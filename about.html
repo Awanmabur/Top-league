@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Top League</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+  <style>
+    :root {
+      --primary: #4a90e2;
+      --accent: #d97800;
+      --highlight: #009f8b;
+      --light-bg: #f9f9f9;
+      --white: #ffffff;
+      --text-dark: #333;
+      --text-light: #777;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: var(--light-bg);
+      color: var(--text-dark);
+    }
+
+    section {
+      padding: 3rem 1rem;
+    }
+
+    h2 {
+      text-align: center;
+      font-size: 2.5rem;
+      color: var(--primary);
+      margin-bottom: 2rem;
+    }
+
+    .container {
+      padding: 2rem;
+    }
+
+    .header {
+      background: var(--white);
+      border-radius: 1rem;
+      padding: 1rem;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      margin-bottom: 2rem;
+    }
+
+    .header h1 {
+      font-size: 2.8rem;
+      color: var(--primary);
+      margin-bottom: 1rem;
+    }
+
+    .header p {
+      color: var(--text-light);
+      font-size: 1.1rem;
+      margin-bottom: 2rem;
+    }
+
+    /* About Section */
+    .about-section {
+      text-align: center;
+      background-color: var(--white);
+    }
+
+    .about-section h2 {
+      color: var(--primary);
+      margin-top: -2rem;
+    }
+
+    .about-section p {
+      margin: 0 8rem;
+      margin-top: -1.3rem;
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    .about-section .content {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2rem;
+      justify-content: center;
+      margin-top: 2rem;
+    }
+
+    .about-section img {
+      max-width: 500px;
+      border-radius: 1rem;
+    }
+
+    .about-section .text {
+      max-width: 600px;
+      text-align: left;
+    }
+
+    .about-section .text h3 {
+      color: var(--primary);
+      margin-top: -.4rem;
+    }
+
+    .about-section .text p,
+    .about-section .text li {
+      font-size: 1rem;
+      line-height: 1.6;
+    }
+
+    .about-section .cta {
+      margin-top: 2rem;
+    }
+
+    .about-section .cta a {
+      padding: 0.75rem 1.5rem;
+      border: 2px solid var(--primary);
+      color: var(--primary);
+      border-radius: 2rem;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+
+
+
+
+    .wrapper {
+      margin: 0 8rem;
+    }
+
+    .wrapper h2 {
+      color: var(--primary);
+    }
+
+    .wrapper p {
+      margin: 0 8rem;
+      margin-top: -1.3rem;
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    .container {
+      background-color: white;
+      color: black;
+      border-radius: 20px;
+      box-shadow: 0 5px 10px 0 rgb(0,0,0,0.25);
+      margin: 20px 0;
+    }
+
+    .question {
+      font-size: 1.2rem;
+      font-weight: 600;
+      position: relative;
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      color: var(--primary);
+    }
+
+    .question::after {
+      content: "\002B";
+      font-size: 2.2rem;
+      position: absolute;
+      right: 20px;
+      transition: 0.2s;
+    }
+
+    .question.active::after {
+      transform: rotate(45deg);
+    }
+
+    .answercont {
+      max-height: 0;
+      overflow: hidden;
+      transition: 0.3s;
+    }
+
+    .answer {
+      /*padding: 0 20px 20px;*/
+      line-height: 1.5rem;
+    }
+
+    .question.active + .answercont {
+    }
+
+    @media screen and (max-width: 790px){
+      html {
+        font-size: 14px;
+      }
+      .wrapper {
+      margin: 0 1rem
+    }
+    }
+
+
+
+
+
+
+
+.feature-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.feature-item i {
+  color: #4a90e2;
+  font-size: 1.2rem;
+  margin-top: 0.2rem;
+  line-height: 2
+}
+
+.feature-item div {
+  margin-top: 0.4rem;
+  font-size: 0.95rem;
+  line-height: 2
+}
+
+
+    /* Contact Section */
+    .contact-section {
+      background: var(--light-bg);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 2rem;
+    }
+
+    .contact-info,
+    .contact-form {
+      flex: 1 1 300px;
+      max-width: 500px;
+      padding: 2rem;
+      background: var(--white);
+      border-radius: 1rem;
+    }
+
+    .contact-info h3,
+    .contact-form h3 {
+      margin-bottom: 1rem;
+      color: var(--primary);
+    }
+
+    .contact-info p,
+    .contact-info a {
+      margin: 0.5rem 0;
+      color: var(--text-dark);
+    }
+
+    .contact-info .social-icons a {
+      margin: 0 0.5rem;
+      font-size: 1.5rem;
+      color: var(--primary);
+    }
+
+    .contact-form input,
+    .contact-form textarea {
+      width: 100%;
+      margin-bottom: 1rem;
+      padding: 0.75rem;
+      border: 1px solid #ccc;
+      border-radius: 0.5rem;
+    }
+
+    .contact-form button {
+      padding: 0.75rem 1.5rem;
+      background: var(--primary);
+      color: var(--white);
+      border: none;
+      border-radius: 2rem;
+      cursor: pointer;
+    }
+
+
+
+    /* --- Footer --- */
+    .footer {
+      background-color: #f9f9f9;
+      padding: 3rem 2rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      font-size: 0.9rem;
+    }
+
+    .footer div {
+      margin: 1rem;
+      flex: 1 1 200px;
+    }
+
+    .footer h4 {
+      font-size: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .footer ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .footer ul li {
+      margin-bottom: 0.5rem;
+    }
+
+    .footer ul li a {
+      color: #333;
+      text-decoration: none;
+    }
+
+    .footer ul li a:hover {
+      text-decoration: underline;
+    }
+
+    .footer .app-links img {
+      width: 120px;
+      margin-right: 10px;
+    }
+
+
+  </style>
+
+</head>
+
+<body>
+  <section class="header">
+    <h1>Welcome to Top League Schools</h1>
+    <p>Discover the best schools and their unique offerings. Join us to explore and manage school profiles efficiently.</p>
+  </section>
+
+  <section class="about-section">
+    <h2>Who we are</h2>
+    <p>
+      Top League School is dedicated to recognizing and promoting the most outstanding educational institutions in South Sudan and beyond. We connect students and parents with schools that exemplify academic excellence, innovation, and holistic development.
+    </p>
+
+    <div class="content">
+      <img src="img/about.png" alt="School Building">
+      <div class="text">
+      <h3>Why working with us.</h3>
+      <div class="feature-item">
+        <i class="fas fa-check-circle"></i>
+        <div><strong>Online Learning:</strong> Enable virtual classes and learning materials for students.</div>
+      </div>
+      <div class="feature-item">
+        <i class="fas fa-check-circle"></i>
+        <div><strong>Student Profiles:</strong> Centralized student records for easy access and updates.</div>
+      </div>
+      <div class="feature-item">
+        <i class="fas fa-check-circle"></i>
+        <div><strong>Exam & Grades:</strong> Record, manage and share results efficiently.</div>
+      </div>
+      <div class="feature-item">
+        <i class="fas fa-check-circle"></i>
+        <div><strong>Timetable:</strong> Automated schedule creation for classes and exams.</div>
+      </div>
+      <div class="feature-item">
+        <i class="fas fa-check-circle"></i>
+        <div><strong>Parent Engagement:</strong> Keep parents informed and involved in their child’s progress.</div>
+      </div>
+      <div class="feature-item">
+        <i class="fas fa-check-circle"></i>
+        <div><strong>Fee Tracking:</strong> Monitor and manage school fees and payments with ease.</div>
+      </div>
+      <div class="feature-item">
+        <i class="fas fa-check-circle"></i>
+        <div><strong>Messaging:</strong> Internal messaging for seamless communication.</div>
+      </div>
+      <div class="feature-item">
+        <i class="fas fa-check-circle"></i>
+        <div><strong>Accessible Anywhere:</strong> Access Top league from any device on the go.</div>
+      </div>
+
+        <!-- <ul>
+          <li><i class="fas fa-check-circle"></i>Expertise: Skilled professionals with years of experience.</li>
+          <li>Innovation: We stay ahead of trends.</li>
+          <li>Tailored Solutions: Custom services to your needs.</li>
+          <li>Quality Assurance: Rigorous testing ensures reliability.</li>
+          <li>Client Satisfaction: Clear communication and smooth collaboration.</li>
+        </ul> -->
+        <div class="cta">
+          <a href="#contact">Get In Touch with us</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+
+
+  <div class="wrapper">
+
+    <h2>Frequently Ask Questions</h2>
+    <p>
+      Top League School is dedicated to recognizing and promoting the most outstanding educational institutions in South Sudan and beyond. We connect students and parents with schools that exemplify academic excellence, innovation, and holistic development.
+    </p>
+
+    <div class="container">
+      <div class="question">
+        How do I verify my email?
+      </div>
+      <div class="answercont">
+        <div class="answer">
+          Click the link in the verification email from verify@codepen.io (be sure to check your spam folder or other email tabs if it's not in your inbox).
+
+  Or, send an email with the subject "Verify" to verify@codepen.io from the email address you use for your CodePen account.<br><br>
+
+  <a href="https://blog.codepen.io/documentation/features/email-verification/#how-do-i-verify-my-email-2">How to Verify Email Docs</a>
+        </div>
+      </div>
+    </div>
+
+      <div class="container">
+      <div class="question">
+        My Pen loads infinitely or crashes the browser.
+      </div>
+      <div class="answercont">
+        <div class="answer">
+          It's likely an infinite loop in JavaScript that we could not catch. To fix, add ?turn_off_js=true to the end of the URL (on any page, like the Pen or Project editor, your Profile page, or the Dashboard) to temporarily turn off JavaScript. When you're ready to run the JavaScript again, remove ?turn_off_js=true and refresh the page.<br><br>
+
+  <a href="https://blog.codepen.io/documentation/features/turn-off-javascript-in-previews/">How to Disable JavaScript Docs</a>
+        </div>
+      </div>
+    </div>
+
+        <div class="container">
+      <div class="question">
+        How do I contact the creator of a Pen?
+      </div>
+      <div class="answercont">
+        <div class="answer">
+          You can leave a comment on any public Pen. Click the "Comments" link in the Pen editor view, or visit the Details page.<br><br>
+
+  <a href="https://blog.codepen.io/documentation/faq/how-do-i-contact-the-creator-of-a-pen/">How to Contact Creator of a Pen Docs</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="question">
+        What version of [library] does CodePen use?
+      </div>
+      <div class="answercont">
+        <div class="answer">
+          We have our current list of library versions <a href="https://codepen.io/versions">here</a>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="question">
+        What are forks?
+      </div>
+      <div class="answercont">
+        <div class="answer">
+          A fork is a complete copy of a Pen or Project that you can save to your own account and modify. Your forked copy comes with everything the original author wrote, including all of the code and any dependencies.<br><br>
+
+  <a href="https://blog.codepen.io/documentation/features/forks/">Learn More About Forks</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+
+  <script src="https://storage.ko-fi.com/cdn/scripts/overlay-widget.js"></script>
+  <script>
+    kofiWidgetOverlay.draw('mohamedghulam', {
+      'type': 'floating-chat',
+      'floating-chat.donateButton.text': 'Support me',
+      'floating-chat.donateButton.background-color': '#323842',
+      'floating-chat.donateButton.text-color': '#fff'
+    });
+  </script>
+
+
+
+
+  <section class="contact-section" id="contact">
+    <div class="contact-info">
+      <h3>Let's Get In Touch</h3>
+      <p>P.O Box 176495, Kampala GPO</p>
+      <p>Email: info@simonmabur.com</p>
+      <p>+256-7819-77217</p>
+      <p>+211-9245-47722</p>
+      <p>+256-7071-80023</p>
+      <div class="social-icons">
+        <a href="#">🔗</a>
+        <a href="#">🔗</a>
+        <a href="#">🔗</a>
+        <a href="#">🔗</a>
+      </div>
+    </div>
+    <div class="contact-form">
+      <h3>Contact Me</h3>
+      <input type="text" placeholder="Username">
+      <input type="email" placeholder="Email">
+      <input type="tel" placeholder="Phone">
+      <textarea placeholder="Message" rows="5"></textarea>
+      <button>Send</button>
+    </div>
+  </section>
+
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div>
+      <h4>About Us</h4>
+      <p></p>
+    </div>
+    <div>
+      <h4>Learn about our mission</h4>
+      <ul>
+        <li><a href="#">Our Story</a></li>
+        <li><a href="#">Careers</a></li>
+        <li><a href="#">Press resources</a></li>
+        <li><a href="#">Subscriptions</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Get help with your account</h4>
+      <ul>
+        <li><a href="#">Customer Support</a></li>
+        <li><a href="#">FAQ</a></li>
+        <li><a href="#">Help Center</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Join our school community</h4>
+      <ul>
+        <li><a href="#">Connect with us</a></li>
+        <li><a href="#">Twitter</a></li>
+        <li><a href="#">Discord server</a></li>
+      </ul>
+    </div>
+    <div class="app-links">
+      <h4>Get the app</h4>
+      <a href="#"><img src="https://upload.wikimedia.org/wikipedia/commons/5/5f/Available_on_the_App_Store_(black)_SVG.svg" alt="App Store"></a>
+      <a href="#"><img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Google Play"></a>
+    </div>
+  </footer>
+
+
+</body>
+
+<script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js'></script><script  src="./script.js"></script>
+
+
+<script type="text/javascript">
+
+let question = document.querySelectorAll(".question");
+
+question.forEach(question => {
+  question.addEventListener("click", event => {
+    const active = document.querySelector(".question.active");
+    if(active && active !== question ) {
+      active.classList.toggle("active");
+      active.nextElementSibling.style.maxHeight = 0;
+    }
+    question.classList.toggle("active");
+    const answer = question.nextElementSibling;
+    if(question.classList.contains("active")){
+      answer.style.maxHeight = answer.scrollHeight + "px";
+    } else {
+      answer.style.maxHeight = 0;
+    }
+  })
+})
+
+
+
+</script>
+
+</html>
