@@ -1224,8 +1224,8 @@ to { transform: translateY(0); opacity: 1; }
 
    .features {
      display: grid;
-     grid-template-columns: repeat(auto-fit, minmax(150px, 2fr));
-     gap: 2rem;
+     grid-template-columns: repeat(auto-fit, minmax(200px, 2fr));
+     gap: 1rem;
      padding: 1rem 0rem;
      background-color: #fff;
      text-align: center;
