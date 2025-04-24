@@ -1211,6 +1211,14 @@ to { transform: translateY(0); opacity: 1; }
      text-align: center;
    }
 
+   .hero-content p {
+     font-size: 1.1rem;
+     margin-bottom: 1.5rem;
+     margin-right: 0rem;
+     text-align: justify;
+   }
+
+
 
    /*features section */
 
