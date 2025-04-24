@@ -178,7 +178,7 @@ body {
 .hero-content p {
   font-size: 1.1rem;
   margin-bottom: 1.5rem;
-
+  margin-right: 3rem;
   text-align: justify;
 }
 
@@ -202,10 +202,10 @@ body {
   background-color: #357abd;
 }
 
-.hero-image {
+/*.hero-image {
   flex: 1 1 40%;
   text-align: center;
-}
+}*/
 
 .hero-image img {
   max-width: 100%;
@@ -1190,7 +1190,7 @@ to { transform: translateY(0); opacity: 1; }
 
    .hero {
      display: grid;
-     grid-template-columns: repeat(auto-fit, minmax(100px, 2fr));
+     grid-template-columns: repeat(auto-fit, minmax(200px, 2fr));
      flex-wrap: wrap;
      align-items: center;
      justify-content: space-between;
