@@ -202,10 +202,10 @@ body {
   background-color: #357abd;
 }
 
-/*.hero-image {
+.hero-image {
   flex: 1 1 40%;
   text-align: center;
-}*/
+}
 
 .hero-image img {
   max-width: 100%;
@@ -1189,8 +1189,7 @@ to { transform: translateY(0); opacity: 1; }
    }
 
    .hero {
-     display: grid;
-     grid-template-columns: repeat(auto-fit, minmax(200px, 2fr));
+     display: flex;
      flex-wrap: wrap;
      align-items: center;
      justify-content: space-between;
@@ -1212,7 +1211,7 @@ to { transform: translateY(0); opacity: 1; }
    /*features section */
 
    .features {
-     display: grid;
+     display: flex;
      grid-template-columns: repeat(auto-fit, minmax(200px, 2fr));
      gap: 2rem;
      padding: 1rem 1rem;
