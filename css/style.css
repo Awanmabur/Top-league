@@ -178,7 +178,7 @@ body {
 .hero-content p {
   font-size: 1.1rem;
   margin-bottom: 1.5rem;
-  /*margin-right: 3rem;*/
+  margin-right: 3rem;
   text-align: justify;
 }
 
@@ -203,7 +203,7 @@ body {
 }
 
 .hero-image {
-  flex: 1 1 40%;
+  flex: 1 1 100%;
   text-align: center;
 }
 
@@ -1188,8 +1188,7 @@ to { transform: translateY(0); opacity: 1; }
    }
 
    .hero {
-     display: grid;
-     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+     display: flex;
      flex-wrap: wrap;
      align-items: center;
      justify-content: space-between;
