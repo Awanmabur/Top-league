@@ -161,7 +161,7 @@ body {
   font-size: 2.2rem;
   margin-bottom: 1rem;
   color: #111;
-  margin-right: 3rem
+
 }
 
 .hero-content h2 {
@@ -178,7 +178,7 @@ body {
 .hero-content p {
   font-size: 1.1rem;
   margin-bottom: 1.5rem;
-  margin-right: 3rem;
+   
   text-align: justify;
 }
 
@@ -1141,6 +1141,7 @@ to { transform: translateY(0); opacity: 1; }
 
    #menu-btn {
     display: inline-block;
+    color: black
   }
 
   .header .navbar {
@@ -1184,11 +1185,12 @@ to { transform: translateY(0); opacity: 1; }
      background: rgba(255, 255, 255, 0.6);
      border-radius: 30px;
      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-     margin: 1rem 2rem;
+     margin: 1rem 1rem;
    }
 
    .hero {
-     display: flex;
+     display: grid;
+     grid-template-columns: repeat(auto-fit, minmax(200px, 2fr));
      flex-wrap: wrap;
      align-items: center;
      justify-content: space-between;
@@ -1196,7 +1198,7 @@ to { transform: translateY(0); opacity: 1; }
      background: rgba(255, 255, 255, 0.3);
      backdrop-filter: blur(10px);
      border-radius: 25px;
-     margin: 0 0rem;
+     margin: 0 1rem;
      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
      margin-bottom: 2rem
    }
