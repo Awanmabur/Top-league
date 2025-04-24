@@ -1188,7 +1188,8 @@ to { transform: translateY(0); opacity: 1; }
    }
 
    .hero {
-     display: flex;
+     display: grid;
+     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
      flex-wrap: wrap;
      align-items: center;
      justify-content: space-between;
