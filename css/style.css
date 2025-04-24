@@ -1222,7 +1222,7 @@ to { transform: translateY(0); opacity: 1; }
 
    /*features section */
 
-   .features {
+   .features, .feature {
      display: grid;
      grid-template-columns: repeat(auto-fit, minmax(100px, 2fr));
      gap: 2rem;
