@@ -188,7 +188,7 @@ body {
 
 .btn {
   display: inline-block;
-  padding: 0.73rem 1.5rem;
+  padding: 0.73rem 1rem;
   margin-left: 20px;
   background-color: #4a90e2;
   color: white;
@@ -1222,7 +1222,7 @@ to { transform: translateY(0); opacity: 1; }
 
    /*features section */
 
-   .features, .feature {
+   .features {
      display: grid;
      grid-template-columns: repeat(auto-fit, minmax(100px, 2fr));
      gap: 2rem;
