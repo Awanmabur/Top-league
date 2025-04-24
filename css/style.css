@@ -1206,12 +1206,16 @@ to { transform: translateY(0); opacity: 1; }
      margin-bottom: 30px
    }
 
+   .hero-image {
+     flex: 1 1 100%;
+     text-align: center;
+   }
 
 
    /*features section */
 
    .features {
-     display: flex;
+     display: grid;
      grid-template-columns: repeat(auto-fit, minmax(200px, 2fr));
      gap: 2rem;
      padding: 1rem 1rem;
