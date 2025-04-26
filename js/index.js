@@ -34,19 +34,38 @@ function scrollToTop(scrollDuration) {
 
 
 
-// Smooth scroll manually
+// Smooth scroll manually with custom scrollStep (like your scrollToTop)
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function(e) {
         e.preventDefault(); // prevent default jump
+
         let target = document.querySelector(this.getAttribute('href'));
-        if (target) {
-            target.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start'
-            });
-        }
+        if (!target) return;
+
+        scrollToTarget(target, 4000); // set scroll duration here (milliseconds)
     });
 });
+
+function scrollToTarget(target, scrollDuration) {
+    let targetPosition = target.getBoundingClientRect().top + window.pageYOffset;
+    let startPosition = window.pageYOffset;
+    let distance = targetPosition - startPosition;
+
+    let scrollStep = distance / (scrollDuration / 15); // same formula style
+    let scrollInterval = setInterval(function() {
+        let currentScroll = window.pageYOffset;
+        let isScrollingDown = distance > 0;
+
+        if ((isScrollingDown && currentScroll >= targetPosition) || (!isScrollingDown && currentScroll <= targetPosition)) {
+            // Reached or passed the target
+            clearInterval(scrollInterval);
+            window.scrollTo(0, targetPosition); // snap to exact position
+        } else {
+            window.scrollBy(0, scrollStep);
+        }
+    }, 15);
+}
+
 
 
 
