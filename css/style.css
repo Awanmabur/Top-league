@@ -1128,9 +1128,384 @@ to { transform: translateY(0); opacity: 1; }
 
 @media screen and (max-width: 1024px) {
 
+   body {
+     margin: 0;
+     font-family: 'Segoe UI', sans-serif;
+     background-color: var(--light-bg);
+     color: var(--text-dark);
+     font-size: 18px
+   }
+
+   #menu-btn {
+    display: inline-block;
+    color: #4a90e2;
+  }
+
+
+  /* Navbar container */
+ .header .navbar {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 0.9s ease, opacity 0.9s ease;
  }
 
+ /* Active menu */
+ .header .navbar.active {
+  max-height: 500px; /* big enough to fit the menu */
+  opacity: 1;
+ }
 
+ /* Animate li items */
+ .header .navbar li {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.9s ease, transform 0.9s ease;
+ }
+
+ /* When menu is active, li items appear */
+ .header .navbar.active li {
+  opacity: 1;
+  transform: translateY(0);
+ }
+
+ .navbar {
+     position: absolute;
+     top: 99%;
+     left: 0;
+     right: 0;
+     border-radius: 20px;
+     background: #4a90e2;
+     -webkit-clip-path: polygon(0 0, 100% 0, 100% 0, 0 0);
+             clip-path: polygon(0 0, 100% 0, 100% 0, 0 0);
+   }
+   .header .navbar.active {
+     -webkit-clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+             clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+   }
+   .header .navbar a {
+     margin: 1rem .8rem;
+     font-size: 1.5rem;
+     display: block;
+     color: white
+   }
+
+   .logo{
+     display: none;
+   }
+
+
+   .demo {
+     display: inline-block;
+     padding: 0.53rem 1rem;
+     margin-left: 20px;
+     background-color: transparent;
+     border: solid 1px ;
+     color:  #4a90e2;
+     border-radius: 25px;
+     text-decoration: none;
+     font-weight: bold;
+     transition: background-color 0.3s ease;
+   }
+
+   .demo:hover {
+     background-color: #357abd;
+     color: white;
+   }
+
+
+   .Joinbtn {
+     color: red;
+     background: transparent
+     padding: 0.2rem .5rem;
+     border-radius: 25px;
+     border: 1px solid white;
+     width: 40%;
+   }
+
+   .Joinbtn:hover {
+     background: white;
+   }
+
+   .sign-in {
+     border: 1px solid white;
+     width: 40%;
+     padding: 0.1rem .5rem;
+     border-radius: 25px;
+   }
+
+   .sign-in:hover {
+     color: #4a90e2;
+     background: white;
+   }
+
+
+
+   .header{
+     margin-top: 1.5rem;
+   }
+
+   .action__btn:hover a {
+     color: #aaa;
+   }
+
+   .navbar i {
+     display: none;
+   }
+
+   .header {
+     display: flex;
+     justify-content: space-between;
+     align-items: center;
+     padding: .4rem 1rem;
+     backdrop-filter: blur(10px);
+     background: rgba(255, 255, 255, 0.6);
+     border-radius: 30px;
+     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+     margin: 1rem 1rem;
+   }
+
+   .hero {
+     display: flex;
+     flex-wrap: wrap;
+     align-items: center;
+     justify-content: space-between;
+     padding: 1rem 1rem;
+     background: rgba(255, 255, 255, 0.3);
+     backdrop-filter: blur(10px);
+     border-radius: 25px;
+     margin: 0 1rem;
+     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+     margin-bottom: 2rem
+   }
+
+   .hero-btn{
+     margin-bottom: 30px
+   }
+
+   .hero-image {
+     flex: 1 1 100%;
+     text-align: center;
+   }
+
+   .hero-content p {
+     font-size: 1.1rem;
+     margin-bottom: 1.5rem;
+     margin-right: 0rem;
+     text-align: justify;
+   }
+
+
+
+   /*features section */
+
+   .features {
+     display: grid;
+     grid-template-columns: repeat(auto-fit, minmax(300px, 2fr));
+     gap: 2rem;
+     padding: 1rem 1rem;
+     background-color: #fff;
+     text-align: center;
+     background: rgba(255, 255, 255, 0.3);
+     backdrop-filter: blur(10px);
+     border-radius: 25px;
+     margin: 2rem 1rem;
+     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+   }
+
+
+   .featured-schools h2 {
+     margin: 2rem 1rem;
+   }
+
+
+
+   .featured-schoolsp{
+     text-align: center;
+     width: 90%;
+     font-size: 1rem;
+     margin-top: -10px;
+     margin-bottom: 1rem;
+     color: #111;
+     margin-left: 18px
+   }
+
+
+
+   .featured-schools p {
+     text-align: left;
+     max-width: 700px;
+     margin: 0 auto 2rem auto;
+     color: #555;
+   }
+
+
+
+
+   .orbit-wrapper {
+     display: flex;
+     flex-wrap: wrap;
+     justify-content: space-around;
+     align-items: flex-start;
+     gap: 2rem;
+     padding: 4rem 1rem;
+   }
+
+
+
+
+
+
+
+   /* --- Pricing Section --- */
+   .pricing-section {
+     text-align: center;
+     padding: 1rem .5rem;
+     background: #f9f9f9;
+   }
+
+   .pricing-section h2 {
+     font-size: 2rem;
+     margin-bottom: -1rem;
+     margin-top: -2rem
+   }
+
+   .pricing-section p {
+     padding: 2rem 2rem;
+     margin-top: -25px;
+   }
+
+
+   .plans {
+     display: flex;
+     justify-content: center;
+     flex-wrap: wrap;
+     gap: 2rem;
+   }
+
+   .plan {
+     background: #fff;
+     border-radius: 16px;
+     box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+     padding: 1.5rem;
+     width: 350px;
+     text-align: left;
+     transition: transform 0.3s ease;
+   }
+
+
+   .container {
+   width: 100%;
+   margin-left: auto;
+   margin-right: auto;
+   padding: 0rem 1.5rem;
+   margin-top: -40px;
+   }
+
+
+   .container h2 {
+     text-align: center;
+     font-size: 2.5rem;
+     color: var(--primary);
+     margin-bottom: 2rem;
+   }
+
+
+   .containerp {
+     padding: 0 1rem;
+     text-align: center;
+     margin-top: -30px;
+     margin-bottom: -25px
+   }
+
+
+
+ /*blogs*/
+
+   #blogs {
+   display: grid;
+   grid-template-columns: repeat(auto-fit, minmax(200px, 2fr));
+   gap: 20px;
+   width: 100%;
+   padding: 0 1rem;
+   }
+
+
+   .blog-header {
+     padding: 0 1rem;
+     text-align: center;
+     margin-bottom: 2rem;
+     margin-top: -2rem
+   }
+
+   .blog-header p {
+     text-align: center;
+     margin-bottom: 2rem;
+     margin-top:  1rem
+   }
+
+   .blog-card {
+     background: white;
+     border-radius: 8px;
+     padding: .5rem;
+     box-shadow: var(--shadow);
+     margin-bottom: 1.5rem;
+     width: 100%;
+     transition: transform 0.3s, box-shadow 0.3s;
+     }
+
+
+   .contact-section h2 {
+     margin-top: 30px;
+   }
+
+
+   .contact-p {
+     padding: 0 2rem;
+     text-align: center;
+     margin-top: -30px;
+     margin-bottom: -5px
+   }
+
+
+
+   .fab-container {
+     display: flex;
+     flex-direction: column;
+     justify-content: flex-end;
+     align-items: center;
+     user-select: "none";
+     position: fixed;
+     bottom: 100px;
+     right: 20px;
+   }
+
+
+   /* --- Footer --- */
+   .footer {
+     background-color: #f9f9f9;
+     display: flex;
+     flex-wrap: wrap;
+     justify-content: space-between;
+     font-size: 1.2rem;
+     background: rgba(255, 255, 255, 0.3);
+     backdrop-filter: blur(10px);
+     border-radius: 25px;
+     margin: 2rem 1rem;
+     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+   }
+
+
+   .footer div {
+     margin: 1rem;
+     flex: 1 1 300px;
+   }
+
+
+
+
+
+ }
 
 
 
