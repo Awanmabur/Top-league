@@ -51,7 +51,7 @@ function scrollToTarget(target, scrollDuration) {
     let startPosition = window.pageYOffset;
     let distance = targetPosition - startPosition;
 
-    let scrollStep = distance / (scrollDuration / 15); // same formula style
+    let scrollStep = distance / (scrollDuration / 3); // same formula style
     let scrollInterval = setInterval(function() {
         let currentScroll = window.pageYOffset;
         let isScrollingDown = distance > 0;
@@ -63,7 +63,7 @@ function scrollToTarget(target, scrollDuration) {
         } else {
             window.scrollBy(0, scrollStep);
         }
-    }, 15);
+    }, 3);
 }
 
 
