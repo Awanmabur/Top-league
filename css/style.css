@@ -21,6 +21,8 @@
 --text-light: #777;
 }
 
+
+
 a{
   text-decoration: none;
 }
@@ -52,15 +54,15 @@ body {
 }
 
 .header .navbar a {
-  font-size: 1.4rem;
-  color: #aaa;
+  font-size: 1.3rem;
+  color: #4a90e2;
   display: inline-block;
-  margin: 0 .4rem;
-  font-weight: normal;
+  margin: 0 .3rem;
+  font-weight: 350;
 }
 
 .header .navbar a:hover {
-  color: #1abc9c;
+  color: #000;
   cursor: pointer;
 }
 
@@ -74,17 +76,17 @@ body {
   font-weight: normal;
   letter-spacing: 3px;
   line-height: 2;
-  color: #1abc9c;
+  color: #4a90e2;
 }
 
 .logo i {
-  color: #1abc9c;
+  color: #4a90e2;
   padding-right: .5rem;
 }
 
 .navbar i {
   font-size: 22px;
-  color: #1abc9c;
+  color: #4a90e2;
 }
 
 .navbar i:hover {
@@ -94,7 +96,7 @@ body {
 }
 
 #menu-btn {
-  font-size: 2.5rem;
+  font-size: 2.3rem;
   color: #fff;
   cursor: pointer;
   display: none;
@@ -106,15 +108,15 @@ body {
 
 
 .Joinbtn {
-  color: #111;
-  background: #4a90e2;
-  padding: 0.1rem .5rem;
+  color: white;
+  background: transparent;
+  padding: 0rem .5rem;
   border-radius: 25px;
+  border: 1px solid #4a90e2;
 }
 
 .Joinbtn:hover {
-  border: 1px solid #4a90e2;
-  background: transparent
+  background: #4a90e2;
 }
 
 .sign-in {
@@ -124,7 +126,7 @@ body {
 }
 
 .sign-in:hover {
-  color: #111;
+  color: #fff;
   background: #4a90e2;
 }
 
@@ -201,6 +203,16 @@ body {
 .btn:hover {
   background-color: #357abd;
 }
+
+
+
+.demo {
+  display: none;
+}
+
+
+
+
 
 .hero-image {
   flex: 1 1 40%;
@@ -1141,15 +1153,16 @@ to { transform: translateY(0); opacity: 1; }
 
    #menu-btn {
     display: inline-block;
-    color: black
+    color: #4a90e2;
   }
 
-  .header .navbar {
+ .navbar {
      position: absolute;
      top: 99%;
      left: 0;
      right: 0;
-     background: #222;
+     border-radius: 20px;
+     background: #4a90e2;
      -webkit-clip-path: polygon(0 0, 100% 0, 100% 0, 0 0);
              clip-path: polygon(0 0, 100% 0, 100% 0, 0 0);
    }
@@ -1158,17 +1171,68 @@ to { transform: translateY(0); opacity: 1; }
              clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
    }
    .header .navbar a {
-     margin: 2rem;
-     font-size: 2rem;
+     margin: 1rem .8rem;
+     font-size: 1.5rem;
      display: block;
+     color: white
    }
+
+   .logo{
+     display: none;
+   }
+
+
+   .demo {
+     display: inline-block;
+     padding: 0.53rem 1rem;
+     margin-left: 20px;
+     background-color: transparent;
+     border: solid 1px ;
+     color:  #4a90e2;
+     border-radius: 25px;
+     text-decoration: none;
+     font-weight: bold;
+     transition: background-color 0.3s ease;
+   }
+
+   .demo:hover {
+     background-color: #357abd;
+     color: white;
+   }
+
+
+   .Joinbtn {
+     color: red;
+     background: transparent
+     padding: 0.2rem .5rem;
+     border-radius: 25px;
+     border: 1px solid white;
+     width: 40%;
+   }
+
+   .Joinbtn:hover {
+     background: white;
+   }
+
+   .sign-in {
+     border: 1px solid white;
+     width: 40%;
+     padding: 0.1rem .5rem;
+     border-radius: 25px;
+   }
+
+   .sign-in:hover {
+     color: #4a90e2;
+     background: white;
+   }
+
+
 
    .header{
      margin-top: 1.5rem;
    }
 
    .action__btn:hover a {
-
      color: #aaa;
    }
 
@@ -1180,7 +1244,7 @@ to { transform: translateY(0); opacity: 1; }
      display: flex;
      justify-content: space-between;
      align-items: center;
-     padding: 1rem 2rem;
+     padding: .4rem 1rem;
      backdrop-filter: blur(10px);
      background: rgba(255, 255, 255, 0.6);
      border-radius: 30px;
@@ -1224,7 +1288,7 @@ to { transform: translateY(0); opacity: 1; }
 
    .features {
      display: grid;
-     grid-template-columns: repeat(auto-fit, minmax(200px, 2fr));
+     grid-template-columns: repeat(auto-fit, minmax(180px, 2fr));
      gap: 2rem;
      padding: 1rem 1rem;
      background-color: #fff;
@@ -1272,6 +1336,16 @@ to { transform: translateY(0); opacity: 1; }
      align-items: flex-start;
      gap: 2rem;
      padding: 4rem 1rem;
+   }
+
+
+   .orbit-ring {
+     position: absolute;
+     width: 280px;
+     height: 280px;
+     border-radius: 50%;
+     margin-top: -20px;
+     animation: spin 30s linear infinite;
    }
 
 
