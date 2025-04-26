@@ -1702,7 +1702,7 @@ to { transform: translateY(0); opacity: 1; }
    }
 
    .hero-content h2 {
-     font-size: 1.6rem;
+     font-size: 1.7rem;
      text-transform: uppercase;
      margin-bottom: 1rem;
      color: #111;
@@ -1917,7 +1917,7 @@ to { transform: translateY(0); opacity: 1; }
      align-items: center;
      user-select: "none";
      position: fixed;
-     bottom: 180px;
+     bottom: 200px;
      right: 20px;
    }
 
