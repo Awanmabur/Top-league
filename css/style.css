@@ -1288,8 +1288,24 @@ to { transform: translateY(0); opacity: 1; }
      text-align: center;
    }
 
+
+   .hero-content h1 {
+     font-size: 2.5rem;
+     margin-bottom: 1rem;
+     color: #111;
+
+   }
+
+   .hero-content h2 {
+     font-size: 2rem;
+     text-transform: uppercase;
+     margin-bottom: 1rem;
+     color: #111;
+   }
+
+
    .hero-content p {
-     font-size: 1.1rem;
+     font-size: 1.3rem;
      margin-bottom: 1.5rem;
      margin-right: 0rem;
      text-align: justify;
@@ -1678,6 +1694,20 @@ to { transform: translateY(0); opacity: 1; }
      text-align: center;
    }
 
+   .hero-content h1 {
+     font-size: 1.2rem;
+     margin-bottom: 1rem;
+     color: #111;
+
+   }
+
+   .hero-content h2 {
+     font-size: 1.6rem;
+     text-transform: uppercase;
+     margin-bottom: 1rem;
+     color: #111;
+   }
+
    .hero-content p {
      font-size: 1.1rem;
      margin-bottom: 1.5rem;
@@ -1879,6 +1909,17 @@ to { transform: translateY(0); opacity: 1; }
    }
 
 
+
+   .fab-container {
+     display: flex;
+     flex-direction: column;
+     justify-content: flex-end;
+     align-items: center;
+     user-select: "none";
+     position: fixed;
+     bottom: 180px;
+     right: 20px;
+   }
 
 
 
