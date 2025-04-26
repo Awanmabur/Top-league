@@ -1338,11 +1338,23 @@ to { transform: translateY(0); opacity: 1; }
      padding: 4rem 1rem;
    }
 
+   .orbit-center {
+     width: 100px;
+     height: 100px;
+
+   }
+
+   .orbit-center img {
+     width: 100px;
+     height: 100px;
+     border-radius: 50%;
+   }
+
 
    .orbit-ring {
      position: absolute;
-     width: 280px;
-     height: 280px;
+     width: 250px;
+     height: 250px;
      border-radius: 50%;
      margin-top: -20px;
      animation: spin 30s linear infinite;
