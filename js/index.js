@@ -1,35 +1,52 @@
 
 let navbar = document.querySelector('.header .navbar');
+let toTopBtn = document.getElementById("toTopBtn");
 
-document.querySelector('#menu-btn').onclick = () =>{
+// Toggle navbar on menu button click
+document.querySelector('#menu-btn').onclick = () => {
     navbar.classList.toggle('active');
-}
-
-window.onscroll = () =>{
-    navbar.classList.remove('active');
-}
-
-
-
-  // vanilla JS
-var toTopBtn = document.getElementById("toTopBtn");
-
-window.onscroll = function () {
-toTopBtn.style.display = document.documentElement.scrollTop > 300 ? "block" : "none";
 };
 
-toTopBtn.addEventListener("click", function(){
-scrollToTop(4000);
+// When scrolling
+window.addEventListener('scroll', () => {
+    // Remove active class from navbar when scrolling
+    navbar.classList.remove('active');
+
+    // Show or hide the toTop button
+    toTopBtn.style.display = document.documentElement.scrollTop > 300 ? "block" : "none";
 });
+
+// Scroll to top button functionality
+toTopBtn.addEventListener("click", function() {
+    scrollToTop(4000);
+});
+
 function scrollToTop(scrollDuration) {
-  var scrollStep = -window.scrollY / (scrollDuration / 5),
-      scrollInterval = setInterval(function(){
-      if ( window.scrollY != 0 ) {
-          window.scrollBy( 0, scrollStep );
-      }
-      else clearInterval(scrollInterval);
-  },15);
+    var scrollStep = -window.scrollY / (scrollDuration / 5),
+        scrollInterval = setInterval(function() {
+            if (window.scrollY != 0) {
+                window.scrollBy(0, scrollStep);
+            } else {
+                clearInterval(scrollInterval);
+            }
+        }, 15);
 }
+
+
+
+// Smooth scroll manually
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function(e) {
+        e.preventDefault(); // prevent default jump
+        let target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+            target.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
+    });
+});
 
 
 

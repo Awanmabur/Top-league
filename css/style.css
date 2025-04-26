@@ -1156,6 +1156,34 @@ to { transform: translateY(0); opacity: 1; }
     color: #4a90e2;
   }
 
+
+  /* Navbar container */
+.header .navbar {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 0.9s ease, opacity 0.9s ease;
+}
+
+/* Active menu */
+.header .navbar.active {
+  max-height: 500px; /* big enough to fit the menu */
+  opacity: 1;
+}
+
+/* Animate li items */
+.header .navbar li {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.9s ease, transform 0.9s ease;
+}
+
+/* When menu is active, li items appear */
+.header .navbar.active li {
+  opacity: 1;
+  transform: translateY(0);
+}
+
  .navbar {
      position: absolute;
      top: 99%;
@@ -1288,7 +1316,7 @@ to { transform: translateY(0); opacity: 1; }
 
    .features {
      display: grid;
-     grid-template-columns: repeat(auto-fit, minmax(180px, 2fr));
+     grid-template-columns: repeat(auto-fit, minmax(160px, 2fr));
      gap: 2rem;
      padding: 1rem 1rem;
      background-color: #fff;
