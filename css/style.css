@@ -62,7 +62,7 @@ body {
 }
 
 .header .navbar a:hover {
-  color: #000;
+  color: #111;
   cursor: pointer;
 }
 
@@ -71,11 +71,12 @@ body {
 }
 
 .logo {
-  font-size: 2.0rem;
+  font-size: 1.5rem;
   color: #fff;
   font-weight: normal;
-  letter-spacing: 3px;
+  letter-spacing: 2px;
   line-height: 2;
+  padding: .3rem;
   color: #4a90e2;
 }
 
@@ -107,27 +108,19 @@ body {
 }
 
 
-.Joinbtn {
-  color: white;
-  background: transparent;
-  padding: 0rem .5rem;
-  border-radius: 25px;
-  border: 1px solid #4a90e2;
-}
-
-.Joinbtn:hover {
-  background: #4a90e2;
-}
-
-.sign-in {
+#sign-in {
   border: 1px solid #4a90e2;
   padding: 0.1rem .5rem;
   border-radius: 25px;
+  padding-bottom: 0.3rem;
+  background: #4a90e2;
+  color: white;
 }
 
-.sign-in:hover {
-  color: #fff;
-  background: #4a90e2;
+#sign-in:hover {
+  color: #4a90e2;
+  background: transparent;
+  border: 1px solid #4a90e2;
 }
 
 
@@ -194,6 +187,7 @@ body {
   margin-left: 20px;
   background-color: #4a90e2;
   color: white;
+  border: 1px solid #4a90e2;
   border-radius: 25px;
   text-decoration: none;
   font-weight: bold;
@@ -201,7 +195,8 @@ body {
 }
 
 .btn:hover {
-  background-color: #357abd;
+  background-color: transparent;
+  color: #4a90e2;
 }
 
 
@@ -384,6 +379,7 @@ body {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 1.5rem;
+  margin-top: -30px
 }
 
 .feature-item {
@@ -485,6 +481,7 @@ body {
   font-size: 0.95rem;
   color: var(--text-light);
   margin-bottom: 1rem;
+  text-align: left;
 }
 
 .card a {
@@ -585,7 +582,7 @@ body {
 }
 
 .plan button:hover {
-  background-color: #357abd;
+  background-color: #4a90e2;
 }
 
 
@@ -892,7 +889,7 @@ to { transform: translateY(0); opacity: 1; }
 }
 
 #toTopBtn:hover {
-  background-color: #357abd;
+  background-color: #4a90e2;
   transform: scale(1.1);
 }
 
@@ -1058,6 +1055,7 @@ to { transform: translateY(0); opacity: 1; }
   border-radius: 0.5rem;
 }
 
+
 .contact-form button {
   padding: 0.75rem 1.5rem;
   background: var(--primary);
@@ -1199,9 +1197,9 @@ to { transform: translateY(0); opacity: 1; }
      display: inline-block;
      padding: 0.53rem 1rem;
      margin-left: 20px;
-     background-color: transparent;
+     background-color: #4a90e2;
      border: solid 1px ;
-     color:  #4a90e2;
+     color: white;
      border-radius: 25px;
      text-decoration: none;
      font-weight: bold;
@@ -1209,35 +1207,24 @@ to { transform: translateY(0); opacity: 1; }
    }
 
    .demo:hover {
-     background-color: #357abd;
-     color: white;
+     background-color: transparent;
+     color: #4a90e2;
    }
 
 
-   .Joinbtn {
-     color: red;
-     background: transparent
-     padding: 0.2rem .5rem;
-     border-radius: 25px;
-     border: 1px solid white;
-     width: 40%;
-   }
-
-   .Joinbtn:hover {
-     background: white;
-   }
-
-   .sign-in {
+   #sign-in {
      border: 1px solid white;
      width: 40%;
      padding: 0.1rem .5rem;
      border-radius: 25px;
+     padding-bottom: 0.4rem;
    }
 
-   .sign-in:hover {
+   #sign-in:hover {
      color: #4a90e2;
      background: white;
    }
+
 
 
 
@@ -1605,9 +1592,9 @@ to { transform: translateY(0); opacity: 1; }
      display: inline-block;
      padding: 0.53rem 1rem;
      margin-left: 20px;
-     background-color: transparent;
+     background-color: #4a90e2;
      border: solid 1px ;
-     color:  #4a90e2;
+     color: white;
      border-radius: 25px;
      text-decoration: none;
      font-weight: bold;
@@ -1615,32 +1602,20 @@ to { transform: translateY(0); opacity: 1; }
    }
 
    .demo:hover {
-     background-color: #357abd;
-     color: white;
+     background-color: transparent;
+     color: #4a90e2;
    }
 
 
-   .Joinbtn {
-     color: red;
-     background: transparent
-     padding: 0.2rem .5rem;
-     border-radius: 25px;
-     border: 1px solid white;
-     width: 40%;
-   }
-
-   .Joinbtn:hover {
-     background: white;
-   }
-
-   .sign-in {
+   #sign-in {
      border: 1px solid white;
      width: 40%;
      padding: 0.1rem .5rem;
      border-radius: 25px;
+     padding-bottom: 0.4rem;
    }
 
-   .sign-in:hover {
+   #sign-in:hover {
      color: #4a90e2;
      background: white;
    }
