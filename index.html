@@ -11,7 +11,9 @@
 </head>
 
 <body>
+  <div id="bodyload">
 
+  </div>
   <!-- <header>
   <h2>GenericLogo</h2>
   <input type="checkbox" id="nav-toggle" class="nav-toggle">
@@ -46,6 +48,7 @@
       <a class="Joinbtn" data-aos="zoom-in-left" data-aos-delay="1150" href="tel: +256781977217" ><i class="fa fa-phone" aria-hidden="true"></i></a>
     </div>
 
+
     <a data-aos="zoom-in-left" data-aos-delay="150" href="/" class="logo">Classic Academy</a>
     <a href="#" class="demo">Book Demo</a>
     <nav class="navbar">
@@ -73,6 +76,31 @@
 
 <!-- dropdown section ends -->
 
+<div id="loader">
+  <div class="academylogo">
+    <img src="./img/academylogo.png" width="200" alt="">
+  </div>
+  <div class="loader">
+    <div class="face front"></div>
+    <div class="face back"></div>
+  </div>
+  <div class="loader">
+    <div class="face front"></div>
+    <div class="face back"></div>
+  </div>
+  <div class="loader">
+    <div class="face front"></div>
+    <div class="face back"></div>
+  </div>
+  <div class="loader">
+    <div class="face front"></div>
+    <div class="face back"></div>
+  </div>
+  <div class="loader">
+    <div class="face front"></div>
+    <div class="face back"></div>
+  </div>
+</div>
 
   <section class="hero">
     <div class="hero-content">
@@ -737,6 +765,14 @@
 
 <script src="./js/index.js" defer></script>
 
+
+<script>
+  // Always wait 10 seconds before showing content
+  setTimeout(function () {
+    document.getElementById("loader").style.display = "none";
+    document.getElementById("bodyload").style.display = "block";
+  }, 2000); // 10,000 milliseconds = 10 seconds
+</script>
 
 
 </body>
