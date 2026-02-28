@@ -1,0 +1,1963 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- ✅ SEO -->
+    <title>Schedule a Demo or Support Call | Classic Academy & Classic Campus</title>
+    <meta name="description"
+        content="Schedule a meeting with the Classic team for a demo, onboarding, or support for Classic Academy and Classic Campus. Pick a date, choose a time, and join via Zoom — with Google Calendar invite." />
+    <meta name="keywords"
+        content="Classic Academy, Classic Campus, schedule demo, onboarding meeting, support call, booking, Zoom meeting, Google Calendar invite, school ERP, university ERP, LMS, admissions" />
+    <meta name="robots" content="index,follow" />
+    <link rel="canonical" href="/" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Schedule a Demo or Support Call | Classic Academy & Classic Campus" />
+    <meta property="og:description"
+        content="Book a meeting with the Classic team. Choose a date and time, receive a Zoom + Google Calendar invite, and join the meeting when it’s time." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="/" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Schedule a Demo or Support Call | Classic Academy & Classic Campus" />
+    <meta name="twitter:description"
+        content="Book a meeting with the Classic team for demo, onboarding, or support. Zoom + Google Calendar invite included." />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg: #f6f7fb;
+            --card: #ffffff;
+            --text: #0f172a;
+            --muted: #6b7280;
+            --line: #e7ecf3;
+
+            --primary: #2e2fa6;
+            --primary2: #23248b;
+            --primarySoft: #dfe9ff;
+            --primaryInk: #1b1c6a;
+
+            --yellow: #f2c94c;
+            --yellow2: #ffd86b;
+
+            --ok: #16a34a;
+            --past: #cbd5e1;
+            --danger: #b91c1c;
+
+            --shadow: 0 18px 55px rgba(15, 23, 42, .10);
+            --shadow2: 0 10px 26px rgba(15, 23, 42, .08);
+
+            /* ✅ More rounded edges */
+            --radius: 26px;
+            --radiusMd: 20px;
+            --radiusPill: 999px;
+
+            --ring: 0 0 0 4px rgba(46, 47, 166, .14);
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        html,
+        body {
+            height: 100%
+        }
+
+        body {
+            margin: 0;
+            font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Arial;
+            color: var(--text);
+            background: var(--bg);
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none
+        }
+
+        button,
+        input,
+        select,
+        textarea {
+            font: inherit
+        }
+
+        :focus-visible {
+            outline: none;
+            box-shadow: var(--ring);
+            border-color: rgba(46, 47, 166, .35) !important;
+        }
+
+        /* ✅ Clean animations */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                transition: none !important;
+                animation: none !important;
+                scroll-behavior: auto !important
+            }
+        }
+
+        .fadeIn {
+            animation: fade .35s ease both;
+        }
+
+        @keyframes fade {
+            from {
+                opacity: 0;
+                transform: translateY(6px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        /* Top bar */
+        .top {
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 22px 18px 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px
+        }
+
+        .mark {
+            width: 34px;
+            height: 34px;
+            border-radius: 999px;
+            background: radial-gradient(circle at 35% 30%, #fff 0 25%, transparent 26% 100%),
+                linear-gradient(135deg, var(--primary), #1f7ae0);
+            box-shadow: 0 12px 26px rgba(46, 47, 166, .18);
+            transform: translateZ(0);
+        }
+
+        .brandText {
+            font-weight: 800;
+            letter-spacing: -.02em;
+            font-size: 22px;
+            display: flex;
+            gap: 6px;
+            align-items: baseline;
+        }
+
+        .brandText span:last-child {
+            color: var(--primary)
+        }
+
+        .navRight {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--muted);
+            font-size: 14px
+        }
+
+        .search {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            border: 1px solid var(--line);
+            border-radius: var(--radiusPill);
+            background: #fff;
+            box-shadow: var(--shadow2);
+            min-width: 260px;
+            transition: transform .14s ease, box-shadow .14s ease;
+        }
+
+        .search:focus-within {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow)
+        }
+
+        .search input {
+            border: 0;
+            outline: none;
+            width: 100%;
+            font-size: 14px;
+            color: var(--text)
+        }
+
+        .avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: var(--radiusPill);
+            background: linear-gradient(135deg, #e8eefc, #cfe0ff);
+            border: 1px solid var(--line);
+            display: grid;
+            place-items: center;
+            box-shadow: var(--shadow2);
+            color: var(--primaryInk);
+            font-weight: 800;
+        }
+
+        .wrap {
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 6px 18px 30px
+        }
+
+        /* Header */
+        .hero {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 18px;
+            padding: 14px 0 18px;
+        }
+
+        .heroLeft {
+            display: flex;
+            gap: 14px;
+            align-items: flex-start
+        }
+
+        .heroIcon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radiusMd);
+            background: #fff;
+            border: 1px solid var(--line);
+            box-shadow: var(--shadow2);
+            display: grid;
+            place-items: center;
+            color: var(--primary);
+            flex: 0 0 auto;
+        }
+
+        .heroTitle {
+            font-size: 36px;
+            font-weight: 800;
+            letter-spacing: -.03em;
+            margin: 0;
+            line-height: 1.1;
+        }
+
+        .heroSub {
+            margin: 8px 0 0;
+            color: var(--muted);
+            font-size: 14px;
+            max-width: 62ch
+        }
+
+        .pillRow {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: flex-end
+        }
+
+        .pill {
+            font-size: 12px;
+            padding: 7px 10px;
+            border: 1px solid var(--line);
+            border-radius: var(--radiusPill);
+            background: #fff;
+            color: var(--muted);
+            box-shadow: var(--shadow2);
+            white-space: nowrap;
+        }
+
+        /* Layout */
+        .layout {
+            display: grid;
+            grid-template-columns: 1.05fr .82fr .95fr;
+            gap: 18px;
+            align-items: start;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .cardPad {
+            padding: 18px
+        }
+
+        /* ✅ Preferences (selects) */
+        .prefs {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .pref {
+            display: grid;
+            gap: 6px
+        }
+
+        .prefs label {
+            font-size: 12px;
+            color: var(--muted);
+            font-weight: 700
+        }
+
+        .prefs select {
+            width: 100%;
+            border-radius: var(--radiusMd);
+            padding: 12px 14px;
+            border: 1px solid var(--line);
+            background: #fff;
+            box-shadow: var(--shadow2);
+            outline: none;
+            transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease;
+            appearance: none;
+            background-image:
+                linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+                linear-gradient(135deg, var(--muted) 50%, transparent 50%),
+                linear-gradient(to right, transparent, transparent);
+            background-position:
+                calc(100% - 18px) calc(50% - 4px),
+                calc(100% - 12px) calc(50% - 4px),
+                calc(100% - 2.6em) 0.5em;
+            background-size: 6px 6px, 6px 6px, 1px 1.5em;
+            background-repeat: no-repeat;
+        }
+
+        .prefs select:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow)
+        }
+
+        .prefs select:focus {
+            border-color: rgba(46, 47, 166, .35)
+        }
+
+        /* Calendar */
+        .calTop {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 18px 12px
+        }
+
+        .calMonth {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 800;
+            letter-spacing: -.02em;
+            font-size: 22px;
+            color: var(--primaryInk)
+        }
+
+        .calMonth .miniIcon {
+            width: 34px;
+            height: 34px;
+            border-radius: var(--radiusMd);
+            background: #fff8db;
+            border: 1px solid #fde7a2;
+            display: grid;
+            place-items: center;
+            color: #a16207;
+        }
+
+        .calNav {
+            display: flex;
+            gap: 8px;
+            align-items: center
+        }
+
+        .iconBtn {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radiusPill);
+            border: 1px solid var(--line);
+            background: #fff;
+            box-shadow: var(--shadow2);
+            cursor: pointer;
+            transition: transform .14s ease, box-shadow .14s ease;
+        }
+
+        .iconBtn:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow)
+        }
+
+        .iconBtn:active {
+            transform: translateY(0)
+        }
+
+        .dow {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            padding: 6px 18px 10px;
+            color: var(--muted);
+            font-size: 12px;
+            letter-spacing: .02em;
+        }
+
+        .dow span {
+            text-align: center;
+            padding: 10px 0;
+            font-weight: 700
+        }
+
+        .calGridWrap {
+            position: relative;
+            padding: 0 18px 18px
+        }
+
+        .colPill {
+            position: absolute;
+            top: 0;
+            bottom: 18px;
+            left: 18px;
+            border-radius: var(--radiusPill);
+            background: #f3f5ff;
+            opacity: 0;
+            transform: translateX(0);
+            transition: opacity .16s ease, transform .16s ease;
+            pointer-events: none;
+        }
+
+        .days {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: 12px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .day {
+            border: 0;
+            background: transparent;
+            border-radius: var(--radiusMd);
+            height: 44px;
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+            color: var(--text);
+            position: relative;
+            user-select: none;
+            transition: transform .14s ease, background .14s ease, box-shadow .14s ease;
+        }
+
+        .day:hover {
+            background: rgba(15, 23, 42, .04);
+            transform: translateY(-1px)
+        }
+
+        .day:active {
+            transform: translateY(0)
+        }
+
+        .day.disabled {
+            opacity: .35;
+            cursor: not-allowed;
+            transform: none !important;
+            background: transparent !important
+        }
+
+        .day.today {
+            outline: 2px solid rgba(46, 47, 166, .18)
+        }
+
+        .day.selected {
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 14px 28px rgba(46, 47, 166, .18);
+        }
+
+        .day .mini {
+            position: absolute;
+            bottom: -6px;
+            width: 6px;
+            height: 6px;
+            border-radius: 999px;
+            background: transparent;
+        }
+
+        .day.avail .mini {
+            background: var(--ok)
+        }
+
+        .day.booked .mini {
+            background: #f97316
+        }
+
+        .day.past .mini {
+            background: var(--past)
+        }
+
+        .blank {
+            visibility: hidden
+        }
+
+        /* Middle tabs */
+        .tabs {
+            display: flex;
+            gap: 28px;
+            padding: 18px 18px 8px;
+            font-weight: 800;
+            color: var(--muted);
+            justify-content: center;
+            user-select: none;
+        }
+
+        .tab {
+            position: relative;
+            padding-bottom: 10px;
+            cursor: pointer;
+            transition: color .14s ease, transform .14s ease;
+        }
+
+        .tab:hover {
+            transform: translateY(-1px)
+        }
+
+        .tab.active {
+            color: var(--text)
+        }
+
+        .tab.active:after {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 3px;
+            border-radius: var(--radiusPill);
+            background: var(--primary);
+        }
+
+        .pane {
+            display: none
+        }
+
+        .pane.active {
+            display: block
+        }
+
+        .midHead {
+            text-align: center;
+            padding: 18px 18px 6px;
+            color: var(--muted);
+            font-weight: 800
+        }
+
+        /* Times grid (2 cols, 3 on wide screens) */
+        .timeWrap {
+            padding: 10px 18px 18px;
+        }
+
+        .timeGrid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            align-items: center;
+        }
+
+        @media (min-width: 1280px) {
+            .timeGrid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        .slot {
+            width: 100%;
+            border: 1px solid var(--line);
+            background: #fff;
+            border-radius: var(--radiusPill);
+            padding: 12px 14px;
+            font-weight: 800;
+            color: var(--text);
+            box-shadow: var(--shadow2);
+            cursor: pointer;
+            transition: transform .14s ease, border-color .14s ease, box-shadow .14s ease, background .14s ease;
+            text-align: center;
+        }
+
+        .slot:hover {
+            transform: translateY(-1px);
+            border-color: rgba(46, 47, 166, .25);
+            box-shadow: var(--shadow)
+        }
+
+        .slot:active {
+            transform: translateY(0)
+        }
+
+        .slot.active {
+            background: var(--primary);
+            color: #fff;
+            border-color: transparent;
+            box-shadow: 0 16px 34px rgba(46, 47, 166, .22);
+        }
+
+        .hint {
+            padding: 0 18px 18px;
+            text-align: center;
+            color: var(--muted);
+            font-size: 12px;
+            min-height: 16px;
+        }
+
+        .midFoot {
+            border-top: 1px solid var(--line);
+            padding: 14px 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .link {
+            border: 0;
+            background: transparent;
+            color: var(--primary);
+            font-weight: 800;
+            cursor: pointer;
+            padding: 0;
+            transition: transform .14s ease;
+        }
+
+        .link:hover {
+            text-decoration: underline;
+            transform: translateY(-1px)
+        }
+
+        .overviewBox,
+        .agendaBox {
+            padding: 14px 18px 18px;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .miniCard {
+            margin-top: 12px;
+            border: 1px solid var(--line);
+            background: #fff;
+            border-radius: var(--radiusMd);
+            box-shadow: var(--shadow2);
+            padding: 12px;
+            color: var(--text);
+        }
+
+        .miniRow {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            font-size: 12px;
+            color: var(--muted)
+        }
+
+        .miniRow strong {
+            color: var(--text)
+        }
+
+        .agendaBox textarea {
+            width: 100%;
+            border-radius: var(--radiusMd);
+            padding: 12px 14px;
+            border: 1px solid var(--line);
+            outline: none;
+            min-height: 130px;
+            resize: vertical;
+            margin-top: 10px;
+            box-shadow: var(--shadow2);
+            transition: box-shadow .14s ease, transform .14s ease;
+        }
+
+        .agendaBox textarea:focus {
+            box-shadow: var(--shadow);
+            transform: translateY(-1px)
+        }
+
+        /* Right panel */
+        .side {
+            border-radius: 30px;
+            background: linear-gradient(180deg, var(--primary), var(--primary2));
+            color: #fff;
+            box-shadow: 0 24px 60px rgba(46, 47, 166, .24);
+            border: 1px solid rgba(255, 255, 255, .10);
+            overflow: hidden;
+            position: sticky;
+            top: 12px;
+        }
+
+        .sidePad {
+            padding: 18px
+        }
+
+        .hostCard {
+            background: var(--primarySoft);
+            color: var(--primaryInk);
+            border-radius: var(--radiusMd);
+            padding: 14px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            box-shadow: 0 18px 40px rgba(0, 0, 0, .10);
+            margin-top: 12px;
+        }
+
+        .hostAvatar {
+            width: 52px;
+            height: 52px;
+            border-radius: var(--radiusPill);
+            background: linear-gradient(135deg, #fff, #cfe0ff);
+            display: grid;
+            place-items: center;
+            font-weight: 800;
+            color: var(--primaryInk);
+            border: 1px solid rgba(46, 47, 166, .15);
+            flex: 0 0 auto;
+        }
+
+        .hostMeta {
+            display: grid;
+            gap: 2px
+        }
+
+        .loc {
+            font-size: 12px;
+            color: rgba(27, 28, 106, .75);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 800;
+        }
+
+        .hostName {
+            font-weight: 900;
+            letter-spacing: -.01em
+        }
+
+        .hostRole {
+            font-size: 13px;
+            color: rgba(27, 28, 106, .75);
+            font-weight: 800
+        }
+
+        .details {
+            margin-top: 18px;
+            display: grid;
+            gap: 14px
+        }
+
+        .dRow {
+            display: grid;
+            grid-template-columns: 44px 1fr;
+            gap: 12px;
+            align-items: center
+        }
+
+        .dIcon {
+            width: 44px;
+            height: 44px;
+            border-radius: var(--radiusPill);
+            border: 1px solid rgba(255, 255, 255, .18);
+            background: rgba(255, 255, 255, .10);
+            display: grid;
+            place-items: center;
+        }
+
+        .dLabel {
+            font-size: 12px;
+            color: rgba(255, 255, 255, .72);
+            margin-top: 2px;
+            font-weight: 700
+        }
+
+        .dValue {
+            font-weight: 900;
+            letter-spacing: -.01em
+        }
+
+        .dValue small {
+            font-weight: 800;
+            color: rgba(255, 255, 255, .75);
+            margin-left: 6px
+        }
+
+        /* Form area */
+        .formCard {
+            margin-top: 18px;
+            background: rgba(255, 255, 255, .10);
+            border: 1px solid rgba(255, 255, 255, .14);
+            border-radius: var(--radiusMd);
+            padding: 14px;
+            backdrop-filter: blur(10px);
+        }
+
+        .field {
+            display: grid;
+            gap: 6px;
+            margin-bottom: 10px
+        }
+
+        .field label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, .82);
+            font-weight: 800
+        }
+
+        .field input,
+        .field textarea {
+            width: 100%;
+            border-radius: var(--radiusMd);
+            padding: 12px 14px;
+            border: 1px solid rgba(255, 255, 255, .18);
+            background: rgba(255, 255, 255, .14);
+            color: #fff;
+            outline: none;
+            transition: transform .14s ease, box-shadow .14s ease;
+        }
+
+        .field input::placeholder,
+        .field textarea::placeholder {
+            color: rgba(255, 255, 255, .65)
+        }
+
+        .field input:focus,
+        .field textarea:focus {
+            transform: translateY(-1px);
+            box-shadow: 0 0 0 4px rgba(255, 255, 255, .10)
+        }
+
+        .field textarea {
+            min-height: 80px;
+            resize: vertical
+        }
+
+        .hp {
+            display: none !important
+        }
+
+        /* CTA (Book -> Join Meeting) */
+        .joinBtn {
+            margin-top: 14px;
+            width: 100%;
+            border: 0;
+            border-radius: var(--radiusPill);
+            padding: 14px 16px;
+            background: linear-gradient(135deg, var(--yellow), var(--yellow2));
+            color: #2b2b2b;
+            font-weight: 900;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 18px 34px rgba(0, 0, 0, .18);
+            transition: transform .14s ease, filter .14s ease, opacity .14s ease;
+        }
+
+        .joinBtn:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.02)
+        }
+
+        .joinBtn:active {
+            transform: translateY(0)
+        }
+
+        .joinBtn:disabled {
+            opacity: .55;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none
+        }
+
+        .status {
+            margin-top: 10px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, .86);
+            min-height: 16px;
+            font-weight: 700;
+        }
+
+        .status.error {
+            color: #ffd1d1
+        }
+
+        .successBox {
+            margin-top: 12px;
+            background: rgba(255, 255, 255, .10);
+            border: 1px solid rgba(255, 255, 255, .14);
+            border-radius: var(--radiusMd);
+            padding: 14px;
+            display: none;
+        }
+
+        .successBox h3 {
+            margin: 0 0 6px
+        }
+
+        .actions {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap
+        }
+
+        .btnOutline {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 12px;
+            border-radius: var(--radiusPill);
+            border: 1px solid rgba(255, 255, 255, .22);
+            background: rgba(255, 255, 255, .10);
+            color: #fff;
+            font-weight: 900;
+            transition: transform .14s ease, border-color .14s ease;
+        }
+
+        .btnOutline:hover {
+            border-color: rgba(255, 255, 255, .35);
+            transform: translateY(-1px)
+        }
+
+        .btnOutline:active {
+            transform: translateY(0)
+        }
+
+        .bookAnother {
+            margin-top: 10px;
+            display: inline-block;
+            color: rgba(255, 255, 255, .92);
+            font-size: 12px;
+            font-weight: 900;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+            opacity: .92
+        }
+
+        /* ✅ Responsive: headings + selects become 2 columns on phone */
+        @media (max-width: 1060px) {
+            .layout {
+                grid-template-columns: 1fr
+            }
+
+            .side {
+                position: static
+            }
+
+            .search {
+                display: none
+            }
+        }
+
+        @media (max-width: 640px) {
+            .top {
+                padding: 16px 14px 8px
+            }
+
+            .wrap {
+                padding: 6px 14px 26px
+            }
+
+            .hero {
+                padding: 10px 0 14px
+            }
+
+            .heroTitle {
+                font-size: 26px;
+                line-height: 1.08
+            }
+
+            .heroSub {
+                font-size: 13px
+            }
+
+            .brandText {
+                font-size: 20px
+            }
+
+            /* ✅ 2 columns for selects on phone */
+            .prefs {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .prefs .pref:last-child {
+                grid-column: 1 / -1;
+                /* duration takes full width (2 rows total) */
+            }
+
+            /* calendar spacing */
+            .days {
+                gap: 10px
+            }
+        }
+
+        @media (max-width: 420px) {
+
+            /* ✅ Optionally 1 column for very small phones */
+            .prefs {
+                grid-template-columns: 1fr
+            }
+
+            .prefs .pref:last-child {
+                grid-column: auto
+            }
+
+            .heroTitle {
+                font-size: 24px
+            }
+        }
+    
+/* --- Site header/footer (links only; booking UI unchanged) --- */
+.header {
+  position: relative;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:.2rem 2rem;
+  backdrop-filter: blur(10px);
+  background: rgba(255,255,255,0.6);
+  border-radius: 30px;
+  box-shadow: 0 4px 30px rgba(0,0,0,0.1);
+  margin: 1rem 6rem;
+  z-index: 999;
+}
+.header .navbar a{
+  font-size: 1.05rem;
+  color: #2e2fa6;
+  display:inline-block;
+  margin: 0 .35rem;
+  font-weight: 600;
+}
+.header .navbar a:hover{ color:#0f172a; }
+.logo{
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: .2px;
+  color: #2e2fa6;
+}
+#menu-btn{
+  font-size: 2rem;
+  color: #2e2fa6;
+  cursor: pointer;
+  display:none;
+}
+.demo{ display:none; }
+.action__btn{ display:none; }
+#sign-in{
+  border: 1px solid #2e2fa6;
+  padding: .12rem .7rem;
+  border-radius: 999px;
+  background:#2e2fa6;
+  color:#fff;
+  font-weight: 800;
+}
+#sign-in:hover{ background: transparent; color:#2e2fa6; }
+
+.footer{
+  background: rgba(255,255,255,0.6);
+  backdrop-filter: blur(10px);
+  border-radius: 25px;
+  margin: 2rem 6rem;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+  display:flex; flex-wrap:wrap;
+  justify-content:space-between;
+  font-size: .95rem;
+}
+.footer div{ margin: 1rem; flex: 1 1 220px; }
+.footer h4{ margin: 0 0 .75rem 0; }
+.footer ul{ list-style:none; padding:0; margin:0; }
+.footer li{ margin-bottom: .45rem; }
+.footer a:hover{ text-decoration: underline; }
+
+@media (max-width: 1024px){
+  #menu-btn{ display:inline-block; }
+  .header{ margin: 1rem 1rem; padding: .4rem 1rem; }
+  .logo{ display:none; }
+  .demo{ display:inline-block; padding:.53rem 1rem; border:1px solid #2e2fa6; background:#2e2fa6; color:#fff; border-radius:999px; font-weight:800; }
+  .demo:hover{ background: transparent; color:#2e2fa6; }
+  .navbar{
+      position:absolute; top:99%; left:0; right:0;
+      border-radius:20px;
+      background:#2e2fa6;
+      max-height:0; overflow:hidden; opacity:0;
+      transition: max-height .35s ease, opacity .35s ease;
+  }
+  .header .navbar.active{ max-height:520px; opacity:1; }
+  .header .navbar a{ display:block; margin: 1rem .9rem; color:#fff; font-size:1.25rem; }
+  #sign-in{ width:max-content; background:#fff; color:#2e2fa6; border-color:#fff; }
+  .footer{ margin: 2rem 1rem; }
+}
+
+</style>
+
+    <!-- ✅ Structured data (SEO) -->
+    <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Schedule a Demo or Support Call | Classic Academy & Classic Campus",
+    "description": "Schedule a meeting with the Classic team for a demo, onboarding, or support. Zoom + Google Calendar invite included.",
+    "publisher": {
+      "@type": "Organization",
+      "name": "Classic",
+      "url": "/"
+    }
+  }
+  </script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+
+<body>
+<!-- dropdown section starts  -->
+
+<header class="header">
+
+    <div id="menu-btn" class="fas fa-bars"></div>
+
+    <div class="action__btn">
+      <a id="dark-light" data-aos="zoom-in-left" data-aos-delay="900"><i class="fa fa-adjust" aria-hidden="true"></i></a>
+      <a data-aos="zoom-in-left" data-aos-delay="750" href="https://api.whatsapp.com/send?phone=256781977217"><i class="fab fa-whatsapp" ></i></a>
+      <a class="Joinbtn" data-aos="zoom-in-left" data-aos-delay="1150" href="tel:+256781977217" ><i class="fa fa-phone" aria-hidden="true"></i></a>
+    </div>
+
+    <a data-aos="zoom-in-left" data-aos-delay="150" href="index.html" class="logo">Classic Academy</a>
+    <a href="schedule.html" class="demo">Book Demo</a>
+    <nav class="navbar">
+        <a data-aos="zoom-in-left" data-aos-delay="300" href="index.html">Home</a>
+        <a data-aos="zoom-in-left" data-aos-delay="450" href="about.html">About</a>
+        <a data-aos="zoom-in-left" data-aos-delay="600" href="services/index.html">Features</a>
+        <a data-aos="zoom-in-left" data-aos-delay="900" href="index.html#testimonials">Benefits</a>
+        <a data-aos="zoom-in-left" data-aos-delay="1150" href="contact/index.html">Contact</a>
+
+        <a id="sign-in" data-aos="zoom-in-left" data-aos-delay="750" href="index.html#pricing">Join Today</a>
+        <a id="sign-in" data-aos="zoom-in-left" data-aos-delay="1150" href="schedule.html" >Sign In</a>
+
+    </nav>
+
+   </header>
+
+<!-- dropdown section ends -->
+
+    <header class="top fadeIn">
+        <div class="brand">
+            <div class="mark" aria-hidden="true"></div>
+            <div class="brandText">Classic <span>Schedule</span></div>
+        </div>
+        <div class="navRight">
+            <div class="search" aria-label="Search (visual only)">
+                <span style="opacity:.75">Search</span>
+                <input placeholder="" />
+                <svg class="svg" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M10 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16Zm11 3-6-6" />
+                </svg>
+            </div>
+            <div class="avatar" title="Account">CK</div>
+        </div>
+    </header>
+
+    <main class="wrap">
+        <section class="hero fadeIn">
+            <div class="heroLeft">
+                <div class="heroIcon" aria-hidden="true">
+                    <svg class="svg" viewBox="0 0 24 24">
+                        <path d="M7 2h2v2h6V2h2v2h3v18H4V4h3V2Zm13 6H6v12h14V8ZM8 10h4v4H8v-4Z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="heroTitle">Schedule a meeting</h1>
+                    <p class="heroSub">Book a Classic Academy / Classic Campus demo, onboarding, or support session.
+                        Choose a date and time — we’ll send a Zoom + Google Calendar invite.</p>
+                </div>
+            </div>
+            <div class="pillRow">
+                <span class="pill">Zoom + Google Calendar</span>
+                <span class="pill" id="tzPill">Africa/Kampala</span>
+            </div>
+        </section>
+
+        <section class="layout">
+            <!-- LEFT: Calendar -->
+            <div class="card fadeIn">
+                <div class="cardPad">
+                    <div class="prefs" aria-label="Preferences">
+                        <div class="pref">
+                            <label for="product">Product</label>
+                            <select id="product">
+                                <option>Classic Academy</option>
+                                <option>Classic Campus</option>
+                                <option>Both</option>
+                            </select>
+                        </div>
+                        <div class="pref">
+                            <label for="purpose">Purpose</label>
+                            <select id="purpose">
+                                <option>Demo</option>
+                                <option>Onboarding</option>
+                                <option>Support</option>
+                            </select>
+                        </div>
+                        <div class="pref">
+                            <label for="duration">Duration</label>
+                            <select id="duration">
+                                <option value="30">30 minutes</option>
+                                <option value="45">45 minutes</option>
+                                <option value="60">60 minutes</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="calTop">
+                    <div class="calMonth">
+                        <div class="miniIcon" aria-hidden="true">
+                            <svg class="svg" viewBox="0 0 24 24">
+                                <path d="M7 2h2v2h6V2h2v2h3v18H4V4h3V2Zm13 6H6v12h14V8Z" />
+                            </svg>
+                        </div>
+                        <span id="monthTitle">—</span>
+                    </div>
+                    <div class="calNav">
+                        <button class="iconBtn" id="prevMonth" type="button" aria-label="Previous month">‹</button>
+                        <button class="iconBtn" id="nextMonth" type="button" aria-label="Next month">›</button>
+                    </div>
+                </div>
+
+                <div class="dow" aria-hidden="true">
+                    <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+                </div>
+
+                <div class="calGridWrap">
+                    <div class="colPill" id="colPill" aria-hidden="true"></div>
+                    <div class="days" id="days"></div>
+                </div>
+            </div>
+
+            <!-- MIDDLE -->
+            <div class="card fadeIn">
+                <div class="tabs" aria-label="Sections">
+                    <div class="tab" id="tabOverview">Overview</div>
+                    <div class="tab active" id="tabSchedule">Schedule</div>
+                    <div class="tab" id="tabAgenda">Agenda</div>
+                </div>
+
+                <div class="pane" id="paneOverview">
+                    <div class="midHead">Meeting overview</div>
+                    <div class="overviewBox">
+                        Quick summary of your selection and what happens next.
+                        <div class="miniCard">
+                            <div class="miniRow"><span>Session</span><strong id="ovMeta">—</strong></div>
+                            <div class="miniRow" style="margin-top:6px"><span>Date & time</span><strong
+                                    id="ovWhen">—</strong></div>
+                            <div class="miniRow" style="margin-top:6px"><span>Timezone</span><strong
+                                    id="ovTz">—</strong></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pane active" id="paneSchedule">
+                    <div class="midHead" id="slotSub">Pick a time</div>
+                    <div class="timeWrap">
+                        <div class="timeGrid" id="slots"></div>
+                    </div>
+                    <div class="hint" id="slotHint">Select an available day to see times.</div>
+
+                    <div class="midFoot">
+                        <span style="display:flex;align-items:center;gap:8px">
+                            <span
+                                style="width:8px;height:8px;border-radius:999px;background:var(--ok);display:inline-block"></span>
+                            Available
+                            <span
+                                style="width:8px;height:8px;border-radius:999px;background:#f97316;display:inline-block;margin-left:10px"></span>
+                            Booked
+                            <span
+                                style="width:8px;height:8px;border-radius:999px;background:var(--past);display:inline-block;margin-left:10px"></span>
+                            Past
+                        </span>
+                        <button class="link" id="refresh" type="button">Refresh</button>
+                    </div>
+                </div>
+
+                <div class="pane" id="paneAgenda">
+                    <div class="midHead">Add an agenda (optional)</div>
+                    <div class="agendaBox">
+                        Add topics/questions to help us prepare (optional).
+                        <textarea id="agendaNotes" placeholder="Example:
+• Pricing & rollout plan
+• Data migration
+• User roles & permissions
+• Integrations (Google, SMS, etc.)"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT -->
+            <aside class="side fadeIn">
+                <div class="sidePad">
+                    <div class="hostCard">
+                        <div class="hostAvatar" aria-hidden="true">C</div>
+                        <div class="hostMeta">
+                            <div class="loc">
+                                <svg class="svg" viewBox="0 0 24 24">
+                                    <path
+                                        d="M12 2a7 7 0 0 1 7 7c0 5-7 13-7 13S5 14 5 9a7 7 0 0 1 7-7Zm0 9a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" />
+                                </svg>
+                                Kampala, Uganda
+                            </div>
+                            <div class="hostName">Classic Team</div>
+                            <div class="hostRole">Academy / Campus Specialist</div>
+                        </div>
+                    </div>
+
+                    <div class="details" aria-label="Selected details">
+                        <div class="dRow">
+                            <div class="dIcon" aria-hidden="true">
+                                <svg class="svg" viewBox="0 0 24 24">
+                                    <path d="M7 2h2v2h6V2h2v2h3v18H4V4h3V2Zm13 6H6v12h14V8Z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <div class="dValue" id="sumDate">—</div>
+                                <div class="dLabel">Date</div>
+                            </div>
+                        </div>
+
+                        <div class="dRow">
+                            <div class="dIcon" aria-hidden="true">
+                                <svg class="svg" viewBox="0 0 24 24">
+                                    <path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20Zm1 5h-2v6l5 3 1-2-4-2V7Z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <div class="dValue">
+                                    <span id="sumTime">—</span>
+                                    <small id="sumTz">GMT+3</small>
+                                </div>
+                                <div class="dLabel">Time</div>
+                            </div>
+                        </div>
+
+                        <div class="dRow">
+                            <div class="dIcon" aria-hidden="true">
+                                <svg class="svg" viewBox="0 0 24 24">
+                                    <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm1 5h-2v6l5 3 1-2-4-2Z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <div class="dValue"><span id="sumDur">—</span></div>
+                                <div class="dLabel">Duration</div>
+                            </div>
+                        </div>
+
+                        <div class="dRow">
+                            <div class="dIcon" aria-hidden="true">
+                                <svg class="svg" viewBox="0 0 24 24">
+                                    <path d="M4 6h16v2H4V6Zm0 5h16v2H4v-2Zm0 5h10v2H4v-2Z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <div class="dValue"><span id="sumMeta">Classic Academy • Demo</span></div>
+                                <div class="dLabel">Session</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form id="form" class="formCard" autocomplete="on">
+                        <div id="fieldsWrap">
+                            <div class="field">
+                                <label for="company">Institution / Organization (optional)</label>
+                                <input id="company" placeholder="School / University name" />
+                            </div>
+
+                            <div class="field">
+                                <label for="name">Your name</label>
+                                <input id="name" required placeholder="Full name" autocomplete="name" />
+                            </div>
+
+                            <div class="field">
+                                <label for="email">Email</label>
+                                <input id="email" required type="email" placeholder="you@school.org"
+                                    autocomplete="email" />
+                            </div>
+
+                            <div class="field">
+                                <label for="phone">Phone / WhatsApp (optional)</label>
+                                <input id="phone" placeholder="+256 7XX XXX XXX" autocomplete="tel" />
+                            </div>
+
+                            <div class="field">
+                                <label for="notes">Notes (optional)</label>
+                                <textarea id="notes" placeholder="What do you want to cover?"></textarea>
+                            </div>
+
+                            <input id="hp" class="hp" tabindex="-1" autocomplete="off" />
+                        </div>
+
+                        <button id="bookBtn" class="joinBtn" type="submit" disabled>
+                            Book Appointment <span aria-hidden="true">›</span>
+                        </button>
+
+                        <div class="status" id="status" role="status" aria-live="polite"></div>
+
+                        <div class="successBox" id="success">
+                            <h3>Booked ✅</h3>
+                            <div id="successText" style="font-size:13px;opacity:.9"></div>
+                            <div class="actions">
+                                <a id="zoomJoin" class="btnOutline" target="_blank" rel="noreferrer">Join Zoom</a>
+                                <a id="gcalLink" class="btnOutline" target="_blank" rel="noreferrer">Open Calendar</a>
+                            </div>
+                            <span class="bookAnother" id="bookAnother">Book another time</span>
+                        </div>
+                    </form>
+                </div>
+            </aside>
+        </section>
+    </main>
+
+    <script>
+        const $ = (id) => document.getElementById(id);
+
+        // Controls
+        const productEl = $("product");
+        const purposeEl = $("purpose");
+        const durationEl = $("duration");
+
+        // Calendar
+        const monthTitle = $("monthTitle");
+        const daysEl = $("days");
+        const colPill = $("colPill");
+        const prevMonthBtn = $("prevMonth");
+        const nextMonthBtn = $("nextMonth");
+        const tzPill = $("tzPill");
+
+        // Middle
+        const slotsEl = $("slots");
+        const slotSub = $("slotSub");
+        const slotHint = $("slotHint");
+        const refreshBtn = $("refresh");
+
+        // Tabs / panes
+        const tabOverview = $("tabOverview");
+        const tabSchedule = $("tabSchedule");
+        const tabAgenda = $("tabAgenda");
+        const paneOverview = $("paneOverview");
+        const paneSchedule = $("paneSchedule");
+        const paneAgenda = $("paneAgenda");
+
+        const ovMeta = $("ovMeta");
+        const ovWhen = $("ovWhen");
+        const ovTz = $("ovTz");
+        const agendaNotes = $("agendaNotes");
+
+        // Right
+        const form = $("form");
+        const fieldsWrap = $("fieldsWrap");
+        const bookBtn = $("bookBtn");
+        const statusEl = $("status");
+        const successBox = $("success");
+        const successText = $("successText");
+        const zoomJoin = $("zoomJoin");
+        const gcalLink = $("gcalLink");
+        const bookAnother = $("bookAnother");
+
+        const sumDate = $("sumDate");
+        const sumTime = $("sumTime");
+        const sumTz = $("sumTz");
+        const sumDur = $("sumDur");
+        const sumMeta = $("sumMeta");
+
+        // View month
+        let view = (() => {
+            const d = new Date();
+            return { year: d.getFullYear(), month: d.getMonth() + 1 };
+        })();
+
+        // State
+        let state = {
+            timezone: "Africa/Kampala",
+            selectedDate: null,
+            selectedTime: null,
+            durationMin: Number(durationEl.value),
+            booked: false,
+            joinUrl: null,
+            calendarUrl: null
+        };
+
+        function setStatus(msg, isError = false) {
+            statusEl.textContent = msg || "";
+            statusEl.classList.toggle("error", !!isError);
+        }
+
+        function fmtMonthTitle(year, month) {
+            const dt = new Date(year, month - 1, 1);
+            return dt.toLocaleString(undefined, { month: "long", year: "numeric" });
+        }
+
+        function todayIso() {
+            const d = new Date();
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        }
+
+        function fmtPrettyDate(iso) {
+            try {
+                const [y, m, d] = iso.split("-").map(Number);
+                const dt = new Date(y, m - 1, d);
+                return dt.toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" });
+            } catch { return iso; }
+        }
+
+        function tzOffsetLabel(timeZone) {
+            try {
+                const parts = new Intl.DateTimeFormat("en-US", { timeZone, timeZoneName: "short" })
+                    .formatToParts(new Date());
+                const tz = parts.find(p => p.type === "timeZoneName")?.value || "";
+                return tz.replace("UTC", "GMT");
+            } catch { return "GMT+3"; }
+        }
+
+        function switchTab(which) {
+            [tabOverview, tabSchedule, tabAgenda].forEach(t => t.classList.remove("active"));
+            [paneOverview, paneSchedule, paneAgenda].forEach(p => p.classList.remove("active"));
+
+            if (which === "overview") {
+                tabOverview.classList.add("active");
+                paneOverview.classList.add("active");
+            } else if (which === "agenda") {
+                tabAgenda.classList.add("active");
+                paneAgenda.classList.add("active");
+            } else {
+                tabSchedule.classList.add("active");
+                paneSchedule.classList.add("active");
+            }
+        }
+
+        tabOverview.addEventListener("click", () => switchTab("overview"));
+        tabSchedule.addEventListener("click", () => switchTab("schedule"));
+        tabAgenda.addEventListener("click", () => switchTab("agenda"));
+
+        function renderSummary() {
+            tzPill.textContent = state.timezone;
+            sumTz.textContent = tzOffsetLabel(state.timezone);
+
+            sumMeta.textContent = `${productEl.value} • ${purposeEl.value}`;
+            sumDur.textContent = `${state.durationMin} min`;
+
+            sumDate.textContent = state.selectedDate ? fmtPrettyDate(state.selectedDate) : "—";
+            sumTime.textContent = state.selectedTime ? state.selectedTime : "—";
+
+            ovMeta.textContent = `${productEl.value} • ${purposeEl.value} • ${state.durationMin} min`;
+            ovWhen.textContent = (state.selectedDate && state.selectedTime)
+                ? `${fmtPrettyDate(state.selectedDate)} • ${state.selectedTime}`
+                : "—";
+            ovTz.textContent = `${state.timezone} (${tzOffsetLabel(state.timezone)})`;
+
+            bookBtn.disabled = !(state.selectedDate && state.selectedTime) || state.booked;
+        }
+
+        function clearSlots(message) {
+            slotsEl.innerHTML = "";
+            slotHint.textContent = message || "";
+            state.selectedTime = null;
+            renderSummary();
+        }
+
+        async function apiGet(path, params = {}) {
+            const url = new URL(path, window.location.origin);
+            Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, String(v)));
+            const res = await fetch(url.toString());
+            const data = await res.json().catch(() => ({}));
+            return { res, data };
+        }
+
+        async function apiPost(path, body) {
+            const url = new URL(path, window.location.origin);
+            const res = await fetch(url.toString(), {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body)
+            });
+            const data = await res.json().catch(() => ({}));
+            return { res, data };
+        }
+
+        function shiftMonth(delta) {
+            const m = view.month + delta;
+            if (m < 1) { view.month = 12; view.year -= 1; }
+            else if (m > 12) { view.month = 1; view.year += 1; }
+            else view.month = m;
+        }
+
+        // ✅ Column highlight aligned with calendar columns
+        function setColumnPillForDate(iso) {
+            if (!iso) { colPill.style.opacity = 0; return; }
+
+            const [y, m, d] = iso.split("-").map(Number);
+            const dt = new Date(y, m - 1, d);
+            const colIndex = dt.getDay(); // Sun=0..Sat=6
+
+            const gapStr = getComputedStyle(daysEl).gap || "12px";
+            const gap = parseFloat(gapStr.split(" ")[0]) || 12;
+
+            const wrap = daysEl.parentElement; // calGridWrap
+            const innerWidth = wrap.clientWidth - 36; // 18 + 18 padding
+            const colW = (innerWidth - gap * 6) / 7;
+
+            colPill.style.width = colW + "px";
+            colPill.style.opacity = 1;
+            colPill.style.transform = `translateX(${colIndex * (colW + gap)}px)`;
+        }
+        window.addEventListener("resize", () => setColumnPillForDate(state.selectedDate));
+
+        async function fetchMonthAvailability() {
+            state.durationMin = Number(durationEl.value);
+
+            monthTitle.textContent = fmtMonthTitle(view.year, view.month);
+            daysEl.innerHTML = "";
+
+            if (!state.booked) {
+                clearSlots("Select an available day to see times.");
+                slotSub.textContent = "Pick a time";
+            }
+            setStatus("");
+
+            const { data } = await apiGet("/api/month-availability", {
+                year: view.year,
+                month: view.month,
+                duration: state.durationMin
+            });
+
+            if (!data.ok) {
+                setStatus(data.message || "Failed to load calendar", true);
+                return;
+            }
+
+            state.timezone = data.timezone || "Africa/Kampala";
+            renderSummary();
+
+            const dayMap = new Map((data.days || []).map(d => [d.date, d]));
+            const first = new Date(view.year, view.month - 1, 1);
+            const daysInMonth = new Date(view.year, view.month, 0).getDate();
+            const startOffset = first.getDay(); // Sunday-first
+            const tIso = todayIso();
+
+            for (let i = 0; i < startOffset; i++) {
+                const blank = document.createElement("div");
+                blank.className = "blank";
+                daysEl.appendChild(blank);
+            }
+
+            for (let d = 1; d <= daysInMonth; d++) {
+                const iso = `${view.year}-${String(view.month).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+                const info = dayMap.get(iso) || { availableSlots: 0, status: "booked" };
+                const status = info.status || (Number(info.availableSlots || 0) > 0 ? "available" : "booked");
+
+                const cell = document.createElement("button");
+                cell.type = "button";
+                cell.className = "day";
+                cell.textContent = String(d);
+
+                if (status === "past") cell.classList.add("disabled", "past");
+                else if (status === "available") cell.classList.add("avail");
+                else cell.classList.add("booked");
+
+                if (iso === tIso) cell.classList.add("today");
+
+                const dot = document.createElement("span");
+                dot.className = "mini";
+                cell.appendChild(dot);
+
+                if (state.selectedDate === iso) {
+                    cell.classList.add("selected");
+                    setColumnPillForDate(iso);
+                }
+
+                cell.addEventListener("click", async () => {
+                    if (status === "past") return;
+
+                    if (state.booked) {
+                        state.selectedDate = iso;
+                        setColumnPillForDate(iso);
+                        document.querySelectorAll(".day").forEach(x => x.classList.remove("selected"));
+                        cell.classList.add("selected");
+                        renderSummary();
+                        return;
+                    }
+
+                    document.querySelectorAll(".day").forEach(x => x.classList.remove("selected"));
+                    cell.classList.add("selected");
+
+                    state.selectedDate = iso;
+                    state.selectedTime = null;
+                    setColumnPillForDate(iso);
+                    renderSummary();
+
+                    switchTab("schedule");
+
+                    if (status !== "available") {
+                        clearSlots("This day is fully booked.");
+                        slotHint.textContent = `No times available for ${fmtPrettyDate(iso)}.`;
+                        return;
+                    }
+
+                    slotHint.textContent = `Available times for ${fmtPrettyDate(iso)}:`;
+                    await loadDaySlots();
+                });
+
+                daysEl.appendChild(cell);
+            }
+
+            if (!state.selectedDate) setColumnPillForDate(null);
+        }
+
+        async function loadDaySlots() {
+            if (!state.selectedDate) return;
+
+            clearSlots("Loading times…");
+            setStatus("");
+
+            const { data } = await apiGet("/api/availability", {
+                date: state.selectedDate,
+                duration: state.durationMin
+            });
+
+            if (!data.ok) {
+                setStatus(data.message || "Failed to load times", true);
+                clearSlots("Could not load times.");
+                return;
+            }
+
+            state.timezone = data.timezone || state.timezone;
+            renderSummary();
+
+            const slots = data.slots || [];
+            slotsEl.innerHTML = "";
+
+            if (!slots.length) {
+                clearSlots("No times available for this day.");
+                slotHint.textContent = `No times available for ${fmtPrettyDate(state.selectedDate)}.`;
+                return;
+            }
+
+            slotHint.textContent = `Choose a time for ${fmtPrettyDate(state.selectedDate)}:`;
+
+            slots.forEach(s => {
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.className = "slot";
+                btn.textContent = s.time;
+
+                btn.addEventListener("click", () => {
+                    document.querySelectorAll(".slot").forEach(x => x.classList.remove("active"));
+                    btn.classList.add("active");
+                    state.selectedTime = s.time;
+                    setStatus("");
+                    renderSummary();
+                });
+
+                slotsEl.appendChild(btn);
+            });
+        }
+
+        function setBookedUI(data) {
+            state.booked = true;
+            state.joinUrl = data.zoom?.join_url || null;
+            state.calendarUrl = data.calendar?.htmlLink || null;
+
+            fieldsWrap.style.display = "none";
+            successBox.style.display = "block";
+            successText.textContent = "You’re booked. Use Join Zoom when it’s time, or open the Calendar invite.";
+
+            zoomJoin.href = state.joinUrl || "#";
+            gcalLink.href = state.calendarUrl || "#";
+
+            // Turn CTA into Join Meeting
+            bookBtn.disabled = !state.joinUrl;
+            bookBtn.type = "button";
+            bookBtn.innerHTML = `Join Meeting <span aria-hidden="true">›</span>`;
+            bookBtn.onclick = () => {
+                if (state.joinUrl) window.open(state.joinUrl, "_blank", "noopener,noreferrer");
+            };
+
+            setStatus("Booked ✅");
+            renderSummary();
+        }
+
+        function resetBookingUI() {
+            state.booked = false;
+            state.joinUrl = null;
+            state.calendarUrl = null;
+
+            fieldsWrap.style.display = "";
+            successBox.style.display = "none";
+
+            bookBtn.type = "submit";
+            bookBtn.onclick = null;
+            bookBtn.innerHTML = `Book Appointment <span aria-hidden="true">›</span>`;
+
+            setStatus("");
+            renderSummary();
+        }
+
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            if (state.booked) return;
+            if (!state.selectedDate || !state.selectedTime) return;
+
+            setStatus("Booking…");
+            bookBtn.disabled = true;
+
+            const payload = {
+                date: state.selectedDate,
+                time: state.selectedTime,
+                durationMin: state.durationMin,
+                product: productEl.value,
+                purpose: purposeEl.value,
+                company: $("company").value.trim(),
+                name: $("name").value.trim(),
+                email: $("email").value.trim(),
+                phone: $("phone").value.trim(),
+                notes: ($("notes").value.trim() || agendaNotes.value.trim()),
+                hp: $("hp").value
+            };
+
+            const { res, data } = await apiPost("/api/book", payload);
+
+            if (!data.ok) {
+                setStatus(data.message || "Booking failed", true);
+                bookBtn.disabled = false;
+                if (res.status === 409) await fetchMonthAvailability();
+                return;
+            }
+
+            setBookedUI(data);
+        });
+
+        bookAnother.addEventListener("click", () => {
+            resetBookingUI();
+            clearSlots("Select an available day to see times.");
+            slotHint.textContent = "Select an available day to see times.";
+        });
+
+        refreshBtn.addEventListener("click", async () => {
+            if (state.booked) return;
+            if (state.selectedDate) await loadDaySlots();
+            else await fetchMonthAvailability();
+        });
+
+        prevMonthBtn.addEventListener("click", async () => {
+            shiftMonth(-1);
+            if (!state.booked) {
+                state.selectedDate = null;
+                state.selectedTime = null;
+            }
+            await fetchMonthAvailability();
+        });
+
+        nextMonthBtn.addEventListener("click", async () => {
+            shiftMonth(1);
+            if (!state.booked) {
+                state.selectedDate = null;
+                state.selectedTime = null;
+            }
+            await fetchMonthAvailability();
+        });
+
+        durationEl.addEventListener("change", async () => {
+            state.durationMin = Number(durationEl.value);
+            if (!state.booked) {
+                state.selectedDate = null;
+                state.selectedTime = null;
+                setColumnPillForDate(null);
+            }
+            await fetchMonthAvailability();
+        });
+
+        productEl.addEventListener("change", renderSummary);
+        purposeEl.addEventListener("change", renderSummary);
+
+        // Init
+        fetchMonthAvailability();
+        renderSummary();
+        switchTab("schedule");
+    </script>
+
+<!-- Footer -->
+<footer class="footer">
+  <div>
+    <h4>About Us</h4>
+    <p>We are excited to introduce our upcoming Classic Academy Plans, where schools will be categorized </p>
+    <a href="https://play.google.com/store" target="_blank" rel="noopener"><img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" style="height: 50px; width: 150px" alt="Google Play"></a>
+    <a href="https://apps.apple.com/" target="_blank" rel="noopener">
+      <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg"
+       alt="Download on the App Store"
+       style="height: 50px;">
+    </a>
+
+  </div>
+  <div>
+    <h4>Learn about our mission</h4>
+    <ul>
+      <li><a href="about.html">Our Story</a></li>
+      <li><a href="services/index.html">What We Offer</a></li>
+      <li><a href="plan.html?plan=standard">Plans & Pricing</a></li>
+      <li><a href="blog.html?slug=increase-admissions">Press resources</a></li>
+      <li><a href="careers.html">Careers</a></li>
+    </ul>
+  </div>
+  <div>
+    <h4>Get help with your account</h4>
+    <ul>
+      <li><a href="contact/index.html">Customer Support</a></li>
+      <li><a href="schedule.html">Book a Demo</a></li>
+      <li><a href="faq.html">FAQ</a></li>
+      <li><a href="privacy.html">Privacy Policy</a></li>
+      <li><a href="terms.html">Terms</a></li>
+    </ul>
+  </div>
+  <div>
+    <h4>Join our school community</h4>
+    <ul>
+      <li><a href="schools/index.html">Find Schools</a></li>
+      <li><a href="admissions.html">Admissions</a></li>
+      <li><a href="search/index.html">Search</a></li>
+      <li><a href="blog.html?slug=increase-admissions">Blog</a></li>
+      <li><a href="https://x.com" target="_blank" rel="noopener">Twitter</a></li>
+      <li><a href="https://discord.com" target="_blank" rel="noopener">Discord server</a></li>
+    </ul>
+  </div>
+
+ </footer>
+<script>
+  // mobile nav toggle for standard header
+  const navbar = document.querySelector('.header .navbar');
+  const menuBtn = document.querySelector('#menu-btn');
+  if(menuBtn && navbar){
+    menuBtn.addEventListener('click', ()=> navbar.classList.toggle('active'));
+    window.addEventListener('scroll', ()=> navbar.classList.remove('active'));
+  }
+</script>
+</body>
+
+</html>

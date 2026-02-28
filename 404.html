@@ -1,44 +1,28 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>About — Classic Academy</title>
-
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>404 — Classic Academy</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
   <!-- SEO -->
-  <meta name="description" content="Learn about Classic Academy — an all‑in‑one school management and admissions platform built to help schools enroll faster and run operations smoothly." />
+  <meta name="description" content="Page not found." />
   <meta name="robots" content="index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1" />
   <meta name="theme-color" content="#4a90e2" />
-  <link rel="canonical" href="/about.html" />
-
+  <link rel="canonical" href="/404" />
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="About — Classic Academy" />
-  <meta property="og:description" content="Why Classic Academy exists, what we build, and how we help schools modernize admissions and operations." />
-  <meta property="og:url" content="/about.html" />
+  <meta property="og:title" content="404 — Classic Academy" />
+  <meta property="og:description" content="Page not found." />
+  <meta property="og:url" content="/404" />
   <meta property="og:image" content="img/hero.png" />
-
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="About — Classic Academy" />
-  <meta name="twitter:description" content="Why Classic Academy exists, what we build, and how we help schools modernize admissions and operations." />
+  <meta name="twitter:title" content="404 — Classic Academy" />
+  <meta name="twitter:description" content="Page not found." />
   <meta name="twitter:image" content="img/hero.png" />
 
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "AboutPage",
-    "name": "About — Classic Academy",
-    "url": "/about.html",
-    "isPartOf": {
-      "@type": "WebSite",
-      "name": "Classic Academy",
-      "url": "/"
-    }
-  }
-  </script>
-
   <style>
+
 /* ====== YOUR ORIGINAL STYLES (UNCHANGED) ====== */
 * {
   margin: 0;
@@ -1178,10 +1162,8 @@ textarea{ border-radius: 22px !important; }
 }
 
 
-/* =========================
-   About page (uniform with main)
-   ========================= */
 
+/* Shared inner-page sections */
 .about-hero{
   margin: 0 6rem;
   border-radius: 26px;
@@ -1195,335 +1177,61 @@ textarea{ border-radius: 22px !important; }
   gap: 1.4rem;
   align-items: center;
 }
-.about-hero h1{
-  margin: .7rem 0 .55rem 0;
-  font-size: 2.35rem;
-  color: #0f172a;
-}
-.about-hero p{ margin: 0; color: #334155; max-width: 60ch; }
-.about-hero .pillrow{ margin-top: 1rem; display:flex; gap:.6rem; flex-wrap:wrap; }
-.about-hero .pill{
-  display:inline-flex; gap:.45rem; align-items:center;
-  padding:.45rem .75rem; border-radius:999px;
-  background: rgba(255,255,255,.6);
-  border: 1px solid rgba(255,255,255,.75);
-  color:#0f172a;
-  font-weight:700;
-}
-.about-hero .pill i{ color:#16a34a; }
+.about-hero h1{ margin:.7rem 0 .55rem 0; font-size: 2.2rem; color:#0f172a; }
+.about-hero p{ margin:0; color:#334155; max-width: 60ch; }
 .about-hero .actions{ margin-top: 1.25rem; display:flex; gap:.6rem; flex-wrap:wrap; }
 .about-hero .actions .btn{ margin-left:0; }
-.about-hero .media{
-  border-radius: 22px; overflow:hidden;
-  background: rgba(74,144,226,.12);
-  border: 1px solid rgba(255,255,255,.75);
-  box-shadow: 0 12px 30px rgba(15,23,42,.10);
-  min-height: 260px;
-}
+.about-hero .media{ border-radius:22px; overflow:hidden; background: rgba(74,144,226,.12); border:1px solid rgba(255,255,255,.75); box-shadow: 0 12px 30px rgba(15,23,42,.10); min-height: 260px; }
 .about-hero .media img{ width:100%; height:100%; object-fit:cover; display:block; }
 
-.about-section{ padding: 2.6rem 0; }
-.about-wrap{ margin: 0 6rem; }
-.about-grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-top: 1.2rem; }
-.about-card{
-  background: rgba(255,255,255,.7);
-  border: 1px solid rgba(255,255,255,.85);
-  border-radius: 22px;
-  box-shadow: 0 12px 30px rgba(15,23,42,.10);
-  padding: 1.2rem 1.15rem;
-}
-.about-card h3{ margin:.15rem 0 .55rem 0; color:#0f172a; }
-.about-card p{ margin:0; color:#475569; }
+.page-wrap{ margin: 0 6rem; padding: 2.2rem 0 2.8rem 0; }
+.page-head{ text-align:center; max-width: 920px; margin: 0 auto 1.2rem auto; }
+.page-head h2{ margin:.8rem 0 .35rem 0; color:#0f172a; font-size:2rem; }
+.page-head p{ margin:0; color:#475569; }
 
-.values{ display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.2rem; margin-top: 1.2rem; }
-.value{
+.grid-3{ display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 1.1rem; }
+.grid-2{ display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 1.1rem; }
+.cardx{
   background: rgba(255,255,255,.7);
   border: 1px solid rgba(255,255,255,.85);
   border-radius: 22px;
   box-shadow: 0 12px 30px rgba(15,23,42,.10);
-  padding: 1.1rem 1.05rem;
+  padding: 1.15rem 1.05rem;
 }
-.value .icon{
+.cardx h3, .cardx h4{ margin: .15rem 0 .5rem 0; color:#0f172a; }
+.cardx p{ margin:0; color:#475569; line-height:1.7; }
+.cardx ul{ margin:.6rem 0 0 0; padding:0; list-style:none; display:grid; gap:.55rem; }
+.cardx li{ display:flex; gap:.6rem; align-items:flex-start; line-height:1.55; color:#1f2937; }
+.cardx li i{ color:#16a34a; margin-top:.25rem; }
+.iconpill{
   width:44px;height:44px;border-radius:999px;
   display:inline-flex;align-items:center;justify-content:center;
   background: rgba(74,144,226,.16);
   border: 1px solid rgba(74,144,226,.25);
-  margin-bottom:.6rem;
+  margin-bottom: .6rem;
 }
-.value .icon i{ color:#1d4ed8; }
-.value h4{ margin:.2rem 0 .25rem 0; color:#0f172a; }
-.value p{ margin:0; color:#475569; }
-
-.faq-wrap{ margin: 0 6rem; padding-bottom: 2.8rem; }
-.faq-head{ text-align:center; max-width: 900px; margin: 0 auto 1.2rem auto; }
-.faq-head h2{ margin:.8rem 0 .35rem 0; color:#0f172a; font-size:2rem; }
-.faq-head p{ margin:0; color:#475569; }
-
-.faq-grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
-.faq-card{
-  background: rgba(255,255,255,.7);
-  border: 1px solid rgba(255,255,255,.85);
-  border-radius: 22px;
-  box-shadow: 0 12px 30px rgba(15,23,42,.10);
-  padding: .9rem .95rem;
-}
-.faq-q{
-  display:flex;justify-content:space-between;gap:1rem;
-  cursor:pointer;font-weight:900;color:#0f172a;
-  padding:.2rem .15rem;
-}
-.faq-q i{ color:#4a90e2; margin-top:.3rem; transition: transform .2s ease; }
-.faq-card.open .faq-q i{ transform: rotate(45deg); }
-.faq-a{
-  max-height:0; overflow:hidden; transition: max-height .28s ease;
-  color:#475569; line-height:1.7; padding: 0 .15rem;
-}
-.faq-card.open .faq-a{ max-height: 320px; margin-top:.45rem; }
+.iconpill i{ color:#1d4ed8; }
 
 @media (max-width: 1024px){
-  .about-hero, .about-wrap, .faq-wrap{ margin: 0 1rem; }
+  .about-hero, .page-wrap{ margin: 0 1rem; }
   .about-hero{ grid-template-columns: 1fr; }
-  .values{ grid-template-columns: 1fr 1fr; }
-  .about-grid{ grid-template-columns: 1fr; }
-  .faq-grid{ grid-template-columns: 1fr; }
+  .grid-3{ grid-template-columns: repeat(2, minmax(0,1fr)); }
 }
-@media (max-width: 520px){
-  .values{ grid-template-columns: 1fr; }
-  .about-hero h1{ font-size: 1.8rem; }
+@media (max-width: 600px){
+  .grid-3{ grid-template-columns: 1fr; }
+  .grid-2{ grid-template-columns: 1fr; }
+  .about-hero h1{ font-size: 1.75rem; }
 }
 
   </style>
-
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-
-  <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css'>
-
-  <script src='https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js'></script>
-
-  
-<!-- Shared header/footer styles (match index) -->
-<style id="shared-header-footer">
-  .header{
-    position: relative;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    padding:.2rem 2rem;
-    backdrop-filter: blur(10px);
-    background: rgba(255,255,255,.6);
-    border-radius:30px;
-    box-shadow: 0 4px 30px rgba(0,0,0,.1);
-    margin:1rem 6rem;
-    z-index:999;
-  }
-  .header .navbar a{
-    font-size:1.3rem;
-    color:#4a90e2;
-    display:inline-block;
-    margin:0 .3rem;
-    font-weight:350;
-  }
-  .header .navbar a:hover{ color:#111; cursor:pointer; }
-  .logo{
-    font-size:1.5rem;
-    font-weight:400;
-    letter-spacing:1.5px;
-    line-height:2;
-    padding:.3rem;
-    color:#4a90e2;
-  }
-  .navbar i{ font-size:22px; color:#4a90e2; }
-  #menu-btn{ font-size:2.3rem; color:#fff; cursor:pointer; display:none; }
-  .demo{ display:none; }
-  .action__btn{ display:none; }
-  #sign-in{
-    border:1px solid #4a90e2;
-    padding:0.1rem .5rem;
-    border-radius:25px;
-    padding-bottom:.3rem;
-    background:#4a90e2;
-    color:#fff;
-  }
-  #sign-in:hover{ color:#4a90e2; background:transparent; border:1px solid #4a90e2; }
-
-  .footer{
-    background-color:#f9f9f9;
-    display:flex;
-    flex-wrap:wrap;
-    justify-content:space-between;
-    font-size:.9rem;
-    background: rgba(255,255,255,.3);
-    backdrop-filter: blur(10px);
-    border-radius:25px;
-    margin:2rem 6rem;
-    box-shadow:0 8px 32px rgba(0,0,0,.1);
-  }
-  .footer div{ margin:1rem; flex:1 1 200px; }
-  .footer h4{ font-size:1rem; margin-bottom:1rem; }
-  .footer ul{ list-style:none; padding:0; }
-  .footer ul li{ margin-bottom:.5rem; }
-  .footer ul li a{ color:#333; text-decoration:none; }
-  .footer ul li a:hover{ text-decoration:underline; }
-  .footer .app-links img{ width:120px; margin-right:10px; }
-
-  #toTopBtn{
-    position:fixed;
-    bottom:30px;
-    right:30px;
-    background-color:#4a90e2;
-    color:#fff;
-    border:none;
-    width:42px;
-    height:42px;
-    border-radius:50%;
-    cursor:pointer;
-    font-size:1.5rem;
-    box-shadow:0 4px 10px rgba(0,0,0,.2);
-    display:none;
-    z-index:1000;
-    transition: background .3s, transform .3s;
-  }
-  #toTopBtn:hover{ background-color:#4a90e2; transform: scale(1.1); }
-
-  /* Floating action button */
-  .fab-container{
-    display:flex;
-    flex-direction:column;
-    justify-content:flex-end;
-    align-items:center;
-    user-select:none;
-    position:fixed;
-    bottom:170px;
-    right:20px;
-    z-index:1000;
-  }
-  .whatsapp-icon{ transition: fill .3s ease; cursor:pointer; }
-  .whatsapp-icon:hover{ fill:white; }
-  .fab-container:hover{ height:100%; }
-  .fab-container:hover .sub-button:nth-child(2){ transform: translateY(-80px); }
-  .fab-container:hover .sub-button:nth-child(3){ transform: translateY(-140px); }
-  .fab-container:hover .sub-button:nth-child(4){ transform: translateY(-200px); }
-  .fab-container:hover .sub-button:nth-child(5){ transform: translateY(-260px); }
-  .fab-container:hover .sub-button:nth-child(6){ transform: translateY(-320px); }
-
-  .fab-container .fab{
-    position:relative;
-    height:70px;
-    width:70px;
-    background-color:#4ba2ff;
-    border-radius:50%;
-    z-index:2;
-  }
-  .fab-container .fab:before{
-    content:" ";
-    position:absolute;
-    bottom:0;
-    right:0;
-    height:35px;
-    width:35px;
-    background-color: inherit;
-    border-radius: 0 0 10px 0;
-    z-index:-1;
-  }
-  .fab-container .fab .fab-content{
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    height:100%;
-    width:100%;
-    border-radius:50%;
-    cursor:pointer;
-    user-select:none;
-  }
-  .fab-container .fab .fab-content .material-icons{ color:#2e2e2e; font-size:48px; }
-  .fab-container .sub-button{
-    position:absolute;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    bottom:10px;
-    right:10px;
-    height:50px;
-    width:50px;
-    background-color:#4ba2ff;
-    border-radius:50%;
-    transition: all .3s ease;
-  }
-  .fab-container .sub-button:hover{ cursor:pointer; }
-  .fab-container .sub-button .material-icons{ color:#2e2e2e; padding-top:6px; }
-  .fab-container .sub-button .material-icons:hover{ color:#FEFEFE; padding-top:6px; }
-
-  @media screen and (max-width: 1024px){
-    #menu-btn{ display:inline-block; color:#4a90e2; }
-    .header{ margin:1rem 1rem; padding:.4rem 1rem; }
-    .logo{ display:none; }
-    .demo{
-      display:inline-block;
-      padding:0.53rem 1rem;
-      margin-left:20px;
-      background-color:#4a90e2;
-      border:solid 1px;
-      color:#fff;
-      border-radius:25px;
-      text-decoration:none;
-      font-weight:bold;
-      transition: background-color .3s ease;
-    }
-    .demo:hover{ background-color:transparent; color:#4a90e2; }
-    .header .navbar{
-      overflow:hidden;
-      max-height:0;
-      opacity:0;
-      transition: max-height .9s ease, opacity .9s ease;
-    }
-    .header .navbar.active{ max-height:500px; opacity:1; }
-    .navbar{
-      position:absolute;
-      top:99%;
-      left:0;
-      right:0;
-      border-radius:20px;
-      background:#4a90e2;
-      clip-path: polygon(0 0, 100% 0, 100% 0, 0 0);
-      z-index: 1000;
-    }
-    .header .navbar.active{
-      clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
-    }
-    .header .navbar a{
-      margin:1rem .8rem;
-      font-size:1.5rem;
-      display:block;
-      color:#fff;
-    }
-    #sign-in{
-      border:1px solid #fff;
-      width:40%;
-      padding:0.1rem .5rem;
-      border-radius:25px;
-      padding-bottom:0.4rem;
-    }
-    #sign-in:hover{ color:#4a90e2; background:#fff; }
-    .navbar i{ display:none; }
-    .footer{ margin:2rem 1rem; font-size:1.2rem; }
-    .footer div{ flex:1 1 300px; }
-    .fab-container{ bottom:100px; }
-  }
-  @media screen and (max-width: 480px){
-    .fab-container{ bottom:180px; }
-    .footer{ margin:2rem 1rem; font-size:1.2rem; }
-    .footer div{ flex:1 1 200px; }
-    .footer h4{ font-size:1.5rem; }
-    .footer .app-links img{ width:90px; margin-right:10px; }
-  }
-</style>
-
 </head>
-
 <body>
-  <div id="bodyload"></div>
+  <div id="bodyload" style="display:none;"></div>
 
-  <header class="header">
+  <!-- dropdown section starts  -->
+<!-- dropdown section starts  -->
+
+<header class="header">
 
     <div id="menu-btn" class="fas fa-bars"></div>
 
@@ -1549,9 +1257,12 @@ textarea{ border-radius: 22px !important; }
 
    </header>
 
+<!-- dropdown section ends -->
+<!-- dropdown section ends -->
+
   <div id="loader">
     <div class="academylogo">
-      <img src="./img/academylogo.png" width="200" alt="">
+      <img src="img/academylogo.png" width="200" alt="">
     </div>
     <div class="loader"><div class="face front"></div><div class="face back"></div></div>
     <div class="loader"><div class="face front"></div><div class="face back"></div></div>
@@ -1560,208 +1271,40 @@ textarea{ border-radius: 22px !important; }
     <div class="loader"><div class="face front"></div><div class="face back"></div></div>
   </div>
 
-  <section class="about-hero reveal">
-    <div>
-      <span class="kicker"><i class="fa-solid fa-circle-info"></i> About Classic Academy</span>
-      <h1>Built to help schools enroll faster and run smoother.</h1>
-      <p>
-        Classic Academy is an all‑in‑one school management and admissions platform designed to simplify daily operations —
-        from admissions and attendance to exams, finance tracking, and communication.
-      </p>
-
-      <div class="pillrow">
-        <span class="pill"><i class="fa-solid fa-check"></i> Admissions pipeline</span>
-        <span class="pill"><i class="fa-solid fa-check"></i> Attendance & timetable</span>
-        <span class="pill"><i class="fa-solid fa-check"></i> Exams & results</span>
-        <span class="pill"><i class="fa-solid fa-check"></i> Fees & receipts</span>
-      </div>
-
-      <div class="actions">
-        <a href="index.html#book-demo" class="btn primary" data-open-demo><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
-        <a href="index.html#pricing" class="btn ghost"><i class="fa-solid fa-tags"></i> View Pricing</a>
-        <a href="plan.html?plan=standard" class="btn ghost"><i class="fa-solid fa-layer-group"></i> Plan Details</a>
-      </div>
+  
+<section class="about-hero reveal">
+  <div>
+    <span class="kicker"><i class="fa-solid fa-sparkles"></i> Not found</span>
+    <h1>404 — Page not found</h1>
+    <p>The page you’re looking for doesn’t exist. Use search or go back to the homepage.</p>
+    <div class="actions">
+      <a class="btn primary" href="index.html"><i class="fa-solid fa-house"></i> Home</a>
+      <a class="btn ghost" href="search/index.html"><i class="fa-solid fa-magnifying-glass"></i> Search</a>
+      <a class="btn ghost" href="contact/index.html"><i class="fa-solid fa-phone-volume"></i> Contact</a>
     </div>
+  </div>
+  <div class="media">
+    <img src="img/hero.png" alt="">
+  </div>
+</section>
 
-    <div class="media">
-      <img src="img/about.png" alt="Classic Academy platform preview">
-    </div>
-  </section>
+<section class="page-wrap">
+  <div class="cardx reveal">
+    <h3>Quick links</h3>
+    <ul>
+      <li><i class="fa-solid fa-check"></i><span><a href="services/index.html">Features</a></span></li>
+      <li><i class="fa-solid fa-check"></i><span><a href="index.html#pricing">Pricing</a></span></li>
+      <li><i class="fa-solid fa-check"></i><span><a href="schools/index.html">Schools directory</a></span></li>
+      <li><i class="fa-solid fa-check"></i><span><a href="blog.html">Blog</a></span></li>
+      <li><i class="fa-solid fa-check"></i><span><a href="faq.html">FAQ</a></span></li>
+    </ul>
+  </div>
+</section>
 
-  <section class="about-section">
-    <div class="about-wrap">
-      <div class="pricing-head reveal">
-        <span class="kicker"><i class="fa-solid fa-bullseye"></i> Our purpose</span>
-        <h2>Who we are</h2>
-        <p>
-          We help schools modernize operations with a clean, secure system that improves admissions, reporting, and communication —
-          without complicated setup.
-        </p>
-      </div>
 
-      <div class="about-grid">
-        <div class="about-card reveal">
-          <h3><i class="fa-solid fa-flag" style="color:#4a90e2"></i> Mission</h3>
-          <p>Make school administration effortless by delivering a fast, secure platform that reduces paperwork and improves decision‑making.</p>
-        </div>
-        <div class="about-card reveal">
-          <h3><i class="fa-solid fa-eye" style="color:#d97800"></i> Vision</h3>
-          <p>Empower every school to deliver better outcomes through modern tools for admissions, learning operations, and accountability.</p>
-        </div>
-      </div>
-
-      <div class="values">
-        <div class="value reveal">
-          <div class="icon"><i class="fa-solid fa-bolt"></i></div>
-          <h4>Speed</h4>
-          <p>Fast onboarding and workflows that save staff time every day.</p>
-        </div>
-        <div class="value reveal">
-          <div class="icon"><i class="fa-solid fa-shield-halved"></i></div>
-          <h4>Security</h4>
-          <p>Role access patterns, audit-friendly workflows, and privacy-first communication.</p>
-        </div>
-        <div class="value reveal">
-          <div class="icon"><i class="fa-solid fa-handshake-angle"></i></div>
-          <h4>Support</h4>
-          <p>Training, rollout check-ins, and responsive help — from setup to success.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="faq-wrap" id="faq">
-    <div class="faq-head reveal">
-      <span class="kicker"><i class="fa-solid fa-circle-question"></i> FAQ</span>
-      <h2>Frequently asked questions</h2>
-      <p>Quick answers about onboarding, pricing, and how Classic Academy works.</p>
-    </div>
-
-    <div class="faq-grid">
-      <div class="faq-card reveal">
-        <div class="faq-q"><span>How long does onboarding take?</span><i class="fa-solid fa-plus"></i></div>
-        <div class="faq-a">Most schools can start in days. We help you import students/staff and configure classes, fees, and admissions workflows.</div>
-      </div>
-
-      <div class="faq-card reveal">
-        <div class="faq-q"><span>Can we start with only the School Profile (free)?</span><i class="fa-solid fa-plus"></i></div>
-        <div class="faq-a">Yes. Publish your school profile and admissions basics first, then upgrade anytime when you want full operations modules.</div>
-      </div>
-
-      <div class="faq-card reveal">
-        <div class="faq-q"><span>Do you support fee invoices and receipts?</span><i class="fa-solid fa-plus"></i></div>
-        <div class="faq-a">Standard and above includes invoices, receipts, and fee tracking. Premium adds deeper finance reporting and portals.</div>
-      </div>
-
-      <div class="faq-card reveal">
-        <div class="faq-q"><span>Can parents receive notifications?</span><i class="fa-solid fa-plus"></i></div>
-        <div class="faq-a">Yes. You can enable WhatsApp/SMS/Email alerts (add-ons). Premium can also include portals and approvals.</div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Contact section (same style as main) -->
-  <section class="contact-v2" id="contact">
-    <div class="cwrap">
-      <div class="chead reveal">
-        <span class="kicker"><i class="fa-solid fa-phone-volume"></i> Contact</span>
-        <h2>Talk to our team</h2>
-        <p>Questions about enrolling, pricing, or a custom rollout? We reply fast and can schedule a guided demo.</p>
-      </div>
-
-      <div class="cgrid">
-        <aside class="cinfo reveal">
-          <h3>Classic Academy Support</h3>
-
-          <div class="cline">
-            <i class="fa-solid fa-location-dot"></i>
-            <div>
-              <strong>Address</strong>
-              <p>Kampala, Uganda • Juba, South Sudan</p>
-            </div>
-          </div>
-
-          <div class="cline">
-            <i class="fa-solid fa-envelope"></i>
-            <div>
-              <strong>Email</strong>
-              <p><a href="mailto:info@simonmabur.com">info@simonmabur.com</a></p>
-            </div>
-          </div>
-
-          <div class="cline">
-            <i class="fa-solid fa-phone"></i>
-            <div>
-              <strong>Phone</strong>
-              <p>
-                <a href="tel:+256781977217">+256 781 977 217</a><br>
-                <a href="tel:+256707180023">+256 707 180 023</a><br>
-                <a href="tel:+211924547722">+211 924 547 722</a>
-              </p>
-            </div>
-          </div>
-
-          <div class="csocial">
-            <a class="icon-btn" href="https://api.whatsapp.com/send?phone=256781977217" target="_blank" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
-            <a class="icon-btn" href="#" target="_blank" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
-            <a class="icon-btn" href="#" target="_blank" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
-            <a class="icon-btn" href="#" target="_blank" aria-label="X"><i class="fa-brands fa-x-twitter"></i></a>
-            <a class="icon-btn" href="#" target="_blank" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
-          </div>
-
-          <div class="ccta">
-            <button class="btn primary" data-open-demo><i class="fa-solid fa-calendar-check"></i> Book Demo</button>
-            <a class="btn ghost" href="index.html#pricing"><i class="fa-solid fa-tags"></i> View Pricing</a>
-          </div>
-
-          <div class="cmini">
-            <i class="fa-solid fa-shield"></i>
-            <p>We never share your contact details. Your data stays private.</p>
-          </div>
-        </aside>
-
-        <form class="cform reveal" onsubmit="return false;">
-          <h3>Send us a message</h3>
-
-          <div class="row">
-            <label>
-              <span>Full name</span>
-              <input type="text" id="contact_name" placeholder="Your name" required>
-            </label>
-            <label>
-              <span>School name</span>
-              <input type="text" id="contact_school" placeholder="Your school (optional)">
-            </label>
-          </div>
-
-          <div class="row">
-            <label>
-              <span>Email</span>
-              <input type="email" id="contact_email" placeholder="you@email.com" required>
-            </label>
-            <label>
-              <span>Phone</span>
-              <input type="tel" id="contact_phone" placeholder="+256 ..." required>
-            </label>
-          </div>
-
-          <label>
-            <span>Message</span>
-            <textarea id="contact_message" rows="6" placeholder="Tell us what you need (admissions, finance, portals, etc.)" required></textarea>
-          </label>
-
-          <div class="form-actions">
-            <button class="btn primary" id="contactSendBtn"><i class="fa-solid fa-paper-plane"></i> Send message</button>
-            <button class="btn ghost" type="button" data-open-demo><i class="fa-solid fa-calendar-check"></i> Or book a demo</button>
-          </div>
-
-          <p class="form-note">Tip: For fastest help, book a demo and we’ll walk you through the best plan.</p>
-        </form>
-      </div>
-    </div>
-  </section>
-
-  <footer class="footer">
+  <!-- Footer -->
+<!-- Footer -->
+<footer class="footer">
   <div>
     <h4>About Us</h4>
     <p>We are excited to introduce our upcoming Classic Academy Plans, where schools will be categorized </p>
@@ -1806,33 +1349,9 @@ textarea{ border-radius: 22px !important; }
   </div>
 
  </footer>
+
   <button id="toTopBtn">↑</button>
 
-  <!-- Floating button (unchanged) -->
-  <div class="fab-container">
-    <div class="fab shadow">
-      <div class="fab-content">
-        <span class="material-icons">support_agent</span>
-      </div>
-    </div>
-    <div class="sub-button shadow">
-      <a href="Tel: +256781977217"><span class="material-icons">phone</span></a>
-    </div>
-    <div class="sub-button shadow">
-      <a href="google.com" target="_blank">
-        <span class="material-icons">
-          <svg xmlns="http://www.w3.org/2000/svg" class="whatsapp-icon" viewBox="0 0 448 512" width="35" height="35" fill="#2e2e2e" aria-label="WhatsApp Icon">
-            <path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zM223.9 438.7c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zM325.1 300.5c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/>
-          </svg>
-        </span>
-      </a>
-    </div>
-    <div class="sub-button shadow">
-      <a href="google.com" target="_blank"><span class="material-icons">share</span></a>
-    </div>
-  </div>
-
-  <!-- Demo Booking Modal -->
   <div class="modal" id="demoModal" aria-hidden="true">
     <div class="modal-backdrop" data-close-demo></div>
 
@@ -1932,109 +1451,65 @@ textarea{ border-radius: 22px !important; }
             </div>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- libs -->
-  
+  <script>
 
-<script>
-// Always wait 2 seconds before showing content
-    setTimeout(function () {
-      document.getElementById("loader").style.display = "none";
-      document.getElementById("bodyload").style.display = "block";
-    }, 2000);
+// Loader
+setTimeout(function () {
+  const loader = document.getElementById("loader");
+  const bodyload = document.getElementById("bodyload");
+  if (loader) loader.style.display = "none";
+  if (bodyload) bodyload.style.display = "block";
+}, 1200);
 
-    let navbar = document.querySelector('.header .navbar');
-    let toTopBtn = document.getElementById("toTopBtn");
+// Navbar toggle
+let navbar = document.querySelector('.header .navbar');
+let toTopBtn = document.getElementById("toTopBtn");
 
-    // Toggle navbar on menu button click
-    document.querySelector('#menu-btn').onclick = () => {
-      navbar.classList.toggle('active');
-    };
+document.querySelector('#menu-btn')?.addEventListener("click", () => {
+  navbar?.classList.toggle('active');
+});
 
-    // When scrolling
-    window.addEventListener('scroll', () => {
-      navbar.classList.remove('active');
-      toTopBtn.style.display = document.documentElement.scrollTop > 300 ? "block" : "none";
+// Scroll behavior
+window.addEventListener('scroll', () => {
+  navbar?.classList.remove('active');
+  if (toTopBtn) toTopBtn.style.display = document.documentElement.scrollTop > 300 ? "block" : "none";
+});
+
+// Scroll to top
+toTopBtn?.addEventListener("click", function () {
+  const duration = 800;
+  const start = window.scrollY;
+  const startTime = performance.now();
+  function step(now){
+    const t = Math.min(1, (now - startTime)/duration);
+    window.scrollTo(0, start * (1 - t));
+    if (t < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+});
+
+// Smooth scroll for same-page anchors
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+  anchor.addEventListener('click', function (e) {
+    const target = document.querySelector(this.getAttribute('href'));
+    if (!target) return;
+    e.preventDefault();
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+});
+
+// Reveal animations
+document.addEventListener("DOMContentLoaded", function () {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) entry.target.classList.add('visible');
     });
+  }, { threshold: 0.12 });
 
-    // Scroll to top
-    toTopBtn.addEventListener("click", function () {
-      scrollToTop(800);
-    });
+  document.querySelectorAll('.reveal, .feature, .hero').forEach(el => observer.observe(el));
+});
 
-    function scrollToTop(scrollDuration) {
-      var scrollStep = -window.scrollY / (scrollDuration / 5),
-        scrollInterval = setInterval(function () {
-          if (window.scrollY != 0) {
-            window.scrollBy(0, scrollStep);
-          } else {
-            clearInterval(scrollInterval);
-          }
-        }, 15);
-    }
-
-    // Smooth scroll (updated to ignore demo buttons)
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-      anchor.addEventListener('click', function (e) {
-        // ignore demo openers
-        if (this.hasAttribute("data-open-demo")) return;
-        const href = this.getAttribute('href');
-        if (!href || href === "#") return; // avoid invalid selector
-        let target = document.querySelector(href);
-        if (!target) return;
-        e.preventDefault();
-        scrollToTarget(target, 700);
-      });
-    });
-
-    function scrollToTarget(target, scrollDuration) {
-      let targetPosition = target.getBoundingClientRect().top + window.pageYOffset;
-      let startPosition = window.pageYOffset;
-      let distance = targetPosition - startPosition;
-      let scrollStep = distance / (scrollDuration / 10);
-
-      let scrollInterval = setInterval(function () {
-        let currentScroll = window.pageYOffset;
-        let isScrollingDown = distance > 0;
-
-        if ((isScrollingDown && currentScroll >= targetPosition) || (!isScrollingDown && currentScroll <= targetPosition)) {
-          clearInterval(scrollInterval);
-          window.scrollTo(0, targetPosition);
-        } else {
-          window.scrollBy(0, scrollStep);
-        }
-      }, 10);
-    }
-
-    // Swiper for testimonials (V2)
-    var swiper = new Swiper(".testimonial-wrapper", {
-      slidesPerView: 1,
-      spaceBetween: 18,
-      loop: true,
-      speed: 900,
-      autoplay: { delay: 2800, disableOnInteraction: false },
-      pagination: { el: ".swiper-pagination", clickable: true },
-      breakpoints: {
-        768: { slidesPerView: 3 },
-        520: { slidesPerView: 2 }
-      }
-    });
-
-    // Feature reveal (your original)
-    document.addEventListener("DOMContentLoaded", function () {
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('visible');
-          }
-        });
-      }, { threshold: 0.1 });
-
-      document.querySelectorAll('.feature, .hero').forEach(el => observer.observe(el));
-    });
   </script>
 
   <script>
@@ -2343,16 +1818,6 @@ textarea{ border-radius: 22px !important; }
   })();
   </script>
 
-  <script>
-    // About FAQ accordion
-    document.querySelectorAll(".faq-card").forEach(card => {
-      const q = card.querySelector(".faq-q");
-      q.addEventListener("click", () => {
-        const open = document.querySelector(".faq-card.open");
-        if (open && open !== card) open.classList.remove("open");
-        card.classList.toggle("open");
-      });
-    });
-  </script>
+
 </body>
 </html>
