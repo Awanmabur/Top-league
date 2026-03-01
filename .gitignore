@@ -1,4 +1,5 @@
 /node_modules
 npm-debug.log
+service-account.json
 .DS_Store
 /*.env
