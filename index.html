@@ -712,7 +712,7 @@
     }
 
     /* =========================
-       FEATURED SCHOOLS (✅ MOVES ON MOBILE TOO + SAME CARD SIZE)
+       FEATURED SCHOOLS (✅ FIX: SAME SIZE AS PC ON MOBILE)
        ========================= */
     .featured-schoolsp {
       text-align: center;
@@ -770,8 +770,10 @@
     .card {
       background: #fff;
       border-radius: 1rem;
-      width: clamp(240px, 32vw, 300px);
-      /* ✅ same on all screens */
+      width: 300px;
+      /* ✅ same on all screen sizes */
+      min-width: 300px;
+      /* ✅ prevent shrinking on mobile */
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       overflow: hidden;
       display: flex;
@@ -817,7 +819,7 @@
     }
 
     /* =========================
-       ORBIT
+       ORBIT (kept)
        ========================= */
     .orbit-wrapper {
       display: flex;
@@ -942,9 +944,7 @@
       color: var(--ink);
     }
 
-    /* =========================
-       REVEAL
-       ========================= */
+    /* Reveal */
     .reveal {
       opacity: 0;
       transform: translateY(14px);
@@ -973,7 +973,7 @@
     }
 
     /* =========================
-       PRICING (V4) - no top gradient bar on cards
+       PRICING (kept)
        ========================= */
     .pricing-v4 {
       padding: 3rem 0;
@@ -1359,7 +1359,7 @@
     }
 
     /* =========================
-       TESTIMONIALS (✅ 6 SLIDES)
+       TESTIMONIALS (6 slides)
        ========================= */
     .testimonial-v2 {
       padding: 3rem 0;
@@ -1729,7 +1729,7 @@
     }
 
     /* =========================
-       CONTACT (✅ book demo in same row as send)
+       CONTACT (✅ FIX: inputs rounded like buttons)
        ========================= */
     .contact-v2 {
       padding: 3rem 0;
@@ -1854,14 +1854,26 @@
       margin-bottom: .35rem;
     }
 
-    .cform input,
+    /* ✅ rounded inputs like buttons */
+    .cform input {
+      width: 100%;
+      padding: .82rem .95rem;
+      border-radius: 999px;
+      /* ✅ pill like buttons */
+      border: 1px solid rgba(74, 144, 226, .35);
+      background: rgba(255, 255, 255, .80);
+      outline: none;
+    }
+
     .cform textarea {
       width: 100%;
-      padding: .8rem .85rem;
-      border-radius: 12px;
+      padding: .85rem 1rem;
+      border-radius: 22px;
+      /* ✅ rounded, comfortable for textarea */
       border: 1px solid rgba(74, 144, 226, .35);
-      background: rgba(255, 255, 255, .75);
+      background: rgba(255, 255, 255, .80);
       outline: none;
+      resize: vertical;
     }
 
     .cform input:focus,
@@ -1880,7 +1892,6 @@
       display: flex;
       gap: .6rem;
       flex-wrap: nowrap;
-      /* ✅ keep same row */
       margin-top: .25rem;
       align-items: center;
     }
@@ -1893,7 +1904,6 @@
       .form-actions {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        /* ✅ same row even on phone */
         gap: .6rem;
       }
 
@@ -1919,9 +1929,7 @@
       }
     }
 
-    /* =========================
-       FOOTER
-       ========================= */
+    /* FOOTER */
     .footer {
       background-color: #f9f9f9;
       display: flex;
@@ -2776,7 +2784,6 @@
 
       <div class="swiper testimonial-wrapper">
         <div class="swiper-wrapper">
-
           <!-- 1 -->
           <div class="swiper-slide">
             <article class="tcard">
@@ -2944,8 +2951,8 @@
               </div>
             </article>
           </div>
-
         </div>
+
         <div class="swiper-pagination"></div>
       </div>
 
@@ -3137,7 +3144,7 @@
               placeholder="Tell us what you need (admissions, finance, portals, etc.)" required></textarea>
           </label>
 
-          <!-- ✅ same row (Send + Book Demo) -->
+          <!-- same row (Send + Book Demo) -->
           <div class="form-actions">
             <button class="btn btn-sm" id="contactSendBtn" type="button">
               <i class="fa-solid fa-paper-plane"></i> Send message
@@ -3276,7 +3283,7 @@
 
     toTopBtn?.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
 
-    // ✅ Duplicate featured cards so the animation loop is seamless (also on mobile)
+    // Duplicate featured cards for seamless loop
     (function duplicateFeatured() {
       const track = document.getElementById("featuredTrack");
       if (!track || track.dataset.duplicated === "true") return;
@@ -3285,7 +3292,7 @@
       track.dataset.duplicated = "true";
     })();
 
-    // Swiper for testimonials (6 slides)
+    // Swiper for testimonials
     const isMobile = window.matchMedia("(max-width: 700px)").matches;
 
     new Swiper(".testimonial-wrapper", {
