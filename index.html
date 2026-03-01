@@ -4,35 +4,56 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Classic Academy</title>
 
-  <!-- SEO -->
+  <title>Classic Academy — All-in-One School Management + Admissions</title>
+
+  <!-- ✅ PRODUCTION SEO (classicacademy.app) -->
   <meta name="description"
     content="Classic Academy is an all-in-one school management and admissions platform that helps schools enroll faster, manage students and staff, track fees, run exams, and communicate smoothly — all in one secure system." />
   <meta name="keywords"
     content="school management system, admissions software, school ERP, student information system, fees management, exam results, timetable, attendance, Uganda, South Sudan" />
   <meta name="robots" content="index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1" />
   <meta name="theme-color" content="#4a90e2" />
-  <link rel="canonical" href="/" />
+  <meta name="application-name" content="Classic Academy" />
+  <meta name="format-detection" content="telephone=no" />
+
+  <link rel="canonical" href="https://www.classicacademy.app/" />
+  <link rel="icon" href="https://www.classicacademy.app/img/academylogo.png" />
+  <link rel="apple-touch-icon" href="https://www.classicacademy.app/img/academylogo.png" />
+
+  <!-- Open Graph -->
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="Classic Academy — All-in-One School Management" />
+  <meta property="og:site_name" content="Classic Academy" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:title" content="Classic Academy — All-in-One School Management + Admissions" />
   <meta property="og:description"
     content="All-in-one school management + admissions. Faster enrollment, cleaner finance tracking, better communication." />
-  <meta property="og:url" content="/" />
-  <meta property="og:image" content="img/hero.png" />
+  <meta property="og:url" content="https://www.classicacademy.app/" />
+  <meta property="og:image" content="https://www.classicacademy.app/img/hero.png" />
+  <meta property="og:image:alt" content="Classic Academy — School Management Platform" />
+
+  <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Classic Academy — All-in-One School Management" />
+  <meta name="twitter:title" content="Classic Academy — All-in-One School Management + Admissions" />
   <meta name="twitter:description"
     content="All-in-one school management + admissions. Faster enrollment, cleaner finance tracking, better communication." />
-  <meta name="twitter:image" content="img/hero.png" />
+  <meta name="twitter:image" content="https://www.classicacademy.app/img/hero.png" />
 
+  <!-- Structured data -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "Organization",
     "name": "Classic Academy",
-    "url": "/",
-    "logo": "/img/academylogo.png"
+    "url": "https://www.classicacademy.app/",
+    "logo": "https://www.classicacademy.app/img/academylogo.png",
+    "contactPoint": [{
+      "@type": "ContactPoint",
+      "telephone": "+256781977217",
+      "contactType": "sales",
+      "areaServed": ["UG","SS"],
+      "availableLanguage": ["en"]
+    }]
   }
   </script>
 
@@ -41,11 +62,28 @@
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": "Classic Academy",
-    "url": "/",
+    "url": "https://www.classicacademy.app/",
     "potentialAction": {
       "@type": "SearchAction",
-      "target": "/search?q={search_term_string}",
+      "target": "https://www.classicacademy.app/search?q={search_term_string}",
       "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
+
+  <script type="application/ld+json">
+  {
+    "@context":"https://schema.org",
+    "@type":"SoftwareApplication",
+    "name":"Classic Academy",
+    "operatingSystem":"Web",
+    "applicationCategory":"EducationalApplication",
+    "url":"https://www.classicacademy.app/",
+    "offers":{
+      "@type":"Offer",
+      "price":"0",
+      "priceCurrency":"USD",
+      "url":"https://www.classicacademy.app/#pricing"
     }
   }
   </script>
@@ -55,16 +93,19 @@
     "@context": "https://schema.org",
     "@type": "OfferCatalog",
     "name": "Classic Academy Plans",
+    "url": "https://www.classicacademy.app/#pricing",
     "itemListElement": [
-      { "@type": "Offer", "name": "School Profile Package", "price": "0", "priceCurrency": "USD", "url": "/#pricing" },
-      { "@type": "Offer", "name": "Starter", "price": "200", "priceCurrency": "USD", "url": "/#pricing" },
-      { "@type": "Offer", "name": "Standard", "price": "350", "priceCurrency": "USD", "url": "/#pricing" },
-      { "@type": "Offer", "name": "Growth", "price": "425", "priceCurrency": "USD", "url": "/#pricing" },
-      { "@type": "Offer", "name": "Premium", "price": "500", "priceCurrency": "USD", "url": "/#pricing" }
+      { "@type": "Offer", "name": "School Profile Package", "price": "0", "priceCurrency": "USD", "url": "https://www.classicacademy.app/#pricing" },
+      { "@type": "Offer", "name": "Starter", "price": "200", "priceCurrency": "USD", "url": "https://www.classicacademy.app/#pricing" },
+      { "@type": "Offer", "name": "Standard", "price": "350", "priceCurrency": "USD", "url": "https://www.classicacademy.app/#pricing" },
+      { "@type": "Offer", "name": "Growth", "price": "425", "priceCurrency": "USD", "url": "https://www.classicacademy.app/#pricing" },
+      { "@type": "Offer", "name": "Premium", "price": "500", "priceCurrency": "USD", "url": "https://www.classicacademy.app/#pricing" }
     ]
   }
   </script>
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -89,15 +130,10 @@
       --page-pad: clamp(1rem, 4vw, 6rem);
       --section-gap: clamp(1.2rem, 2.6vw, 2rem);
 
-      --glass: rgba(255, 255, 255, .45);
-      --glass2: rgba(255, 255, 255, .25);
-      --stroke: rgba(255, 255, 255, .55);
       --shadow2: 0 18px 50px rgba(15, 23, 42, .12);
       --shadow3: 0 10px 30px rgba(15, 23, 42, .10);
 
       --radius: 22px;
-      --line: rgba(15, 23, 42, .10);
-      --ring: rgba(74, 144, 226, .18);
     }
 
     html {
@@ -108,6 +144,13 @@
       text-decoration: none;
     }
 
+    section,
+    footer,
+    .featured-schoolsp,
+    .featured-schools {
+      scroll-margin-top: 120px;
+    }
+
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       line-height: 1.6;
@@ -115,6 +158,14 @@
       color: #333;
       overflow-x: clip;
       -webkit-overflow-scrolling: touch;
+      padding-top: 112px;
+      /* fixed navbar space */
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding-top: 102px;
+      }
     }
 
     /* =========================
@@ -198,22 +249,27 @@
     }
 
     /* =========================
-       NAVBAR
+       NAVBAR (FIXED)
        ========================= */
     .header {
-      position: relative;
-      margin: 1rem var(--page-pad);
+      position: fixed;
+      top: 14px;
+      left: var(--page-pad);
+      right: var(--page-pad);
+      margin: 0;
+
       padding: .65rem .85rem;
       border-radius: 999px;
       background: rgba(255, 255, 255, .70);
       border: 1px solid rgba(255, 255, 255, .78);
       backdrop-filter: blur(12px);
       box-shadow: 0 16px 46px rgba(15, 23, 42, .10);
+
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: .8rem;
-      z-index: 999;
+      z-index: 2000;
     }
 
     .brand {
@@ -261,7 +317,6 @@
       display: flex;
       align-items: center;
       gap: .35rem;
-      flex-wrap: nowrap;
     }
 
     .navbar a {
@@ -336,10 +391,10 @@
       color: var(--ink);
     }
 
-    .nav-actions .btn {
-      padding: .58rem .85rem;
-      font-size: .98rem;
-      box-shadow: none;
+    .btn-sm {
+      padding: .55rem .8rem !important;
+      font-size: .95rem !important;
+      box-shadow: none !important;
     }
 
     .menu-btn {
@@ -380,8 +435,10 @@
         border: 1px solid rgba(255, 255, 255, .35);
         border-radius: 20px;
         backdrop-filter: blur(12px);
+
         display: grid;
         gap: .4rem;
+
         transform: translateY(-8px);
         opacity: 0;
         pointer-events: none;
@@ -507,6 +564,21 @@
       flex-wrap: wrap;
       gap: .6rem;
       margin-top: 1.1rem;
+    }
+
+    @media (max-width: 520px) {
+      .hero-btn {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: .6rem;
+      }
+
+      .hero-btn .btn {
+        width: 100%;
+        padding: .62rem .7rem;
+        font-size: .95rem;
+        box-shadow: none;
+      }
     }
 
     .hero-stats {
@@ -640,7 +712,7 @@
     }
 
     /* =========================
-       FEATURED SCHOOLS
+       FEATURED SCHOOLS (✅ MOVES ON MOBILE TOO + SAME CARD SIZE)
        ========================= */
     .featured-schoolsp {
       text-align: center;
@@ -669,15 +741,16 @@
 
     .carousel-container {
       width: 100%;
+      overflow: hidden;
     }
 
     .carousel-track {
       display: flex;
       gap: 1.2rem;
       width: max-content;
-      animation: scrollLeft 40s linear infinite;
       padding-bottom: .25rem;
       will-change: transform;
+      animation: scrollLeft 40s linear infinite;
     }
 
     .carousel-container:hover .carousel-track {
@@ -698,11 +771,13 @@
       background: #fff;
       border-radius: 1rem;
       width: clamp(240px, 32vw, 300px);
+      /* ✅ same on all screens */
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       overflow: hidden;
       display: flex;
       flex-direction: column;
       transition: transform 0.3s ease;
+      flex: 0 0 auto;
     }
 
     .card:hover {
@@ -867,59 +942,6 @@
       color: var(--ink);
     }
 
-    @media (max-width: 1024px) {
-      .features {
-        padding: 1.2rem 1.2rem;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      }
-
-      .orbit-wrapper {
-        padding: 2.2rem var(--page-pad);
-      }
-
-      .feature-list {
-        grid-template-columns: 1fr;
-      }
-
-      .fab-container {
-        bottom: 110px;
-        right: 18px;
-      }
-
-      .footer {
-        font-size: 1.05rem;
-      }
-    }
-
-    @media (max-width: 480px) {
-      .features {
-        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      }
-
-      .orbit-section {
-        height: min(420px, 92vw);
-      }
-
-      .orbit-ring {
-        width: min(260px, 72vw);
-        height: min(260px, 72vw);
-      }
-
-      .fab-container {
-        bottom: 180px;
-      }
-
-      .footer h4 {
-        font-size: 1.15rem;
-      }
-    }
-
-    @media (max-width: 920px) and (orientation: landscape) {
-      .orbit-section {
-        height: min(420px, 70vw);
-      }
-    }
-
     /* =========================
        REVEAL
        ========================= */
@@ -950,9 +972,9 @@
       }
     }
 
-    /* =========================================================
-       PRICING (NEW STYLE - V4)  ✅ ONLY THIS SECTION REDESIGNED
-       ========================================================= */
+    /* =========================
+       PRICING (V4) - no top gradient bar on cards
+       ========================= */
     .pricing-v4 {
       padding: 3rem 0;
       background:
@@ -1047,23 +1069,11 @@
       border-radius: 24px;
       box-shadow: 0 18px 55px rgba(15, 23, 42, .10);
       padding: 1.15rem;
-      position: relative;
       overflow: hidden;
       display: flex;
       flex-direction: column;
       min-height: 100%;
       transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
-    }
-
-    .p4-card::before {
-      content: "";
-      position: absolute;
-      left: 0;
-      top: 0;
-      height: 6px;
-      width: 100%;
-      background: linear-gradient(90deg, rgba(74, 144, 226, 1), rgba(0, 159, 139, .95));
-      opacity: .95;
     }
 
     .p4-card:hover {
@@ -1077,7 +1087,6 @@
       align-items: flex-start;
       justify-content: space-between;
       gap: .8rem;
-      margin-top: .25rem;
     }
 
     .p4-title {
@@ -1109,7 +1118,6 @@
       font-size: 1.12rem;
       letter-spacing: -.01em;
       line-height: 1.2;
-      word-break: break-word;
     }
 
     .p4-sub {
@@ -1263,12 +1271,6 @@
       padding-top: .95rem;
     }
 
-    .btn-sm {
-      padding: .55rem .8rem !important;
-      font-size: .95rem !important;
-      box-shadow: none !important;
-    }
-
     .p4-footnote {
       margin-top: 1rem;
       padding: 1.05rem 1.15rem;
@@ -1302,32 +1304,19 @@
       align-items: center;
     }
 
-    /* Card color bars */
-    .p4-card.profile::before {
-      background: linear-gradient(90deg, rgba(0, 159, 139, 1), rgba(74, 144, 226, .95));
+    @media (max-width: 520px) {
+      .p4-footnote .cta-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        width: 100%;
+        gap: .6rem;
+      }
+
+      .p4-footnote .cta-actions .btn {
+        width: 100%;
+      }
     }
 
-    .p4-card.starter::before {
-      background: linear-gradient(90deg, rgba(74, 144, 226, 1), rgba(99, 102, 241, .95));
-    }
-
-    .p4-card.standard::before {
-      background: linear-gradient(90deg, rgba(217, 120, 0, 1), rgba(74, 144, 226, .95));
-    }
-
-    .p4-card.growth::before {
-      background: linear-gradient(90deg, rgba(0, 159, 139, 1), rgba(217, 120, 0, .95));
-    }
-
-    .p4-card.premium::before {
-      background: linear-gradient(90deg, rgba(99, 102, 241, 1), rgba(74, 144, 226, .95));
-    }
-
-    .p4-card.addons::before {
-      background: linear-gradient(90deg, rgba(15, 23, 42, .85), rgba(74, 144, 226, .95));
-    }
-
-    /* Featured / Most popular card */
     .p4-card.featured {
       border-color: rgba(217, 120, 0, .26);
       box-shadow: 0 28px 90px rgba(217, 120, 0, .12);
@@ -1370,7 +1359,7 @@
     }
 
     /* =========================
-       TESTIMONIALS
+       TESTIMONIALS (✅ 6 SLIDES)
        ========================= */
     .testimonial-v2 {
       padding: 3rem 0;
@@ -1522,6 +1511,21 @@
       border-color: rgba(74, 144, 226, .24);
     }
 
+    .avatar.a4 {
+      background: rgba(99, 102, 241, .16);
+      border-color: rgba(99, 102, 241, .24);
+    }
+
+    .avatar.a5 {
+      background: rgba(14, 165, 233, .16);
+      border-color: rgba(14, 165, 233, .24);
+    }
+
+    .avatar.a6 {
+      background: rgba(34, 197, 94, .16);
+      border-color: rgba(34, 197, 94, .24);
+    }
+
     .tname {
       margin: 0;
       font-weight: 900;
@@ -1571,7 +1575,7 @@
     }
 
     /* =========================
-       BLOGS
+       BLOGS (kept bigger on phone)
        ========================= */
     .blogs-v2 {
       padding: 3rem 0;
@@ -1685,32 +1689,6 @@
       margin-top: .9rem;
     }
 
-    .blogs-foot {
-      margin-top: 1.2rem;
-    }
-
-    .blogs-cta {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 1rem;
-      flex-wrap: wrap;
-      padding: 1.1rem 1.2rem;
-      border-radius: 18px;
-      background: rgba(255, 255, 255, .55);
-      border: 1px solid rgba(255, 255, 255, .75);
-    }
-
-    .blogs-cta h3 {
-      margin: 0;
-      color: #0f172a;
-    }
-
-    .blogs-cta p {
-      margin: .2rem 0 0 0;
-      color: #475569;
-    }
-
     @media (max-width: 1024px) {
       .blogs-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1728,7 +1706,7 @@
         -webkit-overflow-scrolling: touch;
         scroll-snap-type: x mandatory;
         gap: 1rem;
-        padding-bottom: .6rem;
+        padding-bottom: .8rem;
       }
 
       .blogs-grid::-webkit-scrollbar {
@@ -1741,13 +1719,17 @@
       }
 
       .blog2 {
-        flex: 0 0 82%;
+        flex: 0 0 92%;
         scroll-snap-align: start;
+      }
+
+      .blog2-img {
+        height: 210px;
       }
     }
 
     /* =========================
-       CONTACT
+       CONTACT (✅ book demo in same row as send)
        ========================= */
     .contact-v2 {
       padding: 3rem 0;
@@ -1897,8 +1879,28 @@
     .form-actions {
       display: flex;
       gap: .6rem;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
+      /* ✅ keep same row */
       margin-top: .25rem;
+      align-items: center;
+    }
+
+    .form-actions>* {
+      flex: 1 1 0;
+    }
+
+    @media (max-width: 520px) {
+      .form-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        /* ✅ same row even on phone */
+        gap: .6rem;
+      }
+
+      .form-actions .btn,
+      .form-actions button.btn {
+        width: 100%;
+      }
     }
 
     .form-note {
@@ -1962,9 +1964,7 @@
       text-decoration: underline;
     }
 
-    /* =========================
-       SCROLL TO TOP
-       ========================= */
+    /* Scroll to top */
     #toTopBtn {
       position: fixed;
       bottom: 30px;
@@ -2088,9 +2088,7 @@
       font-size: 48px;
     }
 
-    /* =========================
-       MOBILE PERFORMANCE FIX
-       ========================= */
+    /* Mobile perf */
     @media (max-width: 600px) {
 
       .header,
@@ -2120,6 +2118,50 @@
 
       .tcard {
         box-shadow: 0 14px 40px rgba(15, 23, 42, .10);
+      }
+    }
+
+    @media (max-width: 1024px) {
+      .features {
+        padding: 1.2rem 1.2rem;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      }
+
+      .orbit-wrapper {
+        padding: 2.2rem var(--page-pad);
+      }
+
+      .feature-list {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .features {
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      }
+
+      .orbit-section {
+        height: min(420px, 92vw);
+      }
+
+      .orbit-ring {
+        width: min(260px, 72vw);
+        height: min(260px, 72vw);
+      }
+
+      .fab-container {
+        bottom: 180px;
+      }
+
+      .footer h4 {
+        font-size: 1.15rem;
+      }
+    }
+
+    @media (max-width: 920px) and (orientation: landscape) {
+      .orbit-section {
+        height: min(420px, 70vw);
       }
     }
   </style>
@@ -2175,7 +2217,7 @@
     </nav>
 
     <div class="nav-actions">
-      <a href="schedule.html" class="btn"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
+      <a href="schedule.html" class="btn btn-sm"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
       <button id="menu-btn" class="menu-btn" aria-label="Open menu" aria-expanded="false">
         <i class="fa-solid fa-bars"></i>
       </button>
@@ -2268,7 +2310,7 @@
 
   <section class="featured-schools">
     <div class="carousel-container">
-      <div class="carousel-track">
+      <div class="carousel-track" id="featuredTrack">
         <div class="card">
           <img src="https://picsum.photos/seed/school1/400/300" alt="School">
           <div class="card-content">
@@ -2418,7 +2460,7 @@
     </div>
   </section>
 
-  <!-- PRICING (NEW STYLE - V4) -->
+  <!-- PRICING -->
   <section class="pricing-v4" id="pricing">
     <div class="p4-wrap">
       <header class="p4-head reveal">
@@ -2439,8 +2481,7 @@
 
       <div class="p4-body">
         <div class="p4-grid">
-          <!-- Profile -->
-          <article class="p4-card profile reveal">
+          <article class="p4-card reveal">
             <div class="p4-top">
               <div class="p4-title">
                 <div class="p4-ico"><i class="fa-solid fa-gift"></i></div>
@@ -2485,8 +2526,7 @@
             </div>
           </article>
 
-          <!-- Starter -->
-          <article class="p4-card starter reveal">
+          <article class="p4-card reveal">
             <div class="p4-top">
               <div class="p4-title">
                 <div class="p4-ico"><i class="fa-solid fa-rocket"></i></div>
@@ -2531,8 +2571,7 @@
             </div>
           </article>
 
-          <!-- Standard (Featured) -->
-          <article class="p4-card standard featured reveal">
+          <article class="p4-card featured reveal">
             <div class="p4-top">
               <div class="p4-title">
                 <div class="p4-ico"><i class="fa-solid fa-star"></i></div>
@@ -2577,8 +2616,7 @@
             </div>
           </article>
 
-          <!-- Growth -->
-          <article class="p4-card growth reveal">
+          <article class="p4-card reveal">
             <div class="p4-top">
               <div class="p4-title">
                 <div class="p4-ico"><i class="fa-solid fa-arrow-trend-up"></i></div>
@@ -2623,8 +2661,7 @@
             </div>
           </article>
 
-          <!-- Premium -->
-          <article class="p4-card premium reveal">
+          <article class="p4-card reveal">
             <div class="p4-top">
               <div class="p4-title">
                 <div class="p4-ico"><i class="fa-solid fa-crown"></i></div>
@@ -2669,8 +2706,7 @@
             </div>
           </article>
 
-          <!-- Addons -->
-          <article class="p4-card addons reveal">
+          <article class="p4-card reveal">
             <div class="p4-top">
               <div class="p4-title">
                 <div class="p4-ico"><i class="fa-solid fa-puzzle-piece"></i></div>
@@ -2740,6 +2776,8 @@
 
       <div class="swiper testimonial-wrapper">
         <div class="swiper-wrapper">
+
+          <!-- 1 -->
           <div class="swiper-slide">
             <article class="tcard">
               <div class="tquote">
@@ -2749,12 +2787,8 @@
                     class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
                 </div>
               </div>
-
-              <p class="ttext">
-                Admissions became smooth. We receive applications online, review them faster, and parents get updates
-                without calling every day.
-              </p>
-
+              <p class="ttext">Admissions became smooth. We receive applications online, review them faster, and parents
+                get updates without calling every day.</p>
               <div class="tfooter">
                 <div class="tperson">
                   <div class="avatar a1" aria-hidden="true"></div>
@@ -2763,15 +2797,15 @@
                     <p class="trole">Primary School • Kampala</p>
                   </div>
                 </div>
-
-                <div class="tproof" aria-label="Proof points">
+                <div class="tproof">
                   <span><i class="fa-solid fa-check"></i> Faster admissions</span>
-                  <span><i class="fa-solid fa-check"></i> Better communication</span>
+                  <span><i class="fa-solid fa-check"></i> Parent updates</span>
                 </div>
               </div>
             </article>
           </div>
 
+          <!-- 2 -->
           <div class="swiper-slide">
             <article class="tcard">
               <div class="tquote">
@@ -2781,12 +2815,8 @@
                     class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
                 </div>
               </div>
-
-              <p class="ttext">
-                Finance tracking improved instantly—clear invoices, balances, and reports. End-of-term reconciliation is
-                now simple.
-              </p>
-
+              <p class="ttext">Finance tracking improved instantly—clear invoices, balances, and reports. End-of-term
+                reconciliation is now simple.</p>
               <div class="tfooter">
                 <div class="tperson">
                   <div class="avatar a2" aria-hidden="true"></div>
@@ -2795,15 +2825,15 @@
                     <p class="trole">Secondary School • Juba</p>
                   </div>
                 </div>
-
-                <div class="tproof" aria-label="Proof points">
-                  <span><i class="fa-solid fa-check"></i> Invoices & receipts</span>
-                  <span><i class="fa-solid fa-check"></i> Better reporting</span>
+                <div class="tproof">
+                  <span><i class="fa-solid fa-check"></i> Invoices</span>
+                  <span><i class="fa-solid fa-check"></i> Reports</span>
                 </div>
               </div>
             </article>
           </div>
 
+          <!-- 3 -->
           <div class="swiper-slide">
             <article class="tcard">
               <div class="tquote">
@@ -2813,12 +2843,8 @@
                     class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
                 </div>
               </div>
-
-              <p class="ttext">
-                The team onboarded us quickly and trained staff properly. Dashboards help us see attendance and
-                performance patterns.
-              </p>
-
+              <p class="ttext">The onboarding was quick and the staff training was practical. Dashboards help us spot
+                attendance and performance patterns early.</p>
               <div class="tfooter">
                 <div class="tperson">
                   <div class="avatar a3" aria-hidden="true"></div>
@@ -2827,21 +2853,104 @@
                     <p class="trole">International School</p>
                   </div>
                 </div>
-
-                <div class="tproof" aria-label="Proof points">
-                  <span><i class="fa-solid fa-check"></i> Training & rollout</span>
-                  <span><i class="fa-solid fa-check"></i> Analytics dashboards</span>
+                <div class="tproof">
+                  <span><i class="fa-solid fa-check"></i> Training</span>
+                  <span><i class="fa-solid fa-check"></i> Analytics</span>
                 </div>
               </div>
             </article>
           </div>
-        </div>
 
+          <!-- 4 -->
+          <div class="swiper-slide">
+            <article class="tcard">
+              <div class="tquote">
+                <div class="qmark" aria-hidden="true"><i class="fa-solid fa-quote-left"></i></div>
+                <div class="stars" aria-label="5 stars">
+                  <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
+                    class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                </div>
+              </div>
+              <p class="ttext">Publishing results is now clean and fast. The grading workflow reduces mistakes and saves
+                our teachers time every term.</p>
+              <div class="tfooter">
+                <div class="tperson">
+                  <div class="avatar a4" aria-hidden="true"></div>
+                  <div>
+                    <p class="tname">Academic Registrar</p>
+                    <p class="trole">High School • Uganda</p>
+                  </div>
+                </div>
+                <div class="tproof">
+                  <span><i class="fa-solid fa-check"></i> Results</span>
+                  <span><i class="fa-solid fa-check"></i> Fewer errors</span>
+                </div>
+              </div>
+            </article>
+          </div>
+
+          <!-- 5 -->
+          <div class="swiper-slide">
+            <article class="tcard">
+              <div class="tquote">
+                <div class="qmark" aria-hidden="true"><i class="fa-solid fa-quote-left"></i></div>
+                <div class="stars" aria-label="5 stars">
+                  <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
+                    class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                </div>
+              </div>
+              <p class="ttext">Parents are happier because they receive timely updates. Messaging and attendance alerts
+                reduced daily phone calls completely.</p>
+              <div class="tfooter">
+                <div class="tperson">
+                  <div class="avatar a5" aria-hidden="true"></div>
+                  <div>
+                    <p class="tname">Administrator</p>
+                    <p class="trole">Day School • Kampala</p>
+                  </div>
+                </div>
+                <div class="tproof">
+                  <span><i class="fa-solid fa-check"></i> Alerts</span>
+                  <span><i class="fa-solid fa-check"></i> Messaging</span>
+                </div>
+              </div>
+            </article>
+          </div>
+
+          <!-- 6 -->
+          <div class="swiper-slide">
+            <article class="tcard">
+              <div class="tquote">
+                <div class="qmark" aria-hidden="true"><i class="fa-solid fa-quote-left"></i></div>
+                <div class="stars" aria-label="5 stars">
+                  <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
+                    class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                </div>
+              </div>
+              <p class="ttext">Collection improved because every student has a clear balance. Receipts, statements, and
+                exports made our finance office professional.</p>
+              <div class="tfooter">
+                <div class="tperson">
+                  <div class="avatar a6" aria-hidden="true"></div>
+                  <div>
+                    <p class="tname">Finance Officer</p>
+                    <p class="trole">Boarding School • South Sudan</p>
+                  </div>
+                </div>
+                <div class="tproof">
+                  <span><i class="fa-solid fa-check"></i> Statements</span>
+                  <span><i class="fa-solid fa-check"></i> Better collection</span>
+                </div>
+              </div>
+            </article>
+          </div>
+
+        </div>
         <div class="swiper-pagination"></div>
       </div>
 
       <div style="text-align:center; margin-top: 1.2rem" class="reveal">
-        <a class="btn" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Book a Demo</a>
+        <a class="btn btn-sm" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Book a Demo</a>
       </div>
     </div>
   </section>
@@ -2916,8 +3025,8 @@
         </article>
       </div>
 
-      <div class="blogs-foot reveal">
-        <div class="blogs-cta">
+      <div class="blogs-foot reveal" style="margin-top: 1.2rem;">
+        <div class="p4-footnote" style="margin-top:0;">
           <div>
             <h3>Want a personalized rollout plan?</h3>
             <p>Tell us your school size and goals — we’ll recommend the best package.</p>
@@ -3028,12 +3137,13 @@
               placeholder="Tell us what you need (admissions, finance, portals, etc.)" required></textarea>
           </label>
 
+          <!-- ✅ same row (Send + Book Demo) -->
           <div class="form-actions">
-            <button class="btn btn-sm" id="contactSendBtn">
+            <button class="btn btn-sm" id="contactSendBtn" type="button">
               <i class="fa-solid fa-paper-plane"></i> Send message
             </button>
             <a class="btn ghost btn-sm" href="schedule.html">
-              <i class="fa-solid fa-calendar-check"></i> Or book a demo
+              <i class="fa-solid fa-calendar-check"></i> Book a demo
             </a>
           </div>
 
@@ -3125,7 +3235,7 @@
   <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 
   <script>
-    // Loader: show content after 2 seconds
+    // Loader
     setTimeout(() => {
       const loader = document.getElementById("loader");
       if (loader) loader.style.display = "none";
@@ -3149,7 +3259,7 @@
       });
     });
 
-    // Close menu if you tap outside (mobile)
+    // Close menu if tapping outside
     document.addEventListener("click", (e) => {
       const header = document.getElementById("siteHeader");
       if (!header) return;
@@ -3159,15 +3269,23 @@
       }
     }, { passive: true });
 
-    // Show/hide toTop (passive scroll listener for smoother mobile scrolling)
+    // Scroll to top button
     window.addEventListener('scroll', () => {
       if (toTopBtn) toTopBtn.style.display = (window.scrollY > 300) ? "block" : "none";
     }, { passive: true });
 
-    // Smooth scroll to top (native)
     toTopBtn?.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
 
-    // Swiper for testimonials (keeps mobile scroll smooth)
+    // ✅ Duplicate featured cards so the animation loop is seamless (also on mobile)
+    (function duplicateFeatured() {
+      const track = document.getElementById("featuredTrack");
+      if (!track || track.dataset.duplicated === "true") return;
+      const cards = Array.from(track.children);
+      cards.forEach(card => track.appendChild(card.cloneNode(true)));
+      track.dataset.duplicated = "true";
+    })();
+
+    // Swiper for testimonials (6 slides)
     const isMobile = window.matchMedia("(max-width: 700px)").matches;
 
     new Swiper(".testimonial-wrapper", {
@@ -3175,7 +3293,7 @@
       spaceBetween: 18,
       loop: true,
       speed: 800,
-      autoplay: isMobile ? false : { delay: 3000, disableOnInteraction: false },
+      autoplay: isMobile ? false : { delay: 2800, disableOnInteraction: false },
       pagination: { el: ".swiper-pagination", clickable: true },
       nested: true,
       passiveListeners: true,
