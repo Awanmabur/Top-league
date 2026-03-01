@@ -114,7 +114,6 @@
       background: #e0f7fa;
       color: #333;
       overflow-x: clip;
-      /* prevents horizontal wiggle on mobile */
       -webkit-overflow-scrolling: touch;
     }
 
@@ -199,7 +198,7 @@
     }
 
     /* =========================
-       NAVBAR (REDESIGNED)
+       NAVBAR
        ========================= */
     .header {
       position: relative;
@@ -361,7 +360,6 @@
       font-size: 1.05rem;
     }
 
-    /* Mobile menu panel (no max-height animations -> less “shaking”) */
     @media (max-width: 1024px) {
       .brand-sub {
         display: none;
@@ -417,7 +415,7 @@
     }
 
     /* =========================
-       HERO (kept from your redesigned version)
+       HERO
        ========================= */
     .hero {
       position: relative;
@@ -744,7 +742,7 @@
     }
 
     /* =========================
-       ORBIT SECTION (unchanged)
+       ORBIT
        ========================= */
     .orbit-wrapper {
       display: flex;
@@ -869,6 +867,59 @@
       color: var(--ink);
     }
 
+    @media (max-width: 1024px) {
+      .features {
+        padding: 1.2rem 1.2rem;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      }
+
+      .orbit-wrapper {
+        padding: 2.2rem var(--page-pad);
+      }
+
+      .feature-list {
+        grid-template-columns: 1fr;
+      }
+
+      .fab-container {
+        bottom: 110px;
+        right: 18px;
+      }
+
+      .footer {
+        font-size: 1.05rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .features {
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      }
+
+      .orbit-section {
+        height: min(420px, 92vw);
+      }
+
+      .orbit-ring {
+        width: min(260px, 72vw);
+        height: min(260px, 72vw);
+      }
+
+      .fab-container {
+        bottom: 180px;
+      }
+
+      .footer h4 {
+        font-size: 1.15rem;
+      }
+    }
+
+    @media (max-width: 920px) and (orientation: landscape) {
+      .orbit-section {
+        height: min(420px, 70vw);
+      }
+    }
+
     /* =========================
        REVEAL
        ========================= */
@@ -899,39 +950,35 @@
       }
     }
 
-    /* =========================
-       PRICING (REDESIGNED AGAIN)
-       ========================= */
-    .pricing-v3 {
+    /* =========================================================
+       PRICING (NEW STYLE - V4)  ✅ ONLY THIS SECTION REDESIGNED
+       ========================================================= */
+    .pricing-v4 {
       padding: 3rem 0;
       background:
-        radial-gradient(900px 420px at 15% 0%, rgba(74, 144, 226, .10), transparent 60%),
+        radial-gradient(900px 420px at 18% 0%, rgba(74, 144, 226, .10), transparent 60%),
         radial-gradient(760px 420px at 85% 10%, rgba(217, 120, 0, .08), transparent 58%),
         linear-gradient(180deg, rgba(224, 247, 250, .0), rgba(224, 247, 250, .35));
     }
 
-    .pricing-shell {
+    .p4-wrap {
       margin: 0 var(--page-pad);
-      border-radius: calc(var(--radius) + 10px);
+      border-radius: 30px;
       background: rgba(255, 255, 255, .58);
-      border: 1px solid rgba(255, 255, 255, .75);
+      border: 1px solid rgba(255, 255, 255, .78);
       backdrop-filter: blur(14px);
       box-shadow: 0 22px 70px rgba(15, 23, 42, .12);
       overflow: hidden;
-      display: grid;
-      grid-template-columns: .95fr 1.05fr;
     }
 
-    .pricing-left,
-    .pricing-right {
-      padding: 1.7rem;
-    }
-
-    .pricing-left {
-      border-right: 1px solid rgba(15, 23, 42, .08);
+    .p4-head {
+      padding: 1.75rem 1.6rem 1.1rem 1.6rem;
+      border-bottom: 1px solid rgba(15, 23, 42, .08);
       background:
-        radial-gradient(520px 260px at 10% 0%, rgba(74, 144, 226, .12), transparent 60%),
-        rgba(255, 255, 255, .20);
+        radial-gradient(720px 320px at 10% 0%, rgba(74, 144, 226, .10), transparent 62%),
+        radial-gradient(720px 320px at 90% 0%, rgba(0, 159, 139, .08), transparent 62%),
+        rgba(255, 255, 255, .18);
+      text-align: center;
     }
 
     .kicker {
@@ -939,197 +986,263 @@
       gap: .55rem;
       align-items: center;
       color: #1b2a4e;
-      font-weight: 800;
+      font-weight: 900;
       padding: .45rem .8rem;
       border-radius: 999px;
-      background: rgba(255, 255, 255, .78);
-      border: 1px solid rgba(255, 255, 255, .88);
+      background: rgba(255, 255, 255, .82);
+      border: 1px solid rgba(255, 255, 255, .90);
       box-shadow: 0 12px 30px rgba(15, 23, 42, .08);
       width: fit-content;
     }
 
-    .pricing-left h2 {
+    .p4-head h2 {
       margin: .9rem 0 .35rem 0;
-      font-size: clamp(1.55rem, 2.3vw, 2.1rem);
+      font-size: clamp(1.55rem, 2.35vw, 2.15rem);
       color: var(--ink);
       letter-spacing: -.02em;
       line-height: 1.2;
     }
 
-    .pricing-left p {
-      margin: 0;
-      color: var(--muted);
-      max-width: 62ch;
-    }
-
-    .pricing-bullets {
-      margin-top: 1.1rem;
-      display: grid;
-      gap: .7rem;
-    }
-
-    .pbullet {
-      display: flex;
-      gap: .75rem;
-      align-items: flex-start;
-      padding: .85rem .9rem;
-      border-radius: 18px;
-      background: rgba(255, 255, 255, .75);
-      border: 1px solid rgba(15, 23, 42, .10);
-      box-shadow: 0 14px 34px rgba(15, 23, 42, .08);
-    }
-
-    .pbullet i {
-      color: var(--primary);
-      margin-top: .18rem;
-    }
-
-    .pbullet strong {
-      display: block;
-      color: var(--ink);
-    }
-
-    .pbullet span {
-      display: block;
-      margin-top: .15rem;
-      color: var(--muted);
-      font-size: .93rem;
-    }
-
-    .pricing-callout {
-      margin-top: 1.2rem;
-      padding: 1rem 1rem;
-      border-radius: 20px;
-      background: rgba(255, 255, 255, .78);
-      border: 1px solid rgba(255, 255, 255, .88);
-      box-shadow: 0 14px 34px rgba(15, 23, 42, .08);
-      display: grid;
-      gap: .7rem;
-    }
-
-    .pricing-callout h3 {
-      margin: 0;
-      color: var(--ink);
-      letter-spacing: -.01em;
-    }
-
-    .pricing-callout p {
-      margin: 0;
+    .p4-head p {
+      margin: 0 auto;
+      max-width: 920px;
       color: var(--muted);
     }
 
-    .cta-actions {
+    .p4-badges {
+      margin-top: 1rem;
       display: flex;
       flex-wrap: wrap;
-      gap: .6rem;
+      justify-content: center;
+      gap: .55rem;
     }
 
-    .plan-grid-v3 {
+    .p4-badge {
+      display: inline-flex;
+      gap: .5rem;
+      align-items: center;
+      padding: .48rem .75rem;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .80);
+      border: 1px solid rgba(255, 255, 255, .90);
+      box-shadow: 0 10px 24px rgba(15, 23, 42, .07);
+      color: #1f2a44;
+      font-weight: 700;
+    }
+
+    .p4-body {
+      padding: 1.35rem 1.25rem 1.55rem 1.25rem;
+    }
+
+    .p4-grid {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 1rem;
+      align-items: stretch;
     }
 
-    .pplan {
-      background: rgba(255, 255, 255, .86);
+    .p4-card {
+      background: rgba(255, 255, 255, .88);
       border: 1px solid rgba(15, 23, 42, .10);
-      border-radius: 22px;
+      border-radius: 24px;
       box-shadow: 0 18px 55px rgba(15, 23, 42, .10);
-      padding: 1.1rem;
+      padding: 1.15rem;
+      position: relative;
+      overflow: hidden;
       display: flex;
       flex-direction: column;
       min-height: 100%;
-      overflow: hidden;
       transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
     }
 
-    .pplan:hover {
-      transform: translateY(-5px);
+    .p4-card::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 6px;
+      width: 100%;
+      background: linear-gradient(90deg, rgba(74, 144, 226, 1), rgba(0, 159, 139, .95));
+      opacity: .95;
+    }
+
+    .p4-card:hover {
+      transform: translateY(-6px);
       box-shadow: 0 26px 72px rgba(15, 23, 42, .14);
       border-color: rgba(74, 144, 226, .22);
     }
 
-    .pplan-top {
+    .p4-top {
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
-      gap: .75rem;
+      gap: .8rem;
+      margin-top: .25rem;
     }
 
-    .pplan h3 {
-      margin: 0;
+    .p4-title {
+      display: flex;
+      align-items: flex-start;
+      gap: .75rem;
+      min-width: 0;
+    }
+
+    .p4-ico {
+      width: 44px;
+      height: 44px;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      background: rgba(74, 144, 226, .12);
+      border: 1px solid rgba(74, 144, 226, .22);
+    }
+
+    .p4-ico i {
+      color: var(--primary);
       font-size: 1.1rem;
+    }
+
+    .p4-title h3 {
+      margin: 0;
       color: var(--ink);
+      font-size: 1.12rem;
       letter-spacing: -.01em;
       line-height: 1.2;
       word-break: break-word;
     }
 
-    .psub {
-      margin: .25rem 0 0 0;
+    .p4-sub {
+      margin: .22rem 0 0 0;
       color: var(--muted);
       font-size: .92rem;
     }
 
-    .pbadge {
+    .p4-tag {
       display: inline-flex;
       align-items: center;
       gap: .4rem;
       padding: .35rem .65rem;
       border-radius: 999px;
-      background: rgba(74, 144, 226, .12);
-      border: 1px solid rgba(74, 144, 226, .22);
-      color: #1d4ed8;
+      background: rgba(15, 23, 42, .06);
+      border: 1px solid rgba(15, 23, 42, .10);
+      color: var(--ink);
       font-weight: 900;
       font-size: .8rem;
       white-space: nowrap;
       flex: 0 0 auto;
     }
 
-    .pbadge.hot {
+    .p4-tag.hot {
       background: rgba(217, 120, 0, .12);
       border-color: rgba(217, 120, 0, .22);
       color: #9a3412;
     }
 
-    .pbadge.soft {
-      background: rgba(15, 23, 42, .06);
-      border-color: rgba(15, 23, 42, .10);
-      color: var(--ink);
+    .p4-tag.free {
+      background: rgba(0, 159, 139, .12);
+      border-color: rgba(0, 159, 139, .22);
+      color: #065f46;
     }
 
-    .pprice {
+    .p4-pricebox {
       margin-top: .85rem;
       padding: .85rem .9rem;
       border-radius: 18px;
       background: rgba(74, 144, 226, .08);
       border: 1px solid rgba(74, 144, 226, .18);
       display: flex;
-      gap: .45rem;
       align-items: baseline;
+      gap: .45rem;
     }
 
-    .pprice .big {
+    .p4-price {
       font-size: 1.75rem;
       font-weight: 1000;
       color: var(--ink);
       letter-spacing: -.02em;
     }
 
-    .pprice .per {
+    .p4-per {
       color: var(--muted);
       font-weight: 800;
     }
 
-    .plist {
+    .p4-chips {
+      margin-top: .75rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: .45rem;
+    }
+
+    .p4-chip {
+      display: inline-flex;
+      gap: .35rem;
+      align-items: center;
+      padding: .32rem .55rem;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .85);
+      border: 1px solid rgba(15, 23, 42, .10);
+      font-weight: 800;
+      font-size: .86rem;
+      color: #0f172a;
+    }
+
+    .p4-chip i {
+      color: #16a34a;
+    }
+
+    .p4-details {
+      margin-top: .85rem;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, .72);
+      border: 1px solid rgba(15, 23, 42, .10);
+      padding: .75rem .85rem;
+    }
+
+    .p4-details summary {
+      cursor: pointer;
       list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .75rem;
+      font-weight: 900;
+      color: var(--ink);
+    }
+
+    .p4-details summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .p4-details summary span {
+      display: inline-flex;
+      align-items: center;
+      gap: .55rem;
+    }
+
+    .p4-details summary i {
+      color: var(--primary);
+    }
+
+    .p4-details .caret {
+      color: #334155;
+      transition: transform .2s ease;
+    }
+
+    details[open] .caret {
+      transform: rotate(180deg);
+    }
+
+    .p4-list {
+      list-style: none;
+      margin: .75rem 0 0 0;
       padding: 0;
-      margin: .75rem 0 1rem 0;
       display: grid;
       gap: .5rem;
     }
 
-    .plist li {
+    .p4-list li {
       display: flex;
       gap: .55rem;
       align-items: flex-start;
@@ -1137,16 +1250,17 @@
       font-size: .95rem;
     }
 
-    .plist i {
+    .p4-list li i {
       color: #16a34a;
       margin-top: .2rem;
     }
 
-    .plan-actions {
+    .p4-actions {
+      margin-top: auto;
       display: flex;
       gap: .55rem;
       flex-wrap: wrap;
-      margin-top: auto;
+      padding-top: .95rem;
     }
 
     .btn-sm {
@@ -1155,49 +1269,108 @@
       box-shadow: none !important;
     }
 
-    .pfoot {
-      margin: .85rem 0 0 0;
-      color: #64748b;
-      font-size: .9rem;
-    }
-
-    .pplan.featured {
-      border-color: rgba(217, 120, 0, .26);
-      box-shadow: 0 26px 80px rgba(217, 120, 0, .12);
-      background:
-        radial-gradient(900px 380px at 20% 0%, rgba(217, 120, 0, .10), transparent 62%),
-        rgba(255, 255, 255, .90);
-    }
-
-    .pricing-note {
+    .p4-footnote {
       margin-top: 1rem;
-      color: #64748b;
-      font-size: .92rem;
+      padding: 1.05rem 1.15rem;
+      border-radius: 22px;
+      background: rgba(255, 255, 255, .78);
+      border: 1px solid rgba(255, 255, 255, .88);
+      box-shadow: 0 14px 34px rgba(15, 23, 42, .08);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
     }
 
-    @media (min-width: 1180px) {
-      .plan-grid-v3 {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+    .p4-footnote h3 {
+      margin: 0;
+      color: var(--ink);
+      letter-spacing: -.01em;
+    }
+
+    .p4-footnote p {
+      margin: .2rem 0 0 0;
+      color: var(--muted);
+      max-width: 70ch;
+    }
+
+    .p4-footnote .cta-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .6rem;
+      align-items: center;
+    }
+
+    /* Card color bars */
+    .p4-card.profile::before {
+      background: linear-gradient(90deg, rgba(0, 159, 139, 1), rgba(74, 144, 226, .95));
+    }
+
+    .p4-card.starter::before {
+      background: linear-gradient(90deg, rgba(74, 144, 226, 1), rgba(99, 102, 241, .95));
+    }
+
+    .p4-card.standard::before {
+      background: linear-gradient(90deg, rgba(217, 120, 0, 1), rgba(74, 144, 226, .95));
+    }
+
+    .p4-card.growth::before {
+      background: linear-gradient(90deg, rgba(0, 159, 139, 1), rgba(217, 120, 0, .95));
+    }
+
+    .p4-card.premium::before {
+      background: linear-gradient(90deg, rgba(99, 102, 241, 1), rgba(74, 144, 226, .95));
+    }
+
+    .p4-card.addons::before {
+      background: linear-gradient(90deg, rgba(15, 23, 42, .85), rgba(74, 144, 226, .95));
+    }
+
+    /* Featured / Most popular card */
+    .p4-card.featured {
+      border-color: rgba(217, 120, 0, .26);
+      box-shadow: 0 28px 90px rgba(217, 120, 0, .12);
+      background:
+        radial-gradient(900px 380px at 25% 0%, rgba(217, 120, 0, .10), transparent 62%),
+        rgba(255, 255, 255, .92);
+    }
+
+    .p4-card.featured .p4-ico {
+      background: rgba(217, 120, 0, .12);
+      border-color: rgba(217, 120, 0, .22);
+    }
+
+    .p4-card.featured .p4-ico i {
+      color: #d97800;
+    }
+
+    @media (max-width: 1024px) {
+      .p4-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
     }
 
-    @media (max-width: 980px) {
-      .pricing-shell {
+    @media (max-width: 680px) {
+      .p4-head {
+        padding: 1.4rem 1.1rem 1rem 1.1rem;
+      }
+
+      .p4-body {
+        padding: 1.1rem 1rem 1.2rem 1rem;
+      }
+
+      .p4-grid {
         grid-template-columns: 1fr;
       }
 
-      .pricing-left {
-        border-right: none;
-        border-bottom: 1px solid rgba(15, 23, 42, .08);
-      }
-
-      .plan-grid-v3 {
-        grid-template-columns: 1fr;
+      .p4-details {
+        padding: .7rem .8rem;
       }
     }
 
     /* =========================
-       TESTIMONIALS (keep design + FIX mobile scroll)
+       TESTIMONIALS
        ========================= */
     .testimonial-v2 {
       padding: 3rem 0;
@@ -1228,7 +1401,6 @@
       color: var(--muted);
     }
 
-    /* IMPORTANT: allow vertical page scroll while inside Swiper */
     .testimonial-wrapper {
       padding: .25rem .1rem 2.2rem .1rem;
       touch-action: pan-y;
@@ -1399,7 +1571,7 @@
     }
 
     /* =========================
-       BLOGS + CONTACT + FOOTER (unchanged from your version)
+       BLOGS
        ========================= */
     .blogs-v2 {
       padding: 3rem 0;
@@ -1547,28 +1719,6 @@
       .blogs-wrap {
         padding: 1.6rem 1.2rem;
       }
-
-      .features {
-        padding: 1.2rem 1.2rem;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      }
-
-      .orbit-wrapper {
-        padding: 2.2rem var(--page-pad);
-      }
-
-      .feature-list {
-        grid-template-columns: 1fr;
-      }
-
-      .fab-container {
-        bottom: 110px;
-        right: 18px;
-      }
-
-      .footer {
-        font-size: 1.05rem;
-      }
     }
 
     @media (max-width: 600px) {
@@ -1596,6 +1746,9 @@
       }
     }
 
+    /* =========================
+       CONTACT
+       ========================= */
     .contact-v2 {
       padding: 3rem 0;
       background: linear-gradient(180deg, rgba(224, 247, 250, .25), rgba(255, 255, 255, .55));
@@ -1764,6 +1917,9 @@
       }
     }
 
+    /* =========================
+       FOOTER
+       ========================= */
     .footer {
       background-color: #f9f9f9;
       display: flex;
@@ -1933,16 +2089,14 @@
     }
 
     /* =========================
-       MOBILE PERFORMANCE FIX (stops “shaking/jitter”)
-       - remove heavy blur on mobile
-       - reduce big shadows slightly
+       MOBILE PERFORMANCE FIX
        ========================= */
     @media (max-width: 600px) {
 
       .header,
       .hero,
       .features,
-      .pricing-shell,
+      .p4-wrap,
       .tcard,
       .blogs-wrap,
       .cinfo,
@@ -1960,41 +2114,12 @@
         box-shadow: 0 16px 50px rgba(15, 23, 42, .10);
       }
 
-      .pricing-shell {
+      .p4-wrap {
         box-shadow: 0 16px 50px rgba(15, 23, 42, .10);
       }
 
       .tcard {
         box-shadow: 0 14px 40px rgba(15, 23, 42, .10);
-      }
-    }
-
-    @media (max-width: 480px) {
-      .features {
-        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      }
-
-      .orbit-section {
-        height: min(420px, 92vw);
-      }
-
-      .orbit-ring {
-        width: min(260px, 72vw);
-        height: min(260px, 72vw);
-      }
-
-      .fab-container {
-        bottom: 180px;
-      }
-
-      .footer h4 {
-        font-size: 1.15rem;
-      }
-    }
-
-    @media (max-width: 920px) and (orientation: landscape) {
-      .orbit-section {
-        height: min(420px, 70vw);
       }
     }
   </style>
@@ -2029,7 +2154,7 @@
     </div>
   </div>
 
-  <!-- Nav (REDESIGNED) -->
+  <!-- Nav -->
   <header class="header" id="siteHeader">
     <a href="index.html" class="brand" aria-label="Classic Academy Home">
       <img class="brand-mark" src="./img/academylogo.png" alt="Classic Academy logo">
@@ -2050,8 +2175,6 @@
     </nav>
 
     <div class="nav-actions">
-      <a href="schedule.html" class="btn ghost" style="display:none;" id="navSignInBtn"><i
-          class="fa-solid fa-right-to-bracket"></i> Sign In</a>
       <a href="schedule.html" class="btn"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
       <button id="menu-btn" class="menu-btn" aria-label="Open menu" aria-expanded="false">
         <i class="fa-solid fa-bars"></i>
@@ -2295,251 +2418,313 @@
     </div>
   </section>
 
-  <!-- Pricing (REDESIGNED AGAIN) -->
-  <section class="pricing-v3" id="pricing">
-    <div class="pricing-shell">
-      <div class="pricing-left">
+  <!-- PRICING (NEW STYLE - V4) -->
+  <section class="pricing-v4" id="pricing">
+    <div class="p4-wrap">
+      <header class="p4-head reveal">
         <span class="kicker"><i class="fa-solid fa-tags"></i> Plans that fit every school</span>
-        <h2>Pricing that matches your size & workflow</h2>
+        <h2>Pricing & Packages</h2>
         <p>
-          Start with a <strong>Free School Profile</strong> (online presence + admissions basics), then upgrade as you
-          need more modules, users, approvals, and integrations.
+          Start with a <strong>Free School Profile</strong> (online presence + admissions basics), then upgrade for full
+          operations: admissions pipeline, finance, results, portals, reports, and integrations.
         </p>
 
-        <div class="pricing-bullets">
-          <div class="pbullet">
-            <i class="fa-solid fa-bolt"></i>
-            <div>
-              <strong>Fast onboarding</strong>
-              <span>We set up your school and train staff quickly.</span>
+        <div class="p4-badges">
+          <span class="p4-badge"><i class="fa-solid fa-bolt"></i> Fast onboarding</span>
+          <span class="p4-badge"><i class="fa-solid fa-lock"></i> Secure roles</span>
+          <span class="p4-badge"><i class="fa-solid fa-chart-line"></i> Reports</span>
+          <span class="p4-badge"><i class="fa-solid fa-headset"></i> Support</span>
+        </div>
+      </header>
+
+      <div class="p4-body">
+        <div class="p4-grid">
+          <!-- Profile -->
+          <article class="p4-card profile reveal">
+            <div class="p4-top">
+              <div class="p4-title">
+                <div class="p4-ico"><i class="fa-solid fa-gift"></i></div>
+                <div>
+                  <h3>School Profile Package</h3>
+                  <p class="p4-sub">Standalone • Online presence + admissions basics</p>
+                </div>
+              </div>
+              <span class="p4-tag free"><i class="fa-solid fa-leaf"></i> Free</span>
             </div>
-          </div>
-          <div class="pbullet">
-            <i class="fa-solid fa-lock"></i>
-            <div>
-              <strong>Secure by design</strong>
-              <span>Roles, audit logs, and privacy-first handling.</span>
+
+            <div class="p4-pricebox">
+              <span class="p4-price">$0</span>
+              <span class="p4-per">/ year</span>
             </div>
-          </div>
-          <div class="pbullet">
-            <i class="fa-solid fa-chart-line"></i>
-            <div>
-              <strong>Reports & insights</strong>
-              <span>Track performance, attendance, and collections.</span>
+
+            <div class="p4-chips">
+              <span class="p4-chip"><i class="fa-solid fa-check"></i> Website</span>
+              <span class="p4-chip"><i class="fa-solid fa-check"></i> Admissions</span>
+              <span class="p4-chip"><i class="fa-solid fa-check"></i> WhatsApp</span>
             </div>
-          </div>
+
+            <details class="p4-details" open>
+              <summary>
+                <span><i class="fa-solid fa-list-check"></i> What’s included</span>
+                <i class="fa-solid fa-chevron-down caret" aria-hidden="true"></i>
+              </summary>
+              <ul class="p4-list">
+                <li><i class="fa-solid fa-check"></i> Landing + About + Contact + Google map</li>
+                <li><i class="fa-solid fa-check"></i> Gallery + News/Announcements</li>
+                <li><i class="fa-solid fa-check"></i> Programs/Courses + Staff section</li>
+                <li><i class="fa-solid fa-check"></i> Admissions info + FAQs</li>
+                <li><i class="fa-solid fa-check"></i> Basic application + inquiry form</li>
+                <li><i class="fa-solid fa-check"></i> Social + WhatsApp click-to-chat</li>
+              </ul>
+            </details>
+
+            <div class="p4-actions">
+              <a class="btn btn-sm" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
+              <a class="btn ghost btn-sm" href="plan.html?plan=profile"><i class="fa-solid fa-book-open"></i> Read
+                more</a>
+            </div>
+          </article>
+
+          <!-- Starter -->
+          <article class="p4-card starter reveal">
+            <div class="p4-top">
+              <div class="p4-title">
+                <div class="p4-ico"><i class="fa-solid fa-rocket"></i></div>
+                <div>
+                  <h3>Starter</h3>
+                  <p class="p4-sub">Up to 300 users • 15 features / term</p>
+                </div>
+              </div>
+              <span class="p4-tag"><i class="fa-solid fa-flag"></i> Start</span>
+            </div>
+
+            <div class="p4-pricebox">
+              <span class="p4-price">$200</span>
+              <span class="p4-per">/ term</span>
+            </div>
+
+            <div class="p4-chips">
+              <span class="p4-chip"><i class="fa-solid fa-check"></i> Roles</span>
+              <span class="p4-chip"><i class="fa-solid fa-check"></i> Attendance</span>
+              <span class="p4-chip"><i class="fa-solid fa-check"></i> Messaging</span>
+            </div>
+
+            <details class="p4-details">
+              <summary>
+                <span><i class="fa-solid fa-list-check"></i> Key modules</span>
+                <i class="fa-solid fa-chevron-down caret" aria-hidden="true"></i>
+              </summary>
+              <ul class="p4-list">
+                <li><i class="fa-solid fa-check"></i> Login & roles (Admin/Staff/Student)</li>
+                <li><i class="fa-solid fa-check"></i> Admissions (basic online application)</li>
+                <li><i class="fa-solid fa-check"></i> Student + Staff profiles</li>
+                <li><i class="fa-solid fa-check"></i> Timetable + Attendance (basic)</li>
+                <li><i class="fa-solid fa-check"></i> Results + Fees summary (basic)</li>
+                <li><i class="fa-solid fa-check"></i> Messaging + onboarding support</li>
+              </ul>
+            </details>
+
+            <div class="p4-actions">
+              <a class="btn btn-sm" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
+              <a class="btn ghost btn-sm" href="plan.html?plan=starter"><i class="fa-solid fa-book-open"></i> Read
+                more</a>
+            </div>
+          </article>
+
+          <!-- Standard (Featured) -->
+          <article class="p4-card standard featured reveal">
+            <div class="p4-top">
+              <div class="p4-title">
+                <div class="p4-ico"><i class="fa-solid fa-star"></i></div>
+                <div>
+                  <h3>Standard</h3>
+                  <p class="p4-sub">Up to 750 users • 35 features / term</p>
+                </div>
+              </div>
+              <span class="p4-tag hot"><i class="fa-solid fa-fire"></i> Most Popular</span>
+            </div>
+
+            <div class="p4-pricebox">
+              <span class="p4-price">$350</span>
+              <span class="p4-per">/ term</span>
+            </div>
+
+            <div class="p4-chips">
+              <span class="p4-chip"><i class="fa-solid fa-check"></i> Finance</span>
+              <span class="p4-chip"><i class="fa-solid fa-check"></i> Exams</span>
+              <span class="p4-chip"><i class="fa-solid fa-check"></i> Reports</span>
+            </div>
+
+            <details class="p4-details" open>
+              <summary>
+                <span><i class="fa-solid fa-list-check"></i> Best value includes</span>
+                <i class="fa-solid fa-chevron-down caret" aria-hidden="true"></i>
+              </summary>
+              <ul class="p4-list">
+                <li><i class="fa-solid fa-check"></i> Full admissions pipeline</li>
+                <li><i class="fa-solid fa-check"></i> Advanced student management</li>
+                <li><i class="fa-solid fa-check"></i> Exams management + grading workflows</li>
+                <li><i class="fa-solid fa-check"></i> Finance (invoices + payments tracking)</li>
+                <li><i class="fa-solid fa-check"></i> Library + Hostel + Events</li>
+                <li><i class="fa-solid fa-check"></i> Reports/exports + dashboards</li>
+              </ul>
+            </details>
+
+            <div class="p4-actions">
+              <a class="btn btn-sm" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
+              <a class="btn ghost btn-sm" href="plan.html?plan=standard"><i class="fa-solid fa-book-open"></i> Read
+                more</a>
+            </div>
+          </article>
+
+          <!-- Growth -->
+          <article class="p4-card growth reveal">
+            <div class="p4-top">
+              <div class="p4-title">
+                <div class="p4-ico"><i class="fa-solid fa-arrow-trend-up"></i></div>
+                <div>
+                  <h3>Growth</h3>
+                  <p class="p4-sub">Up to 900 users • approvals + deeper analytics</p>
+                </div>
+              </div>
+              <span class="p4-tag"><i class="fa-solid fa-sparkles"></i> New</span>
+            </div>
+
+            <div class="p4-pricebox">
+              <span class="p4-price">$425</span>
+              <span class="p4-per">/ term</span>
+            </div>
+
+            <div class="p4-chips">
+              <span class="p4-chip"><i class="fa-solid fa-check"></i> Approvals</span>
+              <span class="p4-chip"><i class="fa-solid fa-check"></i> Audit logs</span>
+              <span class="p4-chip"><i class="fa-solid fa-check"></i> Insights</span>
+            </div>
+
+            <details class="p4-details">
+              <summary>
+                <span><i class="fa-solid fa-list-check"></i> What you get</span>
+                <i class="fa-solid fa-chevron-down caret" aria-hidden="true"></i>
+              </summary>
+              <ul class="p4-list">
+                <li><i class="fa-solid fa-check"></i> Everything in Standard</li>
+                <li><i class="fa-solid fa-check"></i> Approval flows (finance + results)</li>
+                <li><i class="fa-solid fa-check"></i> Bulk imports + templates</li>
+                <li><i class="fa-solid fa-check"></i> Stronger audit logs + roles</li>
+                <li><i class="fa-solid fa-check"></i> Cohort & performance insights</li>
+                <li><i class="fa-solid fa-check"></i> Faster support response</li>
+              </ul>
+            </details>
+
+            <div class="p4-actions">
+              <a class="btn btn-sm" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
+              <a class="btn ghost btn-sm" href="plan.html?plan=growth"><i class="fa-solid fa-book-open"></i> Read
+                more</a>
+            </div>
+          </article>
+
+          <!-- Premium -->
+          <article class="p4-card premium reveal">
+            <div class="p4-top">
+              <div class="p4-title">
+                <div class="p4-ico"><i class="fa-solid fa-crown"></i></div>
+                <div>
+                  <h3>Premium</h3>
+                  <p class="p4-sub">1000+ users • Up to 70 features / term</p>
+                </div>
+              </div>
+              <span class="p4-tag"><i class="fa-solid fa-gem"></i> Elite</span>
+            </div>
+
+            <div class="p4-pricebox">
+              <span class="p4-price">$500+</span>
+              <span class="p4-per">/ term</span>
+            </div>
+
+            <div class="p4-chips">
+              <span class="p4-chip"><i class="fa-solid fa-check"></i> Portals</span>
+              <span class="p4-chip"><i class="fa-solid fa-check"></i> Integrations</span>
+              <span class="p4-chip"><i class="fa-solid fa-check"></i> Priority</span>
+            </div>
+
+            <details class="p4-details">
+              <summary>
+                <span><i class="fa-solid fa-list-check"></i> Includes</span>
+                <i class="fa-solid fa-chevron-down caret" aria-hidden="true"></i>
+              </summary>
+              <ul class="p4-list">
+                <li><i class="fa-solid fa-check"></i> Full finance workflows + statements</li>
+                <li><i class="fa-solid fa-check"></i> Advanced reports + dashboards</li>
+                <li><i class="fa-solid fa-check"></i> Bulk imports + templates</li>
+                <li><i class="fa-solid fa-check"></i> SMS/Email integrations (OTP + alerts)</li>
+                <li><i class="fa-solid fa-check"></i> Portals (student/staff + optional parent)</li>
+                <li><i class="fa-solid fa-check"></i> Priority training + rollout</li>
+              </ul>
+            </details>
+
+            <div class="p4-actions">
+              <a class="btn btn-sm" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
+              <a class="btn ghost btn-sm" href="plan.html?plan=premium"><i class="fa-solid fa-book-open"></i> Read
+                more</a>
+            </div>
+          </article>
+
+          <!-- Addons -->
+          <article class="p4-card addons reveal">
+            <div class="p4-top">
+              <div class="p4-title">
+                <div class="p4-ico"><i class="fa-solid fa-puzzle-piece"></i></div>
+                <div>
+                  <h3>Add-ons & Boosters</h3>
+                  <p class="p4-sub">Extra users/features + promotion options</p>
+                </div>
+              </div>
+              <span class="p4-tag"><i class="fa-solid fa-sliders"></i> Flexible</span>
+            </div>
+
+            <div class="p4-pricebox">
+              <span class="p4-price">From $30</span>
+              <span class="p4-per">/ add-on</span>
+            </div>
+
+            <div class="p4-chips">
+              <span class="p4-chip"><i class="fa-solid fa-check"></i> Extra users</span>
+              <span class="p4-chip"><i class="fa-solid fa-check"></i> Extra modules</span>
+              <span class="p4-chip"><i class="fa-solid fa-check"></i> Custom domain</span>
+            </div>
+
+            <details class="p4-details">
+              <summary>
+                <span><i class="fa-solid fa-list-check"></i> Examples</span>
+                <i class="fa-solid fa-chevron-down caret" aria-hidden="true"></i>
+              </summary>
+              <ul class="p4-list">
+                <li><i class="fa-solid fa-check"></i> Extra 100 users: +$50</li>
+                <li><i class="fa-solid fa-check"></i> Extra 10 features/pages: +$50</li>
+                <li><i class="fa-solid fa-check"></i> Parent portal: +$100+</li>
+                <li><i class="fa-solid fa-check"></i> SMS credits: billed separately</li>
+                <li><i class="fa-solid fa-check"></i> Custom domain + SSL: +$30–$80</li>
+                <li><i class="fa-solid fa-check"></i> Sponsored placement (optional)</li>
+              </ul>
+            </details>
+
+            <div class="p4-actions">
+              <a class="btn btn-sm" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Talk to Sales</a>
+              <a class="btn ghost btn-sm" href="#contact"><i class="fa-solid fa-message"></i> Ask a question</a>
+            </div>
+          </article>
         </div>
 
-        <div class="pricing-callout reveal">
+        <div class="p4-footnote reveal">
           <div>
-            <h3>Not sure which plan is best?</h3>
-            <p>Tell us your school size and goals — we’ll recommend the best package.</p>
+            <h3>Ready to modernize your school?</h3>
+            <p>Book a demo and we’ll recommend the best plan based on your size, modules, and rollout timeline.</p>
           </div>
           <div class="cta-actions">
             <a class="btn btn-sm" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
             <a class="btn ghost btn-sm" href="#contact"><i class="fa-solid fa-message"></i> Contact Sales</a>
           </div>
         </div>
-      </div>
-
-      <div class="pricing-right">
-        <div class="plan-grid-v3">
-          <article class="pplan reveal">
-            <div class="pplan-top">
-              <div>
-                <h3>School Profile Package</h3>
-                <p class="psub">Standalone • Online presence + admissions basics</p>
-              </div>
-              <span class="pbadge soft"><i class="fa-solid fa-gift"></i> Free</span>
-            </div>
-
-            <div class="pprice">
-              <span class="big">$0</span>
-              <span class="per">/ year</span>
-            </div>
-
-            <ul class="plist">
-              <li><i class="fa-solid fa-check"></i> Landing + About + Contact + Google map</li>
-              <li><i class="fa-solid fa-check"></i> Gallery + News/Announcements</li>
-              <li><i class="fa-solid fa-check"></i> Programs/Courses + Staff section</li>
-              <li><i class="fa-solid fa-check"></i> Admissions info + FAQs</li>
-              <li><i class="fa-solid fa-check"></i> Basic application + inquiry form</li>
-              <li><i class="fa-solid fa-check"></i> Social + WhatsApp click-to-chat</li>
-            </ul>
-
-            <div class="plan-actions">
-              <a class="btn btn-sm" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
-              <a class="btn ghost btn-sm" href="plan.html?plan=profile"><i class="fa-solid fa-book-open"></i> Read
-                more</a>
-            </div>
-
-            <p class="pfoot">Great for visibility + credibility online.</p>
-          </article>
-
-          <article class="pplan reveal">
-            <div class="pplan-top">
-              <div>
-                <h3>Starter</h3>
-                <p class="psub">Up to 300 users • 15 features / term</p>
-              </div>
-              <span class="pbadge"><i class="fa-solid fa-rocket"></i> Start</span>
-            </div>
-
-            <div class="pprice">
-              <span class="big">$200</span>
-              <span class="per">/ term</span>
-            </div>
-
-            <ul class="plist">
-              <li><i class="fa-solid fa-check"></i> Login & roles (Admin/Staff/Student)</li>
-              <li><i class="fa-solid fa-check"></i> Admissions (basic online application)</li>
-              <li><i class="fa-solid fa-check"></i> Student + Staff profiles</li>
-              <li><i class="fa-solid fa-check"></i> Timetable + Attendance (basic)</li>
-              <li><i class="fa-solid fa-check"></i> Results + Fees summary (basic)</li>
-              <li><i class="fa-solid fa-check"></i> Messaging + onboarding support</li>
-            </ul>
-
-            <div class="plan-actions">
-              <a class="btn btn-sm" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
-              <a class="btn ghost btn-sm" href="plan.html?plan=starter"><i class="fa-solid fa-book-open"></i> Read
-                more</a>
-            </div>
-
-            <p class="pfoot">A strong foundation to digitize your school.</p>
-          </article>
-
-          <article class="pplan featured reveal">
-            <div class="pplan-top">
-              <div>
-                <h3>Standard</h3>
-                <p class="psub">Up to 750 users • 35 features / term</p>
-              </div>
-              <span class="pbadge hot"><i class="fa-solid fa-star"></i> Popular</span>
-            </div>
-
-            <div class="pprice">
-              <span class="big">$350</span>
-              <span class="per">/ term</span>
-            </div>
-
-            <ul class="plist">
-              <li><i class="fa-solid fa-check"></i> Full admissions pipeline</li>
-              <li><i class="fa-solid fa-check"></i> Advanced student management</li>
-              <li><i class="fa-solid fa-check"></i> Exams management + grading workflows</li>
-              <li><i class="fa-solid fa-check"></i> Finance (invoices + payments tracking)</li>
-              <li><i class="fa-solid fa-check"></i> Library + Hostel + Events</li>
-              <li><i class="fa-solid fa-check"></i> Reports/exports + dashboards</li>
-            </ul>
-
-            <div class="plan-actions">
-              <a class="btn btn-sm" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
-              <a class="btn ghost btn-sm" href="plan.html?plan=standard"><i class="fa-solid fa-book-open"></i> Read
-                more</a>
-            </div>
-
-            <p class="pfoot">Best value for growth + control.</p>
-          </article>
-
-          <article class="pplan reveal">
-            <div class="pplan-top">
-              <div>
-                <h3>Growth</h3>
-                <p class="psub">Up to 900 users • approvals + deeper analytics</p>
-              </div>
-              <span class="pbadge soft"><i class="fa-solid fa-arrow-trend-up"></i> New</span>
-            </div>
-
-            <div class="pprice">
-              <span class="big">$425</span>
-              <span class="per">/ term</span>
-            </div>
-
-            <ul class="plist">
-              <li><i class="fa-solid fa-check"></i> Everything in Standard</li>
-              <li><i class="fa-solid fa-check"></i> Approval flows (finance + results)</li>
-              <li><i class="fa-solid fa-check"></i> Bulk imports + templates</li>
-              <li><i class="fa-solid fa-check"></i> Stronger audit logs + roles</li>
-              <li><i class="fa-solid fa-check"></i> Cohort & performance insights</li>
-              <li><i class="fa-solid fa-check"></i> Faster support response</li>
-            </ul>
-
-            <div class="plan-actions">
-              <a class="btn btn-sm" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
-              <a class="btn ghost btn-sm" href="plan.html?plan=growth"><i class="fa-solid fa-book-open"></i> Read
-                more</a>
-            </div>
-
-            <p class="pfoot">For schools scaling fast with more control.</p>
-          </article>
-
-          <article class="pplan reveal">
-            <div class="pplan-top">
-              <div>
-                <h3>Premium</h3>
-                <p class="psub">1000+ users • Up to 70 features / term</p>
-              </div>
-              <span class="pbadge"><i class="fa-solid fa-crown"></i> Elite</span>
-            </div>
-
-            <div class="pprice">
-              <span class="big">$500+</span>
-              <span class="per">/ term</span>
-            </div>
-
-            <ul class="plist">
-              <li><i class="fa-solid fa-check"></i> Full finance workflows + statements</li>
-              <li><i class="fa-solid fa-check"></i> Advanced reports + dashboards</li>
-              <li><i class="fa-solid fa-check"></i> Bulk imports + templates</li>
-              <li><i class="fa-solid fa-check"></i> SMS/Email integrations (OTP + alerts)</li>
-              <li><i class="fa-solid fa-check"></i> Portals (student/staff + optional parent)</li>
-              <li><i class="fa-solid fa-check"></i> Priority training + rollout</li>
-            </ul>
-
-            <div class="plan-actions">
-              <a class="btn btn-sm" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
-              <a class="btn ghost btn-sm" href="plan.html?plan=premium"><i class="fa-solid fa-book-open"></i> Read
-                more</a>
-            </div>
-
-            <p class="pfoot">Enterprise-grade performance + rollout support.</p>
-          </article>
-
-          <article class="pplan reveal">
-            <div class="pplan-top">
-              <div>
-                <h3>Add-ons & Boosters</h3>
-                <p class="psub">Extra users/features + promotion options</p>
-              </div>
-              <span class="pbadge soft"><i class="fa-solid fa-puzzle-piece"></i> Flexible</span>
-            </div>
-
-            <div class="pprice">
-              <span class="big">From $30</span>
-              <span class="per">/ add-on</span>
-            </div>
-
-            <ul class="plist">
-              <li><i class="fa-solid fa-check"></i> Extra 100 users: +$50</li>
-              <li><i class="fa-solid fa-check"></i> Extra 10 features/pages: +$50</li>
-              <li><i class="fa-solid fa-check"></i> Parent portal: +$100+</li>
-              <li><i class="fa-solid fa-check"></i> SMS credits: billed separately</li>
-              <li><i class="fa-solid fa-check"></i> Custom domain + SSL: +$30–$80</li>
-              <li><i class="fa-solid fa-check"></i> Sponsored placement (optional)</li>
-            </ul>
-
-            <div class="plan-actions">
-              <a class="btn btn-sm" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Talk to Sales</a>
-              <a class="btn ghost btn-sm" href="plan.html?plan=premium"><i class="fa-solid fa-book-open"></i> Read
-                more</a>
-            </div>
-
-            <p class="pfoot">Customize and promote your school listing.</p>
-          </article>
-        </div>
-
-        <p class="pricing-note">
-          Note: Prices shown are per term (except School Profile). Integrations and SMS credits billed separately.
-        </p>
       </div>
     </div>
   </section>
@@ -2982,28 +3167,22 @@
     // Smooth scroll to top (native)
     toTopBtn?.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
 
-    // Swiper for testimonials (FIX: stop mobile scroll “bickering”)
+    // Swiper for testimonials (keeps mobile scroll smooth)
     const isMobile = window.matchMedia("(max-width: 700px)").matches;
 
-    const tSwiper = new Swiper(".testimonial-wrapper", {
+    new Swiper(".testimonial-wrapper", {
       slidesPerView: 1,
       spaceBetween: 18,
       loop: true,
       speed: 800,
-
-      // Disable autoplay on mobile to reduce scroll/jank
       autoplay: isMobile ? false : { delay: 3000, disableOnInteraction: false },
-
       pagination: { el: ".swiper-pagination", clickable: true },
-
-      // Touch/scroll fix: allow vertical scroll through swiper area
       nested: true,
       passiveListeners: true,
       touchStartPreventDefault: false,
       touchMoveStopPropagation: false,
       touchAngle: 35,
       threshold: 8,
-
       breakpoints: {
         520: { slidesPerView: 2 },
         768: { slidesPerView: 3 }
