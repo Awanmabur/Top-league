@@ -1,109 +1,37 @@
 <!DOCTYPE html>
-
 <html lang="en">
 
 <head>
   <meta charset="utf-8" />
-  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-  <title>Schools — Classic Campus (Mock)</title>
-  <!-- ✅ PRODUCTION SEO (classicacademy.app) -->
-  <meta
-    content="Classic Academy is an all-in-one school management and admissions platform that helps schools enroll faster, manage students and staff, track fees, run exams, and communicate smoothly — all in one secure system."
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Blog — Classic Academy</title>
+
+  <meta content="Classic Academy blog: practical guides for admissions, finance tracking, exams, and school operations."
     name="description" />
-  <meta
-    content="school management system, admissions software, school ERP, student information system, fees management, exam results, timetable, attendance, Uganda, South Sudan"
-    name="keywords" />
   <meta content="index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1" name="robots" />
   <meta content="#4a90e2" name="theme-color" />
-  <meta content="Classic Academy" name="application-name" />
-  <meta content="telephone=no" name="format-detection" />
-  <link href="https://www.classicacademy.app/" rel="canonical" />
-  <link href="https://www.classicacademy.app/img/academylogo.png" rel="icon" />
-  <link href="https://www.classicacademy.app/img/academylogo.png" rel="apple-touch-icon" />
-  <!-- Open Graph -->
-  <meta content="website" property="og:type" />
-  <meta content="Classic Academy" property="og:site_name" />
-  <meta content="en_US" property="og:locale" />
-  <meta content="Classic Academy — All-in-One School Management + Admissions" property="og:title" />
-  <meta
-    content="All-in-one school management + admissions. Faster enrollment, cleaner finance tracking, better communication."
+  <link href="/blog" rel="canonical" />
+  <meta content="article" property="og:type" />
+  <meta content="Classic Academy Blog" id="ogTitle" property="og:title" />
+  <meta content="Practical guides for admissions, finance tracking, exams, and school operations." id="ogDesc"
     property="og:description" />
-  <meta content="https://www.classicacademy.app/" property="og:url" />
-  <meta content="https://www.classicacademy.app/img/hero.png" property="og:image" />
-  <meta content="Classic Academy — School Management Platform" property="og:image:alt" />
-  <!-- Twitter -->
+  <meta content="/blog" property="og:url" />
+  <meta content="https://picsum.photos/seed/classicacademy/1200/700" id="ogImage" property="og:image" />
   <meta content="summary_large_image" name="twitter:card" />
-  <meta content="Classic Academy — All-in-One School Management + Admissions" name="twitter:title" />
-  <meta
-    content="All-in-one school management + admissions. Faster enrollment, cleaner finance tracking, better communication."
+  <meta content="Classic Academy Blog" id="twTitle" name="twitter:title" />
+  <meta content="Practical guides for admissions, finance tracking, exams, and school operations." id="twDesc"
     name="twitter:description" />
-  <meta content="https://www.classicacademy.app/img/hero.png" name="twitter:image" />
-  <!-- Structured data -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    "name": "Classic Academy",
-    "url": "https://www.classicacademy.app/",
-    "logo": "https://www.classicacademy.app/img/academylogo.png",
-    "contactPoint": [{
-      "@type": "ContactPoint",
-      "telephone": "+256781977217",
-      "contactType": "sales",
-      "areaServed": ["UG","SS"],
-      "availableLanguage": ["en"]
-    }]
-  }
+  <meta content="https://picsum.photos/seed/classicacademy/1200/700" id="twImage" name="twitter:image" />
+  <script id="ldjsonArticle" type="application/ld+json">
+  { "placeholder": true }
   </script>
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    "name": "Classic Academy",
-    "url": "https://www.classicacademy.app/",
-    "potentialAction": {
-      "@type": "SearchAction",
-      "target": "https://www.classicacademy.app/search?q={search_term_string}",
-      "query-input": "required name=search_term_string"
-    }
-  }
-  </script>
-  <script type="application/ld+json">
-  {
-    "@context":"https://schema.org",
-    "@type":"SoftwareApplication",
-    "name":"Classic Academy",
-    "operatingSystem":"Web",
-    "applicationCategory":"EducationalApplication",
-    "url":"https://www.classicacademy.app/",
-    "offers":{
-      "@type":"Offer",
-      "price":"0",
-      "priceCurrency":"USD",
-      "url":"https://www.classicacademy.app/#pricing"
-    }
-  }
-  </script>
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "OfferCatalog",
-    "name": "Classic Academy Plans",
-    "url": "https://www.classicacademy.app/#pricing",
-    "itemListElement": [
-      { "@type": "Offer", "name": "School Profile Package", "price": "0", "priceCurrency": "USD", "url": "https://www.classicacademy.app/#pricing" },
-      { "@type": "Offer", "name": "Starter", "price": "200", "priceCurrency": "USD", "url": "https://www.classicacademy.app/#pricing" },
-      { "@type": "Offer", "name": "Standard", "price": "350", "priceCurrency": "USD", "url": "https://www.classicacademy.app/#pricing" },
-      { "@type": "Offer", "name": "Growth", "price": "425", "priceCurrency": "USD", "url": "https://www.classicacademy.app/#pricing" },
-      { "@type": "Offer", "name": "Premium", "price": "500", "priceCurrency": "USD", "url": "https://www.classicacademy.app/#pricing" }
-    ]
-  }
-  </script>
+
   <link href="https://fonts.googleapis.com" rel="preconnect" />
   <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
-  <link href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" rel="stylesheet" />
+
   <style>
     * {
       margin: 0;
@@ -2146,515 +2074,232 @@
         height: min(420px, 70vw);
       }
     }
+  </style>
 
-
-    /* ===========================
-   Schools page (uniform with main page)
-   =========================== */
-    .schools-page {
-      position: relative;
-      margin: 0 var(--page-pad);
-      margin-bottom: 2rem;
-      border-radius: calc(var(--radius) + 6px);
-      overflow: hidden;
-      background:
-        radial-gradient(900px 420px at 10% 15%, rgba(74, 144, 226, .18), transparent 60%),
-        radial-gradient(760px 420px at 90% 0%, rgba(217, 120, 0, .12), transparent 55%),
-        linear-gradient(180deg, rgba(255, 255, 255, .75), rgba(255, 255, 255, .55));
-      border: 1px solid rgba(255, 255, 255, .65);
-      box-shadow: var(--shadow2);
+  <style>
+    :root {
+      --bg: #e0f7fa;
+      --card: rgba(255, 255, 255, .82);
+      --stroke: rgba(255, 255, 255, .9);
+      --shadow: 0 18px 50px rgba(15, 23, 42, .12);
+      --shadow2: 0 12px 30px rgba(15, 23, 42, .10);
+      --primary: #4a90e2;
+      --text: #0f172a;
+      --muted: #64748b;
+      --ok: #16a34a;
     }
 
-    .schools-shell {
-      padding: clamp(1rem, 2.2vw, 1.35rem);
+    * {
+      box-sizing: border-box
     }
 
-    .schools-hero {
-      border-radius: var(--radius);
-      padding: clamp(1rem, 2.3vw, 1.4rem);
-      background:
-        radial-gradient(920px 320px at 10% 10%, rgba(74, 144, 226, .24), transparent 62%),
-        radial-gradient(800px 300px at 90% 0%, rgba(0, 159, 139, .18), transparent 55%),
-        linear-gradient(180deg, rgba(255, 255, 255, .82), rgba(255, 255, 255, .58));
-      border: 1px solid rgba(255, 255, 255, .78);
-      box-shadow: 0 12px 28px rgba(15, 23, 42, .10);
+    .wrap {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 0rem var(--page-pad) 2.5rem
     }
 
-    .schools-kicker {
+    .shell {
+      background: var(--card);
+      border: 1px solid var(--stroke);
+      border-radius: 26px;
+      box-shadow: var(--shadow);
+      padding: 1.4rem
+    }
+
+    .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+      flex-wrap: wrap;
+      border-bottom: 1px solid rgba(15, 23, 42, .08);
+      padding-bottom: 1rem;
+      margin-bottom: 1rem
+    }
+
+    .kicker {
       display: inline-flex;
-      align-items: center;
       gap: .55rem;
+      align-items: center;
       padding: .45rem .75rem;
       border-radius: 999px;
-      background: rgba(255, 255, 255, .70);
-      border: 1px solid rgba(255, 255, 255, .82);
-      color: #1b2a4e;
-      font-weight: 800;
-      width: fit-content;
+      background: rgba(255, 255, 255, .7);
+      border: 1px solid rgba(255, 255, 255, .9);
+      font-weight: 900;
+      color: #1f2a44
     }
 
-    .schools-hero h1 {
-      margin-top: .85rem;
-      font-size: clamp(1.55rem, 2.55vw, 2.35rem);
-      line-height: 1.15;
-      letter-spacing: -.02em;
-      color: var(--ink);
+    h1 {
+      margin: .75rem 0 .35rem 0;
+      font-size: 2rem
     }
 
-    .schools-hero h1 span {
-      color: var(--primary);
-    }
-
-    .schools-sub {
-      margin-top: .65rem;
+    .sub {
+      margin: 0;
       color: var(--muted);
-      font-weight: 650;
-      max-width: 58rem;
+      line-height: 1.6
     }
 
-    .schools-stats {
-      display: flex;
-      flex-wrap: wrap;
-      gap: .6rem;
-      margin-top: 1rem;
-    }
-
-    .schools-stat {
-      display: flex;
-      align-items: center;
-      gap: .6rem;
-      padding: .55rem .75rem;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, .62);
-      border: 1px solid rgba(255, 255, 255, .80);
-      box-shadow: 0 10px 22px rgba(15, 23, 42, .06);
-      color: #1b2a4e;
-      font-weight: 800;
-    }
-
-    .schools-stat span {
-      color: var(--muted);
-      font-weight: 700;
-    }
-
-    .schools-controls {
-      display: grid;
-      grid-template-columns: 1.2fr .8fr .8fr .8fr;
-      gap: .75rem;
-      margin-top: var(--section-gap);
-    }
-
-    .schools-control {
-      display: flex;
-      align-items: center;
-      gap: .65rem;
-      padding: .75rem .85rem;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, .72);
-      border: 1px solid rgba(255, 255, 255, .86);
-      box-shadow: 0 10px 24px rgba(15, 23, 42, .06);
-    }
-
-    .schools-control i {
-      color: rgba(15, 23, 42, .55);
-    }
-
-    .schools-control input,
-    .schools-control select {
-      width: 100%;
-      border: none;
-      outline: none;
-      background: transparent;
-      font: inherit;
-      color: var(--ink);
-      font-weight: 700;
-    }
-
-    .schools-control select {
-      cursor: pointer;
-    }
-
-    .schools-chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: .6rem;
-      margin-top: .9rem;
-    }
-
-    .schools-chip {
+    .blog-btn {
       display: inline-flex;
       align-items: center;
       gap: .55rem;
-      padding: .55rem .75rem;
+      padding: .55rem .9rem;
       border-radius: 999px;
-      border: 1px solid rgba(15, 23, 42, .10);
-      background: rgba(255, 255, 255, .70);
-      color: var(--ink);
-      font-weight: 800;
-      cursor: pointer;
-    }
-
-    .schools-chip i {
-      color: var(--primary);
-    }
-
-    .schools-chip.is-active {
-      background: linear-gradient(135deg, var(--primary), var(--highlight));
-      border-color: transparent;
-      color: #fff;
-    }
-
-    .schools-chip.is-active i {
-      color: #fff;
-    }
-
-    .schools-empty {
-      display: none;
-      margin-top: 1rem;
-      padding: 1rem;
-      border-radius: var(--radius);
-      background: rgba(255, 255, 255, .72);
-      border: 1px solid rgba(255, 255, 255, .86);
-      box-shadow: 0 10px 24px rgba(15, 23, 42, .06);
-      text-align: center;
-    }
-
-    .schools-empty-icon {
-      width: 44px;
-      height: 44px;
-      border-radius: 999px;
-      display: grid;
-      place-items: center;
-      margin: 0 auto .5rem;
-      background: rgba(74, 144, 226, .12);
-      border: 1px solid rgba(74, 144, 226, .18);
-      color: var(--primary);
-    }
-
-    .schools-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: .9rem;
-      margin-top: 1rem;
-      padding-bottom: .35rem;
-    }
-
-    .school-card {
-      background: rgba(255, 255, 255, .82);
-      border: 1px solid rgba(255, 255, 255, .88);
-      border-radius: calc(var(--radius) - 2px);
-      overflow: hidden;
-      box-shadow: 0 14px 30px rgba(15, 23, 42, .08);
-      transition: transform .18s ease, box-shadow .18s ease;
-      cursor: pointer;
-    }
-
-    .school-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 20px 46px rgba(15, 23, 42, .12);
-    }
-
-    .school-cover {
-      height: 120px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .school-cover::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(600px 220px at 70% 10%, rgba(255, 255, 255, 0.22), transparent 60%);
-      opacity: .95;
-    }
-
-    .school-avatar {
-      position: absolute;
-      left: 14px;
-      bottom: -22px;
-      width: 52px;
-      height: 52px;
-      border-radius: 16px;
-      background: rgba(255, 255, 255, .92);
-      border: 1px solid rgba(255, 255, 255, .92);
-      display: grid;
-      place-items: center;
+      border: 1px solid rgba(15, 23, 42, .12);
+      background: rgba(255, 255, 255, .55);
       font-weight: 900;
-      color: #1b2a4e;
-      box-shadow: 0 14px 28px rgba(15, 23, 42, .12);
-      z-index: 2;
-    }
-
-    .school-badge {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      display: inline-flex;
-      align-items: center;
-      gap: .45rem;
-      padding: .4rem .6rem;
-      border-radius: 999px;
-      font-size: .82rem;
-      font-weight: 800;
-      background: rgba(255, 255, 255, .30);
-      border: 1px solid rgba(255, 255, 255, .45);
-      color: #fff;
-      backdrop-filter: blur(10px);
-      z-index: 2;
-    }
-
-    .school-badge.ok {
-      background: rgba(236, 253, 243, .92);
-      border-color: rgba(187, 247, 208, .95);
-      color: #15803d;
-      backdrop-filter: none;
-    }
-
-    .school-body {
-      padding: 2.1rem .95rem .95rem;
-    }
-
-    .school-top {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: .7rem;
-    }
-
-    .school-name {
-      margin: 0;
-      font-size: 1rem;
-      letter-spacing: -.01em;
-      line-height: 1.2;
-      color: var(--ink);
-    }
-
-    .school-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: .45rem;
-      padding: .38rem .6rem;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, .70);
-      border: 1px solid rgba(15, 23, 42, .10);
-      color: var(--ink);
-      font-weight: 800;
-      font-size: .82rem;
+      box-shadow: var(--shadow2);
       white-space: nowrap;
+      font-size: .95rem
     }
 
-    .school-pill i {
-      color: var(--primary);
+    .blog-btn.primary {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+      box-shadow: 0 12px 28px rgba(74, 144, 226, .22)
     }
 
-    .school-tagline {
-      margin-top: .55rem;
-      color: var(--muted);
-      font-weight: 650;
-      font-size: .92rem;
-      min-height: 2.2rem;
+    .blog-btn.primary:hover {
+      background: transparent;
+      color: var(--primary)
     }
 
-    .school-meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: .65rem;
-      margin-top: .6rem;
-      color: rgba(15, 23, 42, .85);
-      font-weight: 750;
-      font-size: .86rem;
-    }
-
-    .school-meta i {
-      color: var(--primary);
-    }
-
-    .school-kpis {
+    .grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: .55rem;
-      margin-top: .75rem;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 1rem
     }
 
-    .school-kpi {
-      border-radius: 16px;
+    .blog-card {
+      background: rgba(255, 255, 255, .78);
       border: 1px solid rgba(15, 23, 42, .08);
-      background: rgba(15, 23, 42, .03);
-      padding: .55rem .6rem;
-    }
-
-    .school-kpi .v {
-      font-weight: 900;
-      color: #1b2a4e;
-      font-size: .92rem;
-    }
-
-    .school-kpi .l {
-      margin-top: .15rem;
-      color: var(--muted);
-      font-weight: 800;
-      font-size: .75rem;
-    }
-
-    .school-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: .55rem;
-      margin-top: .75rem;
-    }
-
-    .schools-btn {
-      padding: .55rem .8rem !important;
-      border-radius: 999px !important;
-      font-size: .92rem !important;
-    }
-
-    /* Drawer */
-    .schools-drawer {
-      position: fixed;
-      inset: 0;
-      background: rgba(15, 23, 42, .55);
-      display: none;
-      z-index: 1000;
-    }
-
-    .schools-drawer.show {
-      display: block;
-    }
-
-    .schools-sheet {
-      position: absolute;
-      top: 0;
-      right: 0;
-      width: min(520px, 92vw);
-      height: 100%;
-      background: rgba(255, 255, 255, .94);
-      border-left: 1px solid rgba(255, 255, 255, .85);
-      box-shadow: -20px 0 60px rgba(2, 8, 23, .25);
+      border-radius: 22px;
+      box-shadow: var(--shadow2);
       padding: 1rem;
-      overflow: auto;
+      overflow: hidden
     }
 
-    .schools-sheet-top {
+    .heroimg {
+      height: 240px;
+      border-radius: 18px;
+      background: #cfe9ff;
+      overflow: hidden
+    }
+
+    .heroimg img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block
+    }
+
+    .meta {
       display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: .8rem;
-      padding-bottom: .75rem;
-      border-bottom: 1px solid rgba(15, 23, 42, .08);
-      margin-bottom: .85rem;
-    }
-
-    .schools-sheet-top h3 {
-      margin: 0;
-      color: #1b2a4e;
-      letter-spacing: -.01em;
-    }
-
-    .schools-sheet-close {
-      width: 44px;
-      height: 44px;
-      border-radius: 14px;
-      border: 1px solid rgba(15, 23, 42, .10);
-      background: rgba(255, 255, 255, .9);
-      cursor: pointer;
-      display: grid;
-      place-items: center;
-    }
-
-    .schools-sheet-card {
-      border-radius: calc(var(--radius) - 2px);
-      border: 1px solid rgba(15, 23, 42, .08);
-      background: rgba(15, 23, 42, .02);
-      padding: .85rem;
-      margin-bottom: .85rem;
-    }
-
-    .schools-sheet-row {
-      display: flex;
-      gap: .75rem;
+      gap: .5rem;
+      flex-wrap: wrap;
       align-items: center;
-      flex-wrap: wrap;
+      margin-top: .8rem
     }
 
-    .schools-sheet-logo {
-      width: 56px;
-      height: 56px;
-      border-radius: 16px;
-      background: rgba(255, 255, 255, .92);
-      border: 1px solid rgba(15, 23, 42, .10);
+    .chip {
+      display: inline-flex;
+      gap: .4rem;
+      align-items: center;
+      padding: .35rem .6rem;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, .05);
+      font-weight: 800;
+      font-size: .9rem
+    }
+
+    .chip i {
+      color: var(--ok)
+    }
+
+    .content {
+      line-height: 1.75;
+      color: #1f2937
+    }
+
+    .list {
+      list-style: none;
+      padding: 0;
+      margin: .2rem 0 0 0;
       display: grid;
-      place-items: center;
-      font-weight: 900;
-      color: #1b2a4e;
+      gap: .6rem
     }
 
-    .schools-sheet-name {
-      font-weight: 900;
-      color: var(--ink);
-    }
-
-    .schools-sheet-tag {
-      color: var(--muted);
-      font-weight: 650;
-      font-size: .92rem;
-      margin-top: .2rem;
-    }
-
-    .schools-sheet-meta {
+    .list li {
       display: flex;
-      flex-wrap: wrap;
       gap: .6rem;
-      margin-top: .75rem;
-      color: rgba(15, 23, 42, .9);
-      font-weight: 750;
-      font-size: .86rem;
+      align-items: flex-start
     }
 
-    .schools-sheet-meta i {
-      color: var(--primary);
+    .list i {
+      color: var(--ok);
+      margin-top: .25rem
     }
 
-    .schools-sheet-actions {
+    .sidebar h3 {
+      margin: .2rem 0 .6rem 0
+    }
+
+    .sidecard {
+      background: rgba(255, 255, 255, .78);
+      border: 1px solid rgba(15, 23, 42, .08);
+      border-radius: 22px;
+      box-shadow: var(--shadow2);
+      padding: 1rem
+    }
+
+    .sideposts {
+      display: grid;
+      gap: .7rem
+    }
+
+    .sp {
       display: flex;
-      gap: .65rem;
-      flex-wrap: wrap;
-      margin-top: .85rem;
+      gap: .7rem;
+      align-items: flex-start
     }
 
-    .schools-sheet-title {
-      color: #1b2a4e;
+    .thumb {
+      width: 72px;
+      height: 56px;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #dbeafe;
+      flex: 0 0 auto
     }
 
-    .schools-ul {
-      margin-top: .55rem;
-      padding-left: 1.1rem;
-      color: var(--ink);
-      font-weight: 700;
+    .thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover
     }
 
-    .schools-muted {
+    .sp h4 {
+      margin: 0;
+      font-size: 1rem
+    }
+
+    .sp p {
+      margin: .15rem 0 0 0;
       color: var(--muted);
-      font-weight: 650;
+      font-size: .9rem;
+      line-height: 1.35
     }
 
-    @media (max-width: 980px) {
-      .schools-controls {
-        grid-template-columns: 1fr 1fr;
+    @media(max-width:980px) {
+      .grid {
+        grid-template-columns: 1fr
       }
 
-      .schools-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-
-    @media (max-width: 760px) {
-      .schools-controls {
-        grid-template-columns: 1fr;
-      }
-
-      .schools-grid {
-        grid-template-columns: 1fr;
+      .heroimg {
+        height: 200px
       }
     }
   </style>
@@ -2663,7 +2308,7 @@
 <body>
   <div id="loader">
     <div class="academylogo">
-      <img alt="Classic Academy logo" src="./img/academylogo.png" />
+      <img src="./img/academylogo.png" alt="Classic Academy logo">
     </div>
     <div style="display:flex; gap:10px;">
       <div class="loader">
@@ -2688,9 +2333,9 @@
       </div>
     </div>
   </div>
-  <!-- Nav -->
+
   <header class="header" id="siteHeader">
-    <a aria-label="Classic Academy Home" class="brand" href="index.html">
+    <a aria-label="Classic Academy Home" class="brand" href="/">
       <img alt="Classic Academy logo" class="brand-mark" src="./img/academylogo.png" />
       <div class="brand-txt">
         <span class="brand-name">Classic Academy</span>
@@ -2698,158 +2343,60 @@
       </div>
     </a>
     <nav aria-label="Primary" class="navbar">
-      <a href="index.html">Home</a>
-      <a href="about.html">About</a>
-      <a href="services/index.html">Features</a>
-      <a href="#testimonials">Benefits</a>
-      <a href="#contact">Contact</a>
-      <a class="nav-pill" href="#pricing">Join Today</a>
-      <a class="nav-pill" href="schedule.html">Sign In</a>
+      <a href="/">Home</a>
+      <a href="/about">About</a>
+      <a href="/services">Features</a>
+      <a href="/#testimonials">Benefits</a>
+      <a href="/#contact">Contact</a>
+      <a class="nav-pill" href="/#pricing">Join Today</a>
+      <a class="nav-pill" href="/schedule">Sign In</a>
     </nav>
     <div class="nav-actions">
-      <a class="btn btn-sm" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
+      <a class="btn btn-sm" href="/schedule"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
       <button aria-expanded="false" aria-label="Open menu" class="menu-btn" id="menu-btn">
         <i class="fa-solid fa-bars"></i>
       </button>
     </div>
   </header>
-  <!-- Hero -->
 
-  <!-- Feature tiles -->
-
-  <!-- Featured Schools -->
-
-
-  <!-- Orbit + Feature list -->
-
-  <!-- PRICING -->
-
-  <!-- Testimonials -->
-
-  <!-- Blogs -->
-
-  <!-- Contact -->
-
-  <!-- Footer -->
-
-  <section aria-label="Search Schools" class="schools-page">
-    <div class="schools-shell">
-      <div class="schools-hero">
-        <div class="schools-kicker"><i class="fa-solid fa-magnifying-glass"></i> Search • Compare • Apply Online</div>
-        <h1>Find a School <span>Powered by Classic Campus</span></h1>
-        <p class="schools-sub">
-          Search schools, compare programs and performance, view galleries, see awards, then apply directly online.
-        </p>
-        <div class="schools-stats">
-          <div class="schools-stat"><i class="fa-solid fa-circle-check"></i> Verified schools <span>trusted
-              profile</span></div>
-          <div class="schools-stat"><i class="fa-solid fa-file-circle-plus"></i> Online applications <span>fast &amp;
-              simple</span></div>
-          <div class="schools-stat"><i class="fa-solid fa-star"></i> Awards &amp; gallery <span>real proof</span></div>
-        </div>
-      </div>
-      <div class="schools-controls" role="search">
-        <label class="schools-control">
-          <i class="fa-solid fa-magnifying-glass"></i>
-          <input autocomplete="off" id="schoolsQ" placeholder="Search school name, city, program (e.g. Science, ICT)..."
-            type="search" />
-        </label>
-        <label class="schools-control">
-          <i class="fa-solid fa-location-dot"></i>
-          <select id="schoolsCity">
-            <option value="">All cities</option>
-            <option>Kampala</option>
-            <option>Entebbe</option>
-            <option>Jinja</option>
-            <option>Gulu</option>
-            <option>Mbarara</option>
-          </select>
-        </label>
-        <label class="schools-control">
-          <i class="fa-solid fa-building-columns"></i>
-          <select id="schoolsType">
-            <option value="">All types</option>
-            <option>University</option>
-            <option>College</option>
-            <option>Secondary School</option>
-            <option>Primary School</option>
-            <option>Institute</option>
-          </select>
-        </label>
-        <label class="schools-control">
-          <i class="fa-solid fa-arrow-up-wide-short"></i>
-          <select id="schoolsSort">
-            <option value="rank">Sort: Recommended</option>
-            <option value="students_desc">Students (high → low)</option>
-            <option value="programs_desc">Programs (high → low)</option>
-            <option value="name_asc">Name (A → Z)</option>
-          </select>
-        </label>
-      </div>
-      <div aria-label="Quick filters" class="schools-chips">
-        <button class="schools-chip is-active" data-chip="all" type="button"><i class="fa-solid fa-layer-group"></i>
-          All</button>
-        <button class="schools-chip" data-chip="verified" type="button"><i class="fa-solid fa-circle-check"></i>
-          Verified</button>
-        <button class="schools-chip" data-chip="boarding" type="button"><i class="fa-solid fa-bed"></i>
-          Boarding</button>
-        <button class="schools-chip" data-chip="day" type="button"><i class="fa-solid fa-sun"></i> Day</button>
-        <button class="schools-chip" data-chip="science" type="button"><i class="fa-solid fa-flask"></i>
-          Science</button>
-        <button class="schools-chip" data-chip="ict" type="button"><i class="fa-solid fa-laptop-code"></i> ICT</button>
-      </div>
-      <div aria-live="polite" class="schools-empty" id="schoolsEmpty">
-        <div class="schools-empty-icon"><i class="fa-solid fa-face-frown"></i></div>
-        <b>No schools match your search</b>
-        <p>Try changing filters, remove chips, or search a different city/program.</p>
-      </div>
-      <div aria-label="School results" class="schools-grid" id="schoolsGrid"></div>
-    </div>
-  </section>
-  <div aria-hidden="true" class="schools-drawer" id="schoolsDrawer">
-    <div aria-label="School Preview" aria-modal="true" class="schools-sheet" role="dialog">
-      <div class="schools-sheet-top">
+  <div class="wrap">
+    <div class="shell">
+      <div class="top">
         <div>
-          <h3>School Preview</h3>
-          <div class="schools-muted" id="schoolsSheetHint">Click “View Profile” to open the school profile page.</div>
-        </div>
-        <button aria-label="Close" class="schools-sheet-close" id="schoolsDrawerClose" type="button">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
-      <div class="schools-sheet-card">
-        <div class="schools-sheet-row">
-          <div class="schools-sheet-logo" id="schoolsSheetLogo">CA</div>
-          <div>
-            <div class="schools-sheet-name" id="schoolsSheetName">Classic Academy</div>
-            <div class="schools-sheet-tag" id="schoolsSheetTag">Discipline • Excellence • Technology-driven learning
-            </div>
+          <div class="kicker"><i class="fa-solid fa-pen-nib"></i> Classic Academy Blog</div>
+          <h1 id="title">Blog</h1>
+          <p class="sub" id="subtitle">Tips and insights for schools, admissions, and digital operations.</p>
+          <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.85rem">
+            <a class="blog-btn primary" href="/#pricing"><i class="fa-solid fa-tags"></i> View plans</a>
+            <a class="blog-btn" href="/#blogs"><i class="fa-solid fa-arrow-left"></i> Back</a>
           </div>
         </div>
-        <div class="schools-sheet-meta" id="schoolsSheetMeta"></div>
-        <div class="schools-sheet-actions">
-          <button class="btn schools-btn" id="schoolsBtnView" type="button"><i class="fa-solid fa-id-card"></i> View
-            Profile</button>
-          <button class="btn ghost schools-btn" id="schoolsBtnApply" type="button"><i
-              class="fa-solid fa-file-circle-plus"></i> Apply</button>
-        </div>
       </div>
-      <div class="schools-sheet-card">
-        <b class="schools-sheet-title">Why this school</b>
-        <ul class="schools-ul">
-          <li>Verified branding &amp; trusted profile</li>
-          <li>Gallery, awards, announcements</li>
-          <li>Online application with documents</li>
-        </ul>
-      </div>
-      <div class="schools-sheet-card">
-        <b class="schools-sheet-title">Tip</b>
-        <div class="schools-muted" style="margin-top:.5rem">
-          In real system, “View Profile” goes to: <b>/schools/:id</b>
-        </div>
+      <div class="grid">
+        <article class="blog-card">
+          <div class="heroimg"><img alt="" id="hero" src="https://picsum.photos/seed/classicacademy/1200/700" /></div>
+          <div class="meta" id="meta"></div>
+          <div class="content" id="content" style="margin-top:.9rem"></div>
+          <div class="sidecard" style="margin-top:1rem;background:rgba(224,247,250,.6)">
+            <h3><i class="fa-solid fa-circle-check" style="color:#16a34a"></i> Quick takeaway</h3>
+            <ul class="list" id="takeaways"></ul>
+          </div>
+        </article>
+        <aside class="sidebar">
+          <div class="sidecard">
+            <h3><i class="fa-solid fa-fire" style="color:#d97800"></i> More posts</h3>
+            <div class="sideposts" id="more"></div>
+          </div>
+          <div class="sidecard" style="margin-top:1rem">
+            <h3><i class="fa-solid fa-calendar-check" style="color:#4a90e2"></i> Want a guided demo?</h3>
+            <p class="sub" style="margin:.2rem 0 .8rem 0">We’ll show you the best plan for your school.</p>
+            <a class="blog-btn primary" href="/schedule"><i class="fa-solid fa-video"></i> Book demo</a>
+          </div>
+        </aside>
       </div>
     </div>
   </div>
+
   <footer class="footer">
     <div>
       <h4>About Us</h4>
@@ -2867,37 +2414,37 @@
     <div>
       <h4>Learn about our mission</h4>
       <ul>
-        <li><a href="about.html">Our Story</a></li>
-        <li><a href="services/index.html">What We Offer</a></li>
-        <li><a href="plan.html?plan=standard">Plans &amp; Pricing</a></li>
-        <li><a href="blog.html?slug=increase-admissions">Press resources</a></li>
-        <li><a href="careers.html">Careers</a></li>
+        <li><a href="/about">Our Story</a></li>
+        <li><a href="/services">What We Offer</a></li>
+        <li><a href="/plan?plan=standard">Plans &amp; Pricing</a></li>
+        <li><a href="/blog?slug=increase-admissions">Press resources</a></li>
+        <li><a href="/careers">Careers</a></li>
       </ul>
     </div>
     <div>
       <h4>Get help with your account</h4>
       <ul>
-        <li><a href="contact/index.html">Customer Support</a></li>
-        <li><a href="schedule.html">Book a Demo</a></li>
-        <li><a href="faq.html">FAQ</a></li>
-        <li><a href="privacy.html">Privacy Policy</a></li>
-        <li><a href="terms.html">Terms</a></li>
+        <li><a href="/contact">Customer Support</a></li>
+        <li><a href="/schedule">Book a Demo</a></li>
+        <li><a href="/faq">FAQ</a></li>
+        <li><a href="/privacy">Privacy Policy</a></li>
+        <li><a href="/terms">Terms</a></li>
       </ul>
     </div>
     <div>
       <h4>Join our school community</h4>
       <ul>
-        <li><a href="schools/index.html">Find Schools</a></li>
-        <li><a href="admissions.html">Admissions</a></li>
-        <li><a href="search/index.html">Search</a></li>
-        <li><a href="blog.html?slug=increase-admissions">Blog</a></li>
-        <li><a href="https://x.com" rel="noopener" target="_blank">Twitter</a></li>
-        <li><a href="https://discord.com" rel="noopener" target="_blank">Discord server</a></li>
+        <li><a href="/schools">Find Schools</a></li>
+        <li><a href="/admissions">Admissions</a></li>
+        <li><a href="/search">Search</a></li>
+        <li><a href="/blog?slug=increase-admissions">Blog</a></li>
+        <li><a href="https://chat.whatsapp.com/HRGoS3fMZoZGgXbz1HDw6a?mode=gi_t" target="_blank" rel="noopener">Join whatsapp group</a></li>
       </ul>
     </div>
   </footer>
+
   <button aria-label="Scroll to top" id="toTopBtn">↑</button>
-  <!-- Floating support button -->
+
   <div aria-hidden="true" class="fab-container">
     <div class="fab shadow">
       <div class="fab-content">
@@ -2920,319 +2467,10 @@
       </a>
     </div>
     <div class="sub-button shadow">
-      <a href="share.html" rel="noopener" target="_blank"><span class="material-icons">share</span></a>
+      <a href="/share" rel="noopener" target="_blank"><span class="material-icons">share</span></a>
     </div>
   </div>
-  <!-- libs -->
-  <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 
-  <script>
-    (() => {
-      // ---------- Data (Mock) ----------
-      const schools = [
-        {
-          id: "s1",
-          name: "Classic Academy",
-          short: "CA",
-          type: "Secondary School",
-          city: "Kampala",
-          country: "Uganda",
-          verified: true,
-          system: "Day & Boarding",
-          tagline: "Discipline • Excellence • Technology-driven learning",
-          programs: 18,
-          students: 1240,
-          awards: 8,
-          tags: ["boarding", "day", "science", "ict", "verified"],
-          phone: "+256 781 977 217"
-        },
-        {
-          id: "s2",
-          name: "Junub International College",
-          short: "JIC",
-          type: "College",
-          city: "Jinja",
-          country: "Uganda",
-          verified: false,
-          system: "Day",
-          tagline: "Career-focused education with modern skills.",
-          programs: 12,
-          students: 640,
-          awards: 3,
-          tags: ["day", "ict"],
-          phone: "+256 700 000 001"
-        },
-        {
-          id: "s3",
-          name: "Nile View Primary School",
-          short: "NV",
-          type: "Primary School",
-          city: "Entebbe",
-          country: "Uganda",
-          verified: true,
-          system: "Day",
-          tagline: "Strong foundation, caring teachers, happy learners.",
-          programs: 8,
-          students: 980,
-          awards: 5,
-          tags: ["day", "verified"],
-          phone: "+256 700 000 002"
-        },
-        {
-          id: "s4",
-          name: "Gulu Science & Tech Institute",
-          short: "GST",
-          type: "Institute",
-          city: "Gulu",
-          country: "Uganda",
-          verified: true,
-          system: "Day & Boarding",
-          tagline: "Hands-on science, labs, and real-world projects.",
-          programs: 20,
-          students: 720,
-          awards: 6,
-          tags: ["boarding", "day", "science", "ict", "verified"],
-          phone: "+256 700 000 003"
-        },
-        {
-          id: "s5",
-          name: "Mbarara Excellence High School",
-          short: "ME",
-          type: "Secondary School",
-          city: "Mbarara",
-          country: "Uganda",
-          verified: false,
-          system: "Boarding",
-          tagline: "High performance with strong discipline culture.",
-          programs: 15,
-          students: 1100,
-          awards: 4,
-          tags: ["boarding", "science"],
-          phone: "+256 700 000 004"
-        },
-        {
-          id: "s6",
-          name: "Kampala Business University",
-          short: "KBU",
-          type: "University",
-          city: "Kampala",
-          country: "Uganda",
-          verified: true,
-          system: "Day",
-          tagline: "Business, leadership and innovation for tomorrow.",
-          programs: 26,
-          students: 3200,
-          awards: 10,
-          tags: ["day", "ict", "verified"],
-          phone: "+256 700 000 005"
-        }
-      ];
-
-      // ---------- Helpers ----------
-      function coverGradient(seed) {
-        const combos = [
-          ["rgba(74,144,226,.92)", "rgba(0,159,139,.45)"],
-          ["rgba(0,159,139,.82)", "rgba(217,120,0,.42)"],
-          ["rgba(217,120,0,.72)", "rgba(74,144,226,.52)"],
-          ["rgba(15,23,42,.78)", "rgba(74,144,226,.55)"],
-        ];
-        const idx = seed % combos.length;
-        return `linear-gradient(135deg, ${combos[idx][0]}, ${combos[idx][1]})`;
-      }
-      function fmt(n) {
-        return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-      }
-
-      // ---------- Elements ----------
-      const qEl = document.getElementById("schoolsQ");
-      const cityEl = document.getElementById("schoolsCity");
-      const typeEl = document.getElementById("schoolsType");
-      const sortEl = document.getElementById("schoolsSort");
-      const gridEl = document.getElementById("schoolsGrid");
-      const emptyEl = document.getElementById("schoolsEmpty");
-
-      // Drawer
-      const drawer = document.getElementById("schoolsDrawer");
-      const drawerClose = document.getElementById("schoolsDrawerClose");
-      const sheetLogo = document.getElementById("schoolsSheetLogo");
-      const sheetName = document.getElementById("schoolsSheetName");
-      const sheetTag = document.getElementById("schoolsSheetTag");
-      const sheetMeta = document.getElementById("schoolsSheetMeta");
-      const btnView = document.getElementById("schoolsBtnView");
-      const btnApply = document.getElementById("schoolsBtnApply");
-
-      let selectedId = null;
-      let activeChip = "all";
-
-      function openDrawer(s) {
-        selectedId = s.id;
-        sheetLogo.textContent = s.short || (s.name || "S").slice(0, 2).toUpperCase();
-        sheetName.textContent = s.name;
-        sheetTag.textContent = s.tagline;
-
-        const pills = [];
-        pills.push(`<span><i class="fa-solid fa-location-dot"></i> ${s.city}, ${s.country}</span>`);
-        pills.push(`<span><i class="fa-solid fa-building-columns"></i> ${s.type}</span>`);
-        pills.push(`<span><i class="fa-solid fa-bed"></i> ${s.system}</span>`);
-        pills.push(`<span><i class="fa-solid fa-phone"></i> ${s.phone}</span>`);
-        pills.push(`<span><i class="fa-solid fa-users"></i> ${fmt(s.students)} students</span>`);
-        pills.push(`<span><i class="fa-solid fa-graduation-cap"></i> ${fmt(s.programs)} programs</span>`);
-        pills.push(`<span><i class="fa-solid fa-award"></i> ${fmt(s.awards)} awards</span>`);
-        sheetMeta.innerHTML = pills.join("");
-        drawer.classList.add("show");
-        drawer.setAttribute("aria-hidden", "false");
-      }
-      function closeDrawer() {
-        drawer.classList.remove("show");
-        drawer.setAttribute("aria-hidden", "true");
-        selectedId = null;
-      }
-
-      drawerClose?.addEventListener("click", closeDrawer);
-      drawer?.addEventListener("click", (e) => { if (e.target === drawer) closeDrawer(); });
-
-      btnView?.addEventListener("click", () => {
-        if (!selectedId) return;
-        alert("Mock: open public profile → /schools/" + selectedId);
-      });
-      btnApply?.addEventListener("click", () => {
-        if (!selectedId) return;
-        alert("Mock: start application → /admissions/apply?school=" + selectedId);
-      });
-
-      // ---------- Chips ----------
-      document.querySelectorAll(".schools-chip").forEach(ch => {
-        ch.addEventListener("click", () => {
-          document.querySelectorAll(".schools-chip").forEach(x => x.classList.remove("is-active"));
-          ch.classList.add("is-active");
-          activeChip = ch.dataset.chip || "all";
-          render();
-        });
-      });
-
-      // ---------- Filtering / sorting ----------
-      function getFiltered() {
-        const q = (qEl?.value || "").trim().toLowerCase();
-        const city = cityEl?.value || "";
-        const type = typeEl?.value || "";
-
-        let list = schools.slice();
-
-        if (activeChip && activeChip !== "all") {
-          list = list.filter(s => (s.tags || []).includes(activeChip));
-        }
-
-        if (q) {
-          list = list.filter(s => {
-            const hay = [
-              s.name, s.city, s.type, s.tagline,
-              (s.tags || []).join(" ")
-            ].join(" ").toLowerCase();
-            return hay.includes(q);
-          });
-        }
-
-        if (city) list = list.filter(s => s.city === city);
-        if (type) list = list.filter(s => s.type === type);
-
-        const sort = sortEl?.value || "rank";
-        if (sort === "students_desc") list.sort((a, b) => (b.students || 0) - (a.students || 0));
-        else if (sort === "programs_desc") list.sort((a, b) => (b.programs || 0) - (a.programs || 0));
-        else if (sort === "name_asc") list.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-        else {
-          list.sort((a, b) => {
-            const av = (a.verified ? 1 : 0), bv = (b.verified ? 1 : 0);
-            if (bv !== av) return bv - av;
-            const aa = (a.awards || 0), ba = (b.awards || 0);
-            if (ba !== aa) return ba - aa;
-            return (b.students || 0) - (a.students || 0);
-          });
-        }
-
-        return list;
-      }
-
-      // ---------- Render cards ----------
-      function render() {
-        const list = getFiltered();
-        if (!gridEl) return;
-        gridEl.innerHTML = "";
-        if (emptyEl) emptyEl.style.display = list.length ? "none" : "block";
-
-        list.forEach((s, idx) => {
-          const card = document.createElement("article");
-          card.className = "school-card";
-          card.setAttribute("role", "button");
-          card.setAttribute("tabindex", "0");
-
-          const cover = document.createElement("div");
-          cover.className = "school-cover";
-          cover.style.background = coverGradient(idx);
-
-          const avatar = document.createElement("div");
-          avatar.className = "school-avatar";
-          avatar.textContent = s.short || (s.name || "S").slice(0, 2).toUpperCase();
-          cover.appendChild(avatar);
-
-          const badge = document.createElement("div");
-          badge.className = s.verified ? "school-badge ok" : "school-badge";
-          badge.innerHTML = s.verified
-            ? `<i class="fa-solid fa-circle-check"></i> Verified`
-            : `<i class="fa-solid fa-circle-info"></i> Listed`;
-          cover.appendChild(badge);
-
-          const body = document.createElement("div");
-          body.className = "school-body";
-          body.innerHTML = `
-        <div class="school-top">
-          <h3 class="school-name">${s.name}</h3>
-          <span class="school-pill"><i class="fa-solid fa-building-columns"></i> ${s.type}</span>
-        </div>
-        <div class="school-tagline">${s.tagline}</div>
-        <div class="school-meta">
-          <span><i class="fa-solid fa-location-dot"></i> ${s.city}, ${s.country}</span>
-          <span><i class="fa-solid fa-bed"></i> ${s.system}</span>
-        </div>
-
-        <div class="school-kpis">
-          <div class="school-kpi"><div class="v">${fmt(s.students)}</div><div class="l">Students</div></div>
-          <div class="school-kpi"><div class="v">${fmt(s.programs)}</div><div class="l">Programs</div></div>
-          <div class="school-kpi"><div class="v">${fmt(s.awards)}</div><div class="l">Awards</div></div>
-        </div>
-
-        <div class="school-actions">
-          <button class="btn schools-btn" type="button" data-action="view"><i class="fa-solid fa-id-card"></i> View</button>
-          <button class="btn ghost schools-btn" type="button" data-action="apply"><i class="fa-solid fa-file-circle-plus"></i> Apply</button>
-        </div>
-      `;
-
-          const viewBtn = body.querySelector('[data-action="view"]');
-          const applyBtn = body.querySelector('[data-action="apply"]');
-
-          viewBtn?.addEventListener("click", (e) => { e.stopPropagation(); openDrawer(s); });
-          applyBtn?.addEventListener("click", (e) => {
-            e.stopPropagation();
-            alert("Mock: start application → /admissions/apply?school=" + s.id);
-          });
-
-          card.addEventListener("click", () => openDrawer(s));
-          card.addEventListener("keydown", (e) => {
-            if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDrawer(s); }
-          });
-
-          card.appendChild(cover);
-          card.appendChild(body);
-          gridEl.appendChild(card);
-        });
-      }
-
-      // Live input
-      [qEl, cityEl, typeEl, sortEl].forEach(el => el && el.addEventListener("input", render));
-      [cityEl, typeEl, sortEl].forEach(el => el && el.addEventListener("change", render));
-
-      render();
-    })();
-  </script>
   <script>
     // Loader
     setTimeout(() => {
@@ -3275,55 +2513,155 @@
 
     toTopBtn?.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
 
-    // Duplicate featured cards for seamless loop
-    (function duplicateFeatured() {
-      const track = document.getElementById("featuredTrack");
-      if (!track || track.dataset.duplicated === "true") return;
-      const cards = Array.from(track.children);
-      cards.forEach(card => track.appendChild(card.cloneNode(true)));
-      track.dataset.duplicated = "true";
-    })();
-
-    // Swiper for testimonials
-    const isMobile = window.matchMedia("(max-width: 700px)").matches;
-    new Swiper(".testimonial-wrapper", {
-      slidesPerView: 1,
-      spaceBetween: 18,
-      loop: true,
-      speed: 800,
-      autoplay: isMobile ? false : { delay: 2800, disableOnInteraction: false },
-      pagination: { el: ".swiper-pagination", clickable: true },
-      nested: true,
-      passiveListeners: true,
-      touchStartPreventDefault: false,
-      touchMoveStopPropagation: false,
-      touchAngle: 35,
-      threshold: 8,
-      breakpoints: {
-        520: { slidesPerView: 2 },
-        768: { slidesPerView: 3 }
-      }
-    });
-
-    // Reveal animations
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (!entry.isIntersecting) return;
-        if (entry.target.classList.contains("feature") || entry.target.classList.contains("hero")) {
-          entry.target.classList.add("visible");
-        }
-        if (entry.target.classList.contains("reveal")) {
+    // Reveal animations (optional)
+    if ("IntersectionObserver" in window) {
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (!entry.isIntersecting) return;
           entry.target.classList.add("in");
-        }
-      });
-    }, { threshold: 0.12 });
+        });
+      }, { threshold: 0.12 });
 
-    document.querySelectorAll(".feature, .hero, .reveal").forEach(el => io.observe(el));
+      document.querySelectorAll(".reveal").forEach(el => io.observe(el));
+    } else {
+      document.querySelectorAll(".reveal").forEach(el => el.classList.add("in"));
+    }
+  </script>
 
-    // Contact form stub
-    document.getElementById("contactSendBtn")?.addEventListener("click", () => {
-      alert("Message captured. (Connect this to your backend/email endpoint.)");
-    });
+  <script>
+    const POSTS = [
+      {
+        slug: "increase-admissions",
+        title: "How to Increase Admissions Without Increasing Your Budget",
+        subtitle: "A practical playbook for visibility, trust, and faster parent follow-up.",
+        cover: "https://picsum.photos/seed/admissions/1200/700",
+        category: "Admissions",
+        minutes: 6,
+        date: "2026-02-25",
+        author: "Classic Academy Team",
+        content: [
+          "Most schools lose potential students because inquiries are slow, information is incomplete, and follow-up is inconsistent.",
+          "With Classic Academy, your school profile acts like a fast, clear landing page, while online admissions captures applications and questions immediately.",
+          "The key is a simple flow: (1) be visible, (2) build trust, (3) respond fast, (4) track the pipeline until enrollment."
+        ],
+        takeaways: [
+          "Publish clear admissions requirements + fees overview.",
+          "Use online inquiry + application forms to capture leads instantly.",
+          "Track every applicant status (review → accept → enroll).",
+          "Follow up with SMS/WhatsApp reminders when needed."
+        ]
+      },
+      {
+        slug: "fees-tracking",
+        title: "Fees Tracking That Actually Works: Invoices, Receipts & Balances",
+        subtitle: "Reduce disputes, improve collection, and keep finance clean every term.",
+        cover: "https://picsum.photos/seed/finance/1200/700",
+        category: "Finance",
+        minutes: 7,
+        date: "2026-02-20",
+        author: "Classic Academy Team",
+        content: [
+          "Many fee disputes come from unclear balances, missing receipts, and manual spreadsheets.",
+          "A proper finance module gives you invoices, payment tracking, receipts, and statements — in one place.",
+          "Standard and above includes finance workflows; Premium adds deeper reporting and portals."
+        ],
+        takeaways: [
+          "Issue invoices per term and track payments automatically.",
+          "Generate receipts and statements to reduce disputes.",
+          "Use dashboards to see fee collection trends.",
+          "Approve sensitive finance actions with Growth/Premium."
+        ]
+      },
+      {
+        slug: "exam-results",
+        title: "Exam & Results Management: From Setup to Publishing",
+        subtitle: "Clean grading workflows and faster publishing without mistakes.",
+        cover: "https://picsum.photos/seed/exams/1200/700",
+        category: "Academics",
+        minutes: 5,
+        date: "2026-02-18",
+        author: "Classic Academy Team",
+        content: [
+          "Results take too long when grading is scattered and approvals are missing.",
+          "Classic Academy supports exam setup, grading workflows, and publishing controls (Growth+).",
+          "When results are structured, reporting becomes easy."
+        ],
+        takeaways: [
+          "Standard supports structured exam workflows.",
+          "Growth adds approvals before publishing results.",
+          "Use analytics to spot performance patterns.",
+          "Export results quickly when needed."
+        ]
+      }
+    ];
+
+    function getSlug() {
+      const u = new URL(window.location.href);
+      return (u.searchParams.get("slug") || POSTS[0].slug).toLowerCase();
+    }
+
+    function render() {
+      const slug = getSlug();
+      const post = POSTS.find(p => p.slug === slug) || POSTS[0];
+
+      document.title = post.title + " — Classic Academy";
+
+      // SEO (dynamic)
+      const metaDesc = document.querySelector('meta[name="description"]');
+      if (metaDesc) metaDesc.setAttribute("content", post.subtitle);
+      const ogTitle = document.getElementById("ogTitle"); if (ogTitle) ogTitle.setAttribute("content", post.title);
+      const ogDesc = document.getElementById("ogDesc"); if (ogDesc) ogDesc.setAttribute("content", post.subtitle);
+      const ogImage = document.getElementById("ogImage"); if (ogImage) ogImage.setAttribute("content", post.cover);
+      const twTitle = document.getElementById("twTitle"); if (twTitle) twTitle.setAttribute("content", post.title);
+      const twDesc = document.getElementById("twDesc"); if (twDesc) twDesc.setAttribute("content", post.subtitle);
+      const twImage = document.getElementById("twImage"); if (twImage) twImage.setAttribute("content", post.cover);
+
+      const ld = document.getElementById("ldjsonArticle");
+      if (ld) {
+        const article = {
+          "@context": "https://schema.org",
+          "@type": "Article",
+          "headline": post.title,
+          "description": post.subtitle,
+          "image": [post.cover],
+          "author": { "@type": "Organization", "name": post.author },
+          "publisher": { "@type": "Organization", "name": "Classic Academy", "logo": { "@type": "ImageObject", "url": "/img/academylogo.png" } },
+          "datePublished": post.date,
+          "mainEntityOfPage": { "@type": "WebPage", "@id": "/blog?slug=" + post.slug }
+        };
+        ld.textContent = JSON.stringify(article, null, 2);
+      }
+
+      document.getElementById("title").textContent = post.title;
+      document.getElementById("subtitle").textContent = post.subtitle;
+      document.getElementById("hero").src = post.cover;
+
+      document.getElementById("meta").innerHTML = `
+        <span class="chip"><i class="fa-solid fa-tag"></i>${post.category}</span>
+        <span class="chip"><i class="fa-solid fa-clock"></i>${post.minutes} min read</span>
+        <span class="chip"><i class="fa-solid fa-calendar"></i>${post.date}</span>
+        <span class="chip"><i class="fa-solid fa-user"></i>${post.author}</span>
+      `;
+
+      document.getElementById("content").innerHTML =
+        post.content.map(p => `<p style="margin:.75rem 0">${p}</p>`).join("");
+
+      document.getElementById("takeaways").innerHTML =
+        post.takeaways.map(t => `<li><i class="fa-solid fa-check"></i><span>${t}</span></li>`).join("");
+
+      document.getElementById("more").innerHTML =
+        POSTS.filter(p => p.slug !== post.slug).map(p => `
+          <a class="sp" href="/blog?slug=${p.slug}">
+            <div class="thumb"><img src="${p.cover}" alt=""></div>
+            <div>
+              <h4>${p.title}</h4>
+              <p>${p.category} • ${p.minutes} min</p>
+            </div>
+          </a>
+        `).join("");
+    }
+
+    render();
   </script>
 </body>
 

@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-  <title>About — Classic Academy</title>
+  <title>Schools — Classic Campus (Mock)</title>
   <!-- ✅ PRODUCTION SEO (classicacademy.app) -->
   <meta
     content="Classic Academy is an all-in-one school management and admissions platform that helps schools enroll faster, manage students and staff, track fees, run exams, and communicate smoothly — all in one secure system."
@@ -17,23 +17,23 @@
   <meta content="#4a90e2" name="theme-color" />
   <meta content="Classic Academy" name="application-name" />
   <meta content="telephone=no" name="format-detection" />
-  <link href="https://www.classicacademy.app/about.html" rel="canonical" />
+  <link href="https://www.classicacademy.app/schools" rel="canonical" />
   <link href="https://www.classicacademy.app/img/academylogo.png" rel="icon" />
   <link href="https://www.classicacademy.app/img/academylogo.png" rel="apple-touch-icon" />
   <!-- Open Graph -->
   <meta content="website" property="og:type" />
   <meta content="Classic Academy" property="og:site_name" />
   <meta content="en_US" property="og:locale" />
-  <meta content="About — Classic Academy" property="og:title" />
+  <meta content="Classic Academy — All-in-One School Management + Admissions" property="og:title" />
   <meta
     content="All-in-one school management + admissions. Faster enrollment, cleaner finance tracking, better communication."
     property="og:description" />
-  <meta content="https://www.classicacademy.app/about.html" property="og:url" />
+  <meta content="https://www.classicacademy.app/schools" property="og:url" />
   <meta content="https://www.classicacademy.app/img/hero.png" property="og:image" />
   <meta content="Classic Academy — School Management Platform" property="og:image:alt" />
   <!-- Twitter -->
   <meta content="summary_large_image" name="twitter:card" />
-  <meta content="About — Classic Academy" name="twitter:title" />
+  <meta content="Classic Academy — All-in-One School Management + Admissions" name="twitter:title" />
   <meta
     content="All-in-one school management + admissions. Faster enrollment, cleaner finance tracking, better communication."
     name="twitter:description" />
@@ -2146,6 +2146,517 @@
         height: min(420px, 70vw);
       }
     }
+
+
+    /* ===========================
+   Schools page (uniform with main page)
+   =========================== */
+    .schools-page {
+      position: relative;
+      margin: 0 var(--page-pad);
+      margin-bottom: 2rem;
+      border-radius: calc(var(--radius) + 6px);
+      overflow: hidden;
+      background:
+        radial-gradient(900px 420px at 10% 15%, rgba(74, 144, 226, .18), transparent 60%),
+        radial-gradient(760px 420px at 90% 0%, rgba(217, 120, 0, .12), transparent 55%),
+        linear-gradient(180deg, rgba(255, 255, 255, .75), rgba(255, 255, 255, .55));
+      border: 1px solid rgba(255, 255, 255, .65);
+      box-shadow: var(--shadow2);
+    }
+
+    .schools-shell {
+      padding: clamp(1rem, 2.2vw, 1.35rem);
+    }
+
+    .schools-hero {
+      border-radius: var(--radius);
+      padding: clamp(1rem, 2.3vw, 1.4rem);
+      background:
+        radial-gradient(920px 320px at 10% 10%, rgba(74, 144, 226, .24), transparent 62%),
+        radial-gradient(800px 300px at 90% 0%, rgba(0, 159, 139, .18), transparent 55%),
+        linear-gradient(180deg, rgba(255, 255, 255, .82), rgba(255, 255, 255, .58));
+      border: 1px solid rgba(255, 255, 255, .78);
+      box-shadow: 0 12px 28px rgba(15, 23, 42, .10);
+    }
+
+    .schools-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: .55rem;
+      padding: .45rem .75rem;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .70);
+      border: 1px solid rgba(255, 255, 255, .82);
+      color: #1b2a4e;
+      font-weight: 800;
+      width: fit-content;
+    }
+
+    .schools-hero h1 {
+      margin-top: .85rem;
+      font-size: clamp(1.55rem, 2.55vw, 2.35rem);
+      line-height: 1.15;
+      letter-spacing: -.02em;
+      color: var(--ink);
+    }
+
+    .schools-hero h1 span {
+      color: var(--primary);
+    }
+
+    .schools-sub {
+      margin-top: .65rem;
+      color: var(--muted);
+      font-weight: 650;
+      max-width: 58rem;
+    }
+
+    .schools-stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .6rem;
+      margin-top: 1rem;
+    }
+
+    .schools-stat {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      padding: .55rem .75rem;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .62);
+      border: 1px solid rgba(255, 255, 255, .80);
+      box-shadow: 0 10px 22px rgba(15, 23, 42, .06);
+      color: #1b2a4e;
+      font-weight: 800;
+    }
+
+    .schools-stat span {
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .schools-controls {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr .8fr .8fr;
+      gap: .75rem;
+      margin-top: var(--section-gap);
+    }
+
+    .schools-control {
+      display: flex;
+      align-items: center;
+      gap: .65rem;
+      padding: .75rem .85rem;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .72);
+      border: 1px solid rgba(255, 255, 255, .86);
+      box-shadow: 0 10px 24px rgba(15, 23, 42, .06);
+    }
+
+    .schools-control i {
+      color: rgba(15, 23, 42, .55);
+    }
+
+    .schools-control input,
+    .schools-control select {
+      width: 100%;
+      border: none;
+      outline: none;
+      background: transparent;
+      font: inherit;
+      color: var(--ink);
+      font-weight: 700;
+    }
+
+    .schools-control select {
+      cursor: pointer;
+    }
+
+    .schools-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .6rem;
+      margin-top: .9rem;
+    }
+
+    .schools-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: .55rem;
+      padding: .55rem .75rem;
+      border-radius: 999px;
+      border: 1px solid rgba(15, 23, 42, .10);
+      background: rgba(255, 255, 255, .70);
+      color: var(--ink);
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .schools-chip i {
+      color: var(--primary);
+    }
+
+    .schools-chip.is-active {
+      background: linear-gradient(135deg, var(--primary), var(--highlight));
+      border-color: transparent;
+      color: #fff;
+    }
+
+    .schools-chip.is-active i {
+      color: #fff;
+    }
+
+    .schools-empty {
+      display: none;
+      margin-top: 1rem;
+      padding: 1rem;
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, .72);
+      border: 1px solid rgba(255, 255, 255, .86);
+      box-shadow: 0 10px 24px rgba(15, 23, 42, .06);
+      text-align: center;
+    }
+
+    .schools-empty-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      margin: 0 auto .5rem;
+      background: rgba(74, 144, 226, .12);
+      border: 1px solid rgba(74, 144, 226, .18);
+      color: var(--primary);
+    }
+
+    .schools-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: .9rem;
+      margin-top: 1rem;
+      padding-bottom: .35rem;
+    }
+
+    .school-card {
+      background: rgba(255, 255, 255, .82);
+      border: 1px solid rgba(255, 255, 255, .88);
+      border-radius: calc(var(--radius) - 2px);
+      overflow: hidden;
+      box-shadow: 0 14px 30px rgba(15, 23, 42, .08);
+      transition: transform .18s ease, box-shadow .18s ease;
+      cursor: pointer;
+    }
+
+    .school-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 20px 46px rgba(15, 23, 42, .12);
+    }
+
+    .school-cover {
+      height: 120px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .school-cover::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(600px 220px at 70% 10%, rgba(255, 255, 255, 0.22), transparent 60%);
+      opacity: .95;
+    }
+
+    .school-avatar {
+      position: absolute;
+      left: 14px;
+      bottom: -22px;
+      width: 52px;
+      height: 52px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, .92);
+      border: 1px solid rgba(255, 255, 255, .92);
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      color: #1b2a4e;
+      box-shadow: 0 14px 28px rgba(15, 23, 42, .12);
+      z-index: 2;
+    }
+
+    .school-badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: .45rem;
+      padding: .4rem .6rem;
+      border-radius: 999px;
+      font-size: .82rem;
+      font-weight: 800;
+      background: rgba(255, 255, 255, .30);
+      border: 1px solid rgba(255, 255, 255, .45);
+      color: #fff;
+      backdrop-filter: blur(10px);
+      z-index: 2;
+    }
+
+    .school-badge.ok {
+      background: rgba(236, 253, 243, .92);
+      border-color: rgba(187, 247, 208, .95);
+      color: #15803d;
+      backdrop-filter: none;
+    }
+
+    .school-body {
+      padding: 2.1rem .95rem .95rem;
+    }
+
+    .school-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: .7rem;
+    }
+
+    .school-name {
+      margin: 0;
+      font-size: 1rem;
+      letter-spacing: -.01em;
+      line-height: 1.2;
+      color: var(--ink);
+    }
+
+    .school-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: .45rem;
+      padding: .38rem .6rem;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .70);
+      border: 1px solid rgba(15, 23, 42, .10);
+      color: var(--ink);
+      font-weight: 800;
+      font-size: .82rem;
+      white-space: nowrap;
+    }
+
+    .school-pill i {
+      color: var(--primary);
+    }
+
+    .school-tagline {
+      margin-top: .55rem;
+      color: var(--muted);
+      font-weight: 650;
+      font-size: .92rem;
+      min-height: 2.2rem;
+    }
+
+    .school-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .65rem;
+      margin-top: .6rem;
+      color: rgba(15, 23, 42, .85);
+      font-weight: 750;
+      font-size: .86rem;
+    }
+
+    .school-meta i {
+      color: var(--primary);
+    }
+
+    .school-kpis {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: .55rem;
+      margin-top: .75rem;
+    }
+
+    .school-kpi {
+      border-radius: 16px;
+      border: 1px solid rgba(15, 23, 42, .08);
+      background: rgba(15, 23, 42, .03);
+      padding: .55rem .6rem;
+    }
+
+    .school-kpi .v {
+      font-weight: 900;
+      color: #1b2a4e;
+      font-size: .92rem;
+    }
+
+    .school-kpi .l {
+      margin-top: .15rem;
+      color: var(--muted);
+      font-weight: 800;
+      font-size: .75rem;
+    }
+
+    .school-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .55rem;
+      margin-top: .75rem;
+    }
+
+    .schools-btn {
+      padding: .55rem .8rem !important;
+      border-radius: 999px !important;
+      font-size: .92rem !important;
+    }
+
+    /* Drawer */
+    .schools-drawer {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, .55);
+      display: none;
+      z-index: 1000;
+    }
+
+    .schools-drawer.show {
+      display: block;
+    }
+
+    .schools-sheet {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: min(520px, 92vw);
+      height: 100%;
+      background: rgba(255, 255, 255, .94);
+      border-left: 1px solid rgba(255, 255, 255, .85);
+      box-shadow: -20px 0 60px rgba(2, 8, 23, .25);
+      padding: 1rem;
+      overflow: auto;
+    }
+
+    .schools-sheet-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: .8rem;
+      padding-bottom: .75rem;
+      border-bottom: 1px solid rgba(15, 23, 42, .08);
+      margin-bottom: .85rem;
+    }
+
+    .schools-sheet-top h3 {
+      margin: 0;
+      color: #1b2a4e;
+      letter-spacing: -.01em;
+    }
+
+    .schools-sheet-close {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      border: 1px solid rgba(15, 23, 42, .10);
+      background: rgba(255, 255, 255, .9);
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+    }
+
+    .schools-sheet-card {
+      border-radius: calc(var(--radius) - 2px);
+      border: 1px solid rgba(15, 23, 42, .08);
+      background: rgba(15, 23, 42, .02);
+      padding: .85rem;
+      margin-bottom: .85rem;
+    }
+
+    .schools-sheet-row {
+      display: flex;
+      gap: .75rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .schools-sheet-logo {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, .92);
+      border: 1px solid rgba(15, 23, 42, .10);
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      color: #1b2a4e;
+    }
+
+    .schools-sheet-name {
+      font-weight: 900;
+      color: var(--ink);
+    }
+
+    .schools-sheet-tag {
+      color: var(--muted);
+      font-weight: 650;
+      font-size: .92rem;
+      margin-top: .2rem;
+    }
+
+    .schools-sheet-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .6rem;
+      margin-top: .75rem;
+      color: rgba(15, 23, 42, .9);
+      font-weight: 750;
+      font-size: .86rem;
+    }
+
+    .schools-sheet-meta i {
+      color: var(--primary);
+    }
+
+    .schools-sheet-actions {
+      display: flex;
+      gap: .65rem;
+      flex-wrap: wrap;
+      margin-top: .85rem;
+    }
+
+    .schools-sheet-title {
+      color: #1b2a4e;
+    }
+
+    .schools-ul {
+      margin-top: .55rem;
+      padding-left: 1.1rem;
+      color: var(--ink);
+      font-weight: 700;
+    }
+
+    .schools-muted {
+      color: var(--muted);
+      font-weight: 650;
+    }
+
+    @media (max-width: 980px) {
+      .schools-controls {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .schools-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 760px) {
+      .schools-controls {
+        grid-template-columns: 1fr;
+      }
+
+      .schools-grid {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 
@@ -2179,7 +2690,7 @@
   </div>
   <!-- Nav -->
   <header class="header" id="siteHeader">
-    <a aria-label="Classic Academy Home" class="brand" href="index.html">
+    <a aria-label="Classic Academy Home" class="brand" href="/">
       <img alt="Classic Academy logo" class="brand-mark" src="./img/academylogo.png" />
       <div class="brand-txt">
         <span class="brand-name">Classic Academy</span>
@@ -2187,16 +2698,16 @@
       </div>
     </a>
     <nav aria-label="Primary" class="navbar">
-      <a href="index.html">Home</a>
-      <a href="about.html">About</a>
-      <a href="services/index.html">Features</a>
-      <a href="#testimonials">Benefits</a>
-      <a href="#contact">Contact</a>
-      <a class="nav-pill" href="#pricing">Join Today</a>
-      <a class="nav-pill" href="schedule.html">Sign In</a>
+      <a href="/">Home</a>
+      <a href="/about">About</a>
+      <a href="/services">Features</a>
+      <a href="/#testimonials">Benefits</a>
+      <a href="/#contact">Contact</a>
+      <a class="nav-pill" href="/#pricing">Join Today</a>
+      <a class="nav-pill" href="/login">Sign In</a>
     </nav>
     <div class="nav-actions">
-      <a class="btn btn-sm" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
+      <a class="btn btn-sm" href="/schedule"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
       <button aria-expanded="false" aria-label="Open menu" class="menu-btn" id="menu-btn">
         <i class="fa-solid fa-bars"></i>
       </button>
@@ -2213,803 +2724,132 @@
 
   <!-- PRICING -->
 
-  <section aria-label="About Hero" class="hero">
-    <div class="hero-inner">
-      <div class="hero-content">
-        <div class="hero-kicker"><i class="fa-solid fa-circle-info"></i> About Classic Academy</div>
-        <h1>Built to help schools enroll faster and run smoother.</h1>
-        <p class="hero-sub">
-          Classic Academy is an all‑in‑one school management and admissions platform designed to simplify daily
-          operations —
-          from admissions and attendance to exams, finance tracking, and communication.
-        </p>
-        <div class="hero-points">
-          <div class="hero-point"><i class="fa-solid fa-circle-check"></i> Fast onboarding — import students/staff and
-            go live in days</div>
-          <div class="hero-point"><i class="fa-solid fa-circle-check"></i> Secure roles + audit-friendly workflows for
-            accountability</div>
-          <div class="hero-point"><i class="fa-solid fa-circle-check"></i> Real support — training, rollout check-ins,
-            and help desk</div>
-        </div>
-        <div class="hero-btn">
-          <a class="btn" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
-          <a class="btn ghost" href="#pricing"><i class="fa-solid fa-tags"></i> View Plans</a>
-        </div>
-        <div class="hero-stats">
-          <div class="stat"><strong>Mission</strong><span>Reduce paperwork and improve decisions</span></div>
-          <div class="stat"><strong>Vision</strong><span>Modern tools for every school</span></div>
-          <div class="stat"><strong>Support</strong><span>Training + rollout + updates</span></div>
-        </div>
-      </div>
-      <div class="hero-media">
-        <div class="hero-image">
-          <img alt="School building" src="img/hero.png" />
-        </div>
-        <div aria-label="Quick note" class="hero-note">
-          <i class="fa-solid fa-lock"></i>
-          <p><strong style="color:#0f172a;">Privacy-first:</strong> Your school stays in full control of its data.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section aria-label="About Story" class="pricing-v4">
-    <div class="p4-wrap">
-      <header class="p4-head reveal">
-        <span class="kicker"><i class="fa-solid fa-people-group"></i> Who we are</span>
-        <h2>Modern school operations — without complicated setup</h2>
-        <p>
-          We help schools modernize operations with a clean, secure system that improves admissions, reporting, and
-          communication —
-          while keeping staff workflows simple.
-        </p>
-        <div class="p4-badges">
-          <span class="p4-badge"><i class="fa-solid fa-bolt"></i> Fast onboarding</span>
-          <span class="p4-badge"><i class="fa-solid fa-user-shield"></i> Secure roles</span>
-          <span class="p4-badge"><i class="fa-solid fa-file-shield"></i> Audit-ready</span>
-          <span class="p4-badge"><i class="fa-solid fa-headset"></i> Responsive support</span>
-        </div>
-      </header>
-      <div class="p4-body">
-        <div class="p4-grid">
-          <article class="p4-card reveal">
-            <div class="p4-top">
-              <div class="p4-title">
-                <div class="p4-ico"><i class="fa-solid fa-bullseye"></i></div>
-                <div>
-                  <h3>Mission</h3>
-                  <p class="p4-sub">Make administration effortless</p>
-                </div>
-              </div>
-            </div>
-            <ul class="p4-list">
-              <li><i class="fa-solid fa-check"></i> Deliver a fast, secure platform for daily school workflows</li>
-              <li><i class="fa-solid fa-check"></i> Reduce paperwork and staff time spent on repeated tasks</li>
-              <li><i class="fa-solid fa-check"></i> Improve decision-making with clean reporting</li>
-            </ul>
-          </article>
-          <article class="p4-card reveal">
-            <div class="p4-top">
-              <div class="p4-title">
-                <div class="p4-ico"><i class="fa-solid fa-eye"></i></div>
-                <div>
-                  <h3>Vision</h3>
-                  <p class="p4-sub">Better outcomes through modern tools</p>
-                </div>
-              </div>
-            </div>
-            <ul class="p4-list">
-              <li><i class="fa-solid fa-check"></i> Empower schools with online admissions and clear communication</li>
-              <li><i class="fa-solid fa-check"></i> Strengthen accountability through roles and audit trails</li>
-              <li><i class="fa-solid fa-check"></i> Support growth with scalable modules and add-ons</li>
-            </ul>
-          </article>
-          <article class="p4-card reveal">
-            <div class="p4-top">
-              <div class="p4-title">
-                <div class="p4-ico"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
-                <div>
-                  <h3>What makes us different</h3>
-                  <p class="p4-sub">Practical, school-first design</p>
-                </div>
-              </div>
-            </div>
-            <ul class="p4-list">
-              <li><i class="fa-solid fa-check"></i> Fast onboarding and workflows that save staff time daily</li>
-              <li><i class="fa-solid fa-check"></i> Privacy-first communication and role-based access patterns</li>
-              <li><i class="fa-solid fa-check"></i> Training, rollout check-ins, and responsive help</li>
-            </ul>
-            <div class="p4-actions">
-              <a class="btn btn-sm" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
-              <a class="btn ghost btn-sm" href="#contact"><i class="fa-solid fa-message"></i> Talk to us</a>
-            </div>
-          </article>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section aria-label="About FAQ" class="pricing-v4">
-    <div class="p4-wrap">
-      <header class="p4-head reveal">
-        <span class="kicker"><i class="fa-solid fa-circle-question"></i> FAQ</span>
-        <h2>Frequently asked questions</h2>
-        <p>Quick answers about onboarding, pricing, and how Classic Academy works.</p>
-      </header>
-      <div class="p4-body">
-        <div class="p4-grid">
-          <article class="p4-card reveal">
-            <details class="p4-details" open="">
-              <summary>
-                <span><i class="fa-solid fa-list-check"></i> How long does onboarding take?</span>
-                <i aria-hidden="true" class="fa-solid fa-chevron-down caret"></i>
-              </summary>
-              <ul class="p4-list">
-                <li><i class="fa-solid fa-check"></i> Most schools can start in days</li>
-                <li><i class="fa-solid fa-check"></i> We help import students/staff and configure classes, fees, and
-                  admissions</li>
-              </ul>
-            </details>
-          </article>
-          <article class="p4-card reveal">
-            <details class="p4-details">
-              <summary>
-                <span><i class="fa-solid fa-list-check"></i> Can we start with only the School Profile (free)?</span>
-                <i aria-hidden="true" class="fa-solid fa-chevron-down caret"></i>
-              </summary>
-              <ul class="p4-list">
-                <li><i class="fa-solid fa-check"></i> Yes — publish your school profile and admissions basics first</li>
-                <li><i class="fa-solid fa-check"></i> Upgrade anytime for full operations modules</li>
-              </ul>
-            </details>
-          </article>
-          <article class="p4-card reveal">
-            <details class="p4-details">
-              <summary>
-                <span><i class="fa-solid fa-list-check"></i> Do you support fee invoices and receipts?</span>
-                <i aria-hidden="true" class="fa-solid fa-chevron-down caret"></i>
-              </summary>
-              <ul class="p4-list">
-                <li><i class="fa-solid fa-check"></i> Standard and above include invoices, receipts, and fee tracking
-                </li>
-                <li><i class="fa-solid fa-check"></i> Premium adds deeper finance reporting and portals</li>
-              </ul>
-            </details>
-          </article>
-          <article class="p4-card reveal">
-            <details class="p4-details">
-              <summary>
-                <span><i class="fa-solid fa-list-check"></i> Can parents receive notifications?</span>
-                <i aria-hidden="true" class="fa-solid fa-chevron-down caret"></i>
-              </summary>
-              <ul class="p4-list">
-                <li><i class="fa-solid fa-check"></i> WhatsApp/SMS/Email alerts available as add-ons</li>
-                <li><i class="fa-solid fa-check"></i> Premium can include parent portals and approvals</li>
-              </ul>
-            </details>
-          </article>
-        </div>
-      </div>
-    </div>
-  </section>
-  <section class="pricing-v4" id="pricing">
-    <div class="p4-wrap">
-      <header class="p4-head reveal">
-        <span class="kicker"><i class="fa-solid fa-tags"></i> Plans that fit every school</span>
-        <h2>Pricing &amp; Packages</h2>
-        <p>
-          Start with a <strong>Free School Profile</strong> (online presence + admissions basics), then upgrade for full
-          operations: admissions pipeline, finance, results, portals, reports, and integrations.
-        </p>
-        <div class="p4-badges">
-          <span class="p4-badge"><i class="fa-solid fa-bolt"></i> Fast onboarding</span>
-          <span class="p4-badge"><i class="fa-solid fa-lock"></i> Secure roles</span>
-          <span class="p4-badge"><i class="fa-solid fa-chart-line"></i> Reports</span>
-          <span class="p4-badge"><i class="fa-solid fa-headset"></i> Support</span>
-        </div>
-      </header>
-      <div class="p4-body">
-        <div class="p4-grid">
-          <!-- Profile -->
-          <article class="p4-card reveal">
-            <div class="p4-top">
-              <div class="p4-title">
-                <div class="p4-ico"><i class="fa-solid fa-gift"></i></div>
-                <div>
-                  <h3>School Profile Package</h3>
-                  <p class="p4-sub">Standalone • Online presence + admissions basics</p>
-                </div>
-              </div>
-              <span class="p4-tag free"><i class="fa-solid fa-leaf"></i> Free</span>
-            </div>
-            <div class="p4-pricebox">
-              <span class="p4-price">$0</span>
-              <span class="p4-per">/ year</span>
-            </div>
-            <div class="p4-chips">
-              <span class="p4-chip"><i class="fa-solid fa-check"></i> Website</span>
-              <span class="p4-chip"><i class="fa-solid fa-check"></i> Admissions</span>
-              <span class="p4-chip"><i class="fa-solid fa-check"></i> WhatsApp</span>
-            </div>
-            <details class="p4-details" open="">
-              <summary>
-                <span><i class="fa-solid fa-list-check"></i> What’s included</span>
-                <i aria-hidden="true" class="fa-solid fa-chevron-down caret"></i>
-              </summary>
-              <ul class="p4-list">
-                <li><i class="fa-solid fa-check"></i> Landing + About + Contact + Google map</li>
-                <li><i class="fa-solid fa-check"></i> Gallery + News/Announcements</li>
-                <li><i class="fa-solid fa-check"></i> Programs/Courses + Staff section</li>
-                <li><i class="fa-solid fa-check"></i> Admissions info + FAQs</li>
-                <li><i class="fa-solid fa-check"></i> Basic application + inquiry form</li>
-                <li><i class="fa-solid fa-check"></i> Social + WhatsApp click-to-chat</li>
-              </ul>
-            </details>
-            <div class="p4-actions">
-              <a class="btn btn-sm" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
-              <a class="btn ghost btn-sm" href="plan.html?plan=profile"><i class="fa-solid fa-book-open"></i> Read
-                more</a>
-            </div>
-          </article>
-          <!-- Starter -->
-          <article class="p4-card reveal">
-            <div class="p4-top">
-              <div class="p4-title">
-                <div class="p4-ico"><i class="fa-solid fa-rocket"></i></div>
-                <div>
-                  <h3>Starter</h3>
-                  <p class="p4-sub">Up to 300 users • 15 features / term</p>
-                </div>
-              </div>
-              <span class="p4-tag"><i class="fa-solid fa-flag"></i> Start</span>
-            </div>
-            <div class="p4-pricebox">
-              <span class="p4-price">$200</span>
-              <span class="p4-per">/ term</span>
-            </div>
-            <div class="p4-chips">
-              <span class="p4-chip"><i class="fa-solid fa-check"></i> Roles</span>
-              <span class="p4-chip"><i class="fa-solid fa-check"></i> Attendance</span>
-              <span class="p4-chip"><i class="fa-solid fa-check"></i> Messaging</span>
-            </div>
-            <details class="p4-details">
-              <summary>
-                <span><i class="fa-solid fa-list-check"></i> Key modules</span>
-                <i aria-hidden="true" class="fa-solid fa-chevron-down caret"></i>
-              </summary>
-              <ul class="p4-list">
-                <li><i class="fa-solid fa-check"></i> Login &amp; roles (Admin/Staff/Student)</li>
-                <li><i class="fa-solid fa-check"></i> Admissions (basic online application)</li>
-                <li><i class="fa-solid fa-check"></i> Student + Staff profiles</li>
-                <li><i class="fa-solid fa-check"></i> Timetable + Attendance (basic)</li>
-                <li><i class="fa-solid fa-check"></i> Results + Fees summary (basic)</li>
-                <li><i class="fa-solid fa-check"></i> Messaging + onboarding support</li>
-              </ul>
-            </details>
-            <div class="p4-actions">
-              <a class="btn btn-sm" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
-              <a class="btn ghost btn-sm" href="plan.html?plan=starter"><i class="fa-solid fa-book-open"></i> Read
-                more</a>
-            </div>
-          </article>
-          <!-- Standard -->
-          <article class="p4-card featured reveal">
-            <div class="p4-top">
-              <div class="p4-title">
-                <div class="p4-ico"><i class="fa-solid fa-star"></i></div>
-                <div>
-                  <h3>Standard</h3>
-                  <p class="p4-sub">Up to 750 users • 35 features / term</p>
-                </div>
-              </div>
-              <span class="p4-tag hot"><i class="fa-solid fa-fire"></i> Most Popular</span>
-            </div>
-            <div class="p4-pricebox">
-              <span class="p4-price">$350</span>
-              <span class="p4-per">/ term</span>
-            </div>
-            <div class="p4-chips">
-              <span class="p4-chip"><i class="fa-solid fa-check"></i> Finance</span>
-              <span class="p4-chip"><i class="fa-solid fa-check"></i> Exams</span>
-              <span class="p4-chip"><i class="fa-solid fa-check"></i> Reports</span>
-            </div>
-            <details class="p4-details" open="">
-              <summary>
-                <span><i class="fa-solid fa-list-check"></i> Best value includes</span>
-                <i aria-hidden="true" class="fa-solid fa-chevron-down caret"></i>
-              </summary>
-              <ul class="p4-list">
-                <li><i class="fa-solid fa-check"></i> Full admissions pipeline</li>
-                <li><i class="fa-solid fa-check"></i> Advanced student management</li>
-                <li><i class="fa-solid fa-check"></i> Exams management + grading workflows</li>
-                <li><i class="fa-solid fa-check"></i> Finance (invoices + payments tracking)</li>
-                <li><i class="fa-solid fa-check"></i> Library + Hostel + Events</li>
-                <li><i class="fa-solid fa-check"></i> Reports/exports + dashboards</li>
-              </ul>
-            </details>
-            <div class="p4-actions">
-              <a class="btn btn-sm" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
-              <a class="btn ghost btn-sm" href="plan.html?plan=standard"><i class="fa-solid fa-book-open"></i> Read
-                more</a>
-            </div>
-          </article>
-          <!-- Growth -->
-          <article class="p4-card reveal">
-            <div class="p4-top">
-              <div class="p4-title">
-                <div class="p4-ico"><i class="fa-solid fa-arrow-trend-up"></i></div>
-                <div>
-                  <h3>Growth</h3>
-                  <p class="p4-sub">Up to 900 users • approvals + deeper analytics</p>
-                </div>
-              </div>
-              <span class="p4-tag"><i class="fa-solid fa-sparkles"></i> New</span>
-            </div>
-            <div class="p4-pricebox">
-              <span class="p4-price">$425</span>
-              <span class="p4-per">/ term</span>
-            </div>
-            <div class="p4-chips">
-              <span class="p4-chip"><i class="fa-solid fa-check"></i> Approvals</span>
-              <span class="p4-chip"><i class="fa-solid fa-check"></i> Audit logs</span>
-              <span class="p4-chip"><i class="fa-solid fa-check"></i> Insights</span>
-            </div>
-            <details class="p4-details">
-              <summary>
-                <span><i class="fa-solid fa-list-check"></i> What you get</span>
-                <i aria-hidden="true" class="fa-solid fa-chevron-down caret"></i>
-              </summary>
-              <ul class="p4-list">
-                <li><i class="fa-solid fa-check"></i> Everything in Standard</li>
-                <li><i class="fa-solid fa-check"></i> Approval flows (finance + results)</li>
-                <li><i class="fa-solid fa-check"></i> Bulk imports + templates</li>
-                <li><i class="fa-solid fa-check"></i> Stronger audit logs + roles</li>
-                <li><i class="fa-solid fa-check"></i> Cohort &amp; performance insights</li>
-                <li><i class="fa-solid fa-check"></i> Faster support response</li>
-              </ul>
-            </details>
-            <div class="p4-actions">
-              <a class="btn btn-sm" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
-              <a class="btn ghost btn-sm" href="plan.html?plan=growth"><i class="fa-solid fa-book-open"></i> Read
-                more</a>
-            </div>
-          </article>
-          <!-- Premium -->
-          <article class="p4-card reveal">
-            <div class="p4-top">
-              <div class="p4-title">
-                <div class="p4-ico"><i class="fa-solid fa-crown"></i></div>
-                <div>
-                  <h3>Premium</h3>
-                  <p class="p4-sub">1000+ users • Up to 70 features / term</p>
-                </div>
-              </div>
-              <span class="p4-tag"><i class="fa-solid fa-gem"></i> Elite</span>
-            </div>
-            <div class="p4-pricebox">
-              <span class="p4-price">$500+</span>
-              <span class="p4-per">/ term</span>
-            </div>
-            <div class="p4-chips">
-              <span class="p4-chip"><i class="fa-solid fa-check"></i> Portals</span>
-              <span class="p4-chip"><i class="fa-solid fa-check"></i> Integrations</span>
-              <span class="p4-chip"><i class="fa-solid fa-check"></i> Priority</span>
-            </div>
-            <details class="p4-details">
-              <summary>
-                <span><i class="fa-solid fa-list-check"></i> Includes</span>
-                <i aria-hidden="true" class="fa-solid fa-chevron-down caret"></i>
-              </summary>
-              <ul class="p4-list">
-                <li><i class="fa-solid fa-check"></i> Full finance workflows + statements</li>
-                <li><i class="fa-solid fa-check"></i> Advanced reports + dashboards</li>
-                <li><i class="fa-solid fa-check"></i> Bulk imports + templates</li>
-                <li><i class="fa-solid fa-check"></i> SMS/Email integrations (OTP + alerts)</li>
-                <li><i class="fa-solid fa-check"></i> Portals (student/staff + optional parent)</li>
-                <li><i class="fa-solid fa-check"></i> Priority training + rollout</li>
-              </ul>
-            </details>
-            <div class="p4-actions">
-              <a class="btn btn-sm" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
-              <a class="btn ghost btn-sm" href="plan.html?plan=premium"><i class="fa-solid fa-book-open"></i> Read
-                more</a>
-            </div>
-          </article>
-          <!-- Add-ons (✅ class="addons" so we can control mobile action row) -->
-          <article class="p4-card addons reveal">
-            <div class="p4-top">
-              <div class="p4-title">
-                <div class="p4-ico"><i class="fa-solid fa-puzzle-piece"></i></div>
-                <div>
-                  <h3>Add-ons &amp; Boosters</h3>
-                  <p class="p4-sub">Extra users/features + promotion options</p>
-                </div>
-              </div>
-              <span class="p4-tag"><i class="fa-solid fa-sliders"></i> Flexible</span>
-            </div>
-            <div class="p4-pricebox">
-              <span class="p4-price">From $30</span>
-              <span class="p4-per">/ add-on</span>
-            </div>
-            <div class="p4-chips">
-              <span class="p4-chip"><i class="fa-solid fa-check"></i> Extra users</span>
-              <span class="p4-chip"><i class="fa-solid fa-check"></i> Extra modules</span>
-              <span class="p4-chip"><i class="fa-solid fa-check"></i> Custom domain</span>
-            </div>
-            <details class="p4-details">
-              <summary>
-                <span><i class="fa-solid fa-list-check"></i> Examples</span>
-                <i aria-hidden="true" class="fa-solid fa-chevron-down caret"></i>
-              </summary>
-              <ul class="p4-list">
-                <li><i class="fa-solid fa-check"></i> Extra 100 users: +$50</li>
-                <li><i class="fa-solid fa-check"></i> Extra 10 features/pages: +$50</li>
-                <li><i class="fa-solid fa-check"></i> Parent portal: +$100+</li>
-                <li><i class="fa-solid fa-check"></i> SMS credits: billed separately</li>
-                <li><i class="fa-solid fa-check"></i> Custom domain + SSL: +$30–$80</li>
-                <li><i class="fa-solid fa-check"></i> Sponsored placement (optional)</li>
-              </ul>
-            </details>
-            <div class="p4-actions">
-              <a class="btn btn-sm" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Talk to Sales</a>
-              <a class="btn ghost btn-sm" href="#contact"><i class="fa-solid fa-message"></i> Ask a question</a>
-            </div>
-          </article>
-        </div>
-        <div class="p4-footnote reveal">
-          <div>
-            <h3>Ready to modernize your school?</h3>
-            <p>Book a demo and we’ll recommend the best plan based on your size, modules, and rollout timeline.</p>
-          </div>
-          <div class="cta-actions">
-            <a class="btn btn-sm" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
-            <a class="btn ghost btn-sm" href="#contact"><i class="fa-solid fa-message"></i> Contact Sales</a>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
   <!-- Testimonials -->
-  <section class="testimonial-v2" id="testimonials">
-    <div class="twrap">
-      <div class="thead reveal">
-        <span class="kicker"><i class="fa-solid fa-comments"></i> Trusted by schools</span>
-        <h2>What schools say about Classic Academy</h2>
-        <p>Faster admissions, cleaner finance tracking, and better communication.</p>
+
+  <!-- Blogs -->
+
+  <!-- Contact -->
+
+  <!-- Footer -->
+
+  <section aria-label="Search Schools" class="schools-page">
+    <div class="schools-shell">
+      <div class="schools-hero">
+        <div class="schools-kicker"><i class="fa-solid fa-magnifying-glass"></i> Search • Compare • Apply Online</div>
+        <h1>Find a School <span>Powered by Classic Campus</span></h1>
+        <p class="schools-sub">
+          Search schools, compare programs and performance, view galleries, see awards, then apply directly online.
+        </p>
+        <div class="schools-stats">
+          <div class="schools-stat"><i class="fa-solid fa-circle-check"></i> Verified schools <span>trusted
+              profile</span></div>
+          <div class="schools-stat"><i class="fa-solid fa-file-circle-plus"></i> Online applications <span>fast &amp;
+              simple</span></div>
+          <div class="schools-stat"><i class="fa-solid fa-star"></i> Awards &amp; gallery <span>real proof</span></div>
+        </div>
       </div>
-      <div class="swiper testimonial-wrapper">
-        <div class="swiper-wrapper">
-          <div class="swiper-slide">
-            <article class="tcard">
-              <div class="tquote">
-                <div aria-hidden="true" class="qmark"><i class="fa-solid fa-quote-left"></i></div>
-                <div aria-label="5 stars" class="stars">
-                  <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
-                    class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
-                </div>
-              </div>
-              <p class="ttext">Admissions became smooth. We receive applications online, review them faster, and parents
-                get updates without calling every day.</p>
-              <div class="tfooter">
-                <div class="tperson">
-                  <div aria-hidden="true" class="avatar a1"></div>
-                  <div>
-                    <p class="tname">Head Teacher</p>
-                    <p class="trole">Primary School • Kampala</p>
-                  </div>
-                </div>
-                <div class="tproof">
-                  <span><i class="fa-solid fa-check"></i> Faster admissions</span>
-                  <span><i class="fa-solid fa-check"></i> Parent updates</span>
-                </div>
-              </div>
-            </article>
-          </div>
-          <div class="swiper-slide">
-            <article class="tcard">
-              <div class="tquote">
-                <div aria-hidden="true" class="qmark"><i class="fa-solid fa-quote-left"></i></div>
-                <div aria-label="5 stars" class="stars">
-                  <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
-                    class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
-                </div>
-              </div>
-              <p class="ttext">Finance tracking improved instantly—clear invoices, balances, and reports. End-of-term
-                reconciliation is now simple.</p>
-              <div class="tfooter">
-                <div class="tperson">
-                  <div aria-hidden="true" class="avatar a2"></div>
-                  <div>
-                    <p class="tname">School Bursar</p>
-                    <p class="trole">Secondary School • Juba</p>
-                  </div>
-                </div>
-                <div class="tproof">
-                  <span><i class="fa-solid fa-check"></i> Invoices</span>
-                  <span><i class="fa-solid fa-check"></i> Reports</span>
-                </div>
-              </div>
-            </article>
-          </div>
-          <div class="swiper-slide">
-            <article class="tcard">
-              <div class="tquote">
-                <div aria-hidden="true" class="qmark"><i class="fa-solid fa-quote-left"></i></div>
-                <div aria-label="5 stars" class="stars">
-                  <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
-                    class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
-                </div>
-              </div>
-              <p class="ttext">The onboarding was quick and the staff training was practical. Dashboards help us spot
-                attendance and performance patterns early.</p>
-              <div class="tfooter">
-                <div class="tperson">
-                  <div aria-hidden="true" class="avatar a3"></div>
-                  <div>
-                    <p class="tname">Director</p>
-                    <p class="trole">International School</p>
-                  </div>
-                </div>
-                <div class="tproof">
-                  <span><i class="fa-solid fa-check"></i> Training</span>
-                  <span><i class="fa-solid fa-check"></i> Analytics</span>
-                </div>
-              </div>
-            </article>
-          </div>
-          <div class="swiper-slide">
-            <article class="tcard">
-              <div class="tquote">
-                <div aria-hidden="true" class="qmark"><i class="fa-solid fa-quote-left"></i></div>
-                <div aria-label="5 stars" class="stars">
-                  <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
-                    class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
-                </div>
-              </div>
-              <p class="ttext">Publishing results is now clean and fast. The grading workflow reduces mistakes and saves
-                our teachers time every term.</p>
-              <div class="tfooter">
-                <div class="tperson">
-                  <div aria-hidden="true" class="avatar a4"></div>
-                  <div>
-                    <p class="tname">Academic Registrar</p>
-                    <p class="trole">High School • Uganda</p>
-                  </div>
-                </div>
-                <div class="tproof">
-                  <span><i class="fa-solid fa-check"></i> Results</span>
-                  <span><i class="fa-solid fa-check"></i> Fewer errors</span>
-                </div>
-              </div>
-            </article>
-          </div>
-          <div class="swiper-slide">
-            <article class="tcard">
-              <div class="tquote">
-                <div aria-hidden="true" class="qmark"><i class="fa-solid fa-quote-left"></i></div>
-                <div aria-label="5 stars" class="stars">
-                  <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
-                    class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
-                </div>
-              </div>
-              <p class="ttext">Parents are happier because they receive timely updates. Messaging and attendance alerts
-                reduced daily phone calls completely.</p>
-              <div class="tfooter">
-                <div class="tperson">
-                  <div aria-hidden="true" class="avatar a5"></div>
-                  <div>
-                    <p class="tname">Administrator</p>
-                    <p class="trole">Day School • Kampala</p>
-                  </div>
-                </div>
-                <div class="tproof">
-                  <span><i class="fa-solid fa-check"></i> Alerts</span>
-                  <span><i class="fa-solid fa-check"></i> Messaging</span>
-                </div>
-              </div>
-            </article>
-          </div>
-          <div class="swiper-slide">
-            <article class="tcard">
-              <div class="tquote">
-                <div aria-hidden="true" class="qmark"><i class="fa-solid fa-quote-left"></i></div>
-                <div aria-label="5 stars" class="stars">
-                  <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
-                    class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
-                </div>
-              </div>
-              <p class="ttext">Collection improved because every student has a clear balance. Receipts, statements, and
-                exports made our finance office professional.</p>
-              <div class="tfooter">
-                <div class="tperson">
-                  <div aria-hidden="true" class="avatar a6"></div>
-                  <div>
-                    <p class="tname">Finance Officer</p>
-                    <p class="trole">Boarding School • South Sudan</p>
-                  </div>
-                </div>
-                <div class="tproof">
-                  <span><i class="fa-solid fa-check"></i> Statements</span>
-                  <span><i class="fa-solid fa-check"></i> Better collection</span>
-                </div>
-              </div>
-            </article>
+      <div class="schools-controls" role="search">
+        <label class="schools-control">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input autocomplete="off" id="schoolsQ" placeholder="Search school name, city, program (e.g. Science, ICT)..."
+            type="search" />
+        </label>
+        <label class="schools-control">
+          <i class="fa-solid fa-location-dot"></i>
+          <select id="schoolsCity">
+            <option value="">All cities</option>
+            <option>Kampala</option>
+            <option>Entebbe</option>
+            <option>Jinja</option>
+            <option>Gulu</option>
+            <option>Mbarara</option>
+          </select>
+        </label>
+        <label class="schools-control">
+          <i class="fa-solid fa-building-columns"></i>
+          <select id="schoolsType">
+            <option value="">All types</option>
+            <option>University</option>
+            <option>College</option>
+            <option>Secondary School</option>
+            <option>Primary School</option>
+            <option>Institute</option>
+          </select>
+        </label>
+        <label class="schools-control">
+          <i class="fa-solid fa-arrow-up-wide-short"></i>
+          <select id="schoolsSort">
+            <option value="rank">Sort: Recommended</option>
+            <option value="students_desc">Students (high → low)</option>
+            <option value="programs_desc">Programs (high → low)</option>
+            <option value="name_asc">Name (A → Z)</option>
+          </select>
+        </label>
+      </div>
+      <div aria-label="Quick filters" class="schools-chips">
+        <button class="schools-chip is-active" data-chip="all" type="button"><i class="fa-solid fa-layer-group"></i>
+          All</button>
+        <button class="schools-chip" data-chip="verified" type="button"><i class="fa-solid fa-circle-check"></i>
+          Verified</button>
+        <button class="schools-chip" data-chip="boarding" type="button"><i class="fa-solid fa-bed"></i>
+          Boarding</button>
+        <button class="schools-chip" data-chip="day" type="button"><i class="fa-solid fa-sun"></i> Day</button>
+        <button class="schools-chip" data-chip="science" type="button"><i class="fa-solid fa-flask"></i>
+          Science</button>
+        <button class="schools-chip" data-chip="ict" type="button"><i class="fa-solid fa-laptop-code"></i> ICT</button>
+      </div>
+      <div aria-live="polite" class="schools-empty" id="schoolsEmpty">
+        <div class="schools-empty-icon"><i class="fa-solid fa-face-frown"></i></div>
+        <b>No schools match your search</b>
+        <p>Try changing filters, remove chips, or search a different city/program.</p>
+      </div>
+      <div aria-label="School results" class="schools-grid" id="schoolsGrid"></div>
+    </div>
+  </section>
+  <div aria-hidden="true" class="schools-drawer" id="schoolsDrawer">
+    <div aria-label="School Preview" aria-modal="true" class="schools-sheet" role="dialog">
+      <div class="schools-sheet-top">
+        <div>
+          <h3>School Preview</h3>
+          <div class="schools-muted" id="schoolsSheetHint">Click “View Profile” to open the school profile page.</div>
+        </div>
+        <button aria-label="Close" class="schools-sheet-close" id="schoolsDrawerClose" type="button">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="schools-sheet-card">
+        <div class="schools-sheet-row">
+          <div class="schools-sheet-logo" id="schoolsSheetLogo">CA</div>
+          <div>
+            <div class="schools-sheet-name" id="schoolsSheetName">Classic Academy</div>
+            <div class="schools-sheet-tag" id="schoolsSheetTag">Discipline • Excellence • Technology-driven learning
+            </div>
           </div>
         </div>
-        <div class="swiper-pagination"></div>
+        <div class="schools-sheet-meta" id="schoolsSheetMeta"></div>
+        <div class="schools-sheet-actions">
+          <button class="btn schools-btn" id="schoolsBtnView" type="button"><i class="fa-solid fa-id-card"></i> View
+            Profile</button>
+          <button class="btn ghost schools-btn" id="schoolsBtnApply" type="button"><i
+              class="fa-solid fa-file-circle-plus"></i> Apply</button>
+        </div>
       </div>
-      <div class="reveal" style="text-align:center; margin-top: 1.2rem">
-        <a class="btn btn-sm" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Book a Demo</a>
+      <div class="schools-sheet-card">
+        <b class="schools-sheet-title">Why this school</b>
+        <ul class="schools-ul">
+          <li>Verified branding &amp; trusted profile</li>
+          <li>Gallery, awards, announcements</li>
+          <li>Online application with documents</li>
+        </ul>
       </div>
-    </div>
-  </section>
-  <!-- Blogs -->
-  <section class="blogs-v2" id="blogs">
-    <div class="blogs-wrap">
-      <div class="blogs-head reveal">
-        <span class="kicker"><i class="fa-solid fa-newspaper"></i> Latest insights</span>
-        <h2>Blogs &amp; Resources</h2>
-        <p>Short, practical guides to help schools increase admissions, improve finance tracking, and run operations
-          smoothly.</p>
-      </div>
-      <div class="blogs-grid">
-        <article class="blog2 reveal">
-          <div class="blog2-img">
-            <img alt="Admissions" src="https://picsum.photos/seed/admissions/1200/700" />
-          </div>
-          <div class="blog2-body">
-            <div class="blog2-meta">
-              <span class="chip"><i class="fa-solid fa-tag"></i> Admissions</span>
-              <span class="chip"><i class="fa-solid fa-clock"></i> 6 min</span>
-            </div>
-            <h3>How to Increase Admissions Without Increasing Your Budget</h3>
-            <p>Visibility + trust + fast follow-up. A simple playbook you can apply immediately.</p>
-            <div class="blog2-actions">
-              <a class="btn btn-sm" href="blog.html?slug=increase-admissions"><i class="fa-solid fa-book-open"></i> Read
-                article</a>
-              <a class="btn ghost btn-sm" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Book demo</a>
-            </div>
-          </div>
-        </article>
-        <article class="blog2 reveal">
-          <div class="blog2-img">
-            <img alt="Finance" src="https://picsum.photos/seed/finance/1200/700" />
-          </div>
-          <div class="blog2-body">
-            <div class="blog2-meta">
-              <span class="chip"><i class="fa-solid fa-tag"></i> Finance</span>
-              <span class="chip"><i class="fa-solid fa-clock"></i> 7 min</span>
-            </div>
-            <h3>Fees Tracking That Actually Works: Invoices, Receipts &amp; Balances</h3>
-            <p>Reduce disputes, improve collection, and keep finance clean every term.</p>
-            <div class="blog2-actions">
-              <a class="btn btn-sm" href="blog.html?slug=fees-tracking"><i class="fa-solid fa-book-open"></i> Read
-                article</a>
-              <a class="btn ghost btn-sm" href="plan.html?plan=standard"><i class="fa-solid fa-tags"></i> View plan</a>
-            </div>
-          </div>
-        </article>
-        <article class="blog2 reveal">
-          <div class="blog2-img">
-            <img alt="Exams" src="https://picsum.photos/seed/exams/1200/700" />
-          </div>
-          <div class="blog2-body">
-            <div class="blog2-meta">
-              <span class="chip"><i class="fa-solid fa-tag"></i> Academics</span>
-              <span class="chip"><i class="fa-solid fa-clock"></i> 5 min</span>
-            </div>
-            <h3>Exam &amp; Results Management: From Setup to Publishing</h3>
-            <p>Clean grading workflows and faster publishing — without mistakes.</p>
-            <div class="blog2-actions">
-              <a class="btn btn-sm" href="blog.html?slug=exam-results"><i class="fa-solid fa-book-open"></i> Read
-                article</a>
-              <a class="btn ghost btn-sm" href="plan.html?plan=growth"><i class="fa-solid fa-arrow-trend-up"></i> Growth
-                plan</a>
-            </div>
-          </div>
-        </article>
+      <div class="schools-sheet-card">
+        <b class="schools-sheet-title">Tip</b>
+        <div class="schools-muted" style="margin-top:.5rem">
+          In real system, “View Profile” goes to: <b>/schools/:id</b>
+        </div>
       </div>
     </div>
-  </section>
-  <!-- Contact -->
-  <section class="contact-v2" id="contact">
-    <div class="cwrap">
-      <div class="chead reveal">
-        <span class="kicker"><i class="fa-solid fa-phone-volume"></i> Contact</span>
-        <h2>Talk to our team</h2>
-        <p>Questions about enrolling, pricing, or a custom rollout? We reply fast and can schedule a guided demo.</p>
-      </div>
-      <div class="cgrid">
-        <aside class="cinfo reveal">
-          <h3>Classic Academy Support</h3>
-          <div class="cline">
-            <i class="fa-solid fa-location-dot"></i>
-            <div>
-              <strong>Address</strong>
-              <p>Kampala, Uganda • Juba, South Sudan</p>
-            </div>
-          </div>
-          <div class="cline">
-            <i class="fa-solid fa-envelope"></i>
-            <div>
-              <strong>Email</strong>
-              <p><a href="mailto:info@simonmabur.com">info@simonmabur.com</a></p>
-            </div>
-          </div>
-          <div class="cline">
-            <i class="fa-solid fa-phone"></i>
-            <div>
-              <strong>Phone</strong>
-              <p>
-                <a href="tel:+256781977217">+256 781 977 217</a><br />
-                <a href="tel:+256707180023">+256 707 180 023</a><br />
-                <a href="tel:+211924547722">+211 924 547 722</a>
-              </p>
-            </div>
-          </div>
-          <div class="csocial">
-            <a aria-label="WhatsApp" class="icon-btn" href="https://api.whatsapp.com/send?phone=256781977217"
-              target="_blank">
-              <i class="fa-brands fa-whatsapp"></i>
-            </a>
-            <a aria-label="Facebook" class="icon-btn" href="#" target="_blank"><i
-                class="fa-brands fa-facebook-f"></i></a>
-            <a aria-label="Instagram" class="icon-btn" href="#" target="_blank"><i
-                class="fa-brands fa-instagram"></i></a>
-            <a aria-label="X" class="icon-btn" href="#" target="_blank"><i class="fa-brands fa-x-twitter"></i></a>
-            <a aria-label="LinkedIn" class="icon-btn" href="#" target="_blank"><i
-                class="fa-brands fa-linkedin-in"></i></a>
-          </div>
-          <div class="ccta">
-            <a class="btn btn-sm" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
-            <a class="btn ghost btn-sm" href="#pricing"><i class="fa-solid fa-tags"></i> View Pricing</a>
-          </div>
-          <div class="cmini">
-            <i class="fa-solid fa-shield"></i>
-            <p>We never share your contact details. Your data stays private.</p>
-          </div>
-        </aside>
-        <form class="cform reveal" onsubmit="return false;">
-          <h3>Send us a message</h3>
-          <div class="row">
-            <label>
-              <span>Full name</span>
-              <input id="contact_name" placeholder="Your name" required="" type="text" />
-            </label>
-            <label>
-              <span>School name</span>
-              <input id="contact_school" placeholder="Your school (optional)" type="text" />
-            </label>
-          </div>
-          <div class="row">
-            <label>
-              <span>Email</span>
-              <input id="contact_email" placeholder="you@email.com" required="" type="email" />
-            </label>
-            <label>
-              <span>Phone</span>
-              <input id="contact_phone" placeholder="+256 ..." required="" type="tel" />
-            </label>
-          </div>
-          <label>
-            <span>Message</span>
-            <textarea id="contact_message" placeholder="Tell us what you need (admissions, finance, portals, etc.)"
-              required="" rows="6"></textarea>
-          </label>
-          <div class="form-actions">
-            <button class="btn btn-sm" id="contactSendBtn" type="button">
-              <i class="fa-solid fa-paper-plane"></i> Send message
-            </button>
-            <a class="btn ghost btn-sm" href="schedule.html">
-              <i class="fa-solid fa-calendar-check"></i> Book a demo
-            </a>
-          </div>
-          <p class="form-note">Tip: For fastest help, book a demo and we’ll walk you through the best plan.</p>
-        </form>
-      </div>
-    </div>
-  </section>
-  <!-- Footer -->
+  </div>
   <footer class="footer">
     <div>
       <h4>About Us</h4>
@@ -3027,32 +2867,31 @@
     <div>
       <h4>Learn about our mission</h4>
       <ul>
-        <li><a href="about.html">Our Story</a></li>
-        <li><a href="services/index.html">What We Offer</a></li>
-        <li><a href="plan.html?plan=standard">Plans &amp; Pricing</a></li>
-        <li><a href="blog.html?slug=increase-admissions">Press resources</a></li>
-        <li><a href="careers.html">Careers</a></li>
+        <li><a href="/about">Our Story</a></li>
+        <li><a href="/services">What We Offer</a></li>
+        <li><a href="/plan?plan=standard">Plans &amp; Pricing</a></li>
+        <li><a href="/blog?slug=increase-admissions">Press resources</a></li>
+        <li><a href="/careers">Careers</a></li>
       </ul>
     </div>
     <div>
       <h4>Get help with your account</h4>
       <ul>
-        <li><a href="contact/index.html">Customer Support</a></li>
-        <li><a href="schedule.html">Book a Demo</a></li>
-        <li><a href="faq.html">FAQ</a></li>
-        <li><a href="privacy.html">Privacy Policy</a></li>
-        <li><a href="terms.html">Terms</a></li>
+        <li><a href="/contact">Customer Support</a></li>
+        <li><a href="/schedule">Book a Demo</a></li>
+        <li><a href="/faq">FAQ</a></li>
+        <li><a href="/privacy">Privacy Policy</a></li>
+        <li><a href="/terms">Terms</a></li>
       </ul>
     </div>
     <div>
       <h4>Join our school community</h4>
       <ul>
-        <li><a href="schools/index.html">Find Schools</a></li>
-        <li><a href="admissions.html">Admissions</a></li>
-        <li><a href="search/index.html">Search</a></li>
-        <li><a href="blog.html?slug=increase-admissions">Blog</a></li>
-        <li><a href="https://x.com" rel="noopener" target="_blank">Twitter</a></li>
-        <li><a href="https://discord.com" rel="noopener" target="_blank">Discord server</a></li>
+        <li><a href="/schools">Find Schools</a></li>
+        <li><a href="/admissions">Admissions</a></li>
+        <li><a href="/search">Search</a></li>
+        <li><a href="/blog?slug=increase-admissions">Blog</a></li>
+        <li><a href="https://chat.whatsapp.com/HRGoS3fMZoZGgXbz1HDw6a?mode=gi_t" target="_blank" rel="noopener">Join whatsapp group</a></li>
       </ul>
     </div>
   </footer>
@@ -3080,11 +2919,319 @@
       </a>
     </div>
     <div class="sub-button shadow">
-      <a href="share.html" rel="noopener" target="_blank"><span class="material-icons">share</span></a>
+      <a href="/share" rel="noopener" target="_blank"><span class="material-icons">share</span></a>
     </div>
   </div>
   <!-- libs -->
   <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
+  <script>
+    (() => {
+      // ---------- Data (Mock) ----------
+      const schools = [
+        {
+          id: "s1",
+          name: "Classic Academy",
+          short: "CA",
+          type: "Secondary School",
+          city: "Kampala",
+          country: "Uganda",
+          verified: true,
+          system: "Day & Boarding",
+          tagline: "Discipline • Excellence • Technology-driven learning",
+          programs: 18,
+          students: 1240,
+          awards: 8,
+          tags: ["boarding", "day", "science", "ict", "verified"],
+          phone: "+256 781 977 217"
+        },
+        {
+          id: "s2",
+          name: "Junub International College",
+          short: "JIC",
+          type: "College",
+          city: "Jinja",
+          country: "Uganda",
+          verified: false,
+          system: "Day",
+          tagline: "Career-focused education with modern skills.",
+          programs: 12,
+          students: 640,
+          awards: 3,
+          tags: ["day", "ict"],
+          phone: "+256 700 000 001"
+        },
+        {
+          id: "s3",
+          name: "Nile View Primary School",
+          short: "NV",
+          type: "Primary School",
+          city: "Entebbe",
+          country: "Uganda",
+          verified: true,
+          system: "Day",
+          tagline: "Strong foundation, caring teachers, happy learners.",
+          programs: 8,
+          students: 980,
+          awards: 5,
+          tags: ["day", "verified"],
+          phone: "+256 700 000 002"
+        },
+        {
+          id: "s4",
+          name: "Gulu Science & Tech Institute",
+          short: "GST",
+          type: "Institute",
+          city: "Gulu",
+          country: "Uganda",
+          verified: true,
+          system: "Day & Boarding",
+          tagline: "Hands-on science, labs, and real-world projects.",
+          programs: 20,
+          students: 720,
+          awards: 6,
+          tags: ["boarding", "day", "science", "ict", "verified"],
+          phone: "+256 700 000 003"
+        },
+        {
+          id: "s5",
+          name: "Mbarara Excellence High School",
+          short: "ME",
+          type: "Secondary School",
+          city: "Mbarara",
+          country: "Uganda",
+          verified: false,
+          system: "Boarding",
+          tagline: "High performance with strong discipline culture.",
+          programs: 15,
+          students: 1100,
+          awards: 4,
+          tags: ["boarding", "science"],
+          phone: "+256 700 000 004"
+        },
+        {
+          id: "s6",
+          name: "Kampala Business University",
+          short: "KBU",
+          type: "University",
+          city: "Kampala",
+          country: "Uganda",
+          verified: true,
+          system: "Day",
+          tagline: "Business, leadership and innovation for tomorrow.",
+          programs: 26,
+          students: 3200,
+          awards: 10,
+          tags: ["day", "ict", "verified"],
+          phone: "+256 700 000 005"
+        }
+      ];
+
+      // ---------- Helpers ----------
+      function coverGradient(seed) {
+        const combos = [
+          ["rgba(74,144,226,.92)", "rgba(0,159,139,.45)"],
+          ["rgba(0,159,139,.82)", "rgba(217,120,0,.42)"],
+          ["rgba(217,120,0,.72)", "rgba(74,144,226,.52)"],
+          ["rgba(15,23,42,.78)", "rgba(74,144,226,.55)"],
+        ];
+        const idx = seed % combos.length;
+        return `linear-gradient(135deg, ${combos[idx][0]}, ${combos[idx][1]})`;
+      }
+      function fmt(n) {
+        return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+      }
+
+      // ---------- Elements ----------
+      const qEl = document.getElementById("schoolsQ");
+      const cityEl = document.getElementById("schoolsCity");
+      const typeEl = document.getElementById("schoolsType");
+      const sortEl = document.getElementById("schoolsSort");
+      const gridEl = document.getElementById("schoolsGrid");
+      const emptyEl = document.getElementById("schoolsEmpty");
+
+      // Drawer
+      const drawer = document.getElementById("schoolsDrawer");
+      const drawerClose = document.getElementById("schoolsDrawerClose");
+      const sheetLogo = document.getElementById("schoolsSheetLogo");
+      const sheetName = document.getElementById("schoolsSheetName");
+      const sheetTag = document.getElementById("schoolsSheetTag");
+      const sheetMeta = document.getElementById("schoolsSheetMeta");
+      const btnView = document.getElementById("schoolsBtnView");
+      const btnApply = document.getElementById("schoolsBtnApply");
+
+      let selectedId = null;
+      let activeChip = "all";
+
+      function openDrawer(s) {
+        selectedId = s.id;
+        sheetLogo.textContent = s.short || (s.name || "S").slice(0, 2).toUpperCase();
+        sheetName.textContent = s.name;
+        sheetTag.textContent = s.tagline;
+
+        const pills = [];
+        pills.push(`<span><i class="fa-solid fa-location-dot"></i> ${s.city}, ${s.country}</span>`);
+        pills.push(`<span><i class="fa-solid fa-building-columns"></i> ${s.type}</span>`);
+        pills.push(`<span><i class="fa-solid fa-bed"></i> ${s.system}</span>`);
+        pills.push(`<span><i class="fa-solid fa-phone"></i> ${s.phone}</span>`);
+        pills.push(`<span><i class="fa-solid fa-users"></i> ${fmt(s.students)} students</span>`);
+        pills.push(`<span><i class="fa-solid fa-graduation-cap"></i> ${fmt(s.programs)} programs</span>`);
+        pills.push(`<span><i class="fa-solid fa-award"></i> ${fmt(s.awards)} awards</span>`);
+        sheetMeta.innerHTML = pills.join("");
+        drawer.classList.add("show");
+        drawer.setAttribute("aria-hidden", "false");
+      }
+      function closeDrawer() {
+        drawer.classList.remove("show");
+        drawer.setAttribute("aria-hidden", "true");
+        selectedId = null;
+      }
+
+      drawerClose?.addEventListener("click", closeDrawer);
+      drawer?.addEventListener("click", (e) => { if (e.target === drawer) closeDrawer(); });
+
+      btnView?.addEventListener("click", () => {
+        if (!selectedId) return;
+        alert("Mock: open public profile → /schools/" + selectedId);
+      });
+      btnApply?.addEventListener("click", () => {
+        if (!selectedId) return;
+        alert("Mock: start application → /admissions/apply?school=" + selectedId);
+      });
+
+      // ---------- Chips ----------
+      document.querySelectorAll(".schools-chip").forEach(ch => {
+        ch.addEventListener("click", () => {
+          document.querySelectorAll(".schools-chip").forEach(x => x.classList.remove("is-active"));
+          ch.classList.add("is-active");
+          activeChip = ch.dataset.chip || "all";
+          render();
+        });
+      });
+
+      // ---------- Filtering / sorting ----------
+      function getFiltered() {
+        const q = (qEl?.value || "").trim().toLowerCase();
+        const city = cityEl?.value || "";
+        const type = typeEl?.value || "";
+
+        let list = schools.slice();
+
+        if (activeChip && activeChip !== "all") {
+          list = list.filter(s => (s.tags || []).includes(activeChip));
+        }
+
+        if (q) {
+          list = list.filter(s => {
+            const hay = [
+              s.name, s.city, s.type, s.tagline,
+              (s.tags || []).join(" ")
+            ].join(" ").toLowerCase();
+            return hay.includes(q);
+          });
+        }
+
+        if (city) list = list.filter(s => s.city === city);
+        if (type) list = list.filter(s => s.type === type);
+
+        const sort = sortEl?.value || "rank";
+        if (sort === "students_desc") list.sort((a, b) => (b.students || 0) - (a.students || 0));
+        else if (sort === "programs_desc") list.sort((a, b) => (b.programs || 0) - (a.programs || 0));
+        else if (sort === "name_asc") list.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+        else {
+          list.sort((a, b) => {
+            const av = (a.verified ? 1 : 0), bv = (b.verified ? 1 : 0);
+            if (bv !== av) return bv - av;
+            const aa = (a.awards || 0), ba = (b.awards || 0);
+            if (ba !== aa) return ba - aa;
+            return (b.students || 0) - (a.students || 0);
+          });
+        }
+
+        return list;
+      }
+
+      // ---------- Render cards ----------
+      function render() {
+        const list = getFiltered();
+        if (!gridEl) return;
+        gridEl.innerHTML = "";
+        if (emptyEl) emptyEl.style.display = list.length ? "none" : "block";
+
+        list.forEach((s, idx) => {
+          const card = document.createElement("article");
+          card.className = "school-card";
+          card.setAttribute("role", "button");
+          card.setAttribute("tabindex", "0");
+
+          const cover = document.createElement("div");
+          cover.className = "school-cover";
+          cover.style.background = coverGradient(idx);
+
+          const avatar = document.createElement("div");
+          avatar.className = "school-avatar";
+          avatar.textContent = s.short || (s.name || "S").slice(0, 2).toUpperCase();
+          cover.appendChild(avatar);
+
+          const badge = document.createElement("div");
+          badge.className = s.verified ? "school-badge ok" : "school-badge";
+          badge.innerHTML = s.verified
+            ? `<i class="fa-solid fa-circle-check"></i> Verified`
+            : `<i class="fa-solid fa-circle-info"></i> Listed`;
+          cover.appendChild(badge);
+
+          const body = document.createElement("div");
+          body.className = "school-body";
+          body.innerHTML = `
+        <div class="school-top">
+          <h3 class="school-name">${s.name}</h3>
+          <span class="school-pill"><i class="fa-solid fa-building-columns"></i> ${s.type}</span>
+        </div>
+        <div class="school-tagline">${s.tagline}</div>
+        <div class="school-meta">
+          <span><i class="fa-solid fa-location-dot"></i> ${s.city}, ${s.country}</span>
+          <span><i class="fa-solid fa-bed"></i> ${s.system}</span>
+        </div>
+
+        <div class="school-kpis">
+          <div class="school-kpi"><div class="v">${fmt(s.students)}</div><div class="l">Students</div></div>
+          <div class="school-kpi"><div class="v">${fmt(s.programs)}</div><div class="l">Programs</div></div>
+          <div class="school-kpi"><div class="v">${fmt(s.awards)}</div><div class="l">Awards</div></div>
+        </div>
+
+        <div class="school-actions">
+          <button class="btn schools-btn" type="button" data-action="view"><i class="fa-solid fa-id-card"></i> View</button>
+          <button class="btn ghost schools-btn" type="button" data-action="apply"><i class="fa-solid fa-file-circle-plus"></i> Apply</button>
+        </div>
+      `;
+
+          const viewBtn = body.querySelector('[data-action="view"]');
+          const applyBtn = body.querySelector('[data-action="apply"]');
+
+          viewBtn?.addEventListener("click", (e) => { e.stopPropagation(); openDrawer(s); });
+          applyBtn?.addEventListener("click", (e) => {
+            e.stopPropagation();
+            alert("Mock: start application → /admissions/apply?school=" + s.id);
+          });
+
+          card.addEventListener("click", () => openDrawer(s));
+          card.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDrawer(s); }
+          });
+
+          card.appendChild(cover);
+          card.appendChild(body);
+          gridEl.appendChild(card);
+        });
+      }
+
+      // Live input
+      [qEl, cityEl, typeEl, sortEl].forEach(el => el && el.addEventListener("input", render));
+      [cityEl, typeEl, sortEl].forEach(el => el && el.addEventListener("change", render));
+
+      render();
+    })();
+  </script>
   <script>
     // Loader
     setTimeout(() => {

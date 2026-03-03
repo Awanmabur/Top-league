@@ -19,7 +19,7 @@ app.use(
 
 app.use(express.json({ limit: "200kb" }));
 
-// ✅ Static assets (images/css if you later move them to /public)
+// ✅ Static assets (images/css/js in /public)
 app.use(express.static(path.join(__dirname, "public")));
 
 app.use(
@@ -36,6 +36,52 @@ app.use(
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
+/* ============================================================
+   ✅ CLEAN ROUTES FOR EJS PAGES
+   - Home is: views/index.ejs
+   - Other pages live in: views/pages/*.ejs (and nested folders)
+   ============================================================ */
+
+const render = (res, view, data = {}) => res.render(view, data);
+
+// Home page
+app.get("/", (req, res) => {
+  const baseUrl = `${req.protocol}://${req.get("host")}`;
+  const pageUrl = `${baseUrl}/`;
+  return render(res, "index", { baseUrl, pageUrl });
+});
+
+// Map clean routes -> views/pages/*
+const pageRoutes = {
+  "/about": "pages/about",
+  "/features": "pages/features",
+  "/services": "pages/services",
+
+  "/schools": "pages/schools",
+  "/search": "pages/search",
+  "/contact": "pages/contact",
+
+  "/schedule": "pages/schedule",
+  "/plan": "pages/plan",
+  "/blog": "pages/blog",
+
+  "/careers": "pages/careers",
+  "/faq": "pages/faq",
+  "/privacy": "pages/privacy",
+  "/terms": "pages/terms",
+  "/admissions": "pages/admissions",
+  "/share": "pages/share",
+};
+
+// Register routes
+Object.entries(pageRoutes).forEach(([route, view]) => {
+  app.get(route, (req, res) => {
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const pageUrl = `${baseUrl}${route}`;
+    return render(res, view, { baseUrl, pageUrl });
+  });
+});
+
 // ✅ Booking page route: http://localhost:3000/book
 app.get("/book", (req, res) => {
   const baseUrl = `${req.protocol}://${req.get("host")}`;
@@ -43,8 +89,9 @@ app.get("/book", (req, res) => {
   res.render("book", { baseUrl, pageUrl });
 });
 
-// ✅ Optional: if someone visits /, redirect them to /book (not rendering home)
-app.get("/", (req, res) => res.redirect(302, "/book"));
+/* ============================================================
+   END CLEAN ROUTES
+   ============================================================ */
 
 // ---------- Env ----------
 const env = {
@@ -379,4 +426,13 @@ app.post("/api/book", async (req, res) => {
   }
 });
 
-app.listen(env.PORT, () => console.log(`Booking running on http://localhost:${env.PORT}/book`));
+// 404 (optional) — if you have views/pages/404.ejs
+app.use((req, res) => {
+  try {
+    return res.status(404).render("pages/404", { pageUrl: req.originalUrl });
+  } catch {
+    return res.status(404).send("404 — Not Found");
+  }
+});
+
+app.listen(env.PORT, () => console.log(`Server running on http://localhost:${env.PORT}/`));

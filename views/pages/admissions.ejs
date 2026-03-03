@@ -17,7 +17,10 @@
     <meta content="#4a90e2" name="theme-color" />
     <meta content="Classic Academy" name="application-name" />
     <meta content="telephone=no" name="format-detection" />
-    <link href="https://www.classicacademy.app/admissions.html" rel="canonical" />
+
+    <!-- ✅ CANONICAL: remove .html -->
+    <link href="https://www.classicacademy.app/admissions" rel="canonical" />
+
     <link href="https://www.classicacademy.app/img/academylogo.png" rel="icon" />
     <link href="https://www.classicacademy.app/img/academylogo.png" rel="apple-touch-icon" />
     <!-- Open Graph -->
@@ -28,7 +31,10 @@
     <meta
         content="All-in-one school management + admissions. Faster enrollment, cleaner finance tracking, better communication."
         property="og:description" />
-    <meta content="https://www.classicacademy.app/admissions.html" property="og:url" />
+
+    <!-- ✅ OG URL: remove .html -->
+    <meta content="https://www.classicacademy.app/admissions" property="og:url" />
+
     <meta content="https://www.classicacademy.app/img/hero.png" property="og:image" />
     <meta content="Classic Academy — School Management Platform" property="og:image:alt" />
     <!-- Twitter -->
@@ -2179,24 +2185,30 @@
     </div>
     <!-- Nav -->
     <header class="header" id="siteHeader">
-        <a aria-label="Classic Academy Home" class="brand" href="index.html">
+
+        <!-- ✅ ROUTES: replace index.html -> / -->
+        <a aria-label="Classic Academy Home" class="brand" href="/">
             <img alt="Classic Academy logo" class="brand-mark" src="./img/academylogo.png" />
             <div class="brand-txt">
                 <span class="brand-name">Classic Academy</span>
                 <span class="brand-sub">School management + admissions</span>
             </div>
         </a>
+
         <nav aria-label="Primary" class="navbar">
-            <a href="index.html">Home</a>
-            <a href="about.html">About</a>
-            <a href="services/index.html">Features</a>
+
+            <!-- ✅ ROUTES: replace *.html with /route -->
+            <a href="/">Home</a>
+            <a href="/about">About</a>
+            <a href="/services">Features</a>
             <a href="#testimonials">Benefits</a>
             <a href="#contact">Contact</a>
             <a class="nav-pill" href="#pricing">Join Today</a>
-            <a class="nav-pill" href="schedule.html">Sign In</a>
+            <a class="nav-pill" href="/schedule">Sign In</a>
         </nav>
+
         <div class="nav-actions">
-            <a class="btn btn-sm" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
+            <a class="btn btn-sm" href="/schedule"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
             <button aria-expanded="false" aria-label="Open menu" class="menu-btn" id="menu-btn">
                 <i class="fa-solid fa-bars"></i>
             </button>
@@ -2415,7 +2427,9 @@
                     <div class="form-actions">
                         <button class="btn btn-sm" type="submit"><i class="fa-solid fa-paper-plane"></i> Submit
                             application</button>
-                        <a class="btn ghost btn-sm" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Book
+
+                        <!-- ✅ ROUTE: schedule.html -> /schedule -->
+                        <a class="btn ghost btn-sm" href="/schedule"><i class="fa-solid fa-calendar-check"></i> Book
                             a demo</a>
                     </div>
                     <p class="form-note">Tip: If you’re unsure about requirements, contact the school using WhatsApp or
@@ -2424,6 +2438,7 @@
             </div>
         </div>
     </section>
+
     <section class="pricing-v4" id="pricing">
         <div class="p4-wrap">
             <header class="p4-head reveal">
@@ -2479,10 +2494,12 @@
                             </ul>
                         </details>
                         <div class="p4-actions">
-                            <a class="btn btn-sm" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Book
+                            <a class="btn btn-sm" href="/schedule"><i class="fa-solid fa-calendar-check"></i> Book
                                 Demo</a>
-                            <a class="btn ghost btn-sm" href="plan.html?plan=profile"><i
-                                    class="fa-solid fa-book-open"></i> Read
+
+                            <!-- ✅ ROUTE: plan.html -> /plan -->
+                            <a class="btn ghost btn-sm" href="/plan?plan=profile"><i class="fa-solid fa-book-open"></i>
+                                Read
                                 more</a>
                         </div>
                     </article>
@@ -2522,10 +2539,10 @@
                             </ul>
                         </details>
                         <div class="p4-actions">
-                            <a class="btn btn-sm" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Book
+                            <a class="btn btn-sm" href="/schedule"><i class="fa-solid fa-calendar-check"></i> Book
                                 Demo</a>
-                            <a class="btn ghost btn-sm" href="plan.html?plan=starter"><i
-                                    class="fa-solid fa-book-open"></i> Read
+                            <a class="btn ghost btn-sm" href="/plan?plan=starter"><i class="fa-solid fa-book-open"></i>
+                                Read
                                 more</a>
                         </div>
                     </article>
@@ -2565,10 +2582,10 @@
                             </ul>
                         </details>
                         <div class="p4-actions">
-                            <a class="btn btn-sm" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Book
+                            <a class="btn btn-sm" href="/schedule"><i class="fa-solid fa-calendar-check"></i> Book
                                 Demo</a>
-                            <a class="btn ghost btn-sm" href="plan.html?plan=standard"><i
-                                    class="fa-solid fa-book-open"></i> Read
+                            <a class="btn ghost btn-sm" href="/plan?plan=standard"><i class="fa-solid fa-book-open"></i>
+                                Read
                                 more</a>
                         </div>
                     </article>
@@ -2608,10 +2625,10 @@
                             </ul>
                         </details>
                         <div class="p4-actions">
-                            <a class="btn btn-sm" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Book
+                            <a class="btn btn-sm" href="/schedule"><i class="fa-solid fa-calendar-check"></i> Book
                                 Demo</a>
-                            <a class="btn ghost btn-sm" href="plan.html?plan=growth"><i
-                                    class="fa-solid fa-book-open"></i> Read
+                            <a class="btn ghost btn-sm" href="/plan?plan=growth"><i class="fa-solid fa-book-open"></i>
+                                Read
                                 more</a>
                         </div>
                     </article>
@@ -2651,14 +2668,14 @@
                             </ul>
                         </details>
                         <div class="p4-actions">
-                            <a class="btn btn-sm" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Book
+                            <a class="btn btn-sm" href="/schedule"><i class="fa-solid fa-calendar-check"></i> Book
                                 Demo</a>
-                            <a class="btn ghost btn-sm" href="plan.html?plan=premium"><i
-                                    class="fa-solid fa-book-open"></i> Read
+                            <a class="btn ghost btn-sm" href="/plan?plan=premium"><i class="fa-solid fa-book-open"></i>
+                                Read
                                 more</a>
                         </div>
                     </article>
-                    <!-- Add-ons (✅ class="addons" so we can control mobile action row) -->
+                    <!-- Add-ons -->
                     <article class="p4-card addons reveal">
                         <div class="p4-top">
                             <div class="p4-title">
@@ -2694,7 +2711,7 @@
                             </ul>
                         </details>
                         <div class="p4-actions">
-                            <a class="btn btn-sm" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Talk
+                            <a class="btn btn-sm" href="/schedule"><i class="fa-solid fa-calendar-check"></i> Talk
                                 to Sales</a>
                             <a class="btn ghost btn-sm" href="#contact"><i class="fa-solid fa-message"></i> Ask a
                                 question</a>
@@ -2708,7 +2725,7 @@
                             timeline.</p>
                     </div>
                     <div class="cta-actions">
-                        <a class="btn btn-sm" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Book
+                        <a class="btn btn-sm" href="/schedule"><i class="fa-solid fa-calendar-check"></i> Book
                             Demo</a>
                         <a class="btn ghost btn-sm" href="#contact"><i class="fa-solid fa-message"></i> Contact
                             Sales</a>
@@ -2717,6 +2734,7 @@
             </div>
         </div>
     </section>
+
     <!-- Testimonials -->
     <section class="testimonial-v2" id="testimonials">
         <div class="twrap">
@@ -2899,10 +2917,11 @@
                 <div class="swiper-pagination"></div>
             </div>
             <div class="reveal" style="text-align:center; margin-top: 1.2rem">
-                <a class="btn btn-sm" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Book a Demo</a>
+                <a class="btn btn-sm" href="/schedule"><i class="fa-solid fa-calendar-check"></i> Book a Demo</a>
             </div>
         </div>
     </section>
+
     <!-- Blogs -->
     <section class="blogs-v2" id="blogs">
         <div class="blogs-wrap">
@@ -2926,10 +2945,13 @@
                         <h3>How to Increase Admissions Without Increasing Your Budget</h3>
                         <p>Visibility + trust + fast follow-up. A simple playbook you can apply immediately.</p>
                         <div class="blog2-actions">
-                            <a class="btn btn-sm" href="blog.html?slug=increase-admissions"><i
+
+                            <!-- ✅ ROUTE: blog.html -> /blog -->
+                            <a class="btn btn-sm" href="/blog?slug=increase-admissions"><i
                                     class="fa-solid fa-book-open"></i> Read
                                 article</a>
-                            <a class="btn ghost btn-sm" href="schedule.html"><i class="fa-solid fa-calendar-check"></i>
+
+                            <a class="btn ghost btn-sm" href="/schedule"><i class="fa-solid fa-calendar-check"></i>
                                 Book demo</a>
                         </div>
                     </div>
@@ -2946,10 +2968,10 @@
                         <h3>Fees Tracking That Actually Works: Invoices, Receipts &amp; Balances</h3>
                         <p>Reduce disputes, improve collection, and keep finance clean every term.</p>
                         <div class="blog2-actions">
-                            <a class="btn btn-sm" href="blog.html?slug=fees-tracking"><i
-                                    class="fa-solid fa-book-open"></i> Read
+                            <a class="btn btn-sm" href="/blog?slug=fees-tracking"><i class="fa-solid fa-book-open"></i>
+                                Read
                                 article</a>
-                            <a class="btn ghost btn-sm" href="plan.html?plan=standard"><i class="fa-solid fa-tags"></i>
+                            <a class="btn ghost btn-sm" href="/plan?plan=standard"><i class="fa-solid fa-tags"></i>
                                 View plan</a>
                         </div>
                     </div>
@@ -2966,10 +2988,10 @@
                         <h3>Exam &amp; Results Management: From Setup to Publishing</h3>
                         <p>Clean grading workflows and faster publishing — without mistakes.</p>
                         <div class="blog2-actions">
-                            <a class="btn btn-sm" href="blog.html?slug=exam-results"><i
-                                    class="fa-solid fa-book-open"></i> Read
+                            <a class="btn btn-sm" href="/blog?slug=exam-results"><i class="fa-solid fa-book-open"></i>
+                                Read
                                 article</a>
-                            <a class="btn ghost btn-sm" href="plan.html?plan=growth"><i
+                            <a class="btn ghost btn-sm" href="/plan?plan=growth"><i
                                     class="fa-solid fa-arrow-trend-up"></i> Growth
                                 plan</a>
                         </div>
@@ -2978,6 +3000,7 @@
             </div>
         </div>
     </section>
+
     <!-- Contact -->
     <section class="contact-v2" id="contact">
         <div class="cwrap">
@@ -3030,7 +3053,7 @@
                                 class="fa-brands fa-linkedin-in"></i></a>
                     </div>
                     <div class="ccta">
-                        <a class="btn btn-sm" href="schedule.html"><i class="fa-solid fa-calendar-check"></i> Book
+                        <a class="btn btn-sm" href="/schedule"><i class="fa-solid fa-calendar-check"></i> Book
                             Demo</a>
                         <a class="btn ghost btn-sm" href="#pricing"><i class="fa-solid fa-tags"></i> View Pricing</a>
                     </div>
@@ -3071,7 +3094,7 @@
                         <button class="btn btn-sm" id="contactSendBtn" type="button">
                             <i class="fa-solid fa-paper-plane"></i> Send message
                         </button>
-                        <a class="btn ghost btn-sm" href="schedule.html">
+                        <a class="btn ghost btn-sm" href="/schedule">
                             <i class="fa-solid fa-calendar-check"></i> Book a demo
                         </a>
                     </div>
@@ -3081,6 +3104,7 @@
             </div>
         </div>
     </section>
+
     <!-- Footer -->
     <footer class="footer">
         <div>
@@ -3100,36 +3124,42 @@
         <div>
             <h4>Learn about our mission</h4>
             <ul>
-                <li><a href="about.html">Our Story</a></li>
-                <li><a href="services/index.html">What We Offer</a></li>
-                <li><a href="plan.html?plan=standard">Plans &amp; Pricing</a></li>
-                <li><a href="blog.html?slug=increase-admissions">Press resources</a></li>
-                <li><a href="careers.html">Careers</a></li>
+
+                <!-- ✅ ROUTES -->
+                <li><a href="/about">Our Story</a></li>
+                <li><a href="/services">What We Offer</a></li>
+                <li><a href="/plan?plan=standard">Plans &amp; Pricing</a></li>
+                <li><a href="/blog?slug=increase-admissions">Press resources</a></li>
+                <li><a href="/careers">Careers</a></li>
             </ul>
         </div>
         <div>
             <h4>Get help with your account</h4>
             <ul>
-                <li><a href="contact/index.html">Customer Support</a></li>
-                <li><a href="schedule.html">Book a Demo</a></li>
-                <li><a href="faq.html">FAQ</a></li>
-                <li><a href="privacy.html">Privacy Policy</a></li>
-                <li><a href="terms.html">Terms</a></li>
+                <li><a href="/contact">Customer Support</a></li>
+                <li><a href="/schedule">Book a Demo</a></li>
+                <li><a href="/faq">FAQ</a></li>
+                <li><a href="/privacy">Privacy Policy</a></li>
+                <li><a href="/terms">Terms</a></li>
             </ul>
         </div>
         <div>
             <h4>Join our school community</h4>
             <ul>
-                <li><a href="schools/index.html">Find Schools</a></li>
-                <li><a href="admissions.html">Admissions</a></li>
-                <li><a href="search/index.html">Search</a></li>
-                <li><a href="blog.html?slug=increase-admissions">Blog</a></li>
-                <li><a href="https://x.com" rel="noopener" target="_blank">Twitter</a></li>
-                <li><a href="https://discord.com" rel="noopener" target="_blank">Discord server</a></li>
+                <li><a href="/schools">Find Schools</a></li>
+
+                <!-- ✅ CURRENT PAGE -->
+                <li><a href="/admissions">Admissions</a></li>
+
+                <li><a href="/search">Search</a></li>
+                <li><a href="/blog?slug=increase-admissions">Blog</a></li>
+                <li><a href="https://chat.whatsapp.com/HRGoS3fMZoZGgXbz1HDw6a?mode=gi_t" target="_blank" rel="noopener">Join whatsapp group</a></li>
             </ul>
         </div>
     </footer>
+
     <button aria-label="Scroll to top" id="toTopBtn">↑</button>
+
     <!-- Floating support button -->
     <div aria-hidden="true" class="fab-container">
         <div class="fab shadow">
@@ -3152,10 +3182,13 @@
                 </span>
             </a>
         </div>
+
+        <!-- ✅ ROUTE: share.html -> /share -->
         <div class="sub-button shadow">
-            <a href="share.html" rel="noopener" target="_blank"><span class="material-icons">share</span></a>
+            <a href="/share" rel="noopener" target="_blank"><span class="material-icons">share</span></a>
         </div>
     </div>
+
     <!-- libs -->
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <script>

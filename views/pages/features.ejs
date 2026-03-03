@@ -1,0 +1,2146 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Classic Academy — Features</title>
+
+    <!-- ✅ PRODUCTION SEO (classicacademy.app) -->
+    <meta name="description"
+        content="Explore Classic Academy features: admissions, student & staff management, fees tracking, exams, timetables, messaging, portals, reports, and integrations — built for schools in Uganda & South Sudan." />
+    <meta name="keywords"
+        content="Classic Academy features, school management system, admissions software, school ERP, student information system, fees management, exam results, timetable, attendance, Uganda, South Sudan" />
+    <meta name="robots" content="index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:1" />
+    <meta name="theme-color" content="#4a90e2" />
+    <meta name="application-name" content="Classic Academy" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <link rel="canonical" href="https://www.classicacademy.app/features" />
+    <link rel="icon" href="https://www.classicacademy.app/img/academylogo.png" />
+    <link rel="apple-touch-icon" href="https://www.classicacademy.app/img/academylogo.png" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Classic Academy" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:title" content="Classic Academy — Features" />
+    <meta property="og:description"
+        content="Admissions, finance, exams, timetables, messaging, portals and reports — all-in-one." />
+    <meta property="og:url" content="https://www.classicacademy.app/features" />
+    <meta property="og:image" content="https://www.classicacademy.app/img/hero.png" />
+    <meta property="og:image:alt" content="Classic Academy Features" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Classic Academy — Features" />
+    <meta name="twitter:description"
+        content="Admissions, finance, exams, timetables, messaging, portals and reports — all-in-one." />
+    <meta name="twitter:image" content="https://www.classicacademy.app/img/hero.png" />
+
+    <!-- Structured data -->
+    <script type="application/ld+json">
+  {
+    "@context":"https://schema.org",
+    "@type":"WebPage",
+    "name":"Classic Academy — Features",
+    "url":"https://www.classicacademy.app/features",
+    "isPartOf":{
+      "@type":"WebSite",
+      "name":"Classic Academy",
+      "url":"https://www.classicacademy.app/"
+    }
+  }
+  </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Outfit:wght@100..900&display=swap");
+
+        :root {
+            --primary: #4a90e2;
+            --accent: #d97800;
+            --highlight: #009f8b;
+
+            --ink: #0f172a;
+            --muted: #475569;
+
+            --page-pad: clamp(1rem, 4vw, 6rem);
+            --section-gap: clamp(1.2rem, 2.6vw, 2rem);
+
+            --shadow2: 0 18px 50px rgba(15, 23, 42, .12);
+            --shadow3: 0 10px 30px rgba(15, 23, 42, .10);
+
+            --radius: 22px;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        a {
+            text-decoration: none;
+        }
+
+        section,
+        footer {
+            scroll-margin-top: 120px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            background: #e0f7fa;
+            color: #333;
+            overflow-x: clip;
+            -webkit-overflow-scrolling: touch;
+            padding-top: 112px;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding-top: 102px;
+            }
+        }
+
+        /* LOADER */
+        #loader {
+            position: fixed;
+            inset: 0;
+            background: #e0f7fa;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 1.2rem;
+            text-align: center;
+        }
+
+        .academylogo {
+            width: min(220px, 70vw);
+        }
+
+        .academylogo img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .loader {
+            position: relative;
+            width: 18px;
+            height: 28px;
+            perspective: 500px;
+            animation: flip 2s infinite;
+        }
+
+        .loader:nth-child(3) {
+            animation-delay: 0.2s;
+        }
+
+        .loader:nth-child(4) {
+            animation-delay: 0.4s;
+        }
+
+        .loader:nth-child(5) {
+            animation-delay: 0.6s;
+        }
+
+        .loader:nth-child(6) {
+            animation-delay: 0.8s;
+        }
+
+        .face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 4px;
+        }
+
+        .front {
+            background: var(--primary);
+        }
+
+        .back {
+            background: #d35400;
+            transform: rotateY(180deg);
+        }
+
+        @keyframes flip {
+
+            0%,
+            100% {
+                transform: rotateY(0deg);
+            }
+
+            50% {
+                transform: rotateY(180deg);
+            }
+        }
+
+        /* NAVBAR */
+        .header {
+            position: fixed;
+            top: 14px;
+            left: var(--page-pad);
+            right: var(--page-pad);
+            padding: .65rem .85rem;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, .70);
+            border: 1px solid rgba(255, 255, 255, .78);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 16px 46px rgba(15, 23, 42, .10);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: .8rem;
+            z-index: 2000;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+            min-width: 0;
+            color: var(--ink);
+        }
+
+        .brand-mark {
+            width: 40px;
+            height: 40px;
+            border-radius: 14px;
+            object-fit: cover;
+            border: 1px solid rgba(15, 23, 42, .10);
+            background: rgba(255, 255, 255, .85);
+            flex: 0 0 auto;
+        }
+
+        .brand-txt {
+            display: grid;
+            line-height: 1.05;
+            min-width: 0;
+        }
+
+        .brand-name {
+            font-weight: 900;
+            letter-spacing: -.02em;
+            color: var(--ink);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .brand-sub {
+            font-size: .86rem;
+            color: var(--muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .navbar {
+            display: flex;
+            align-items: center;
+            gap: .35rem;
+        }
+
+        .navbar a {
+            padding: .55rem .75rem;
+            border-radius: 999px;
+            color: #1d4ed8;
+            font-weight: 600;
+            font-size: 1.02rem;
+            transition: background .2s ease, transform .2s ease, color .2s ease;
+            white-space: nowrap;
+        }
+
+        .navbar a:hover {
+            background: rgba(74, 144, 226, .10);
+            transform: translateY(-1px);
+            color: var(--ink);
+        }
+
+        .nav-pill {
+            border: 1px solid rgba(74, 144, 226, .35);
+            background: rgba(74, 144, 226, .10);
+            color: #0f172a !important;
+            font-weight: 800;
+        }
+
+        .nav-pill:hover {
+            background: rgba(74, 144, 226, .18);
+            border-color: rgba(74, 144, 226, .45);
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: .55rem;
+            flex: 0 0 auto;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: .45rem;
+            padding: 0.72rem 1rem;
+            background-color: var(--primary);
+            color: white;
+            border: 1px solid var(--primary);
+            border-radius: 999px;
+            font-weight: 800;
+            transition: background-color .25s ease, transform .2s ease, box-shadow .2s ease;
+            cursor: pointer;
+            user-select: none;
+            box-shadow: 0 10px 28px rgba(74, 144, 226, .18);
+            white-space: nowrap;
+        }
+
+        .btn:hover {
+            background-color: transparent;
+            color: var(--primary);
+            transform: translateY(-1px);
+            box-shadow: 0 14px 34px rgba(15, 23, 42, .12);
+        }
+
+        .btn.ghost {
+            background: rgba(255, 255, 255, .72);
+            border: 1px solid rgba(15, 23, 42, .12);
+            color: var(--ink);
+            box-shadow: 0 10px 26px rgba(15, 23, 42, .08);
+        }
+
+        .btn.ghost:hover {
+            background: rgba(255, 255, 255, .88);
+            color: var(--ink);
+        }
+
+        .btn-sm {
+            padding: .55rem .8rem !important;
+            font-size: .95rem !important;
+            box-shadow: none !important;
+        }
+
+        .menu-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 999px;
+            border: 1px solid rgba(15, 23, 42, .12);
+            background: rgba(255, 255, 255, .78);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 10px 26px rgba(15, 23, 42, .08);
+        }
+
+        .menu-btn i {
+            color: var(--ink);
+            font-size: 1.05rem;
+        }
+
+        @media (max-width: 1024px) {
+            .brand-sub {
+                display: none;
+            }
+
+            .menu-btn {
+                display: inline-flex;
+            }
+
+            .navbar {
+                position: absolute;
+                top: calc(100% + .65rem);
+                left: 0;
+                right: 0;
+                margin: 0 .25rem;
+                padding: .75rem;
+                background: rgba(74, 144, 226, .96);
+                border: 1px solid rgba(255, 255, 255, .35);
+                border-radius: 20px;
+                backdrop-filter: blur(12px);
+                display: grid;
+                gap: .4rem;
+                transform: translateY(-8px);
+                opacity: 0;
+                pointer-events: none;
+                transition: transform .2s ease, opacity .2s ease;
+            }
+
+            .navbar.active {
+                transform: translateY(0);
+                opacity: 1;
+                pointer-events: auto;
+            }
+
+            .navbar a {
+                color: #fff;
+                border-radius: 16px;
+                padding: .85rem .85rem;
+                background: rgba(255, 255, 255, .08);
+            }
+
+            .navbar a:hover {
+                background: rgba(255, 255, 255, .14);
+                transform: none;
+                color: #fff;
+            }
+
+            .nav-pill {
+                background: rgba(255, 255, 255, .18);
+                border-color: rgba(255, 255, 255, .35);
+                color: #fff !important;
+            }
+        }
+
+        /* REVEAL */
+        .reveal {
+            opacity: 0;
+            transform: translateY(14px);
+            transition: all .7s ease;
+        }
+
+        .reveal.in {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .reveal {
+                opacity: 1;
+                transform: none;
+                transition: none;
+            }
+
+            * {
+                scroll-behavior: auto !important;
+            }
+        }
+
+        /* PAGE HERO */
+        .page-hero {
+            position: relative;
+            margin: 0 var(--page-pad);
+            margin-bottom: 1.2rem;
+            border-radius: calc(var(--radius) + 6px);
+            overflow: hidden;
+            background:
+                radial-gradient(900px 420px at 10% 15%, rgba(74, 144, 226, .20), transparent 60%),
+                radial-gradient(760px 420px at 90% 0%, rgba(217, 120, 0, .14), transparent 58%),
+                radial-gradient(760px 520px at 80% 110%, rgba(0, 159, 139, .12), transparent 56%),
+                rgba(255, 255, 255, .40);
+            border: 1px solid rgba(255, 255, 255, .70);
+            backdrop-filter: blur(14px);
+            box-shadow: 0 20px 70px rgba(15, 23, 42, .12);
+            padding: clamp(1.1rem, 2.5vw, 2rem);
+        }
+
+        .page-hero-grid {
+            display: grid;
+            grid-template-columns: 1.15fr .85fr;
+            gap: clamp(1rem, 2.6vw, 2rem);
+            align-items: center;
+        }
+
+        .kicker {
+            display: inline-flex;
+            gap: .55rem;
+            align-items: center;
+            color: #1b2a4e;
+            font-weight: 900;
+            padding: .45rem .8rem;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, .82);
+            border: 1px solid rgba(255, 255, 255, .90);
+            box-shadow: 0 12px 30px rgba(15, 23, 42, .08);
+            width: fit-content;
+        }
+
+        .page-hero h1 {
+            margin-top: .85rem;
+            font-size: clamp(1.55rem, 2.55vw, 2.45rem);
+            line-height: 1.15;
+            letter-spacing: -.02em;
+            color: var(--ink);
+        }
+
+        .page-hero h1 span {
+            color: var(--primary);
+        }
+
+        .page-hero p {
+            margin-top: .75rem;
+            color: #24324f;
+            font-size: clamp(1rem, 1.2vw, 1.08rem);
+            max-width: 70ch;
+        }
+
+        .hero-actions {
+            margin-top: 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: .6rem;
+        }
+
+        .hero-mini {
+            margin-top: 1.05rem;
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: .7rem;
+            max-width: 720px;
+        }
+
+        .mini {
+            border-radius: 16px;
+            padding: .75rem .8rem;
+            background: rgba(255, 255, 255, .72);
+            border: 1px solid rgba(255, 255, 255, .85);
+            box-shadow: 0 14px 34px rgba(15, 23, 42, .08);
+        }
+
+        .mini strong {
+            display: block;
+            color: var(--ink);
+            letter-spacing: -.01em;
+        }
+
+        .mini span {
+            display: block;
+            margin-top: .15rem;
+            font-size: .9rem;
+            color: var(--muted);
+        }
+
+        .hero-panel {
+            background: rgba(255, 255, 255, .72);
+            border: 1px solid rgba(255, 255, 255, .85);
+            border-radius: 22px;
+            box-shadow: 0 18px 55px rgba(15, 23, 42, .10);
+            overflow: hidden;
+        }
+
+        .hero-panel-top {
+            padding: .95rem 1rem;
+            border-bottom: 1px solid rgba(15, 23, 42, .08);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: .75rem;
+        }
+
+        .hero-panel-top strong {
+            color: var(--ink);
+            letter-spacing: -.01em;
+        }
+
+        .hero-pill {
+            display: inline-flex;
+            gap: .4rem;
+            align-items: center;
+            padding: .35rem .65rem;
+            border-radius: 999px;
+            background: rgba(74, 144, 226, .10);
+            border: 1px solid rgba(74, 144, 226, .20);
+            font-weight: 900;
+            color: #0f172a;
+            font-size: .85rem;
+            white-space: nowrap;
+        }
+
+        .hero-panel-body {
+            padding: 1rem;
+        }
+
+        .hero-panel-list {
+            list-style: none;
+            display: grid;
+            gap: .55rem;
+            margin: 0;
+            padding: 0;
+        }
+
+        .hero-panel-list li {
+            display: flex;
+            gap: .55rem;
+            align-items: flex-start;
+            color: #0f172a;
+            font-size: .95rem;
+        }
+
+        .hero-panel-list li i {
+            color: #16a34a;
+            margin-top: .2rem;
+        }
+
+        @media (max-width: 920px) {
+            .page-hero-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .hero-mini {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 520px) {
+            .hero-actions {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: .6rem;
+            }
+
+            .hero-actions .btn {
+                width: 100%;
+                padding: .62rem .7rem;
+                font-size: .95rem;
+                box-shadow: none;
+            }
+        }
+
+        /* FEATURE CATEGORIES */
+        .fcats {
+            margin: 1.2rem var(--page-pad) 0 var(--page-pad);
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            border-radius: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            padding: 1.25rem 1.2rem;
+            border: 1px solid rgba(255, 255, 255, .55);
+        }
+
+        .fcats-head {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .fcats-head h2 {
+            color: var(--ink);
+            font-size: clamp(1.35rem, 2.1vw, 1.9rem);
+            letter-spacing: -.01em;
+            margin: 0;
+        }
+
+        .fcats-head p {
+            margin: .2rem 0 0 0;
+            color: var(--muted);
+            max-width: 80ch;
+        }
+
+        .fcats-tools {
+            display: flex;
+            gap: .6rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .search {
+            position: relative;
+            min-width: min(360px, 82vw);
+            flex: 1 1 320px;
+        }
+
+        .search input {
+            width: 100%;
+            padding: .85rem 1rem .85rem 2.65rem;
+            border-radius: 999px;
+            border: 1px solid rgba(74, 144, 226, .35);
+            background: rgba(255, 255, 255, .80);
+            outline: none;
+        }
+
+        .search i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #1f2a44;
+            opacity: .8;
+        }
+
+        .chipbar {
+            display: flex;
+            gap: .5rem;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        .fchip {
+            display: inline-flex;
+            gap: .4rem;
+            align-items: center;
+            padding: .5rem .75rem;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, .75);
+            border: 1px solid rgba(15, 23, 42, .10);
+            font-weight: 900;
+            color: #0f172a;
+            cursor: pointer;
+            user-select: none;
+            transition: transform .2s ease, background .2s ease, border-color .2s ease;
+            font-size: .9rem;
+            white-space: nowrap;
+        }
+
+        .fchip:hover {
+            transform: translateY(-1px);
+            background: rgba(255, 255, 255, .9);
+        }
+
+        .fchip.active {
+            background: rgba(74, 144, 226, .12);
+            border-color: rgba(74, 144, 226, .28);
+        }
+
+        .fgrid {
+            margin-top: 1rem;
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 1rem;
+        }
+
+        .fcard {
+            background: rgba(255, 255, 255, .85);
+            border: 1px solid rgba(15, 23, 42, .10);
+            border-radius: 24px;
+            box-shadow: 0 18px 55px rgba(15, 23, 42, .10);
+            padding: 1.1rem;
+            overflow: hidden;
+            transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+            display: flex;
+            flex-direction: column;
+            min-height: 100%;
+        }
+
+        .fcard:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 26px 72px rgba(15, 23, 42, .14);
+            border-color: rgba(74, 144, 226, .22);
+        }
+
+        .fhead {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: .8rem;
+        }
+
+        .fico {
+            width: 44px;
+            height: 44px;
+            border-radius: 16px;
+            display: grid;
+            place-items: center;
+            flex: 0 0 auto;
+            background: rgba(74, 144, 226, .12);
+            border: 1px solid rgba(74, 144, 226, .22);
+        }
+
+        .fico i {
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+
+        .ftitle h3 {
+            margin: 0;
+            color: var(--ink);
+            font-size: 1.12rem;
+            letter-spacing: -.01em;
+            line-height: 1.2;
+        }
+
+        .ftitle p {
+            margin: .22rem 0 0 0;
+            color: var(--muted);
+            font-size: .92rem;
+        }
+
+        .ftag {
+            display: inline-flex;
+            align-items: center;
+            gap: .4rem;
+            padding: .35rem .65rem;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, .06);
+            border: 1px solid rgba(15, 23, 42, .10);
+            color: var(--ink);
+            font-weight: 900;
+            font-size: .8rem;
+            white-space: nowrap;
+            flex: 0 0 auto;
+        }
+
+        .ftag.hot {
+            background: rgba(217, 120, 0, .12);
+            border-color: rgba(217, 120, 0, .22);
+            color: #9a3412;
+        }
+
+        .flist {
+            list-style: none;
+            margin: .85rem 0 0 0;
+            padding: 0;
+            display: grid;
+            gap: .55rem;
+        }
+
+        .flist li {
+            display: flex;
+            gap: .55rem;
+            align-items: flex-start;
+            color: #1f2937;
+            font-size: .95rem;
+        }
+
+        .flist li i {
+            color: #16a34a;
+            margin-top: .2rem;
+        }
+
+        .factions {
+            margin-top: auto;
+            padding-top: .95rem;
+            display: flex;
+            gap: .55rem;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 1024px) {
+            .fgrid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 680px) {
+            .fgrid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* DEEP DIVE */
+        .deep {
+            padding: 2.4rem 0 0 0;
+            background:
+                radial-gradient(900px 420px at 18% 0%, rgba(74, 144, 226, .10), transparent 60%),
+                radial-gradient(760px 420px at 85% 10%, rgba(217, 120, 0, .08), transparent 58%),
+                linear-gradient(180deg, rgba(224, 247, 250, .0), rgba(224, 247, 250, .35));
+        }
+
+        .deep-wrap {
+            margin: 0 var(--page-pad);
+            border-radius: 30px;
+            background: rgba(255, 255, 255, .58);
+            border: 1px solid rgba(255, 255, 255, .78);
+            backdrop-filter: blur(14px);
+            box-shadow: 0 22px 70px rgba(15, 23, 42, .12);
+            overflow: hidden;
+        }
+
+        .deep-head {
+            padding: 1.6rem 1.6rem 1rem 1.6rem;
+            border-bottom: 1px solid rgba(15, 23, 42, .08);
+            background:
+                radial-gradient(720px 320px at 10% 0%, rgba(74, 144, 226, .10), transparent 62%),
+                radial-gradient(720px 320px at 90% 0%, rgba(0, 159, 139, .08), transparent 62%),
+                rgba(255, 255, 255, .18);
+            text-align: center;
+        }
+
+        .deep-head h2 {
+            margin: .85rem 0 .35rem 0;
+            font-size: clamp(1.45rem, 2.2vw, 2rem);
+            color: var(--ink);
+            letter-spacing: -.02em;
+            line-height: 1.2;
+        }
+
+        .deep-head p {
+            margin: 0 auto;
+            max-width: 920px;
+            color: var(--muted);
+        }
+
+        .deep-body {
+            padding: 1.2rem 1.25rem 1.35rem 1.25rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: .55rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: .35rem 0 1rem 0;
+        }
+
+        .tab {
+            border: 1px solid rgba(15, 23, 42, .10);
+            background: rgba(255, 255, 255, .78);
+            color: var(--ink);
+            padding: .55rem .8rem;
+            border-radius: 999px;
+            font-weight: 900;
+            cursor: pointer;
+            user-select: none;
+            transition: transform .2s ease, background .2s ease, border-color .2s ease;
+            display: inline-flex;
+            gap: .45rem;
+            align-items: center;
+            white-space: nowrap;
+        }
+
+        .tab:hover {
+            transform: translateY(-1px);
+        }
+
+        .tab.active {
+            background: rgba(74, 144, 226, .12);
+            border-color: rgba(74, 144, 226, .24);
+        }
+
+        .panel-grid {
+            display: grid;
+            grid-template-columns: 1.05fr .95fr;
+            gap: 1rem;
+            align-items: start;
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, .85);
+            border: 1px solid rgba(15, 23, 42, .10);
+            border-radius: 24px;
+            box-shadow: 0 18px 55px rgba(15, 23, 42, .10);
+            padding: 1.15rem;
+            overflow: hidden;
+        }
+
+        .panel h3 {
+            margin: 0 0 .4rem 0;
+            color: var(--ink);
+            letter-spacing: -.01em;
+        }
+
+        .panel p {
+            margin: 0 0 .8rem 0;
+            color: var(--muted);
+        }
+
+        .bullets {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: grid;
+            gap: .55rem;
+        }
+
+        .bullets li {
+            display: flex;
+            gap: .55rem;
+            align-items: flex-start;
+            color: #1f2937;
+        }
+
+        .bullets li i {
+            color: #16a34a;
+            margin-top: .2rem;
+        }
+
+        .shot {
+            border-radius: 22px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, .85);
+            background: rgba(255, 255, 255, .65);
+            box-shadow: 0 22px 70px rgba(15, 23, 42, .14);
+        }
+
+        .shot img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .panel-cta {
+            margin-top: .9rem;
+            display: flex;
+            gap: .6rem;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 920px) {
+            .panel-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 520px) {
+            .panel-cta {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: .6rem;
+            }
+
+            .panel-cta .btn {
+                width: 100%;
+            }
+        }
+
+        /* FAQ */
+        .faq {
+            padding: 2.2rem 0 0 0;
+            background: linear-gradient(180deg, rgba(255, 255, 255, .55), rgba(224, 247, 250, .25));
+        }
+
+        .faq-wrap {
+            margin: 0 var(--page-pad);
+            background: rgba(255, 255, 255, .25);
+            border: 1px solid rgba(255, 255, 255, .55);
+            border-radius: 26px;
+            box-shadow: 0 18px 50px rgba(15, 23, 42, .12);
+            backdrop-filter: blur(18px);
+            padding: 1.6rem 1.3rem;
+        }
+
+        .faq-head {
+            text-align: center;
+            max-width: 980px;
+            margin: 0 auto 1rem auto;
+        }
+
+        .faq-head h2 {
+            margin: .35rem 0 .35rem 0;
+            font-size: clamp(1.45rem, 2.2vw, 2rem);
+            color: var(--ink);
+        }
+
+        .faq-head p {
+            margin: 0 auto;
+            max-width: 860px;
+            color: #334155;
+        }
+
+        .faq-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .qa {
+            background: rgba(255, 255, 255, .75);
+            border: 1px solid rgba(255, 255, 255, .85);
+            border-radius: 22px;
+            box-shadow: 0 12px 30px rgba(15, 23, 42, .10);
+            padding: 1rem;
+        }
+
+        .qa details {
+            background: transparent;
+        }
+
+        .qa summary {
+            cursor: pointer;
+            list-style: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: .75rem;
+            font-weight: 1000;
+            color: var(--ink);
+        }
+
+        .qa summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .qa summary span {
+            display: inline-flex;
+            align-items: center;
+            gap: .55rem;
+        }
+
+        .qa summary i {
+            color: var(--primary);
+        }
+
+        .qa .caret {
+            color: #334155;
+            transition: transform .2s ease;
+        }
+
+        .qa details[open] .caret {
+            transform: rotate(180deg);
+        }
+
+        .qa p {
+            margin: .75rem 0 0 0;
+            color: #475569;
+        }
+
+        @media (max-width: 920px) {
+            .faq-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* FOOTER (same as main) */
+        .footer {
+            background-color: #f9f9f9;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            font-size: 0.95rem;
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            border-radius: 25px;
+            margin: 2rem var(--page-pad);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            gap: 0;
+        }
+
+        .footer div {
+            margin: 1rem;
+            flex: 1 1 220px;
+            min-width: 220px;
+        }
+
+        .footer h4 {
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .footer ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .footer ul li {
+            margin-bottom: 0.5rem;
+        }
+
+        .footer ul li a {
+            color: #333;
+        }
+
+        .footer ul li a:hover {
+            text-decoration: underline;
+        }
+
+        #toTopBtn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            display: none;
+            z-index: 1000;
+            transition: transform 0.2s ease;
+        }
+
+        #toTopBtn:hover {
+            transform: scale(1.08);
+        }
+
+        .fab-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            position: fixed;
+            bottom: 170px;
+            right: 20px;
+            z-index: 999;
+        }
+
+        .whatsapp-icon {
+            transition: fill 0.3s ease;
+            cursor: pointer;
+        }
+
+        .whatsapp-icon:hover {
+            fill: white;
+        }
+
+        .fab-container:hover {
+            height: 100%;
+        }
+
+        .fab-container:hover .sub-button:nth-child(2) {
+            transform: translateY(-80px);
+        }
+
+        .fab-container:hover .sub-button:nth-child(3) {
+            transform: translateY(-140px);
+        }
+
+        .fab-container:hover .sub-button:nth-child(4) {
+            transform: translateY(-200px);
+        }
+
+        .fab-container .sub-button {
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            bottom: 10px;
+            right: 10px;
+            height: 50px;
+            width: 50px;
+            background-color: #4ba2ff;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .fab-container .sub-button:hover {
+            cursor: pointer;
+        }
+
+        .fab-container .sub-button .material-icons {
+            color: #2e2e2e;
+            padding-top: 6px;
+        }
+
+        .fab-container .sub-button .material-icons:hover {
+            color: #FEFEFE;
+        }
+
+        .fab-container .fab {
+            position: relative;
+            height: 70px;
+            width: 70px;
+            background-color: #4ba2ff;
+            border-radius: 50%;
+            z-index: 2;
+        }
+
+        .fab-container .fab:before {
+            content: " ";
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            height: 35px;
+            width: 35px;
+            background-color: inherit;
+            border-radius: 0 0 10px 0;
+            z-index: -1;
+        }
+
+        .fab-container .fab .fab-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            width: 100%;
+            border-radius: 50%;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .fab-container .fab .fab-content .material-icons {
+            color: #2e2e2e;
+            font-size: 48px;
+        }
+
+        /* Mobile perf */
+        @media (max-width: 600px) {
+
+            .header,
+            .page-hero,
+            .fcats,
+            .deep-wrap,
+            .faq-wrap,
+            .footer,
+            .navbar {
+                backdrop-filter: none !important;
+            }
+
+            .header {
+                box-shadow: 0 10px 26px rgba(15, 23, 42, .10);
+            }
+
+            .page-hero {
+                box-shadow: 0 16px 50px rgba(15, 23, 42, .10);
+            }
+
+            .deep-wrap {
+                box-shadow: 0 16px 50px rgba(15, 23, 42, .10);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .fab-container {
+                bottom: 180px;
+            }
+
+            .footer h4 {
+                font-size: 1.15rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Loader -->
+    <div id="loader">
+        <div class="academylogo">
+            <img src="./img/academylogo.png" alt="Classic Academy logo">
+        </div>
+        <div style="display:flex; gap:10px;">
+            <div class="loader">
+                <div class="face front"></div>
+                <div class="face back"></div>
+            </div>
+            <div class="loader">
+                <div class="face front"></div>
+                <div class="face back"></div>
+            </div>
+            <div class="loader">
+                <div class="face front"></div>
+                <div class="face back"></div>
+            </div>
+            <div class="loader">
+                <div class="face front"></div>
+                <div class="face back"></div>
+            </div>
+            <div class="loader">
+                <div class="face front"></div>
+                <div class="face back"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nav (same as main) -->
+    <header class="header" id="siteHeader">
+        <a href="/" class="brand" aria-label="Classic Academy Home">
+            <img class="brand-mark" src="./img/academylogo.png" alt="Classic Academy logo">
+            <div class="brand-txt">
+                <span class="brand-name">Classic Academy</span>
+                <span class="brand-sub">School management + admissions</span>
+            </div>
+        </a>
+
+        <nav class="navbar" aria-label="Primary">
+            <a href="/">Home</a>
+            <a href="/about">About</a>
+            <a class="nav-pill" href="/features">Features</a>
+            <a href="/#testimonials">Benefits</a>
+            <a href="/#contact">Contact</a>
+            <a class="nav-pill" href="/#pricing">Join Today</a>
+            <a class="nav-pill" href="/schedule">Sign In</a>
+        </nav>
+
+        <div class="nav-actions">
+            <a href="/schedule" class="btn btn-sm"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
+            <button id="menu-btn" class="menu-btn" aria-label="Open menu" aria-expanded="false">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Page hero -->
+    <section class="page-hero reveal" aria-label="Features hero">
+        <div class="page-hero-grid">
+            <div>
+                <span class="kicker"><i class="fa-solid fa-layer-group"></i> Everything your school needs</span>
+                <h1>All the <span>Features</span> — Organized, Secure, and Easy.</h1>
+                <p>
+                    Classic Academy brings admissions, student records, finance, exams, timetables, messaging, portals
+                    and reports
+                    into one clean system — designed for schools in Uganda & South Sudan.
+                </p>
+
+                <div class="hero-actions">
+                    <a href="/schedule" class="btn"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
+                    <a href="/#pricing" class="btn ghost"><i class="fa-solid fa-tags"></i> View Pricing</a>
+                </div>
+
+                <div class="hero-mini">
+                    <div class="mini"><strong>Role-based Access</strong><span>Admin, Staff, Students, Parents</span>
+                    </div>
+                    <div class="mini"><strong>Fast Onboarding</strong><span>Templates + imports + training</span></div>
+                    <div class="mini"><strong>Reports & Exports</strong><span>PDF, Excel, dashboards</span></div>
+                </div>
+            </div>
+
+            <aside class="hero-panel">
+                <div class="hero-panel-top">
+                    <strong>Popular workflows</strong>
+                    <span class="hero-pill"><i class="fa-solid fa-shield-halved"></i> Secure</span>
+                </div>
+                <div class="hero-panel-body">
+                    <ul class="hero-panel-list">
+                        <li><i class="fa-solid fa-circle-check"></i> Receive applications online → review → shortlist →
+                            admit</li>
+                        <li><i class="fa-solid fa-circle-check"></i> Generate invoices → post payments → print receipts
+                        </li>
+                        <li><i class="fa-solid fa-circle-check"></i> Enter marks → compute grades → publish results</li>
+                        <li><i class="fa-solid fa-circle-check"></i> Track attendance → send alerts → follow-up quickly
+                        </li>
+                        <li><i class="fa-solid fa-circle-check"></i> Share updates via SMS/WhatsApp/Email (optional)
+                        </li>
+                    </ul>
+                </div>
+            </aside>
+        </div>
+    </section>
+
+    <!-- Feature categories -->
+    <section class="fcats" id="modules">
+        <div class="fcats-head reveal">
+            <div>
+                <h2>Feature Modules</h2>
+                <p>Search and filter modules. Click “Learn more” to jump to the deep dive section below.</p>
+            </div>
+
+            <div class="fcats-tools">
+                <div class="search">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input id="featureSearch" type="search"
+                        placeholder="Search features (e.g., fees, exams, admissions, portal)..." />
+                </div>
+                <div class="chipbar" aria-label="Filters">
+                    <button class="fchip active" data-filter="all" type="button"><i class="fa-solid fa-sliders"></i>
+                        All</button>
+                    <button class="fchip" data-filter="admissions" type="button"><i class="fa-solid fa-user-plus"></i>
+                        Admissions</button>
+                    <button class="fchip" data-filter="core" type="button"><i class="fa-solid fa-id-card"></i>
+                        Core</button>
+                    <button class="fchip" data-filter="finance" type="button"><i class="fa-solid fa-coins"></i>
+                        Finance</button>
+                    <button class="fchip" data-filter="academics" type="button"><i
+                            class="fa-solid fa-graduation-cap"></i> Academics</button>
+                    <button class="fchip" data-filter="communication" type="button"><i class="fa-solid fa-comments"></i>
+                        Communication</button>
+                    <button class="fchip" data-filter="reports" type="button"><i class="fa-solid fa-chart-line"></i>
+                        Reports</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="fgrid" id="featureGrid">
+            <!-- Admissions -->
+            <article class="fcard reveal" data-tags="admissions core">
+                <div class="fhead">
+                    <div style="display:flex; gap:.75rem; min-width:0;">
+                        <div class="fico"><i class="fa-solid fa-user-plus"></i></div>
+                        <div class="ftitle">
+                            <h3>Admissions Pipeline</h3>
+                            <p>Online application, review, shortlist, admit, follow-ups.</p>
+                        </div>
+                    </div>
+                    <span class="ftag hot"><i class="fa-solid fa-fire"></i> Popular</span>
+                </div>
+                <ul class="flist">
+                    <li><i class="fa-solid fa-check"></i> Application forms + document uploads</li>
+                    <li><i class="fa-solid fa-check"></i> Statuses: received → under review → accepted</li>
+                    <li><i class="fa-solid fa-check"></i> Parent notifications and quick follow-up</li>
+                </ul>
+                <div class="factions">
+                    <a class="btn btn-sm" href="#deepdive" data-open="admissions"><i
+                            class="fa-solid fa-circle-info"></i> Learn more</a>
+                    <a class="btn ghost btn-sm" href="/schedule"><i class="fa-solid fa-calendar-check"></i> Book
+                        demo</a>
+                </div>
+            </article>
+
+            <!-- Student Management -->
+            <article class="fcard reveal" data-tags="core">
+                <div class="fhead">
+                    <div style="display:flex; gap:.75rem; min-width:0;">
+                        <div class="fico"><i class="fa-solid fa-id-card"></i></div>
+                        <div class="ftitle">
+                            <h3>Student Management</h3>
+                            <p>Central profiles, class placement, guardians, history.</p>
+                        </div>
+                    </div>
+                    <span class="ftag"><i class="fa-solid fa-shield"></i> Core</span>
+                </div>
+                <ul class="flist">
+                    <li><i class="fa-solid fa-check"></i> Student biodata, classes, guardians</li>
+                    <li><i class="fa-solid fa-check"></i> Promotions, transfers, exits</li>
+                    <li><i class="fa-solid fa-check"></i> Bulk import templates</li>
+                </ul>
+                <div class="factions">
+                    <a class="btn btn-sm" href="#deepdive" data-open="core"><i class="fa-solid fa-circle-info"></i>
+                        Learn more</a>
+                    <a class="btn ghost btn-sm" href="/#pricing"><i class="fa-solid fa-tags"></i> View plans</a>
+                </div>
+            </article>
+
+            <!-- Staff -->
+            <article class="fcard reveal" data-tags="core">
+                <div class="fhead">
+                    <div style="display:flex; gap:.75rem; min-width:0;">
+                        <div class="fico"><i class="fa-solid fa-user-tie"></i></div>
+                        <div class="ftitle">
+                            <h3>Staff & Roles</h3>
+                            <p>Role-based access and permissions for every user.</p>
+                        </div>
+                    </div>
+                    <span class="ftag"><i class="fa-solid fa-lock"></i> Secure</span>
+                </div>
+                <ul class="flist">
+                    <li><i class="fa-solid fa-check"></i> Admin, teacher, bursar, registrar roles</li>
+                    <li><i class="fa-solid fa-check"></i> Activity tracking & approvals (plan-based)</li>
+                    <li><i class="fa-solid fa-check"></i> Secure login and audits</li>
+                </ul>
+                <div class="factions">
+                    <a class="btn btn-sm" href="#deepdive" data-open="security"><i class="fa-solid fa-circle-info"></i>
+                        Learn more</a>
+                    <a class="btn ghost btn-sm" href="/schedule"><i class="fa-solid fa-calendar-check"></i> Book
+                        demo</a>
+                </div>
+            </article>
+
+            <!-- Finance -->
+            <article class="fcard reveal" data-tags="finance reports">
+                <div class="fhead">
+                    <div style="display:flex; gap:.75rem; min-width:0;">
+                        <div class="fico"><i class="fa-solid fa-coins"></i></div>
+                        <div class="ftitle">
+                            <h3>Fees & Finance</h3>
+                            <p>Invoices, receipts, balances, statements, exports.</p>
+                        </div>
+                    </div>
+                    <span class="ftag hot"><i class="fa-solid fa-fire"></i> Popular</span>
+                </div>
+                <ul class="flist">
+                    <li><i class="fa-solid fa-check"></i> Fee structures per class/term</li>
+                    <li><i class="fa-solid fa-check"></i> Payments posting + printable receipts</li>
+                    <li><i class="fa-solid fa-check"></i> Student statements & collection reports</li>
+                </ul>
+                <div class="factions">
+                    <a class="btn btn-sm" href="#deepdive" data-open="finance"><i class="fa-solid fa-circle-info"></i>
+                        Learn more</a>
+                    <a class="btn ghost btn-sm" href="/plan?plan=standard"><i class="fa-solid fa-tags"></i> Best
+                        plan</a>
+                </div>
+            </article>
+
+            <!-- Attendance -->
+            <article class="fcard reveal" data-tags="academics communication">
+                <div class="fhead">
+                    <div style="display:flex; gap:.75rem; min-width:0;">
+                        <div class="fico"><i class="fa-solid fa-clipboard-user"></i></div>
+                        <div class="ftitle">
+                            <h3>Attendance</h3>
+                            <p>Daily attendance, trends, and parent alerts (optional).</p>
+                        </div>
+                    </div>
+                    <span class="ftag"><i class="fa-solid fa-check"></i> Essential</span>
+                </div>
+                <ul class="flist">
+                    <li><i class="fa-solid fa-check"></i> Mark per class/lesson/day</li>
+                    <li><i class="fa-solid fa-check"></i> Attendance summaries by student</li>
+                    <li><i class="fa-solid fa-check"></i> Alerts via SMS/WhatsApp/Email (add-on)</li>
+                </ul>
+                <div class="factions">
+                    <a class="btn btn-sm" href="#deepdive" data-open="attendance"><i
+                            class="fa-solid fa-circle-info"></i> Learn more</a>
+                    <a class="btn ghost btn-sm" href="/schedule"><i class="fa-solid fa-calendar-check"></i> Book
+                        demo</a>
+                </div>
+            </article>
+
+            <!-- Timetable -->
+            <article class="fcard reveal" data-tags="academics">
+                <div class="fhead">
+                    <div style="display:flex; gap:.75rem; min-width:0;">
+                        <div class="fico"><i class="fa-solid fa-calendar-days"></i></div>
+                        <div class="ftitle">
+                            <h3>Timetables</h3>
+                            <p>Class schedules, exam schedules and publishing.</p>
+                        </div>
+                    </div>
+                    <span class="ftag"><i class="fa-solid fa-calendar"></i> Scheduling</span>
+                </div>
+                <ul class="flist">
+                    <li><i class="fa-solid fa-check"></i> Class timetable builder</li>
+                    <li><i class="fa-solid fa-check"></i> Exam timetables per term</li>
+                    <li><i class="fa-solid fa-check"></i> Publish to staff/student portals</li>
+                </ul>
+                <div class="factions">
+                    <a class="btn btn-sm" href="#deepdive" data-open="academics"><i class="fa-solid fa-circle-info"></i>
+                        Learn more</a>
+                    <a class="btn ghost btn-sm" href="/#pricing"><i class="fa-solid fa-tags"></i> View plans</a>
+                </div>
+            </article>
+
+            <!-- Exams & Results -->
+            <article class="fcard reveal" data-tags="academics reports">
+                <div class="fhead">
+                    <div style="display:flex; gap:.75rem; min-width:0;">
+                        <div class="fico"><i class="fa-solid fa-graduation-cap"></i></div>
+                        <div class="ftitle">
+                            <h3>Exams & Results</h3>
+                            <p>Marks entry, grading, report cards, publishing.</p>
+                        </div>
+                    </div>
+                    <span class="ftag hot"><i class="fa-solid fa-fire"></i> Popular</span>
+                </div>
+                <ul class="flist">
+                    <li><i class="fa-solid fa-check"></i> Exam setup by term/class/subject</li>
+                    <li><i class="fa-solid fa-check"></i> Grade computation and validations</li>
+                    <li><i class="fa-solid fa-check"></i> Publish to student/parent portal (plan)</li>
+                </ul>
+                <div class="factions">
+                    <a class="btn btn-sm" href="#deepdive" data-open="academics"><i class="fa-solid fa-circle-info"></i>
+                        Learn more</a>
+                    <a class="btn ghost btn-sm" href="/plan?plan=growth"><i class="fa-solid fa-arrow-trend-up"></i>
+                        Growth plan</a>
+                </div>
+            </article>
+
+            <!-- Messaging -->
+            <article class="fcard reveal" data-tags="communication">
+                <div class="fhead">
+                    <div style="display:flex; gap:.75rem; min-width:0;">
+                        <div class="fico"><i class="fa-solid fa-comments"></i></div>
+                        <div class="ftitle">
+                            <h3>Messaging</h3>
+                            <p>Internal messaging + optional SMS/WhatsApp alerts.</p>
+                        </div>
+                    </div>
+                    <span class="ftag"><i class="fa-solid fa-bolt"></i> Fast</span>
+                </div>
+                <ul class="flist">
+                    <li><i class="fa-solid fa-check"></i> Announcements for classes/parents</li>
+                    <li><i class="fa-solid fa-check"></i> Bulk messages (role-based)</li>
+                    <li><i class="fa-solid fa-check"></i> Delivery channels (plan/add-on)</li>
+                </ul>
+                <div class="factions">
+                    <a class="btn btn-sm" href="#deepdive" data-open="communication"><i
+                            class="fa-solid fa-circle-info"></i> Learn more</a>
+                    <a class="btn ghost btn-sm" href="/schedule"><i class="fa-solid fa-calendar-check"></i> Book
+                        demo</a>
+                </div>
+            </article>
+
+            <!-- Portals -->
+            <article class="fcard reveal" data-tags="core communication">
+                <div class="fhead">
+                    <div style="display:flex; gap:.75rem; min-width:0;">
+                        <div class="fico"><i class="fa-solid fa-desktop"></i></div>
+                        <div class="ftitle">
+                            <h3>Student & Parent Portals</h3>
+                            <p>Access results, balances, timetables, notices.</p>
+                        </div>
+                    </div>
+                    <span class="ftag"><i class="fa-solid fa-gem"></i> Premium</span>
+                </div>
+                <ul class="flist">
+                    <li><i class="fa-solid fa-check"></i> Student login for results & timetable</li>
+                    <li><i class="fa-solid fa-check"></i> Parent login (optional add-on)</li>
+                    <li><i class="fa-solid fa-check"></i> Download report cards (plan-based)</li>
+                </ul>
+                <div class="factions">
+                    <a class="btn btn-sm" href="#deepdive" data-open="portals"><i class="fa-solid fa-circle-info"></i>
+                        Learn more</a>
+                    <a class="btn ghost btn-sm" href="/plan?plan=premium"><i class="fa-solid fa-crown"></i> Premium</a>
+                </div>
+            </article>
+
+            <!-- Reports -->
+            <article class="fcard reveal" data-tags="reports finance academics">
+                <div class="fhead">
+                    <div style="display:flex; gap:.75rem; min-width:0;">
+                        <div class="fico"><i class="fa-solid fa-chart-line"></i></div>
+                        <div class="ftitle">
+                            <h3>Reports & Analytics</h3>
+                            <p>Dashboards, exports, and performance insights.</p>
+                        </div>
+                    </div>
+                    <span class="ftag"><i class="fa-solid fa-file-export"></i> Export</span>
+                </div>
+                <ul class="flist">
+                    <li><i class="fa-solid fa-check"></i> Fees collection and arrears reports</li>
+                    <li><i class="fa-solid fa-check"></i> Academic performance summaries</li>
+                    <li><i class="fa-solid fa-check"></i> Excel/PDF exports (plan-based)</li>
+                </ul>
+                <div class="factions">
+                    <a class="btn btn-sm" href="#deepdive" data-open="reports"><i class="fa-solid fa-circle-info"></i>
+                        Learn more</a>
+                    <a class="btn ghost btn-sm" href="/#pricing"><i class="fa-solid fa-tags"></i> View plans</a>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <!-- Deep dive section -->
+    <section class="deep" id="deepdive">
+        <div class="deep-wrap">
+            <header class="deep-head reveal">
+                <span class="kicker"><i class="fa-solid fa-diagram-project"></i> Deep dive</span>
+                <h2>How each module works</h2>
+                <p>Pick a section below to see what you get, how it helps, and what’s included in different plans.</p>
+            </header>
+
+            <div class="deep-body">
+                <div class="tabs reveal" role="tablist" aria-label="Feature deep dive tabs">
+                    <button class="tab active" data-tab="admissions" type="button"><i class="fa-solid fa-user-plus"></i>
+                        Admissions</button>
+                    <button class="tab" data-tab="finance" type="button"><i class="fa-solid fa-coins"></i>
+                        Finance</button>
+                    <button class="tab" data-tab="academics" type="button"><i class="fa-solid fa-graduation-cap"></i>
+                        Academics</button>
+                    <button class="tab" data-tab="attendance" type="button"><i class="fa-solid fa-clipboard-user"></i>
+                        Attendance</button>
+                    <button class="tab" data-tab="communication" type="button"><i class="fa-solid fa-comments"></i>
+                        Communication</button>
+                    <button class="tab" data-tab="portals" type="button"><i class="fa-solid fa-desktop"></i>
+                        Portals</button>
+                    <button class="tab" data-tab="reports" type="button"><i class="fa-solid fa-chart-line"></i>
+                        Reports</button>
+                    <button class="tab" data-tab="security" type="button"><i class="fa-solid fa-shield-halved"></i>
+                        Security</button>
+                    <button class="tab" data-tab="core" type="button"><i class="fa-solid fa-id-card"></i> Core</button>
+                </div>
+
+                <div class="panel-grid">
+                    <div class="panel reveal">
+                        <h3 id="panelTitle">Admissions Pipeline</h3>
+                        <p id="panelDesc">Collect applications online, review faster, and keep parents updated without
+                            daily calls.</p>
+                        <ul class="bullets" id="panelBullets">
+                            <li><i class="fa-solid fa-check"></i> Custom forms per school (fields + requirements)</li>
+                            <li><i class="fa-solid fa-check"></i> Applicant statuses and follow-up workflow</li>
+                            <li><i class="fa-solid fa-check"></i> Export applicant lists for interviews and reporting
+                            </li>
+                            <li><i class="fa-solid fa-check"></i> Admit → create student profile automatically
+                                (plan-based)</li>
+                        </ul>
+
+                        <div class="panel-cta">
+                            <a class="btn btn-sm" href="/schedule"><i class="fa-solid fa-calendar-check"></i> Book
+                                Demo</a>
+                            <a class="btn ghost btn-sm" href="/#pricing"><i class="fa-solid fa-tags"></i> View
+                                pricing</a>
+                        </div>
+                    </div>
+
+                    <div class="shot reveal" aria-label="Feature screenshot">
+                        <img id="panelImage" src="img/hero.png" alt="Classic Academy UI preview">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="faq" id="faq">
+        <div class="faq-wrap">
+            <div class="faq-head reveal">
+                <span class="kicker"><i class="fa-solid fa-circle-question"></i> FAQs</span>
+                <h2>Common questions</h2>
+                <p>Short answers. If you want a guided walkthrough, book a demo and we’ll recommend the right plan.</p>
+            </div>
+
+            <div class="faq-grid">
+                <div class="qa reveal">
+                    <details>
+                        <summary>
+                            <span><i class="fa-solid fa-lock"></i> Is our school data safe?</span>
+                            <i class="fa-solid fa-chevron-down caret" aria-hidden="true"></i>
+                        </summary>
+                        <p>Yes. Access is role-based, activity can be audited (plan-based), and your school controls who
+                            can see or edit data.</p>
+                    </details>
+                </div>
+
+                <div class="qa reveal">
+                    <details>
+                        <summary>
+                            <span><i class="fa-solid fa-bolt"></i> How fast can we go live?</span>
+                            <i class="fa-solid fa-chevron-down caret" aria-hidden="true"></i>
+                        </summary>
+                        <p>Most schools can start with onboarding + imports quickly. We provide templates and training
+                            to help your team adopt the system.</p>
+                    </details>
+                </div>
+
+                <div class="qa reveal">
+                    <details>
+                        <summary>
+                            <span><i class="fa-solid fa-coins"></i> Can we track fees and print receipts?</span>
+                            <i class="fa-solid fa-chevron-down caret" aria-hidden="true"></i>
+                        </summary>
+                        <p>Yes. Create invoice structures, post payments, print receipts, track balances and generate
+                            statements and collection reports.</p>
+                    </details>
+                </div>
+
+                <div class="qa reveal">
+                    <details>
+                        <summary>
+                            <span><i class="fa-solid fa-comments"></i> Can parents receive alerts?</span>
+                            <i class="fa-solid fa-chevron-down caret" aria-hidden="true"></i>
+                        </summary>
+                        <p>Yes. Internal messaging is available, and SMS/WhatsApp/Email alerts can be enabled depending
+                            on your plan/add-ons.</p>
+                    </details>
+                </div>
+            </div>
+
+            <div style="text-align:center; margin-top: 1.1rem" class="reveal">
+                <a class="btn btn-sm" href="/schedule"><i class="fa-solid fa-calendar-check"></i> Book a Demo</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer (same as main) -->
+    <footer class="footer">
+        <div>
+            <h4>About Us</h4>
+            <p>We are excited to introduce our upcoming Classic Academy Plans, where schools will be categorized</p>
+            <a href="https://play.google.com/store" target="_blank" rel="noopener">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg"
+                    style="height: 50px; width: 150px" alt="Google Play">
+            </a>
+            <a href="https://apps.apple.com/" target="_blank" rel="noopener">
+                <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg"
+                    alt="Download on the App Store" style="height: 50px;">
+            </a>
+        </div>
+
+        <div>
+            <h4>Learn about our mission</h4>
+            <ul>
+                <li><a href="/about">Our Story</a></li>
+                <li><a href="/features">What We Offer</a></li>
+                <li><a href="/plan?plan=standard">Plans & Pricing</a></li>
+                <li><a href="/blog?slug=increase-admissions">Press resources</a></li>
+                <li><a href="/careers">Careers</a></li>
+            </ul>
+        </div>
+
+        <div>
+            <h4>Get help with your account</h4>
+            <ul>
+                <li><a href="/contact">Customer Support</a></li>
+                <li><a href="/schedule">Book a Demo</a></li>
+                <li><a href="/faq">FAQ</a></li>
+                <li><a href="/privacy">Privacy Policy</a></li>
+                <li><a href="/terms">Terms</a></li>
+            </ul>
+        </div>
+
+        <div>
+            <h4>Join our school community</h4>
+            <ul>
+                <li><a href="/schools">Find Schools</a></li>
+                <li><a href="/admissions">Admissions</a></li>
+                <li><a href="/search">Search</a></li>
+                <li><a href="/blog?slug=increase-admissions">Blog</a></li>
+                <li><a href="https://chat.whatsapp.com/HRGoS3fMZoZGgXbz1HDw6a?mode=gi_t" target="_blank" rel="noopener">Join whatsapp group</a></li>
+            </ul>
+        </div>
+    </footer>
+
+    <button id="toTopBtn" aria-label="Scroll to top">↑</button>
+
+    <!-- Floating support button (same as main) -->
+    <div class="fab-container" aria-hidden="true">
+        <div class="fab shadow">
+            <div class="fab-content">
+                <span class="material-icons">support_agent</span>
+            </div>
+        </div>
+        <div class="sub-button shadow">
+            <a href="tel:+256781977217"><span class="material-icons">phone</span></a>
+        </div>
+        <div class="sub-button shadow">
+            <a href="https://api.whatsapp.com/send?phone=256781977217" target="_blank" rel="noopener">
+                <span class="material-icons">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="whatsapp-icon" viewBox="0 0 448 512" width="35"
+                        height="35" fill="#2e2e2e" aria-label="WhatsApp Icon">
+                        <path
+                            d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zM223.9 438.7c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zM325.1 300.5c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z" />
+                    </svg>
+                </span>
+            </a>
+        </div>
+        <div class="sub-button shadow">
+            <a href="/share" target="_blank" rel="noopener"><span class="material-icons">share</span></a>
+        </div>
+    </div>
+
+    <!-- libs -->
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
+    <script>
+        // Loader
+        setTimeout(() => {
+            const loader = document.getElementById("loader");
+            if (loader) loader.style.display = "none";
+        }, 1200);
+
+        const navbar = document.querySelector('.header .navbar');
+        const menuBtn = document.getElementById('menu-btn');
+        const toTopBtn = document.getElementById("toTopBtn");
+
+        // Toggle navbar (mobile)
+        menuBtn?.addEventListener("click", () => {
+            const isOpen = navbar?.classList.toggle('active');
+            menuBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        });
+
+        // Close navbar when clicking a link (mobile)
+        document.querySelectorAll(".header .navbar a").forEach(a => {
+            a.addEventListener("click", () => {
+                navbar?.classList.remove("active");
+                menuBtn?.setAttribute('aria-expanded', 'false');
+            });
+        });
+
+        // Close menu if tapping outside
+        document.addEventListener("click", (e) => {
+            const header = document.getElementById("siteHeader");
+            if (!header) return;
+            if (!header.contains(e.target)) {
+                navbar?.classList.remove("active");
+                menuBtn?.setAttribute('aria-expanded', 'false');
+            }
+        }, { passive: true });
+
+        // Scroll to top button
+        window.addEventListener('scroll', () => {
+            if (toTopBtn) toTopBtn.style.display = (window.scrollY > 300) ? "block" : "none";
+        }, { passive: true });
+
+        toTopBtn?.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+
+        // Reveal animations
+        const io = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) return;
+                entry.target.classList.add("in");
+            });
+        }, { threshold: 0.12 });
+
+        document.querySelectorAll(".reveal").forEach(el => io.observe(el));
+
+        // Feature filter + search
+        const grid = document.getElementById("featureGrid");
+        const cards = Array.from(grid?.querySelectorAll(".fcard") || []);
+        const chips = Array.from(document.querySelectorAll(".fchip"));
+        const search = document.getElementById("featureSearch");
+
+        let activeFilter = "all";
+        let query = "";
+
+        function matchesFilter(card) {
+            const tags = (card.dataset.tags || "").split(" ").map(t => t.trim()).filter(Boolean);
+            const q = query.trim().toLowerCase();
+
+            const text = card.innerText.toLowerCase();
+            const passQuery = !q || text.includes(q);
+            const passTag = (activeFilter === "all") || tags.includes(activeFilter);
+
+            return passQuery && passTag;
+        }
+
+        function applyFilters() {
+            cards.forEach(card => {
+                card.style.display = matchesFilter(card) ? "" : "none";
+            });
+        }
+
+        chips.forEach(btn => {
+            btn.addEventListener("click", () => {
+                chips.forEach(x => x.classList.remove("active"));
+                btn.classList.add("active");
+                activeFilter = btn.dataset.filter || "all";
+                applyFilters();
+            });
+        });
+
+        search?.addEventListener("input", (e) => {
+            query = e.target.value || "";
+            applyFilters();
+        });
+
+        // Deep dive tabs content
+        const tabBtns = Array.from(document.querySelectorAll(".tab"));
+        const panelTitle = document.getElementById("panelTitle");
+        const panelDesc = document.getElementById("panelDesc");
+        const panelBullets = document.getElementById("panelBullets");
+        const panelImage = document.getElementById("panelImage");
+
+        const deepData = {
+            admissions: {
+                title: "Admissions Pipeline",
+                desc: "Collect applications online, review faster, and keep parents updated without daily calls.",
+                bullets: [
+                    "Custom forms per school (fields + requirements)",
+                    "Applicant statuses and follow-up workflow",
+                    "Export applicant lists for interviews and reporting",
+                    "Admit → create student profile automatically (plan-based)"
+                ],
+                img: "img/hero.png",
+                alt: "Admissions workflow preview"
+            },
+            finance: {
+                title: "Fees & Finance",
+                desc: "Track invoices, receipts, balances, statements, and improve collections with clean reporting.",
+                bullets: [
+                    "Fee structures per class/term and optional items",
+                    "Post payments and print receipts instantly",
+                    "Balances, arrears tracking, and student statements",
+                    "Exports for reconciliation and end-of-term reporting"
+                ],
+                img: "https://picsum.photos/seed/finance-ca/1200/700",
+                alt: "Finance dashboard preview"
+            },
+            academics: {
+                title: "Exams, Grading & Results",
+                desc: "Setup exams, enter marks, compute grades and publish results with fewer errors.",
+                bullets: [
+                    "Exam setup per term/class/subject",
+                    "Marks entry with validations and grading rules",
+                    "Report cards and result summaries",
+                    "Publish to portals (plan-based) and export PDFs/Excel"
+                ],
+                img: "https://picsum.photos/seed/exams-ca/1200/700",
+                alt: "Exams and results preview"
+            },
+            attendance: {
+                title: "Attendance Tracking",
+                desc: "Simple attendance marking with summaries and optional parent alerts.",
+                bullets: [
+                    "Daily attendance by class/lesson",
+                    "Attendance summaries per student/class",
+                    "Spot trends early and follow-up quickly",
+                    "Optional alerts via SMS/WhatsApp/Email (add-on)"
+                ],
+                img: "https://picsum.photos/seed/attendance-ca/1200/700",
+                alt: "Attendance preview"
+            },
+            communication: {
+                title: "Messaging & Announcements",
+                desc: "Send internal announcements and reach parents fast with optional integrations.",
+                bullets: [
+                    "Broadcast announcements by class/role/group",
+                    "Internal messaging for staff coordination",
+                    "Templates for common notices",
+                    "Optional SMS/WhatsApp/Email delivery (plan/add-on)"
+                ],
+                img: "https://picsum.photos/seed/communication-ca/1200/700",
+                alt: "Messaging preview"
+            },
+            portals: {
+                title: "Student & Parent Portals",
+                desc: "Give students and parents access to results, balances, timetables, and notices.",
+                bullets: [
+                    "Student portal for results, timetable, notices",
+                    "Optional parent portal with secure access",
+                    "Download report cards and fee statements (plan-based)",
+                    "Mobile-friendly access anywhere"
+                ],
+                img: "https://picsum.photos/seed/portal-ca/1200/700",
+                alt: "Portal preview"
+            },
+            reports: {
+                title: "Reports & Analytics",
+                desc: "Dashboards and exports for finance and academics — built for decision making.",
+                bullets: [
+                    "Fees collection, arrears and payment summaries",
+                    "Performance summaries and ranking views (plan-based)",
+                    "Attendance insights and trends",
+                    "Excel/PDF exports for meetings and audits"
+                ],
+                img: "https://picsum.photos/seed/reports-ca/1200/700",
+                alt: "Reports preview"
+            },
+            security: {
+                title: "Security, Roles & Audits",
+                desc: "Control access, reduce mistakes, and track activity across key workflows.",
+                bullets: [
+                    "Role-based permissions (admin/staff/student/parent)",
+                    "Approvals for sensitive actions (plan-based)",
+                    "Audit trail for key actions (plan-based)",
+                    "Privacy-first approach: you control your school data"
+                ],
+                img: "https://picsum.photos/seed/security-ca/1200/700",
+                alt: "Security preview"
+            },
+            core: {
+                title: "Core School Operations",
+                desc: "The foundation: profiles, classes, staff, terms, and clean structure for everything else.",
+                bullets: [
+                    "Student profiles, guardians, and class placement",
+                    "Staff profiles and role assignment",
+                    "Term setup and academic structure",
+                    "Bulk import templates to onboard fast"
+                ],
+                img: "https://picsum.photos/seed/core-ca/1200/700",
+                alt: "Core operations preview"
+            }
+        };
+
+        function setActiveTab(key) {
+            const data = deepData[key] || deepData.admissions;
+            tabBtns.forEach(b => b.classList.toggle("active", b.dataset.tab === key));
+            if (panelTitle) panelTitle.textContent = data.title;
+            if (panelDesc) panelDesc.textContent = data.desc;
+
+            if (panelBullets) {
+                panelBullets.innerHTML = data.bullets.map(t => (
+                    `<li><i class="fa-solid fa-check"></i> ${t}</li>`
+                )).join("");
+            }
+
+            if (panelImage) {
+                panelImage.src = data.img;
+                panelImage.alt = data.alt;
+            }
+
+            // small accessibility polish: focus title
+            panelTitle?.setAttribute("tabindex", "-1");
+            panelTitle?.focus({ preventScroll: true });
+            panelTitle?.removeAttribute("tabindex");
+        }
+
+        tabBtns.forEach(btn => {
+            btn.addEventListener("click", () => setActiveTab(btn.dataset.tab));
+        });
+
+        // "Learn more" buttons open specific tab
+        document.querySelectorAll('[data-open]').forEach(a => {
+            a.addEventListener("click", (e) => {
+                const key = a.getAttribute("data-open");
+                if (!key) return;
+                setActiveTab(key);
+            });
+        });
+
+        // initial
+        applyFilters();
+        setActiveTab("admissions");
+    </script>
+</body>
+
+</html>

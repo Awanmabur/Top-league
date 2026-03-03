@@ -4,32 +4,34 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Privacy Policy — Classic Academy</title>
+  <title>Terms of Service — Classic Academy</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
   <!-- SEO -->
-  <meta name="description" content="Classic Academy privacy policy and data handling overview." />
+  <meta name="description" content="Terms and conditions for using Classic Academy." />
   <meta name="robots" content="index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1" />
   <meta name="theme-color" content="#4a90e2" />
-  <link rel="canonical" href="/privacy" />
+  <link rel="canonical" href="/terms" />
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="Privacy Policy — Classic Academy" />
-  <meta property="og:description" content="Classic Academy privacy policy and data handling overview." />
-  <meta property="og:url" content="/privacy" />
+  <meta property="og:title" content="Terms of Service — Classic Academy" />
+  <meta property="og:description" content="Terms and conditions for using Classic Academy." />
+  <meta property="og:url" content="/terms" />
   <meta property="og:image" content="img/hero.png" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Privacy Policy — Classic Academy" />
-  <meta name="twitter:description" content="Classic Academy privacy policy and data handling overview." />
+  <meta name="twitter:title" content="Terms of Service — Classic Academy" />
+  <meta name="twitter:description" content="Terms and conditions for using Classic Academy." />
   <meta name="twitter:image" content="img/hero.png" />
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap"
-    rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    @import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Outfit:wght@100..900&display=swap");
+
     :root {
       --primary: #4a90e2;
       --accent: #d97800;
@@ -39,29 +41,37 @@
       --muted: #475569;
 
       --page-pad: clamp(1rem, 4vw, 6rem);
-      --radius: 22px;
+      --section-gap: clamp(1.2rem, 2.6vw, 2rem);
 
       --shadow2: 0 18px 50px rgba(15, 23, 42, .12);
       --shadow3: 0 10px 30px rgba(15, 23, 42, .10);
-    }
 
-    * {
-      box-sizing: border-box;
+      --radius: 22px;
     }
 
     html {
       scroll-behavior: smooth;
     }
 
+    a {
+      text-decoration: none;
+    }
+
+    section,
+    footer,
+    .featured-schoolsp,
+    .featured-schools {
+      scroll-margin-top: 120px;
+    }
+
     body {
-      margin: 0;
-      font-family: 'Segoe UI', system-ui, -apple-system, Arial, sans-serif;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       line-height: 1.6;
       background: #e0f7fa;
       color: #333;
       overflow-x: clip;
-      padding-top: 112px;
       -webkit-overflow-scrolling: touch;
+      padding-top: 112px;
     }
 
     @media (max-width: 600px) {
@@ -70,12 +80,7 @@
       }
     }
 
-    a {
-      text-decoration: none;
-      color: inherit;
-    }
-
-    /* Loader */
+    /* LOADER */
     #loader {
       position: fixed;
       inset: 0;
@@ -108,20 +113,20 @@
       animation: flip 2s infinite;
     }
 
-    .loader:nth-child(2) {
-      animation-delay: .2s;
-    }
-
     .loader:nth-child(3) {
-      animation-delay: .4s;
+      animation-delay: 0.2s;
     }
 
     .loader:nth-child(4) {
-      animation-delay: .6s;
+      animation-delay: 0.4s;
     }
 
     .loader:nth-child(5) {
-      animation-delay: .8s;
+      animation-delay: 0.6s;
+    }
+
+    .loader:nth-child(6) {
+      animation-delay: 0.8s;
     }
 
     .face {
@@ -369,22 +374,176 @@
       }
     }
 
-    /* Footer */
+    /* Mobile perf */
+    @media (max-width: 600px) {
+
+      .header,
+      .hero,
+      .features,
+      .p4-wrap,
+      .tcard,
+      .blogs-wrap,
+      .cinfo,
+      .cform,
+      .footer,
+      .navbar,
+      .about-hero,
+      .cardx {
+        backdrop-filter: none !important;
+      }
+
+      .header {
+        box-shadow: 0 10px 26px rgba(15, 23, 42, .10);
+      }
+    }
+
+    /* ===== Inner pages (shared) ===== */
+    .about-hero {
+      margin: 0 var(--page-pad);
+      border-radius: 26px;
+      background: rgba(255, 255, 255, .28);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, .55);
+      box-shadow: 0 18px 50px rgba(15, 23, 42, .12);
+      padding: 2rem 2rem;
+      display: grid;
+      grid-template-columns: 1.25fr .9fr;
+      gap: 1.8rem;
+      align-items: center;
+    }
+
+    .about-hero h1 {
+      font-size: 2.2rem;
+      color: #0f172a;
+      line-height: 1.12;
+      margin-top: .6rem;
+    }
+
+    .about-hero p {
+      margin-top: .65rem;
+      color: #475569;
+      max-width: 58ch;
+    }
+
+    .about-hero .kicker {
+      display: inline-flex;
+      gap: .55rem;
+      align-items: center;
+      padding: .45rem .8rem;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .6);
+      border: 1px solid rgba(255, 255, 255, .75);
+      color: #1f2a44;
+      font-weight: 700;
+      font-size: .95rem;
+    }
+
+    .about-hero .actions {
+      display: flex;
+      gap: .75rem;
+      flex-wrap: wrap;
+      margin-top: 1.1rem;
+    }
+
+    .about-hero .actions .btn {
+      margin-left: 0;
+    }
+
+    .about-hero .media {
+      border-radius: 22px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, .55);
+      border: 1px solid rgba(255, 255, 255, .75);
+      box-shadow: 0 16px 40px rgba(15, 23, 42, .10);
+    }
+
+    .about-hero .media img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .page-wrap {
+      margin: 0 var(--page-pad);
+      padding: 2.2rem 0 2.8rem 0;
+    }
+
+    .cardx {
+      background: rgba(255, 255, 255, .70);
+      border: 1px solid rgba(255, 255, 255, .85);
+      border-radius: 22px;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, .10);
+      padding: 1.2rem 1.15rem;
+    }
+
+    .cardx h3 {
+      margin: 0;
+      color: #0f172a;
+      font-size: 1.15rem;
+    }
+
+    .cardx p {
+      margin-top: .6rem;
+      color: #475569;
+    }
+
+    .cardx ul {
+      list-style: none;
+      padding: 0;
+      margin: .6rem 0 0 0;
+      display: grid;
+      gap: .5rem;
+    }
+
+    .cardx li {
+      display: flex;
+      gap: .6rem;
+      align-items: flex-start;
+      color: #1f2937;
+    }
+
+    .cardx li i {
+      color: #16a34a;
+      margin-top: .25rem;
+    }
+
+    @media (max-width: 1024px) {
+      .about-hero {
+        grid-template-columns: 1fr;
+        padding: 1.25rem;
+      }
+
+      .about-hero h1 {
+        font-size: 1.9rem;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .about-hero h1 {
+        font-size: 1.75rem;
+      }
+    }
+
+    /* FOOTER */
     .footer {
-      background: rgba(255, 255, 255, 0.30);
-      backdrop-filter: blur(10px);
-      border-radius: 25px;
-      margin: 2rem var(--page-pad);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      background-color: #f9f9f9;
       display: flex;
       flex-wrap: wrap;
       justify-content: space-between;
       font-size: 0.95rem;
+      background: rgba(255, 255, 255, 0.3);
+      backdrop-filter: blur(10px);
+      border-radius: 25px;
+      margin: 2rem var(--page-pad);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      gap: 0;
     }
 
     .footer div {
       margin: 1rem;
-      flex: 1 1 200px;
+      flex: 1 1 220px;
+      min-width: 220px;
     }
 
     .footer h4 {
@@ -395,7 +554,6 @@
     .footer ul {
       list-style: none;
       padding: 0;
-      margin: 0;
     }
 
     .footer ul li {
@@ -410,7 +568,6 @@
       text-decoration: underline;
     }
 
-    /* Scroll to Top */
     #toTopBtn {
       position: fixed;
       bottom: 30px;
@@ -433,7 +590,6 @@
       transform: scale(1.08);
     }
 
-    /* Floating support button */
     .fab-container {
       display: flex;
       flex-direction: column;
@@ -484,6 +640,10 @@
       transition: all 0.3s ease;
     }
 
+    .fab-container .sub-button:hover {
+      cursor: pointer;
+    }
+
     .fab-container .sub-button .material-icons {
       color: #2e2e2e;
       padding-top: 6px;
@@ -500,7 +660,6 @@
       background-color: #4ba2ff;
       border-radius: 50%;
       z-index: 2;
-      box-shadow: 0 10px 26px rgba(15, 23, 42, .10);
     }
 
     .fab-container .fab:before {
@@ -529,165 +688,6 @@
     .fab-container .fab .fab-content .material-icons {
       color: #2e2e2e;
       font-size: 48px;
-    }
-
-    /* reveal helper */
-    .reveal {
-      opacity: 0;
-      transform: translateY(14px);
-      transition: all .7s ease;
-    }
-
-    .reveal.in {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      html {
-        scroll-behavior: auto !important;
-      }
-
-      .reveal {
-        opacity: 1;
-        transform: none;
-        transition: none;
-      }
-    }
-
-    @media (max-width: 480px) {
-      .fab-container {
-        bottom: 180px;
-      }
-
-      .footer h4 {
-        font-size: 1.15rem;
-      }
-    }
-
-    main.page {
-      padding: 0 var(--page-pad);
-    }
-
-    .container {
-      max-width: 1500px;
-      margin: 0 auto;
-      padding: 1.25rem 0 2.25rem;
-    }
-
-    .hero {
-      border-radius: calc(var(--radius) + 6px);
-      overflow: hidden;
-      background:
-        radial-gradient(900px 420px at 10% 15%, rgba(74, 144, 226, .20), transparent 60%),
-        radial-gradient(760px 420px at 90% 0%, rgba(217, 120, 0, .14), transparent 58%),
-        radial-gradient(760px 520px at 80% 110%, rgba(0, 159, 139, .12), transparent 56%),
-        rgba(255, 255, 255, .40);
-      border: 1px solid rgba(255, 255, 255, .70);
-      backdrop-filter: blur(14px);
-      box-shadow: var(--shadow2);
-      padding: clamp(1.1rem, 2.5vw, 2rem);
-    }
-
-    .kicker {
-      display: inline-flex;
-      align-items: center;
-      gap: .55rem;
-      padding: .45rem .75rem;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, .65);
-      border: 1px solid rgba(255, 255, 255, .8);
-      color: #1b2a4e;
-      font-weight: 800;
-      width: fit-content;
-      box-shadow: 0 10px 26px rgba(15, 23, 42, .08);
-    }
-
-    .hero h1 {
-      margin: .9rem 0 .4rem;
-      font-size: clamp(1.55rem, 2.55vw, 2.45rem);
-      line-height: 1.15;
-      letter-spacing: -.02em;
-      color: var(--ink);
-    }
-
-    .hero p {
-      margin: .5rem 0 0;
-      color: #24324f;
-      font-size: 1.02rem;
-      max-width: 72ch;
-    }
-
-    .hero .actions {
-      margin-top: 1rem;
-      display: flex;
-      flex-wrap: wrap;
-      gap: .6rem;
-    }
-
-    .note {
-      margin-top: .9rem;
-      font-size: .95rem;
-      color: var(--muted);
-    }
-
-    .grid {
-      margin-top: 1.1rem;
-      display: grid;
-      gap: 1rem;
-    }
-
-    .card {
-      background: rgba(255, 255, 255, .78);
-      border: 1px solid rgba(15, 23, 42, .08);
-      border-radius: 22px;
-      box-shadow: var(--shadow3);
-      padding: 1rem 1.1rem;
-    }
-
-    .card h2 {
-      margin: .15rem 0 .5rem;
-      color: var(--ink);
-      letter-spacing: -.01em;
-    }
-
-    .card p {
-      margin: 0.35rem 0;
-      color: #334155;
-    }
-
-    .card ul {
-      margin: .55rem 0 0;
-      padding: 0;
-      list-style: none;
-      display: grid;
-      gap: .55rem;
-    }
-
-    .card li {
-      display: flex;
-      gap: .6rem;
-      align-items: flex-start;
-      line-height: 1.55;
-    }
-
-    .card li i {
-      color: #16a34a;
-      margin-top: .25rem;
-    }
-
-    @media (max-width: 520px) {
-      .hero .actions {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-      }
-
-      .hero .actions .btn {
-        width: 100%;
-        padding: .62rem .7rem;
-        font-size: .95rem;
-        box-shadow: none;
-      }
     }
   </style>
 </head>
@@ -719,11 +719,12 @@
         <div class="face back"></div>
       </div>
     </div>
+
   </div>
 
   <!-- Nav -->
   <header class="header" id="siteHeader">
-    <a href="index.html" class="brand" aria-label="Classic Academy Home">
+    <a href="/" class="brand" aria-label="Classic Academy Home">
       <img class="brand-mark" src="./img/academylogo.png" alt="Classic Academy logo">
       <div class="brand-txt">
         <span class="brand-name">Classic Academy</span>
@@ -731,116 +732,61 @@
       </div>
     </a>
 
-    <nav class="navbar" aria-label="Primary" id="primaryNav">
-      <a href="index.html">Home</a>
-      <a href="about.html">About</a>
-      <a href="services/index.html">Features</a>
-      <a href="index.html#testimonials">Benefits</a>
-      <a href="index.html#contact">Contact</a>
-      <a class="nav-pill" href="index.html#pricing">Join Today</a>
-      <a class="nav-pill" href="schedule.html">Sign In</a>
+    <nav class="navbar" aria-label="Primary">
+      <a href="/">Home</a>
+      <a href="/about">About</a>
+      <a href="/services">Features</a>
+      <a href="/#testimonials">Benefits</a>
+      <a href="/#contact">Contact</a>
+      <a class="nav-pill" href="/#pricing">Join Today</a>
+      <a class="nav-pill" href="/schedule">Sign In</a>
     </nav>
 
     <div class="nav-actions">
-      <a href="schedule.html" class="btn btn-sm"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
+      <a href="/schedule" class="btn btn-sm"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
       <button id="menu-btn" class="menu-btn" aria-label="Open menu" aria-expanded="false">
         <i class="fa-solid fa-bars"></i>
       </button>
     </div>
   </header>
 
-  <main class="page" aria-label="Privacy policy">
-    <div class="container">
-      <section class="hero reveal">
-        <div class="kicker"><i class="fa-solid fa-shield-halved"></i> Privacy • Data handling • Security</div>
-        <h1>Privacy Policy</h1>
-        <p>
-          This policy explains how we collect, use, and protect information when you use Classic Academy.
-          <strong>Template text</strong> — customize for your legal requirements and your school’s data policies.
-        </p>
-        <div class="actions">
-          <a class="btn btn-sm" href="contact/index.html"><i class="fa-solid fa-envelope"></i> Contact</a>
-          <a class="btn ghost btn-sm" href="index.html#pricing"><i class="fa-solid fa-tags"></i> Pricing</a>
-        </div>
-        <p class="note">Last updated: <span id="lastUpdated" data-fixed="true">2026-03-03</span></p>
-      </section>
-
-      <section class="grid" aria-label="Policy sections">
-        <article class="card reveal">
-          <h2>1) Information we collect</h2>
-          <p>
-            We may collect information you provide (name, email, phone, school information) and operational data
-            necessary
-            to deliver the service (student records, attendance, fees records) depending on your configured modules.
-          </p>
-        </article>
-
-        <article class="card reveal">
-          <h2>2) How we use information</h2>
-          <ul>
-            <li><i class="fa-solid fa-check"></i><span>Provide and improve the platform and support</span></li>
-            <li><i class="fa-solid fa-check"></i><span>Enable admissions, communications, and reports requested by your
-                school</span></li>
-            <li><i class="fa-solid fa-check"></i><span>Secure accounts, prevent fraud, and enforce access
-                controls</span></li>
-            <li><i class="fa-solid fa-check"></i><span>Process payments and invoices where applicable</span></li>
-          </ul>
-        </article>
-
-        <article class="card reveal">
-          <h2>3) Sharing and disclosure</h2>
-          <p>We do not sell personal data. We may share data only:</p>
-          <ul>
-            <li><i class="fa-solid fa-check"></i><span>With service providers who help us operate the platform (hosting,
-                SMS/email, analytics) under appropriate safeguards</span></li>
-            <li><i class="fa-solid fa-check"></i><span>When required by law, regulation, or valid legal process</span>
-            </li>
-            <li><i class="fa-solid fa-check"></i><span>With your authorized school administrators and staff, based on
-                role permissions</span></li>
-          </ul>
-        </article>
-
-        <article class="card reveal">
-          <h2>4) Security</h2>
-          <p>
-            We use reasonable administrative, technical, and physical safeguards to protect your information. No method
-            of
-            transmission or storage is 100% secure, but we work to minimize risk through access controls, auditing, and
-            secure infrastructure.
-          </p>
-        </article>
-
-        <article class="card reveal">
-          <h2>5) Data retention</h2>
-          <p>
-            We retain data as long as needed to provide the service, meet legal obligations, resolve disputes, and
-            enforce
-            agreements. Schools may request exports and controlled deletion according to policy and applicable law.
-          </p>
-        </article>
-
-        <article class="card reveal">
-          <h2>6) Your rights</h2>
-          <p>
-            Depending on your jurisdiction and relationship (student/parent/staff/admin), you may have rights to access,
-            correct, export, or delete information. Contact us to process requests.
-          </p>
-        </article>
-
-        <article class="card reveal">
-          <h2>7) Contact</h2>
-          <p>Questions? Reach us via the Contact page or call/WhatsApp using the support button.</p>
-          <div class="actions" style="margin-top:.8rem; display:flex; flex-wrap:wrap; gap:.6rem;">
-            <a class="btn btn-sm" href="tel:+256781977217"><i class="fa-solid fa-phone"></i> Call</a>
-            <a class="btn ghost btn-sm" href="https://api.whatsapp.com/send?phone=256781977217" target="_blank"
-              rel="noopener">
-              <i class="fa-brands fa-whatsapp"></i> WhatsApp
-            </a>
-          </div>
-        </article>
-      </section>
+  <section class="about-hero reveal">
+    <div>
+      <span class="kicker"><i class="fa-solid fa-sparkles"></i> Legal</span>
+      <h1>Terms of Service</h1>
+      <p>These terms govern use of Classic Academy. (Template text — customize for your business and legal
+        requirements.)</p>
+      <div class="actions">
+        <a class="btn primary" href="/contact"><i class="fa-solid fa-envelope"></i> Contact</a>
+        <a class="btn ghost" href="/privacy"><i class="fa-solid fa-shield"></i> Privacy</a>
+      </div>
     </div>
-  </main>
+    <div class="media">
+      <img src="img/hero.png" alt="">
+    </div>
+  </section>
+
+  <section class="page-wrap">
+    <div class="cardx reveal">
+      <h3>1) Service</h3>
+      <p>Classic Academy provides tools for school operations and admissions. Features may vary by plan.</p>
+      <h3 style="margin-top:1rem">2) Accounts</h3>
+      <p>You are responsible for maintaining confidentiality of login details and for actions under your account.</p>
+      <h3 style="margin-top:1rem">3) Acceptable use</h3>
+      <ul>
+        <li><i class="fa-solid fa-check"></i><span>No illegal, abusive, or harmful use</span></li>
+        <li><i class="fa-solid fa-check"></i><span>No attempts to access other schools' data</span></li>
+        <li><i class="fa-solid fa-check"></i><span>Follow applicable education and privacy laws</span></li>
+      </ul>
+      <h3 style="margin-top:1rem">4) Payments</h3>
+      <p>Paid plans are billed as agreed. Add-ons may incur additional charges.</p>
+      <h3 style="margin-top:1rem">5) Liability</h3>
+      <p>To the extent permitted by law, Classic Academy is not liable for indirect losses. This clause should be
+        reviewed by counsel.</p>
+      <h3 style="margin-top:1rem">6) Contact</h3>
+      <p>Use the Contact page for support or legal notices.</p>
+    </div>
+  </section>
 
   <!-- Footer -->
   <footer class="footer">
@@ -860,34 +806,33 @@
     <div>
       <h4>Learn about our mission</h4>
       <ul>
-        <li><a href="about.html">Our Story</a></li>
-        <li><a href="services/index.html">What We Offer</a></li>
-        <li><a href="plan.html?plan=standard">Plans & Pricing</a></li>
-        <li><a href="blog.html?slug=increase-admissions">Press resources</a></li>
-        <li><a href="careers.html">Careers</a></li>
+        <li><a href="/about">Our Story</a></li>
+        <li><a href="/services">What We Offer</a></li>
+        <li><a href="/plan?plan=standard">Plans & Pricing</a></li>
+        <li><a href="/blog?slug=increase-admissions">Press resources</a></li>
+        <li><a href="/careers">Careers</a></li>
       </ul>
     </div>
 
     <div>
       <h4>Get help with your account</h4>
       <ul>
-        <li><a href="contact/index.html">Customer Support</a></li>
-        <li><a href="schedule.html">Book a Demo</a></li>
-        <li><a href="faq.html">FAQ</a></li>
-        <li><a href="privacy.html">Privacy Policy</a></li>
-        <li><a href="terms.html">Terms</a></li>
+        <li><a href="/contact">Customer Support</a></li>
+        <li><a href="/schedule">Book a Demo</a></li>
+        <li><a href="/faq">FAQ</a></li>
+        <li><a href="/privacy">Privacy Policy</a></li>
+        <li><a href="/terms">Terms</a></li>
       </ul>
     </div>
 
     <div>
       <h4>Join our school community</h4>
       <ul>
-        <li><a href="schools/index.html">Find Schools</a></li>
-        <li><a href="admissions.html">Admissions</a></li>
-        <li><a href="search/index.html">Search</a></li>
-        <li><a href="blog.html?slug=increase-admissions">Blog</a></li>
-        <li><a href="https://x.com" target="_blank" rel="noopener">Twitter</a></li>
-        <li><a href="https://discord.com" target="_blank" rel="noopener">Discord server</a></li>
+        <li><a href="/schools">Find Schools</a></li>
+        <li><a href="/admissions">Admissions</a></li>
+        <li><a href="/search">Search</a></li>
+        <li><a href="/blog?slug=increase-admissions">Blog</a></li>
+        <li><a href="https://chat.whatsapp.com/HRGoS3fMZoZGgXbz1HDw6a?mode=gi_t" target="_blank" rel="noopener">Join whatsapp group</a></li>
       </ul>
     </div>
   </footer>
@@ -906,9 +851,9 @@
     </div>
     <div class="sub-button shadow">
       <a href="https://api.whatsapp.com/send?phone=256781977217" target="_blank" rel="noopener">
-        <span class="material-icons" aria-hidden="true">
+        <span class="material-icons">
           <svg xmlns="http://www.w3.org/2000/svg" class="whatsapp-icon" viewBox="0 0 448 512" width="35" height="35"
-            fill="#2e2e2e">
+            fill="#2e2e2e" aria-label="WhatsApp Icon">
             <path
               d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zM223.9 438.7c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zM325.1 300.5c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z" />
           </svg>
@@ -916,7 +861,7 @@
       </a>
     </div>
     <div class="sub-button shadow">
-      <a href="share.html" target="_blank" rel="noopener"><span class="material-icons">share</span></a>
+      <a href="/share" target="_blank" rel="noopener"><span class="material-icons">share</span></a>
     </div>
   </div>
 
@@ -925,42 +870,66 @@
     setTimeout(() => {
       const loader = document.getElementById("loader");
       if (loader) loader.style.display = "none";
-    }, 1200);
+    }, 2000);
 
-    (() => {
-      const navbar = document.getElementById("primaryNav") || document.querySelector(".header .navbar");
-      const menuBtn = document.getElementById("menu-btn");
+    const navbar = document.querySelector('.header .navbar');
+    const menuBtn = document.getElementById('menu-btn');
+    const toTopBtn = document.getElementById("toTopBtn");
 
-      if (menuBtn && navbar) {
-        const setExpanded = (v) => menuBtn.setAttribute("aria-expanded", v ? "true" : "false");
-        menuBtn.addEventListener("click", () => {
-          const isOpen = navbar.classList.toggle("active");
-          setExpanded(isOpen);
+    // Toggle navbar (mobile)
+    menuBtn?.addEventListener("click", () => {
+      const isOpen = navbar?.classList.toggle('active');
+      menuBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+
+    // Close navbar when clicking a link (mobile)
+    document.querySelectorAll(".header .navbar a").forEach(a => {
+      a.addEventListener("click", () => {
+        navbar?.classList.remove("active");
+        menuBtn?.setAttribute('aria-expanded', 'false');
+      });
+    });
+
+    // Close menu if tapping outside
+    document.addEventListener("click", (e) => {
+      const header = document.getElementById("siteHeader");
+      if (!header) return;
+      if (!header.contains(e.target)) {
+        navbar?.classList.remove("active");
+        menuBtn?.setAttribute('aria-expanded', 'false');
+      }
+    }, { passive: true });
+
+    // Scroll to top button
+    window.addEventListener('scroll', () => {
+      if (toTopBtn) toTopBtn.style.display = (window.scrollY > 300) ? "block" : "none";
+    }, { passive: true });
+
+    toTopBtn?.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+
+    // Reveal animations (also supports content injected later)
+    const revealIO = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        if (entry.target.classList.contains("feature") || entry.target.classList.contains("hero")) {
+          entry.target.classList.add("visible");
+        }
+        if (entry.target.classList.contains("reveal")) {
+          entry.target.classList.add("in");
+        }
+      });
+    }, { threshold: 0.12 });
+
+    window.__observeReveals = () => {
+      document.querySelectorAll(".feature:not([data-observed]), .hero:not([data-observed]), .reveal:not([data-observed])")
+        .forEach(el => {
+          el.dataset.observed = "true";
+          revealIO.observe(el);
         });
-        window.addEventListener("scroll", () => {
-          if (navbar.classList.contains("active")) navbar.classList.remove("active");
-          setExpanded(false);
-        }, { passive: true });
-      }
+    };
 
-      const toTopBtn = document.getElementById("toTopBtn");
-      if (toTopBtn) {
-        const toggle = () => {
-          const y = document.documentElement.scrollTop || document.body.scrollTop || 0;
-          toTopBtn.style.display = y > 300 ? "block" : "none";
-        };
-        window.addEventListener("scroll", toggle, { passive: true });
-        toggle();
-        toTopBtn.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
-      }
-
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach(e => e.isIntersecting && e.target.classList.add("in"));
-      }, { threshold: 0.12 });
-      document.querySelectorAll(".reveal").forEach(el => observer.observe(el));
-    })();
+    window.__observeReveals();
   </script>
-
 </body>
 
 </html>

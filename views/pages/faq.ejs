@@ -4,21 +4,24 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>404 — Classic Academy</title>
+  <title>FAQ — Classic Academy</title>
 
   <!-- SEO -->
-  <meta name="description" content="Page not found." />
+  <meta name="description"
+    content="Frequently asked questions about Classic Academy plans, onboarding, admissions, and finance modules." />
   <meta name="robots" content="index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1" />
   <meta name="theme-color" content="#4a90e2" />
-  <link rel="canonical" href="404.html" />
+  <link rel="canonical" href="/faq" />
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="404 — Classic Academy" />
-  <meta property="og:description" content="Page not found." />
-  <meta property="og:url" content="404.html" />
+  <meta property="og:title" content="FAQ — Classic Academy" />
+  <meta property="og:description"
+    content="Frequently asked questions about Classic Academy plans, onboarding, admissions, and finance modules." />
+  <meta property="og:url" content="/faq" />
   <meta property="og:image" content="img/hero.png" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="404 — Classic Academy" />
-  <meta name="twitter:description" content="Page not found." />
+  <meta name="twitter:title" content="FAQ — Classic Academy" />
+  <meta name="twitter:description"
+    content="Frequently asked questions about Classic Academy plans, onboarding, admissions, and finance modules." />
   <meta name="twitter:image" content="img/hero.png" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -42,8 +45,11 @@
       --muted: #475569;
 
       --page-pad: clamp(1rem, 4vw, 6rem);
+      --section-gap: clamp(1.2rem, 2.6vw, 2rem);
+
       --shadow2: 0 18px 50px rgba(15, 23, 42, .12);
       --shadow3: 0 10px 30px rgba(15, 23, 42, .10);
+
       --radius: 22px;
     }
 
@@ -71,7 +77,7 @@
       }
     }
 
-    /* LOADER */
+    /* LOADER (same style as main) */
     #loader {
       position: fixed;
       inset: 0;
@@ -149,7 +155,7 @@
       }
     }
 
-    /* NAVBAR */
+    /* NAVBAR (same as main) */
     .header {
       position: fixed;
       top: 14px;
@@ -377,7 +383,19 @@
       transform: translateY(0);
     }
 
-    /* 404 HERO */
+    @media (prefers-reduced-motion: reduce) {
+      .reveal {
+        opacity: 1;
+        transform: none;
+        transition: none;
+      }
+
+      * {
+        scroll-behavior: auto !important;
+      }
+    }
+
+    /* INNER PAGE: HERO + FAQ */
     .kicker {
       display: inline-flex;
       gap: .55rem;
@@ -443,13 +461,89 @@
       display: block;
     }
 
+    .page-wrap {
+      margin: 0 var(--page-pad);
+      padding: 2.2rem 0 2.8rem 0;
+    }
+
+    .page-head {
+      text-align: center;
+      max-width: 920px;
+      margin: 0 auto 1.2rem auto;
+    }
+
+    .page-head h2 {
+      margin: .8rem 0 .35rem 0;
+      color: var(--ink);
+      font-size: clamp(1.35rem, 2vw, 2rem);
+      letter-spacing: -.02em;
+    }
+
+    .page-head p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .faq-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.2rem;
+      margin-top: 1.1rem;
+    }
+
+    .faq-card {
+      background: rgba(255, 255, 255, .72);
+      border: 1px solid rgba(255, 255, 255, .85);
+      border-radius: 22px;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, .10);
+      padding: .9rem .95rem;
+    }
+
+    .faq-q {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      cursor: pointer;
+      font-weight: 900;
+      color: var(--ink);
+      padding: .2rem .15rem;
+    }
+
+    .faq-q i {
+      color: var(--primary);
+      margin-top: .3rem;
+      transition: transform .2s ease;
+    }
+
+    .faq-card.open .faq-q i {
+      transform: rotate(45deg);
+    }
+
+    .faq-a {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height .28s ease;
+      color: var(--muted);
+      line-height: 1.7;
+      padding: 0 .15rem;
+    }
+
+    .faq-card.open .faq-a {
+      max-height: 520px;
+      margin-top: .45rem;
+    }
+
     @media (max-width: 1024px) {
       .about-hero {
         grid-template-columns: 1fr;
       }
+
+      .faq-grid {
+        grid-template-columns: 1fr;
+      }
     }
 
-    /* FOOTER */
+    /* FOOTER (same layout/width feel) */
     .footer {
       background: rgba(255, 255, 255, 0.3);
       backdrop-filter: blur(10px);
@@ -659,7 +753,7 @@
 
   <!-- Nav -->
   <header class="header" id="siteHeader">
-    <a href="index.html" class="brand" aria-label="Classic Academy Home">
+    <a href="/" class="brand" aria-label="Classic Academy Home">
       <img class="brand-mark" src="./img/academylogo.png" alt="Classic Academy logo">
       <div class="brand-txt">
         <span class="brand-name">Classic Academy</span>
@@ -668,17 +762,17 @@
     </a>
 
     <nav class="navbar" aria-label="Primary">
-      <a href="index.html">Home</a>
-      <a href="about.html">About</a>
-      <a href="services/index.html">Features</a>
-      <a href="index.html#testimonials">Benefits</a>
-      <a href="index.html#contact">Contact</a>
-      <a class="nav-pill" href="index.html#pricing">Join Today</a>
-      <a class="nav-pill" href="schedule.html">Sign In</a>
+      <a href="/">Home</a>
+      <a href="/about">About</a>
+      <a href="/services">Features</a>
+      <a href="/#testimonials">Benefits</a>
+      <a href="/#contact">Contact</a>
+      <a class="nav-pill" href="/#pricing">Join Today</a>
+      <a class="nav-pill" href="/schedule">Sign In</a>
     </nav>
 
     <div class="nav-actions">
-      <a href="schedule.html" class="btn btn-sm"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
+      <a href="/schedule" class="btn btn-sm"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
       <button id="menu-btn" class="menu-btn" aria-label="Open menu" aria-expanded="false">
         <i class="fa-solid fa-bars"></i>
       </button>
@@ -686,24 +780,82 @@
   </header>
 
   <main>
-    <section class="about-hero reveal">
+    <section class="about-hero reveal" style="margin-top: 0;">
       <div>
-        <span class="kicker"><i class="fa-solid fa-sparkles"></i> Not found</span>
-        <h1>404 — Page not found</h1>
-        <p>The page you’re looking for doesn’t exist. Use search or go back to the homepage.</p>
+        <span class="kicker"><i class="fa-solid fa-sparkles"></i> Help Center</span>
+        <h1>Answers to common questions.</h1>
+        <p>Find quick answers about onboarding, plans, admissions, finance tracking, and support. If you need help, book
+          a demo or contact us.</p>
         <div class="actions">
-          <a class="btn" href="index.html"><i class="fa-solid fa-house"></i> Home</a>
-          <a class="btn ghost" href="search/index.html"><i class="fa-solid fa-magnifying-glass"></i> Search</a>
-          <a class="btn ghost" href="contact/index.html"><i class="fa-solid fa-phone-volume"></i> Contact</a>
+          <a class="btn" href="/schedule"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
+          <a class="btn ghost" href="/contact"><i class="fa-solid fa-phone-volume"></i> Contact</a>
+          <a class="btn ghost" href="/#pricing"><i class="fa-solid fa-tags"></i> Pricing</a>
         </div>
       </div>
       <div class="media">
         <img src="img/hero.png" alt="Classic Academy">
       </div>
     </section>
+
+    <section class="page-wrap">
+      <div class="page-head reveal">
+        <span class="kicker"><i class="fa-solid fa-circle-question"></i> FAQ</span>
+        <h2>Frequently asked questions</h2>
+        <p>Tap a question to expand the answer.</p>
+      </div>
+
+      <div class="faq-grid">
+        <div class="faq-card reveal">
+          <div class="faq-q"><span>Can we start free?</span><i class="fa-solid fa-plus"></i></div>
+          <div class="faq-a">Yes. The School Profile package is free and includes admissions basics. You can upgrade
+            anytime when you need full operations modules.</div>
+        </div>
+
+        <div class="faq-card reveal">
+          <div class="faq-q"><span>How do upgrades work?</span><i class="fa-solid fa-plus"></i></div>
+          <div class="faq-a">Plans are layered: Starter includes Profile, Standard includes Starter, Growth includes
+            Standard, Premium includes everything. Upgrading unlocks additional modules.</div>
+        </div>
+
+        <div class="faq-card reveal">
+          <div class="faq-q"><span>Does Classic Academy support invoices and receipts?</span><i
+              class="fa-solid fa-plus"></i></div>
+          <div class="faq-a">Yes — finance tracking (invoices, receipts, balances, statements) is available on Standard
+            and above.</div>
+        </div>
+
+        <div class="faq-card reveal">
+          <div class="faq-q"><span>Do you support SMS/Email notifications?</span><i class="fa-solid fa-plus"></i></div>
+          <div class="faq-a">Yes as an add-on. Premium can include stronger messaging workflows and portals.</div>
+        </div>
+
+        <div class="faq-card reveal">
+          <div class="faq-q"><span>Can we manage multiple campuses?</span><i class="fa-solid fa-plus"></i></div>
+          <div class="faq-a">Yes — multi-campus/branch support can be enabled as an add-on (typically Growth/Premium).
+          </div>
+        </div>
+
+        <div class="faq-card reveal">
+          <div class="faq-q"><span>How long does onboarding take?</span><i class="fa-solid fa-plus"></i></div>
+          <div class="faq-a">Most schools can start in days. We help with setup, roles, data import templates, and staff
+            training.</div>
+        </div>
+
+        <div class="faq-card reveal">
+          <div class="faq-q"><span>Can parents access a portal?</span><i class="fa-solid fa-plus"></i></div>
+          <div class="faq-a">Yes — parent portal and messaging can be enabled as an add-on depending on your plan.</div>
+        </div>
+
+        <div class="faq-card reveal">
+          <div class="faq-q"><span>Do you provide support after setup?</span><i class="fa-solid fa-plus"></i></div>
+          <div class="faq-a">Yes. Support continues after onboarding. You can also book a demo any time for guided help.
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
 
-  <!-- Footer -->
+  <!-- Footer (same as main page) -->
   <footer class="footer">
     <div>
       <h4>About Us</h4>
@@ -721,34 +873,33 @@
     <div>
       <h4>Learn about our mission</h4>
       <ul>
-        <li><a href="about.html">Our Story</a></li>
-        <li><a href="services/index.html">What We Offer</a></li>
-        <li><a href="plan.html?plan=standard">Plans & Pricing</a></li>
-        <li><a href="blog.html?slug=increase-admissions">Press resources</a></li>
-        <li><a href="careers.html">Careers</a></li>
+        <li><a href="/about">Our Story</a></li>
+        <li><a href="/services">What We Offer</a></li>
+        <li><a href="/plan?plan=standard">Plans & Pricing</a></li>
+        <li><a href="/blog?slug=increase-admissions">Press resources</a></li>
+        <li><a href="/careers">Careers</a></li>
       </ul>
     </div>
 
     <div>
       <h4>Get help with your account</h4>
       <ul>
-        <li><a href="contact/index.html">Customer Support</a></li>
-        <li><a href="schedule.html">Book a Demo</a></li>
-        <li><a href="faq.html">FAQ</a></li>
-        <li><a href="privacy.html">Privacy Policy</a></li>
-        <li><a href="terms.html">Terms</a></li>
+        <li><a href="/contact">Customer Support</a></li>
+        <li><a href="/schedule">Book a Demo</a></li>
+        <li><a href="/faq">FAQ</a></li>
+        <li><a href="/privacy">Privacy Policy</a></li>
+        <li><a href="/terms">Terms</a></li>
       </ul>
     </div>
 
     <div>
       <h4>Join our school community</h4>
       <ul>
-        <li><a href="schools/index.html">Find Schools</a></li>
-        <li><a href="admissions.html">Admissions</a></li>
-        <li><a href="search/index.html">Search</a></li>
-        <li><a href="blog.html?slug=increase-admissions">Blog</a></li>
-        <li><a href="https://x.com" target="_blank" rel="noopener">Twitter</a></li>
-        <li><a href="https://discord.com" target="_blank" rel="noopener">Discord server</a></li>
+        <li><a href="/schools">Find Schools</a></li>
+        <li><a href="/admissions">Admissions</a></li>
+        <li><a href="/search">Search</a></li>
+        <li><a href="/blog?slug=increase-admissions">Blog</a></li>
+        <li><a href="https://chat.whatsapp.com/HRGoS3fMZoZGgXbz1HDw6a?mode=gi_t" target="_blank" rel="noopener">Join whatsapp group</a></li>
       </ul>
     </div>
   </footer>
@@ -774,8 +925,7 @@
     </div>
 
     <div class="sub-button shadow">
-      <a href="share.html" target="_blank" rel="noopener" aria-label="Share"><span
-          class="material-icons">share</span></a>
+      <a href="/share" aria-label="Share"><span class="material-icons">share</span></a>
     </div>
   </div>
 
@@ -830,6 +980,16 @@
     }, { threshold: 0.12 });
 
     document.querySelectorAll(".reveal").forEach(el => io.observe(el));
+
+    // FAQ accordion
+    document.querySelectorAll(".faq-card").forEach(card => {
+      const q = card.querySelector(".faq-q");
+      q?.addEventListener("click", () => {
+        const open = document.querySelector(".faq-card.open");
+        if (open && open !== card) open.classList.remove("open");
+        card.classList.toggle("open");
+      });
+    });
   </script>
 </body>
 
