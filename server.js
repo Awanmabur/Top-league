@@ -628,5 +628,4 @@ app.use((req, res) => {
 
 app.listen(env.PORT, () => {
   console.log(`Server running on http://localhost:${env.PORT}/`);
-  console.log("Feature status:", featureStatus());
 });
