@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Receipt — <%= (tenant && tenant.name) ? tenant.name : "Classic Campus" %></title>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer"/>
+
+  <style>
+    :root{
+      --accent:#0a6fbf; --bg:#f4f8ff; --card:#fff; --muted:#6b7280;
+      --line:rgba(13,64,96,.12); --shadow:0 10px 30px rgba(0,0,0,.08);
+      --radius:16px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:#0f172a}
+    .wrap{max-width:980px;margin:18px auto;padding:0 14px}
+    .topbar{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start;margin-bottom:12px}
+    .title{font-size:18px;font-weight:1000}
+    .subtitle{font-size:12px;color:var(--muted);margin-top:4px}
+    .actions{display:flex;gap:10px;flex-wrap:wrap}
+    .btn{border:none;border-radius:12px;padding:10px 12px;font-weight:900;cursor:pointer;display:inline-flex;gap:8px;align-items:center}
+    .btn.light{background:#fff;border:1px solid var(--line);color:#0f172a}
+    .btn.primary{background:var(--accent);color:#fff}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+    .card-head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+    .card-title{font-weight:1000}
+    .card-sub{font-size:12px;color:var(--muted)}
+    .card-body{padding:14px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .muted{color:var(--muted);font-size:12px}
+    .strong{font-weight:1000}
+    .divider{height:1px;background:var(--line);margin:12px 0}
+    .stamp{border:2px dashed rgba(10,111,191,.35);border-radius:16px;padding:14px;background:rgba(10,111,191,.06)}
+    .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px}
+    table{width:100%;border-collapse:separate;border-spacing:0;min-width:820px;background:#fff}
+    th,td{padding:10px 12px;border-bottom:1px solid rgba(13,64,96,.08);vertical-align:top}
+    th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;text-align:left;background:rgba(13,64,96,.03)}
+    .right{text-align:right}
+    .footer-note{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;margin-top:12px}
+    .mini{font-size:11px;color:var(--muted)}
+    @media print{
+      body{background:#fff}
+      .actions{display:none !important}
+      .wrap{margin:0;max-width:100%}
+      .card{box-shadow:none}
+      .stamp{border-style:solid;border-color:#bbb;background:#fff}
+    }
+    @media(max-width:720px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<%
+  const _tenant = (typeof tenant !== "undefined" && tenant) ? tenant : null;
+  const _payment = (typeof payment !== "undefined" && payment) ? payment : null;
+  const _invoice = (typeof invoice !== "undefined" && invoice) ? invoice : null;
+
+  const fmt = (n)=>{ try{return new Intl.NumberFormat('en-US').format(Number(n||0));}catch(e){return String(n||0);} };
+
+  const studentName = (_invoice && _invoice.studentId && _invoice.studentId.fullName) ? _invoice.studentId.fullName : "Student";
+  const regNo = (_invoice && _invoice.studentId && _invoice.studentId.regNo) ? _invoice.studentId.regNo : "-";
+  const invoiceNo = _invoice ? (_invoice.invoiceNumber || "-") : "-";
+  const receiptNo = _payment ? (_payment.receiptNumber || "-") : "-";
+  const issued = (_payment && _payment.paidAt) ? new Date(_payment.paidAt).toLocaleString() : "-";
+
+  const total = _invoice ? Number(_invoice.amount||0) : 0;
+  const paidToDate = _invoice ? Number(_invoice.amountPaid||0) : 0;
+  const thisPay = _payment ? Number(_payment.amount||0) : 0;
+  const balance = Math.max(0, total - paidToDate);
+%>
+
+<div class="wrap">
+  <div class="topbar">
+    <div>
+      <div class="title">Receipt</div>
+      <div class="subtitle">Printable receipt for payments made on an invoice.</div>
+    </div>
+    <div class="actions">
+      <button class="btn light" onclick="history.back()"><i class="fa-solid fa-arrow-left"></i> Back</button>
+      <button class="btn primary" onclick="window.print()"><i class="fa-solid fa-print"></i> Print</button>
+    </div>
+  </div>
+
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <div class="card-title"><%= (_tenant && _tenant.name) ? _tenant.name : "CampusSaaS University Finance Office" %></div>
+        <div class="card-sub">Official Payment Receipt • Keep this for your records</div>
+      </div>
+      <div>
+        <div class="strong"><%= receiptNo %></div>
+        <div class="muted">Issued: <%= issued %></div>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <div class="grid">
+        <div class="stamp">
+          <div class="strong" style="margin-bottom:6px"><i class="fa-solid fa-building-columns"></i> Institution Details</div>
+          <div class="muted">University / Tenant: <span class="strong"><%= (_tenant && _tenant.name) ? _tenant.name : "Demo University" %></span></div>
+          <div class="muted">Email: <span class="strong"><%= (_tenant && _tenant.email) ? _tenant.email : "finance@university.edu" %></span></div>
+        </div>
+
+        <div class="stamp">
+          <div class="strong" style="margin-bottom:6px"><i class="fa-solid fa-user-graduate"></i> Payer Details</div>
+          <div class="muted">Student: <span class="strong"><%= studentName %></span></div>
+          <div class="muted">Reg No: <span class="strong"><%= regNo %></span></div>
+          <div class="muted">Semester: <span class="strong"><%= _invoice ? (_invoice.academicYear + " - Sem " + _invoice.semester) : "-" %></span></div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="grid">
+        <div>
+          <div class="strong" style="margin-bottom:6px"><i class="fa-solid fa-file-invoice"></i> Invoice Reference</div>
+          <div class="muted">Invoice No: <span class="strong"><%= invoiceNo %></span></div>
+          <div class="muted">Invoice Date: <span class="strong"><%= (_invoice && _invoice.invoiceDate) ? new Date(_invoice.invoiceDate).toLocaleDateString() : "-" %></span></div>
+          <div class="muted">Due Date: <span class="strong"><%= (_invoice && _invoice.dueDate) ? new Date(_invoice.dueDate).toLocaleDateString() : "-" %></span></div>
+          <div class="muted">Status: <span class="strong"><%= _invoice ? (_invoice.status || "-") : "-" %></span></div>
+        </div>
+
+        <div>
+          <div class="strong" style="margin-bottom:6px"><i class="fa-solid fa-receipt"></i> Payment Summary</div>
+          <div class="muted">Method: <span class="strong"><%= _payment ? (_payment.method || "-") : "-" %></span></div>
+          <div class="muted">Reference: <span class="strong"><%= _payment ? (_payment.reference || "-") : "-" %></span></div>
+          <div class="muted">Received By: <span class="strong"><%= _payment ? (_payment.receivedBy || "-") : "-" %></span></div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="strong" style="margin-bottom:8px"><i class="fa-solid fa-list"></i> Items Covered (Invoice Snapshot)</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Description</th>
+              <th class="right">Qty</th>
+              <th class="right">Unit</th>
+              <th class="right">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (!_invoice || !_invoice.items || !_invoice.items.length) { %>
+              <tr><td colspan="5" class="muted">No line items.</td></tr>
+            <% } else { %>
+              <% _invoice.items.forEach(it => { %>
+                <tr>
+                  <td><b><%= it.name || "-" %></b></td>
+                  <td class="muted"><%= it.description || "-" %></td>
+                  <td class="right"><%= it.qty || 1 %></td>
+                  <td class="right">UGX <%= fmt(it.unitAmount || 0) %></td>
+                  <td class="right"><b>UGX <%= fmt(it.total || 0) %></b></td>
+                </tr>
+              <% }) %>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="grid">
+        <div class="stamp">
+          <div class="strong"><i class="fa-solid fa-money-bill-wave"></i> Amounts</div>
+          <div class="divider"></div>
+          <div class="muted" style="display:flex;justify-content:space-between"><span>Total Invoice</span><span class="strong">UGX <%= fmt(total) %></span></div>
+          <div class="muted" style="display:flex;justify-content:space-between"><span>Total Paid (to date)</span><span class="strong">UGX <%= fmt(paidToDate) %></span></div>
+          <div class="muted" style="display:flex;justify-content:space-between"><span>This Payment</span><span class="strong">UGX <%= fmt(thisPay) %></span></div>
+          <div class="divider"></div>
+          <div style="display:flex;justify-content:space-between"><span class="strong">Balance</span><span class="strong">UGX <%= fmt(balance) %></span></div>
+        </div>
+
+        <div class="stamp">
+          <div class="strong"><i class="fa-solid fa-shield"></i> Verification</div>
+          <div class="divider"></div>
+          <div class="muted">Verification Code:</div>
+          <div class="strong"><%= (receiptNo && invoiceNo) ? (receiptNo + " • " + invoiceNo) : "—" %></div>
+          <div class="mini" style="margin-top:8px">
+            Tip: Later you can validate this code online in the tenant portal.
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-note">
+        <div class="mini">
+          <div class="strong">Terms</div>
+          <div>1) This receipt is valid only when recorded in CampusSaaS Finance.</div>
+          <div>2) For disputes, contact finance within 7 days.</div>
+        </div>
+        <div class="mini" style="text-align:right">
+          <div class="strong">Authorized Signature</div>
+          <div style="margin-top:12px;border-top:1px solid #bbb;width:220px"></div>
+          <div>Finance Office</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</div>
+</body>
+</html>

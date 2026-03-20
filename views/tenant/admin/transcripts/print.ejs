@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Transcript — <%= data.student.name %></title>
+<link rel="icon" href="data:," />
+<style>
+  body{font-family:system-ui,Segoe UI,Arial;margin:24px;color:#0b1020}
+  .page{position:relative}
+  .watermark{
+    position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+    pointer-events:none; opacity:.08; font-size:72px; font-weight:900; transform:rotate(-25deg);
+  }
+  .hdr{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+  .brand{font-weight:900;font-size:18px}
+  .small{font-size:12px;color:#334155}
+  .box{border:1px solid #e2e8f0;border-radius:10px;padding:12px;margin-top:12px}
+  table{width:100%;border-collapse:collapse;margin-top:10px}
+  th,td{border-bottom:1px solid #e2e8f0;padding:8px;text-align:left;font-size:12px}
+  th{color:#334155}
+  .right{text-align:right}
+  .row{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .sig{margin-top:30px;display:flex;justify-content:space-between}
+  .qr{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .qr img{width:130px;height:130px;border:1px solid #e2e8f0;border-radius:8px;padding:6px}
+  @media print{ #printBtn{display:none} body{margin:10mm} }
+</style>
+</head>
+<body>
+<div class="page">
+  <% const st = data.transcriptMeta?.status || "draft"; %>
+  <% if (st === "draft" || st === "revoked") { %>
+    <div class="watermark"><%= st.toUpperCase() %></div>
+  <% } %>
+
+  <button id="printBtn" type="button">Print</button>
+
+  <div class="hdr">
+    <div>
+      <div class="brand"><%= (tenant?.name || "Classic Campus University") %></div>
+      <div class="small">ACADEMIC TRANSCRIPT (<%= (data.transcriptMeta.kind || "official").toUpperCase() %>)</div>
+    </div>
+
+    <div class="small">
+      Status: <b><%= st %></b><br/>
+      Issue No: <b><%= data.transcriptMeta.issueNumber || "—" %></b><br/>
+      Issued: <b><%= data.transcriptMeta.issuedAt ? new Date(data.transcriptMeta.issuedAt).toISOString().slice(0,10) : "—" %></b><br/>
+      Hash: <b><%= data.snapshotHash || "—" %></b>
+    </div>
+  </div>
+
+  <div class="box">
+    <div class="row">
+      <div>
+        <div><b>Student:</b> <%= data.student.name %></div>
+        <div><b>Reg No:</b> <%= data.student.reg || "—" %></div>
+        <div><b>Program:</b> <%= data.student.program %></div>
+        <div><b>Class:</b> <%= data.student.classGroup %></div>
+      </div>
+      <div>
+        <div><b>CGPA:</b> <%= Number(data.totals.cgpa || 0).toFixed(2) %></div>
+        <div><b>Classification:</b> <%= data.totals.classification || "—" %></div>
+        <div><b>Total Credits:</b> <%= data.totals.credits ?? 0 %></div>
+        <div><b>Total Points:</b> <%= Number(data.totals.points || 0).toFixed(2) %></div>
+      </div>
+    </div>
+  </div>
+
+  <% if (qrDataUrl && data.transcriptMeta.issueNumber) { %>
+    <div class="box">
+      <div class="qr">
+        <img src="<%= qrDataUrl %>" alt="QR Verify" />
+        <div class="small">
+          <div><b>Verify this transcript</b></div>
+          <div>Scan QR or open:</div>
+          <div><b><%= verifyUrl %></b></div>
+        </div>
+      </div>
+    </div>
+  <% } %>
+
+  <% (data.semesters || []).forEach(function(s){ %>
+    <div class="box">
+      <div class="row">
+        <div><b><%= s.academicYear %></b> • Semester <b><%= s.semester %></b></div>
+        <div>
+          GPA: <b><%= Number(s.gpa || 0).toFixed(2) %></b> •
+          CGPA: <b><%= Number(s.cgpa || 0).toFixed(2) %></b> •
+          Decision: <b><%= s.decision || "—" %></b>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Course</th>
+            <th>Title</th>
+            <th class="right">CU</th>
+            <th class="right">Score</th>
+            <th class="right">Grade</th>
+            <th class="right">GP</th>
+            <th class="right">Points</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% (s.rows || []).forEach(function(r){ %>
+            <tr>
+              <td><b><%= r.courseCode %></b></td>
+              <td><%= r.courseTitle %></td>
+              <td class="right"><%= r.credits %></td>
+              <td class="right"><%= r.score %>/<%= r.total %></td>
+              <td class="right"><b><%= r.grade %></b></td>
+              <td class="right"><%= r.gp %></td>
+              <td class="right"><%= Number(r.points || 0).toFixed(2) %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% }) %>
+
+  <div class="sig">
+    <div>
+      <div class="small">Registrar / Academic Office</div>
+      <div style="margin-top:40px;border-top:1px solid #0b1020;width:240px"></div>
+      <div class="small">Signature & Stamp</div>
+    </div>
+
+    <div>
+      <div class="small">Date</div>
+      <div style="margin-top:40px;border-top:1px solid #0b1020;width:180px"></div>
+      <div class="small"><%= new Date().toISOString().slice(0,10) %></div>
+    </div>
+  </div>
+</div>
+
+<script src="/js/transcript-print.js" defer></script>
+</body>
+</html>

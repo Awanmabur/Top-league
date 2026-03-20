@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title><%= (tenant && tenant.name) ? tenant.name : "CampusSaaS" %> — Parent Profile</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous"
+        referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/navbar.css"/>
+  <link rel="stylesheet" href="/css/parent-portal.css" />
+
+  <style>
+    .summary-grid{
+      margin-top:16px;
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:12px;
+    }
+
+    .summary-box{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+      background:#fbfdff;
+    }
+
+    .summary-label{
+      color:var(--muted);
+      font-size:12px;
+    }
+
+    .summary-value{
+      margin-top:6px;
+      font-size:24px;
+      font-weight:1000;
+      letter-spacing:-.02em;
+    }
+
+    .page-grid{
+      margin-top:16px;
+      display:grid;
+      grid-template-columns:1.1fr .9fr;
+      gap:14px;
+    }
+
+    .form-grid{
+      display:grid;
+      gap:12px;
+      margin-top:14px;
+    }
+
+    .form-row{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:12px;
+    }
+
+    .field{
+      display:grid;
+      gap:6px;
+    }
+
+    .field label{
+      font-size:13px;
+      font-weight:800;
+      color:var(--text);
+    }
+
+    .field input,
+    .field select,
+    .field textarea{
+      width:100%;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px 13px;
+      background:#fff;
+      color:var(--text);
+      font:inherit;
+      outline:none;
+    }
+
+    .field textarea{
+      min-height:120px;
+      resize:vertical;
+      line-height:1.65;
+    }
+
+    .flash-stack{
+      margin-top:16px;
+      display:grid;
+      gap:10px;
+    }
+
+    .flash{
+      padding:12px 14px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background:#fff;
+      box-shadow:var(--shadow);
+      font-size:13px;
+      font-weight:700;
+    }
+
+    .flash.success{
+      color:var(--ok);
+      background:#f6fff8;
+      border-color:#cdeed8;
+    }
+
+    .flash.error{
+      color:var(--danger);
+      background:#fff7f7;
+      border-color:#f3d0d0;
+    }
+
+    .profile-box{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      margin-top:14px;
+      padding:14px;
+      border:1px solid var(--line);
+      border-radius:16px;
+      background:#fff;
+    }
+
+    .avatar-lg{
+      width:62px;
+      height:62px;
+      border-radius:999px;
+      background:linear-gradient(135deg,#dbeafe 0%, #bfdbfe 100%);
+      color:var(--primary-2);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:22px;
+      font-weight:1000;
+      flex-shrink:0;
+    }
+
+    .profile-name{
+      font-size:18px;
+      font-weight:1000;
+      line-height:1.2;
+    }
+
+    .profile-meta{
+      margin-top:4px;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.55;
+    }
+
+    .children-stack{
+      margin-top:14px;
+      display:grid;
+      gap:10px;
+    }
+
+    .child-card{
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:#fff;
+      padding:12px;
+    }
+
+    .child-title{
+      font-weight:1000;
+      font-size:14px;
+    }
+
+    .child-meta{
+      color:var(--muted);
+      font-size:12px;
+      margin-top:4px;
+      line-height:1.55;
+    }
+
+    .metric-list{
+      margin-top:14px;
+      display:grid;
+      gap:10px;
+    }
+
+    .metric-item{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      border-bottom:1px solid #eef4fb;
+      padding-bottom:8px;
+      font-size:13px;
+      color:var(--muted);
+    }
+
+    .metric-item:last-child{
+      border-bottom:none;
+      padding-bottom:0;
+    }
+
+    .metric-item strong{
+      color:var(--text);
+      text-align:right;
+    }
+
+    @media (max-width: 1180px){
+      .page-grid{
+        grid-template-columns:1fr;
+      }
+
+      .summary-grid{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+      }
+    }
+
+    @media (max-width: 720px){
+      .summary-grid{
+        grid-template-columns:1fr;
+      }
+
+      .form-row{
+        grid-template-columns:1fr;
+      }
+
+      .metric-item{
+        flex-direction:column;
+      }
+
+      .metric-item strong{
+        text-align:left;
+      }
+
+      .profile-box{
+        align-items:flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <%
+    const t = tenant || {};
+    const u = user || {};
+    const p = parent || null;
+    const kids = Array.isArray(children) ? children : [];
+    const form = formData || {};
+    const tenantName = t.name || "CampusSaaS";
+    const tenantCode = (t.code || "CC").toString();
+
+    function initials(name) {
+      const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+      const a = parts[0] && parts[0][0] ? parts[0][0] : "P";
+      const b = parts[1] && parts[1][0] ? parts[1][0] : "";
+      return (a + b).toUpperCase();
+    }
+
+    function fullNameOfStudent(c) {
+      const name = (c && c.fullName) ? String(c.fullName).trim() : "";
+      if (name) return name;
+
+      const parts = [];
+      if (c && c.firstName) parts.push(String(c.firstName).trim());
+      if (c && c.middleName) parts.push(String(c.middleName).trim());
+      if (c && c.lastName) parts.push(String(c.lastName).trim());
+      return parts.filter(Boolean).join(" ").trim() || "Student";
+    }
+
+    const parentFullName = [form.firstName, form.lastName].filter(Boolean).join(" ").trim() || "Parent";
+  %>
+
+    <%-include("./navbar") %>
+
+    <main class="main">
+      <div class="topbar">
+        <div>
+          <div class="title">Parent Profile</div>
+          <div class="subtitle">
+            Manage your parent account details, contact information, relationship details and linked student summary.
+          </div>
+        </div>
+
+        <div class="top-actions">
+          <div class="chip">
+            <i class="fa-solid fa-children"></i>
+            <span>Linked Children</span>
+            <b><%= kids.length %></b>
+          </div>
+
+          <button class="btn light" type="button" onclick="window.location.href='/parent/support'">
+            <i class="fa-solid fa-headset"></i> Support
+          </button>
+        </div>
+      </div>
+
+      <% if ((success || []).length || (error || []).length) { %>
+        <div class="flash-stack">
+          <% (success || []).forEach(function(msg){ %>
+            <div class="flash success"><%= msg %></div>
+          <% }); %>
+          <% (error || []).forEach(function(msg){ %>
+            <div class="flash error"><%= msg %></div>
+          <% }); %>
+        </div>
+      <% } %>
+
+      <div class="summary-grid">
+        <div class="summary-box">
+          <div class="summary-label">Parent Profile</div>
+          <div class="summary-value"><%= p ? "Active" : "Missing" %></div>
+        </div>
+        <div class="summary-box">
+          <div class="summary-label">Linked Children</div>
+          <div class="summary-value"><%= kids.length %></div>
+        </div>
+        <div class="summary-box">
+          <div class="summary-label">Relationship</div>
+          <div class="summary-value"><%= form.relationship || "Guardian" %></div>
+        </div>
+        <div class="summary-box">
+          <div class="summary-label">Primary Email</div>
+          <div class="summary-value" style="font-size:16px;"><%= form.email || "—" %></div>
+        </div>
+      </div>
+
+      <div class="page-grid">
+        <section class="card">
+          <div class="section-title">Edit Parent Profile</div>
+          <div class="section-sub">Update the information the school uses to contact and identify you.</div>
+
+          <form method="POST" action="/parent/profile" class="form-grid">
+            <div class="form-row">
+              <div class="field">
+                <label for="firstName">First Name</label>
+                <input id="firstName" name="firstName" type="text" value="<%= form.firstName || '' %>" required />
+              </div>
+
+              <div class="field">
+                <label for="lastName">Last Name</label>
+                <input id="lastName" name="lastName" type="text" value="<%= form.lastName || '' %>" required />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="field">
+                <label for="email">Email</label>
+                <input id="email" name="email" type="email" value="<%= form.email || '' %>" required />
+              </div>
+
+              <div class="field">
+                <label for="phone">Phone</label>
+                <input id="phone" name="phone" type="text" value="<%= form.phone || '' %>" />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="field">
+                <label for="relationship">Relationship</label>
+                <select id="relationship" name="relationship">
+                  <option value="Father" <%= String(form.relationship || '') === 'Father' ? 'selected' : '' %>>Father</option>
+                  <option value="Mother" <%= String(form.relationship || '') === 'Mother' ? 'selected' : '' %>>Mother</option>
+                  <option value="Guardian" <%= String(form.relationship || 'Guardian') === 'Guardian' ? 'selected' : '' %>>Guardian</option>
+                  <option value="Uncle" <%= String(form.relationship || '') === 'Uncle' ? 'selected' : '' %>>Uncle</option>
+                  <option value="Aunt" <%= String(form.relationship || '') === 'Aunt' ? 'selected' : '' %>>Aunt</option>
+                  <option value="Sponsor" <%= String(form.relationship || '') === 'Sponsor' ? 'selected' : '' %>>Sponsor</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label for="occupation">Occupation</label>
+                <input id="occupation" name="occupation" type="text" value="<%= form.occupation || '' %>" />
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="addressLine1">Address Line 1</label>
+              <input id="addressLine1" name="addressLine1" type="text" value="<%= form.addressLine1 || '' %>" />
+            </div>
+
+            <div class="field">
+              <label for="addressLine2">Address Line 2</label>
+              <input id="addressLine2" name="addressLine2" type="text" value="<%= form.addressLine2 || '' %>" />
+            </div>
+
+            <div class="form-row">
+              <div class="field">
+                <label for="city">City / District</label>
+                <input id="city" name="city" type="text" value="<%= form.city || '' %>" />
+              </div>
+
+              <div class="field">
+                <label for="country">Country</label>
+                <input id="country" name="country" type="text" value="<%= form.country || '' %>" />
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="notes">Additional Notes</label>
+              <textarea id="notes" name="notes" placeholder="Any additional information you want the school to know..."><%= form.notes || '' %></textarea>
+            </div>
+
+            <div>
+              <button class="btn primary" type="submit">
+                <i class="fa-solid fa-floppy-disk"></i> Save Profile
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <section>
+          <div class="card">
+            <div class="section-title">Parent Account Summary</div>
+            <div class="section-sub">Current parent profile details and linked family summary.</div>
+
+            <div class="profile-box">
+              <div class="avatar-lg"><%= initials(parentFullName) %></div>
+              <div>
+                <div class="profile-name"><%= parentFullName %></div>
+                <div class="profile-meta">
+                  <div><i class="fa-solid fa-envelope"></i> <%= form.email || "—" %></div>
+                  <div><i class="fa-solid fa-phone"></i> <%= form.phone || "—" %></div>
+                  <div><i class="fa-solid fa-people-roof"></i> <%= form.relationship || "Guardian" %></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="metric-list">
+              <div class="metric-item">
+                <span>Profile record</span>
+                <strong><%= p ? "Available" : "Missing" %></strong>
+              </div>
+              <div class="metric-item">
+                <span>Linked children</span>
+                <strong><%= kids.length %></strong>
+              </div>
+              <div class="metric-item">
+                <span>City</span>
+                <strong><%= form.city || "—" %></strong>
+              </div>
+              <div class="metric-item">
+                <span>Country</span>
+                <strong><%= form.country || "—" %></strong>
+              </div>
+              <div class="metric-item">
+                <span>Occupation</span>
+                <strong><%= form.occupation || "—" %></strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top:14px;">
+            <div class="section-title">Linked Children</div>
+            <div class="section-sub">Students connected to this parent account.</div>
+
+            <% if (!kids.length) { %>
+              <div class="empty" style="margin-top:14px;">
+                <div class="empty-icon"><i class="fa-solid fa-children"></i></div>
+                <div class="empty-title">No linked children yet</div>
+                <div class="empty-text">Ask the school administrator to connect your account to student records.</div>
+              </div>
+            <% } else { %>
+              <div class="children-stack">
+                <% kids.forEach(function(c){ %>
+                  <div class="child-card">
+                    <div class="child-title"><%= fullNameOfStudent(c) %></div>
+                    <div class="child-meta">
+                      Reg No: <strong><%= c.regNo || "—" %></strong>
+                      <span class="dot">•</span>
+                      Class: <strong><%= (c.classGroup && (c.classGroup.title || c.classGroup.name)) || "—" %></strong>
+                      <span class="dot">•</span>
+                      Program: <strong><%= (c.program && (c.program.title || c.program.name)) || "—" %></strong>
+                    </div>
+                  </div>
+                <% }); %>
+              </div>
+            <% } %>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+<script src="/js/navbar.js"></script>
+</body>
+</html>

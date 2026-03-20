@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Announcements — Classic Campus</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="/css/navbar.css" />
+  <style>
+    body{margin:0;background:#f5f8ff;font-family:Poppins,Segoe UI,Arial,sans-serif;color:#0f172a;overflow-x:hidden}
+    *{box-sizing:border-box;min-width:0}
+    .main{flex:1;padding:20px 26px;display:flex;flex-direction:column;gap:16px}
+    .topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+    .title{font-size:20px;font-weight:700;color:#083454}
+    .subtitle{font-size:13px;color:#6b7280;line-height:1.5}
+    .btn{padding:10px 14px;border-radius:10px;border:1px solid #dbe3f6;background:#eef4ff;color:#0a3d62;text-decoration:none;font-weight:700;display:inline-flex;align-items:center;gap:8px}
+    .btn.primary{background:#0a3d62;color:#fff;border-color:#0a3d62}
+    .card{background:#fff;border-radius:12px;padding:14px;border:1px solid #e4ecfb;box-shadow:0 6px 18px rgba(12,38,73,.04)}
+    .list{display:flex;flex-direction:column;gap:12px}
+    .item{border:1px solid #e2ebff;border-radius:12px;padding:14px;background:#fdfdff}
+    .item-title{font-size:15px;font-weight:800;color:#083454}
+    .meta{font-size:12px;color:#6b7280;line-height:1.5;margin-top:4px}
+    .body{font-size:13px;color:#334155;line-height:1.65;margin-top:10px}
+    .badge{display:inline-flex;padding:5px 9px;border-radius:999px;font-size:11px;font-weight:800}
+    .green{background:#e6f9ee;color:#166534}
+    .amber{background:#fffbeb;color:#b45309}
+    .gray{background:#f1f5f9;color:#475569}
+    .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    .alert{padding:12px 14px;border-radius:10px;background:#fff1f2;color:#991b1b;border:1px solid #fecdd3}
+    @media (max-width:900px){.main{padding:16px}}
+  </style>
+</head>
+<body>
+  <%- include("./navbar") %>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="title">Announcements</div>
+        <div class="subtitle">Create, publish and manage platform-wide notices for universities.</div>
+      </div>
+      <div>
+        <a href="/super-admin/announcements/create" class="btn primary"><i class="fa-solid fa-bullhorn"></i> New Announcement</a>
+      </div>
+    </div>
+
+    <% if (error) { %>
+      <div class="alert"><%= error %></div>
+    <% } %>
+
+    <div class="card">
+      <% if (!announcements || announcements.length === 0) { %>
+        <div class="meta">No announcements found.</div>
+      <% } else { %>
+        <div class="list">
+          <% announcements.forEach(function(item){ %>
+            <div class="item">
+              <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;">
+                <div>
+                  <div class="item-title"><%= item.title %></div>
+                  <div class="meta">
+                    Audience: <%= item.audience %> • Channel: <%= item.channel %> • Created:
+                    <%= item.createdAt ? new Date(item.createdAt).toLocaleString() : '—' %>
+                  </div>
+                </div>
+                <span class="badge <%= item.status === 'published' ? 'green' : item.status === 'scheduled' ? 'amber' : 'gray' %>"><%= item.status %></span>
+              </div>
+
+              <div class="body"><%= item.body %></div>
+
+              <div class="actions">
+                <a href="/super-admin/announcements/<%= item._id %>" class="btn">View</a>
+                <% if (item.status !== 'published') { %>
+                  <form action="/super-admin/announcements/<%= item._id %>/publish" method="POST">
+                    <button type="submit" class="btn">Publish</button>
+                  </form>
+                <% } %>
+                <form action="/super-admin/announcements/<%= item._id %>/delete" method="POST" onsubmit="return confirm('Delete this announcement?');">
+                  <button type="submit" class="btn">Delete</button>
+                </form>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+    </div>
+  </main>
+
+  </div>
+  <script src="/js/navbar.js"></script>
+</body>
+</html>

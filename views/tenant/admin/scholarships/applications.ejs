@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Applications — <%= (tenant && tenant.name) ? tenant.name : "Classic Campus" %></title>
+
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer"/>
+  <link rel="stylesheet" href="/css/admin-finance.css"/>
+  <script src="/js/admin-scholarships.js" defer></script>
+</head>
+<body>
+<%
+  const safe=(v)=> (v===null||v===undefined) ? "" : String(v);
+  const sch = (typeof scholarship!=="undefined" && scholarship) ? scholarship : null;
+  const apps = (typeof applications!=="undefined" && Array.isArray(applications)) ? applications : [];
+  const f = (typeof filters!=="undefined" && filters) ? filters : {};
+  const pg = (typeof pagination!=="undefined" && pagination) ? pagination : { page:1, pages:1, total:apps.length };
+
+  const makeUrl=(p)=>{
+    const params=[];
+    if(safe(f.q)) params.push("q="+encodeURIComponent(safe(f.q)));
+    if(safe(f.status)) params.push("status="+encodeURIComponent(safe(f.status)));
+    params.push("page="+encodeURIComponent(String(p)));
+    return "/admin/scholarships/" + (sch ? sch._id : "") + "/applications?" + params.join("&");
+  };
+%>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">CS</div>
+      <div>
+        <h1><%= (tenant && tenant.name) ? tenant.name : "CampusSaaS" %></h1>
+        <div class="sub">Admin Portal</div>
+      </div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section-title">Admissions</div>
+      <a class="nav-item active" href="/admin/scholarships"><i class="fa-solid fa-graduation-cap"></i><span>Scholarships</span></a>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h1 class="h1">Applications</h1>
+        <div class="muted"><%= sch ? safe(sch.title) : "" %></div>
+      </div>
+      <div class="actions">
+        <a class="btn light" href="/admin/scholarships/<%= sch ? sch._id : "" %>"><i class="fa-solid fa-arrow-left"></i> Scholarship</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <form class="filters" method="GET" action="/admin/scholarships/<%= sch ? sch._id : "" %>/applications">
+          <div>
+            <div class="muted">Search</div>
+            <input name="q" value="<%= safe(f.q) %>" placeholder="appId, name, email, phone, regNo"/>
+          </div>
+          <div>
+            <div class="muted">Status</div>
+            <select name="status">
+              <option value="" <%= safe(f.status)==="" ? "selected":"" %>>All</option>
+              <% ["submitted","under_review","shortlisted","awarded","rejected","withdrawn"].forEach(s=>{ %>
+                <option value="<%= s %>" <%= safe(f.status)===s ? "selected":"" %>><%= s %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div style="align-self:end">
+            <button class="btn primary" type="submit"><i class="fa-solid fa-filter"></i> Apply</button>
+            <a class="btn light" href="/admin/scholarships/<%= sch ? sch._id : "" %>/applications"><i class="fa-solid fa-rotate"></i> Reset</a>
+          </div>
+        </form>
+
+        <form method="POST" action="/admin/scholarships/applications/bulk" style="margin-top:10px">
+          <% if(csrfToken){ %><input type="hidden" name="_csrf" value="<%= csrfToken %>"/><% } %>
+
+          <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:space-between;align-items:center">
+            <div class="muted">Total: <b><%= pg.total %></b></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <select name="action">
+                <option value="">Bulk Action</option>
+                <option value="review">Mark under_review</option>
+                <option value="shortlist">Shortlist</option>
+                <option value="award">Award</option>
+                <option value="reject">Reject</option>
+              </select>
+              <button class="btn light" type="submit">Apply</button>
+            </div>
+          </div>
+
+          <div class="table-wrap" style="margin-top:10px">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:40px"></th>
+                  <th>Applicant</th>
+                  <th>Program</th>
+                  <th>Status</th>
+                  <th>Submitted</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if(!apps.length){ %>
+                  <tr><td colspan="6" class="muted">No applications found.</td></tr>
+                <% } %>
+
+                <% apps.forEach(a=>{ %>
+                  <tr>
+                    <td><input type="checkbox" name="ids" value="<%= a._id %>"/></td>
+                    <td>
+                      <div><b><%= safe(a.fullName) %></b></div>
+                      <div class="muted"><%= safe(a.applicationId) %> • <%= safe(a.email) %> • <%= safe(a.phone) %></div>
+                    </td>
+                    <td class="muted"><%= a.program ? ((a.program.code? a.program.code+" — ":"") + (a.program.name||a.program.title||"")) : "-" %></td>
+                    <td><span class="badge <%= safe(a.status) %>"><%= safe(a.status) %></span></td>
+                    <td class="muted"><%= a.createdAt ? new Date(a.createdAt).toLocaleString() : "-" %></td>
+                    <td><a class="link" href="/admin/scholarships/applications/<%= a._id %>">Open</a></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </form>
+
+        <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+          <% if(pg.pages>1){ %>
+            <% if(pg.page>1){ %><a class="btn light" href="<%= makeUrl(pg.page-1) %>">Prev</a><% } %>
+            <div class="muted" style="padding:10px 0">Page <b><%= pg.page %></b> / <b><%= pg.pages %></b></div>
+            <% if(pg.page<pg.pages){ %><a class="btn light" href="<%= makeUrl(pg.page+1) %>">Next</a><% } %>
+          <% } %>
+        </div>
+
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

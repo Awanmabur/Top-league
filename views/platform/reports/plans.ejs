@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Plan Report — Classic Campus</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="/css/navbar.css" />
+  <style>
+    body{margin:0;background:#f5f8ff;font-family:Poppins,Segoe UI,Arial,sans-serif;color:#0f172a;overflow-x:hidden}
+    *{box-sizing:border-box;min-width:0}
+    .main{flex:1;padding:20px 26px;display:flex;flex-direction:column;gap:16px}
+    .title{font-size:20px;font-weight:700;color:#083454}
+    .subtitle{font-size:13px;color:#6b7280;line-height:1.5}
+    .card{background:#fff;border-radius:12px;padding:14px;border:1px solid #e4ecfb;box-shadow:0 6px 18px rgba(12,38,73,.04)}
+    .table-wrap{overflow:auto}
+    table{width:100%;border-collapse:collapse;min-width:920px}
+    th,td{padding:12px 10px;border-bottom:1px solid #edf2ff;text-align:left;font-size:13px}
+    th{font-size:12px;text-transform:uppercase;color:#6b7280}
+    .badge{display:inline-flex;padding:5px 9px;border-radius:999px;font-size:11px;font-weight:800}
+    .green{background:#e6f9ee;color:#166534}
+    .gray{background:#f1f5f9;color:#475569}
+    .alert{padding:12px 14px;border-radius:10px;background:#fff1f2;color:#991b1b;border:1px solid #fecdd3}
+    @media (max-width:900px){.main{padding:16px}}
+  </style>
+</head>
+<body>
+  <%- include("./navbar") %>
+
+  <main class="main">
+    <div>
+      <div class="title">Plan Report</div>
+      <div class="subtitle">Usage, pricing and activity for all platform billing plans.</div>
+    </div>
+
+    <% if (error) { %>
+      <div class="alert"><%= error %></div>
+    <% } %>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Plan</th>
+              <th>Code</th>
+              <th>Billing Model</th>
+              <th>Per School</th>
+              <th>Per Student</th>
+              <th>Share %</th>
+              <th>Active</th>
+              <th>Universities</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% (rows || []).forEach(function(row){ %>
+              <tr>
+                <td><%= row.name %></td>
+                <td><%= row.code %></td>
+                <td><%= row.billingModel %></td>
+                <td>$<%= Number(row.pricePerSchool || 0).toLocaleString() %></td>
+                <td>$<%= Number(row.pricePerStudent || 0).toLocaleString() %></td>
+                <td><%= Number(row.platformSharePercent || 0) %>%</td>
+                <td><span class="badge <%= row.isActive ? 'green' : 'gray' %>"><%= row.isActive ? 'Active' : 'Inactive' %></span></td>
+                <td><%= row.totalTenants || 0 %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  </div>
+  <script src="/js/navbar.js"></script>
+</body>
+</html>

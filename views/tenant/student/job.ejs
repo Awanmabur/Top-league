@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title><%= pageTitle %> — <%= tenant?.name || "CampusSaaS" %></title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/navbar.css"/>
+  <link rel="stylesheet" href="/css/student-portal.css" />
+</head>
+<body>
+<%- include("./navbar") %>
+
+<main class="main">
+  <div class="topbar">
+    <div>
+      <div class="title">Jobs & Opportunities</div>
+      <div class="subtitle">Internships, graduate roles, part-time jobs, and campus opportunities.</div>
+    </div>
+  </div>
+
+  <%-include("./.././partials/flash") %>
+
+  <div class="kpi-row">
+    <div class="card"><div class="section-title">Total</div><div style="font-size:22px;font-weight:800;"><%= stats.total %></div></div>
+    <div class="card"><div class="section-title">Internships</div><div style="font-size:22px;font-weight:800;"><%= stats.internships %></div></div>
+    <div class="card"><div class="section-title">Part Time</div><div style="font-size:22px;font-weight:800;"><%= stats.partTime %></div></div>
+  </div>
+
+  <section class="card" style="margin-top:16px;">
+    <div class="section-title">Available opportunities</div>
+    <div class="section-sub">Current postings available to students.</div>
+
+    <div class="notif-list" style="margin-top:10px;">
+      <% if (jobs?.length) { %>
+        <% jobs.forEach(function(job){ %>
+          <div class="notif-item">
+            <div class="notif-icon"><i class="fa-solid fa-briefcase"></i></div>
+            <div>
+              <div class="notif-title"><%= job.title %></div>
+              <div class="notif-meta"><%= job.company %> • <%= job.location %> • <%= job.type %></div>
+              <div class="small-muted" style="margin-top:4px;"><%= job.summary %></div>
+              <div class="small-muted" style="margin-top:4px;">Deadline: <%= job.deadline ? new Date(job.deadline).toDateString() : "Open" %></div>
+            </div>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <div class="small-muted">No jobs or opportunities found.</div>
+      <% } %>
+    </div>
+  </section>
+</main>
+</div>
+<script src="/js/navbar.js"></script>
+</body>
+</html>

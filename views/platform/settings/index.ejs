@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Platform Settings — Classic Campus</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="/css/navbar.css" />
+  <style>
+    body{margin:0;background:#f5f8ff;font-family:Poppins,Segoe UI,Arial,sans-serif;color:#0f172a;overflow-x:hidden}
+    *{box-sizing:border-box;min-width:0}
+    .main{flex:1;padding:20px 26px;display:flex;flex-direction:column;gap:16px}
+    .title{font-size:20px;font-weight:700;color:#083454}
+    .subtitle{font-size:13px;color:#6b7280;line-height:1.5}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+    .card{background:#fff;border-radius:12px;padding:16px;border:1px solid #e4ecfb;box-shadow:0 6px 18px rgba(12,38,73,.04)}
+    label{font-size:13px;font-weight:700;color:#334155}
+    input,select{width:100%;border:1px solid #dbe3f6;border-radius:10px;padding:11px 12px;background:#fff;font:inherit;margin-top:7px}
+    .field{margin-bottom:12px}
+    .btn{padding:10px 14px;border-radius:10px;border:1px solid #dbe3f6;background:#eef4ff;color:#0a3d62;text-decoration:none;font-weight:700;display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+    .card-title{font-size:15px;font-weight:800;color:#083454;margin-bottom:12px}
+    .alert{padding:12px 14px;border-radius:10px;background:#fff1f2;color:#991b1b;border:1px solid #fecdd3}
+    .meta{font-size:12px;color:#6b7280}
+    @media (max-width:900px){.grid{grid-template-columns:1fr}.main{padding:16px}}
+  </style>
+</head>
+<body>
+  <%- include("./navbar") %>
+
+  <main class="main">
+    <div>
+      <div class="title">Platform Settings</div>
+      <div class="subtitle">Manage global defaults, branding and security settings.</div>
+    </div>
+
+    <% if (error) { %>
+      <div class="alert"><%= error %></div>
+    <% } %>
+
+    <div class="grid">
+      <div class="card">
+        <div class="card-title">General Settings</div>
+        <form action="/super-admin/settings/general" method="POST">
+          <div class="field">
+            <label>Platform Name</label>
+            <input type="text" name="platform_name" value="<%= values?.platform_name || 'Classic Campus' %>" />
+          </div>
+
+          <div class="field">
+            <label>Base Domain</label>
+            <input type="text" name="base_domain" value="<%= values?.base_domain || '' %>" />
+          </div>
+
+          <div class="field">
+            <label>Default Timezone</label>
+            <input type="text" name="default_timezone" value="<%= values?.default_timezone || 'Africa/Kampala' %>" />
+          </div>
+
+          <div class="field">
+            <label>Default Currency</label>
+            <input type="text" name="default_currency" value="<%= values?.default_currency || 'USD' %>" />
+          </div>
+
+          <button type="submit" class="btn">Save General Settings</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Branding Settings</div>
+        <form action="/super-admin/settings/branding" method="POST">
+          <div class="field">
+            <label>Primary Color</label>
+            <input type="text" name="brand_primary_color" value="<%= values?.brand_primary_color || '#0a3d62' %>" />
+          </div>
+
+          <div class="field">
+            <label>Accent Color</label>
+            <input type="text" name="brand_accent_color" value="<%= values?.brand_accent_color || '#0a6fbf' %>" />
+          </div>
+
+          <div class="field">
+            <label>Support Email</label>
+            <input type="email" name="brand_support_email" value="<%= values?.brand_support_email || '' %>" />
+          </div>
+
+          <button type="submit" class="btn">Save Branding Settings</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Security Settings</div>
+        <form action="/super-admin/settings/security" method="POST">
+          <div class="field">
+            <label>Password Min Length</label>
+            <input type="number" name="password_min_length" value="<%= values?.password_min_length || 8 %>" />
+          </div>
+
+          <div class="field">
+            <label>Session Timeout Minutes</label>
+            <input type="number" name="session_timeout_minutes" value="<%= values?.session_timeout_minutes || 120 %>" />
+          </div>
+
+          <div class="field">
+            <label style="display:flex;align-items:center;gap:8px;">
+              <input type="checkbox" name="allow_superadmin_2fa" <%= values?.allow_superadmin_2fa ? 'checked' : '' %> />
+              Enable Superadmin 2FA
+            </label>
+          </div>
+
+          <button type="submit" class="btn">Save Security Settings</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Stored Settings Snapshot</div>
+        <div class="meta">
+          <% if (settings && settings.length) { %>
+            <ul style="padding-left:18px;line-height:1.8;margin:0;">
+              <% settings.forEach(function(s){ %>
+                <li><strong><%= s.key %></strong> — <%= s.group %></li>
+              <% }) %>
+            </ul>
+          <% } else { %>
+            No settings saved yet.
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  </div>
+  <script src="/js/navbar.js"></script>
+</body>
+</html>

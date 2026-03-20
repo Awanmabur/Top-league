@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title><%= pageTitle %> — <%= tenant?.name || "CampusSaaS" %></title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/navbar.css"/>
+  <link rel="stylesheet" href="/css/student-portal.css" />
+</head>
+<body>
+<%- include("./navbar") %>
+
+<main class="main">
+  <div class="topbar">
+    <div>
+      <div class="title">Assignments</div>
+      <div class="subtitle">Coursework, deadlines, submission mode, and assignment status.</div>
+    </div>
+  </div>
+
+  <%-include("./.././partials/flash") %>
+
+  <div class="kpi-row">
+    <div class="card"><div class="section-title">Total</div><div style="font-size:22px;font-weight:800;"><%= kpis.total %></div></div>
+    <div class="card"><div class="section-title">Due Soon</div><div style="font-size:22px;font-weight:800;"><%= kpis.dueSoon %></div></div>
+    <div class="card"><div class="section-title">Open</div><div style="font-size:22px;font-weight:800;"><%= kpis.open %></div></div>
+    <div class="card"><div class="section-title">Submitted / Closed</div><div style="font-size:22px;font-weight:800;"><%= kpis.submitted %></div></div>
+  </div>
+
+  <section class="card" style="margin-top:16px;">
+    <div class="section-title">Assignment list</div>
+    <div class="section-sub">Live coursework records available to your account.</div>
+
+    <div style="overflow-x:auto;margin-top:12px;">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead>
+          <tr style="border-bottom:1px solid #e5edff;">
+            <th style="text-align:left;padding:6px 4px;">Course</th>
+            <th style="text-align:left;padding:6px 4px;">Title</th>
+            <th style="text-align:left;padding:6px 4px;">Type</th>
+            <th style="text-align:left;padding:6px 4px;">Weight</th>
+            <th style="text-align:left;padding:6px 4px;">Due Date</th>
+            <th style="text-align:left;padding:6px 4px;">Submission</th>
+            <th style="text-align:left;padding:6px 4px;">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (assignments?.length) { %>
+            <% assignments.forEach(function(a) { %>
+              <tr>
+                <td><%= a.courseCode %> - <%= a.courseTitle %></td>
+                <td><%= a.title %></td>
+                <td><%= a.type %></td>
+                <td><%= a.weight %></td>
+                <td><%= a.dueDate ? new Date(a.dueDate).toDateString() : "-" %></td>
+                <td><%= a.submissionMode %></td>
+                <td><%= a.status %></td>
+              </tr>
+            <% }) %>
+          <% } else { %>
+            <tr><td colspan="7">No assignments found.</td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+</div>
+<script src="/js/navbar.js"></script>
+</body>
+</html>

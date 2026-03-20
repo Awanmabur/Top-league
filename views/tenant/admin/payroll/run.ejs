@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title><%= run.title %> — Payroll</title>
+<style>
+  :root{--accent:#0a6fbf;--bg:#f4f8ff;--line:rgba(13,64,96,.12);--muted:#6b7280}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial;background:var(--bg);color:#0f172a}
+  .wrap{max-width:1400px;margin:0 auto;padding:18px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.08);padding:16px}
+  .top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start}
+  .title{margin:0;font-size:18px;font-weight:1000}
+  .muted{color:var(--muted);font-size:12px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;align-items:center}
+  input,textarea{padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:#fff}
+  button{padding:10px 14px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-weight:1000;cursor:pointer}
+  .btn2{background:#fff;color:#0f172a;border:1px solid var(--line)}
+  table{width:100%;border-collapse:collapse;margin-top:12px}
+  th,td{padding:10px;border-top:1px solid var(--line);text-align:left;font-size:13px;vertical-align:top}
+  .pill{display:inline-flex;align-items:center;padding:4px 10px;border-radius:999px;font-weight:900;font-size:12px}
+  .p1{background:#eef2ff;color:#3730a3}
+  .p2{background:#ecfdf3;color:#15803d}
+  .p3{background:#fff7ed;color:#92400e}
+  .flash{margin:12px 0;display:grid;gap:8px}
+  .ferr{padding:10px 12px;border-radius:12px;border:1px solid rgba(239,68,68,.25);background:#fee2e2;color:#991b1b;font-weight:900;font-size:13px}
+  .fok{padding:10px 12px;border-radius:12px;border:1px solid rgba(22,163,74,.25);background:#dcfce7;color:#166534;font-weight:900;font-size:13px}
+</style>
+</head>
+<body>
+<%
+  const rows = Array.isArray(items) ? items : [];
+  const t = totals || { base:0, allow:0, deduct:0, net:0 };
+  const csrf = (typeof csrfToken!=="undefined" && csrfToken) ? csrfToken : "";
+  const msgs = (typeof messages!=="undefined" && messages) ? messages : {};
+  const errs = msgs.error ? ([]).concat(msgs.error) : [];
+  const oks = msgs.success ? ([]).concat(msgs.success) : [];
+%>
+<div class="wrap">
+  <div class="card">
+    <div class="top">
+      <div>
+        <h1 class="title"><%= run.title %></h1>
+        <div class="muted">
+          Period: <%= new Date(run.periodStart).toLocaleDateString() %> → <%= new Date(run.periodEnd).toLocaleDateString() %>
+          • Currency: <b><%= run.currency || 'UGX' %></b>
+        </div>
+        <div class="muted">Status: <b><%= run.status %></b></div>
+      </div>
+
+      <div class="row" style="margin:0">
+        <a class="btn2" style="text-decoration:none" href="/admin/payroll">← Back</a>
+
+        <form method="POST" action="/admin/payroll/<%= run._id %>/status" style="display:inline">
+          <% if(csrf){ %><input type="hidden" name="_csrf" value="<%= csrf %>"><% } %>
+          <input type="hidden" name="action" value="revert">
+          <button class="btn2" type="submit" <%= (run.status==='draft')?'disabled':'' %>>Revert to Draft</button>
+        </form>
+
+        <form method="POST" action="/admin/payroll/<%= run._id %>/status" style="display:inline">
+          <% if(csrf){ %><input type="hidden" name="_csrf" value="<%= csrf %>"><% } %>
+          <input type="hidden" name="action" value="approve">
+          <button type="submit" <%= (run.status!=='draft')?'disabled':'' %>>Approve</button>
+        </form>
+
+        <form method="POST" action="/admin/payroll/<%= run._id %>/status" style="display:inline">
+          <% if(csrf){ %><input type="hidden" name="_csrf" value="<%= csrf %>"><% } %>
+          <input type="hidden" name="action" value="pay">
+          <button type="submit" <%= (run.status!=='approved')?'disabled':'' %>>Mark Paid</button>
+        </form>
+      </div>
+    </div>
+
+    <% if (errs.length || oks.length) { %>
+      <div class="flash">
+        <% errs.forEach(m=>{ %><div class="ferr"><%= m %></div><% }) %>
+        <% oks.forEach(m=>{ %><div class="fok"><%= m %></div><% }) %>
+      </div>
+    <% } %>
+
+    <div class="row">
+      <div class="pill p1">Base: <%= Number(t.base||0).toLocaleString() %></div>
+      <div class="pill p2">Allowances: <%= Number(t.allow||0).toLocaleString() %></div>
+      <div class="pill p3">Deductions: <%= Number(t.deduct||0).toLocaleString() %></div>
+      <div class="pill p2">Net Total: <%= Number(t.net||0).toLocaleString() %></div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width:26%">Staff</th>
+          <th style="width:12%">Base</th>
+          <th style="width:12%">Allow</th>
+          <th style="width:12%">Deduct</th>
+          <th style="width:12%">Net</th>
+          <th style="width:26%">Note</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if(!rows.length){ %>
+          <tr><td colspan="6" class="muted">No items.</td></tr>
+        <% } %>
+
+        <% rows.forEach(it=>{ %>
+          <tr>
+            <td>
+              <div><b><%= (it.staff && (it.staff.fullName||((it.staff.firstName||'')+' '+(it.staff.lastName||'')).trim())) ? (it.staff.fullName||((it.staff.firstName||'')+' '+(it.staff.lastName||'')).trim()) : '-' %></b></div>
+              <div class="muted"><%= (it.staff && it.staff.staffNo) ? it.staff.staffNo : '' %></div>
+            </td>
+
+            <td><b><%= Number(it.baseSalary||0).toLocaleString() %></b></td>
+
+            <td>
+              <form method="POST" action="/admin/payroll/item/<%= it._id %>">
+                <% if(csrf){ %><input type="hidden" name="_csrf" value="<%= csrf %>"><% } %>
+                <input name="allowances" type="number" min="0" step="1" value="<%= it.allowances||0 %>" <%= (run.status!=='draft')?'disabled':'' %> />
+            </td>
+
+            <td>
+                <input name="deductions" type="number" min="0" step="1" value="<%= it.deductions||0 %>" <%= (run.status!=='draft')?'disabled':'' %> />
+            </td>
+
+            <td><b><%= Number(it.net||0).toLocaleString() %></b></td>
+
+            <td>
+                <input name="note" value="<%= it.note||'' %>" <%= (run.status!=='draft')?'disabled':'' %> />
+                <div class="row" style="margin-top:8px">
+                  <button type="submit" <%= (run.status!=='draft')?'disabled':'' %>>Save</button>
+                </div>
+              </form>
+            </td>
+
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+
+  </div>
+</div>
+</body>
+</html>

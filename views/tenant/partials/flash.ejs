@@ -1,0 +1,56 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flashing page</title>
+  <link rel="stylesheet" href="/css/flash.css">
+</head>
+
+<div id="flash-container">
+  <% const FLASH = (typeof flash !== "undefined" && flash) ? flash : {success:[], error:[], info:[], welcome:[], logout:[], warning:[]}; %>
+
+  <% if (FLASH.error && FLASH.error.length > 0) { %>
+    <div id="flash-error" class="flash-error">
+      <span class="flash-close" onclick="this.parentElement.style.display='none';">&times;</span>
+      <%= FLASH.error.join(" • ") %>
+    </div>
+  <% } %>
+
+  <% if (FLASH.success && FLASH.success.length > 0) { %>
+    <div id="flash-success" class="flash-success">
+      <span class="flash-close" onclick="this.parentElement.style.display='none';">&times;</span>
+      <%= FLASH.success.join(" • ") %>
+    </div>
+  <% } %>
+
+  <% if (FLASH.info && FLASH.info.length > 0) { %>
+    <div id="flash-info" class="flash-info">
+      <span class="flash-close" onclick="this.parentElement.style.display='none';">&times;</span>
+      <%= FLASH.info.join(" • ") %>
+    </div>
+  <% } %>
+
+  <% if (FLASH.welcome && FLASH.welcome.length > 0) { %>
+    <div id="flash-welcome" class="flash-success">
+      <span class="flash-close" onclick="this.parentElement.style.display='none';">&times;</span>
+      <%= FLASH.welcome.join(" • ") %>
+    </div>
+  <% } %>
+
+  <% if (FLASH.logout && FLASH.logout.length > 0) { %>
+    <div id="flash-logout" class="flash-success">
+      <span class="flash-close" onclick="this.parentElement.style.display='none';">&times;</span>
+      <%= FLASH.logout.join(" • ") %>
+    </div>
+  <% } %>
+
+  <% if (FLASH.warning && FLASH.warning.length > 0) { %>
+    <div id="flash-warning" class="flash-warning">
+      <span class="flash-close" onclick="this.parentElement.style.display='none';">&times;</span>
+      <%= FLASH.warning.join(" • ") %>
+    </div>
+  <% } %>
+</div>
+
+</body>
+</html>

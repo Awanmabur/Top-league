@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Scholarships — <%= (tenant && tenant.name) ? tenant.name : "Classic Campus" %></title>
+
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer"/>
+  <link rel="stylesheet" href="/css/admin-finance.css"/>
+</head>
+<body>
+<%
+  const safe=(v)=> (v===null||v===undefined) ? "" : String(v);
+  const _sch = (typeof scholarships!=="undefined" && Array.isArray(scholarships)) ? scholarships : [];
+  const f = (typeof filters!=="undefined" && filters) ? filters : {};
+  const pg = (typeof pagination!=="undefined" && pagination) ? pagination : { page:1, pages:1, total:_sch.length };
+
+  const makeUrl=(p)=>{
+    const params=[];
+    if(safe(f.q)) params.push("q="+encodeURIComponent(safe(f.q)));
+    if(safe(f.status)) params.push("status="+encodeURIComponent(safe(f.status)));
+    params.push("page="+encodeURIComponent(String(p)));
+    return "/admin/scholarships?" + params.join("&");
+  };
+%>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">CS</div>
+      <div>
+        <h1><%= (tenant && tenant.name) ? tenant.name : "CampusSaaS" %></h1>
+        <div class="sub">Admin Portal</div>
+      </div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section-title">Admissions</div>
+      <a class="nav-item active" href="/admin/scholarships"><i class="fa-solid fa-graduation-cap"></i><span>Scholarships</span></a>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h1 class="h1">Scholarships</h1>
+        <div class="muted">Create scholarships, manage applications and awards</div>
+      </div>
+      <div class="actions">
+        <a class="btn primary" href="/admin/scholarships/new"><i class="fa-solid fa-plus"></i> New Scholarship</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head" style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <div>
+          <div class="card-title">Search & Filters</div>
+          <div class="card-sub">Total: <b><%= pg.total %></b></div>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <form class="filters" method="GET" action="/admin/scholarships">
+          <div>
+            <div class="muted">Search</div>
+            <input name="q" value="<%= safe(f.q) %>" placeholder="title, code, provider"/>
+          </div>
+          <div>
+            <div class="muted">Status</div>
+            <select name="status">
+              <option value="" <%= safe(f.status)==="" ? "selected":"" %>>All</option>
+              <% ["draft","open","closed","archived"].forEach(s=>{ %>
+                <option value="<%= s %>" <%= safe(f.status)===s ? "selected":"" %>><%= s %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div style="align-self:end">
+            <button class="btn primary" type="submit"><i class="fa-solid fa-filter"></i> Apply</button>
+            <a class="btn light" href="/admin/scholarships"><i class="fa-solid fa-rotate"></i> Reset</a>
+          </div>
+        </form>
+
+        <div class="table-wrap" style="margin-top:12px">
+          <table>
+            <thead>
+              <tr>
+                <th>Scholarship</th>
+                <th>Provider</th>
+                <th>Dates</th>
+                <th>Status</th>
+                <th>Amount</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if(!_sch.length){ %>
+                <tr><td colspan="6" class="muted">No scholarships found.</td></tr>
+              <% } %>
+
+              <% _sch.forEach(s=>{ %>
+                <tr>
+                  <td>
+                    <div><b><%= safe(s.title) %></b></div>
+                    <div class="muted"><%= safe(s.code) %></div>
+                  </td>
+                  <td class="muted"><%= safe(s.provider) || "-" %></td>
+                  <td class="muted">
+                    <%= s.openDate ? new Date(s.openDate).toLocaleDateString() : "-" %>
+                    —
+                    <%= s.closeDate ? new Date(s.closeDate).toLocaleDateString() : "-" %>
+                  </td>
+                  <td><span class="badge <%= safe(s.status).toLowerCase() %>"><%= safe(s.status) %></span></td>
+                  <td class="muted"><%= safe(s.currency||"UGX") %> <%= (Number(s.amount||0)).toLocaleString() %></td>
+                  <td>
+                    <div class="row-actions">
+                      <a class="link" href="/admin/scholarships/<%= s._id %>">Open</a>
+                      <a class="link" href="/admin/scholarships/<%= s._id %>/applications">Applications</a>
+                      <a class="link" href="/admin/scholarships/<%= s._id %>/edit">Edit</a>
+                    </div>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+          <% if(pg.pages>1){ %>
+            <% if(pg.page>1){ %><a class="btn light" href="<%= makeUrl(pg.page-1) %>">Prev</a><% } %>
+            <div class="muted" style="padding:10px 0">Page <b><%= pg.page %></b> / <b><%= pg.pages %></b></div>
+            <% if(pg.page<pg.pages){ %><a class="btn light" href="<%= makeUrl(pg.page+1) %>">Next</a><% } %>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

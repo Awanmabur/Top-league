@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Receipt • Finance — CampusSaaS</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer"/>
+
+  <style>
+    :root{
+      --blue:#0a3d62; --blue2:#083454; --accent:#0a6fbf;
+      --bg:#f4f8ff; --card:#fff; --muted:#6b7280;
+      --success:#16a34a; --danger:#ef4444; --warn:#f59e0b;
+      --radius:16px; --line:rgba(13,64,96,.12);
+      --shadow:0 10px 30px rgba(0,0,0,.08);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:#0f172a}
+    .wrap{max-width:980px;margin:18px auto;padding:0 14px}
+
+    .topbar{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start;margin-bottom:12px}
+    .title{font-size:18px;font-weight:1000}
+    .subtitle{font-size:12px;color:var(--muted);margin-top:4px}
+    .actions{display:flex;gap:10px;flex-wrap:wrap}
+
+    .btn{border:none;border-radius:12px;padding:10px 12px;font-weight:900;cursor:pointer;display:inline-flex;gap:8px;align-items:center}
+    .btn.light{background:#fff;border:1px solid var(--line);color:#0f172a}
+    .btn.primary{background:var(--accent);color:#fff}
+    .btn:hover{filter:brightness(.98)}
+
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+    .card-head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+    .card-title{font-weight:1000}
+    .card-sub{font-size:12px;color:var(--muted)}
+    .card-body{padding:14px}
+
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .muted{color:var(--muted);font-size:12px}
+    .strong{font-weight:1000}
+    .divider{height:1px;background:var(--line);margin:12px 0}
+
+    .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:900}
+    .ok{background:#ecfdf3;color:#15803d}
+    .warn{background:#fef9c3;color:#92400e}
+
+    .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px}
+    table{width:100%;border-collapse:separate;border-spacing:0;min-width:820px;background:#fff}
+    th,td{padding:10px 12px;border-bottom:1px solid rgba(13,64,96,.08);vertical-align:top}
+    th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;text-align:left;background:rgba(13,64,96,.03)}
+    .right{text-align:right}
+
+    .stamp{
+      border:2px dashed rgba(10,111,191,.35);
+      border-radius:16px;
+      padding:14px;
+      background:rgba(10,111,191,.06);
+    }
+
+    .footer-note{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;margin-top:12px}
+    .mini{font-size:11px;color:var(--muted)}
+
+    /* PRINT */
+    @media print{
+      body{background:#fff}
+      .actions{display:none !important}
+      .wrap{margin:0;max-width:100%}
+      .card{box-shadow:none}
+      .card-head{border-bottom:1px solid #ddd}
+      .stamp{border-style:solid;border-color:#bbb;background:#fff}
+    }
+
+    @media(max-width:720px){
+      .grid{grid-template-columns:1fr}
+      table{min-width:680px}
+    }
+  </style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="topbar">
+    <div>
+      <div class="title">Receipt</div>
+      <div class="subtitle">Printable receipt for payments made on an invoice.</div>
+    </div>
+    <div class="actions">
+      <button class="btn light" id="btnBack"><i class="fa-solid fa-arrow-left"></i> Back</button>
+      <button class="btn light" id="btnDownload"><i class="fa-solid fa-file-arrow-down"></i> Export PDF</button>
+      <button class="btn primary" id="btnPrint"><i class="fa-solid fa-print"></i> Print</button>
+    </div>
+  </div>
+
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <div class="card-title">CampusSaaS University Finance Office</div>
+        <div class="card-sub">Official Payment Receipt • Keep this for your records</div>
+      </div>
+      <div>
+        <div class="strong" id="rNo">RCPT-2025-00021</div>
+        <div class="muted">Issued: <span id="rIssued">2025-11-18</span></div>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <div class="grid">
+        <div class="stamp">
+          <div class="strong" style="margin-bottom:6px"><i class="fa-solid fa-building-columns"></i> Institution Details</div>
+          <div class="muted">University / Tenant: <span class="strong">Demo University</span></div>
+          <div class="muted">Address: Main Campus, Kampala</div>
+          <div class="muted">Phone: +256 700 000 000</div>
+          <div class="muted">Email: finance@demo-university.edu</div>
+        </div>
+
+        <div class="stamp">
+          <div class="strong" style="margin-bottom:6px"><i class="fa-solid fa-user-graduate"></i> Payer Details</div>
+          <div class="muted">Student: <span class="strong" id="pStudent">Jonathan Kuipers</span></div>
+          <div class="muted">Reg No: <span class="strong" id="pReg">CS/2025/011</span></div>
+          <div class="muted">Program: <span class="strong" id="pProgram">BSc Computing</span></div>
+          <div class="muted">Semester: <span class="strong" id="pSem">2025/2026 - Sem 1</span></div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="grid">
+        <div>
+          <div class="strong" style="margin-bottom:6px"><i class="fa-solid fa-file-invoice"></i> Invoice Reference</div>
+          <div class="muted">Invoice No: <span class="strong" id="invNo">INV-0001</span></div>
+          <div class="muted">Invoice Date: <span class="strong" id="invDate">2025-11-10</span></div>
+          <div class="muted">Due Date: <span class="strong" id="invDue">2025-12-05</span></div>
+          <div class="muted">Status: <span class="badge warn" id="invStatus"><i class="fa-solid fa-circle-half-stroke"></i> Partially Paid</span></div>
+        </div>
+
+        <div>
+          <div class="strong" style="margin-bottom:6px"><i class="fa-solid fa-receipt"></i> Payment Summary</div>
+          <div class="muted">Payment ID: <span class="strong" id="payId">PAY-1001</span></div>
+          <div class="muted">Method: <span class="strong" id="payMethod">Mobile Money</span></div>
+          <div class="muted">Reference: <span class="strong" id="payRef">MTN-33A99</span></div>
+          <div class="muted">Received By: <span class="strong" id="payBy">Cashier</span></div>
+          <div class="muted">Payment Status: <span class="badge ok"><i class="fa-solid fa-check"></i> Success</span></div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="strong" style="margin-bottom:8px"><i class="fa-solid fa-list"></i> Items Covered (Invoice Snapshot)</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+          <tr>
+            <th>Item</th>
+            <th>Description</th>
+            <th class="right">Qty</th>
+            <th class="right">Unit</th>
+            <th class="right">Amount</th>
+          </tr>
+          </thead>
+          <tbody id="itemsBody"></tbody>
+          <tfoot>
+          <tr>
+            <td colspan="4" class="right strong">Invoice Total</td>
+            <td class="right strong" id="invTotal">UGX 2,500,000</td>
+          </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="grid">
+        <div class="stamp">
+          <div class="strong"><i class="fa-solid fa-money-bill-wave"></i> Amounts</div>
+          <div class="divider"></div>
+          <div class="muted" style="display:flex;justify-content:space-between"><span>Total Invoice</span><span class="strong" id="sumTotal">UGX 2,500,000</span></div>
+          <div class="muted" style="display:flex;justify-content:space-between"><span>Total Paid (to date)</span><span class="strong" id="sumPaid">UGX 1,500,000</span></div>
+          <div class="muted" style="display:flex;justify-content:space-between"><span>This Payment</span><span class="strong" id="sumThis">UGX 1,500,000</span></div>
+          <div class="divider"></div>
+          <div style="display:flex;justify-content:space-between"><span class="strong">Balance</span><span class="strong" id="sumBal">UGX 1,000,000</span></div>
+        </div>
+
+        <div class="stamp">
+          <div class="strong"><i class="fa-solid fa-shield"></i> Verification</div>
+          <div class="divider"></div>
+          <div class="muted">Receipt QR/Verification code (backend later)</div>
+          <div class="divider"></div>
+          <div class="muted">Verification Code:</div>
+          <div class="strong" id="verCode">CS-INV-0001-PAY-1001</div>
+          <div class="mini" style="margin-top:8px">
+            Tip: In future, this code will validate online in the tenant portal.
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-note">
+        <div class="mini">
+          <div class="strong">Terms</div>
+          <div>1) This receipt is valid only when recorded in CampusSaaS Finance.</div>
+          <div>2) For disputes, contact finance within 7 days.</div>
+        </div>
+        <div class="mini" style="text-align:right">
+          <div class="strong">Authorized Signature</div>
+          <div style="margin-top:12px;border-top:1px solid #bbb;width:220px"></div>
+          <div>Finance Office</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</div>
+
+<script>
+  const fmt = (n)=>{ try{return new Intl.NumberFormat('en-US').format(n);}catch(e){return String(n);} };
+
+  // Demo data (later backend will fill this)
+  const data = {
+    receiptNo: "RCPT-2025-00021",
+    issued: "2025-11-18",
+
+    student: "Jonathan Kuipers",
+    regNo: "CS/2025/011",
+    program: "BSc Computing",
+    semester: "2025/2026 - Sem 1",
+
+    invoiceNo: "INV-0001",
+    invoiceDate: "2025-11-10",
+    dueDate: "2025-12-05",
+    status: "Partially Paid",
+
+    paymentId: "PAY-1001",
+    method: "Mobile Money",
+    reference: "MTN-33A99",
+    receivedBy: "Cashier",
+    paymentAmount: 1500000,
+
+    items: [
+      { name:"Tuition", desc:"Main tuition fee", qty:1, unit:2500000 },
+      { name:"Scholarship/Waiver", desc:"(if applied) reduces invoice total", qty:0, unit:0 },
+    ]
+  };
+
+  function render(){
+    document.getElementById('rNo').textContent = data.receiptNo;
+    document.getElementById('rIssued').textContent = data.issued;
+
+    document.getElementById('pStudent').textContent = data.student;
+    document.getElementById('pReg').textContent = data.regNo;
+    document.getElementById('pProgram').textContent = data.program;
+    document.getElementById('pSem').textContent = data.semester;
+
+    document.getElementById('invNo').textContent = data.invoiceNo;
+    document.getElementById('invDate').textContent = data.invoiceDate;
+    document.getElementById('invDue').textContent = data.dueDate;
+
+    const statusEl = document.getElementById('invStatus');
+    statusEl.innerHTML = data.status === 'Paid'
+      ? `<i class="fa-solid fa-check"></i> Paid`
+      : `<i class="fa-solid fa-circle-half-stroke"></i> ${data.status}`;
+    statusEl.className = "badge " + (data.status === 'Paid' ? "ok" : "warn");
+
+    document.getElementById('payId').textContent = data.paymentId;
+    document.getElementById('payMethod').textContent = data.method;
+    document.getElementById('payRef').textContent = data.reference;
+    document.getElementById('payBy').textContent = data.receivedBy;
+
+    const tbody = document.getElementById('itemsBody');
+    let total = 0;
+    tbody.innerHTML = data.items.map(it=>{
+      const amt = it.qty * it.unit;
+      total += amt;
+      return `
+        <tr>
+          <td class="strong">${it.name}</td>
+          <td class="muted">${it.desc || '—'}</td>
+          <td class="right">${it.qty}</td>
+          <td class="right">UGX ${fmt(it.unit)}</td>
+          <td class="right strong">UGX ${fmt(amt)}</td>
+        </tr>
+      `;
+    }).join('');
+
+    const paidToDate = data.paymentAmount; // demo
+    const bal = Math.max(total - paidToDate, 0);
+
+    document.getElementById('invTotal').textContent = "UGX " + fmt(total);
+    document.getElementById('sumTotal').textContent = "UGX " + fmt(total);
+    document.getElementById('sumPaid').textContent = "UGX " + fmt(paidToDate);
+    document.getElementById('sumThis').textContent = "UGX " + fmt(data.paymentAmount);
+    document.getElementById('sumBal').textContent = "UGX " + fmt(bal);
+
+    document.getElementById('verCode').textContent = `CS-${data.invoiceNo}-${data.paymentId}`;
+  }
+
+  document.getElementById('btnBack').addEventListener('click', ()=>history.back());
+  document.getElementById('btnPrint').addEventListener('click', ()=>window.print());
+  document.getElementById('btnDownload').addEventListener('click', ()=>alert('Export PDF will be implemented with backend later.'));
+
+  render();
+</script>
+
+</body>
+</html>

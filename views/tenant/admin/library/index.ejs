@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Admin • Library — <%= (tenant && tenant.name) ? tenant.name : "CampusSaaS" %></title>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer"/>
+  <link rel="stylesheet" href="/css/student-portal.css"/>
+  <link rel="stylesheet" href="/css/navbar.css"/>
+
+  <style>
+    *{box-sizing:border-box}
+    html,body{max-width:100%;overflow-x:hidden}
+    body{overflow-x:hidden}
+    .main{min-width:0}
+    .card{min-width:0}
+    .grid-2>*{min-width:0}
+
+    .toolbar{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:space-between;
+      align-items:center;
+    }
+
+    .toolbar .left,
+    .toolbar .right{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
+      min-width:0;
+    }
+
+    .input,.select,.textarea{
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(13,64,96,.16);
+      background:#fff;
+      outline:none;
+      max-width:100%;
+    }
+
+    .textarea{min-height:110px;resize:vertical;width:100%}
+
+    .input{
+      min-width:230px;
+      max-width:100%;
+    }
+
+    .input:focus,.select:focus,.textarea:focus{
+      border-color:rgba(10,111,191,.45);
+      box-shadow:0 0 0 3px rgba(10,111,191,.12)
+    }
+
+    .muted{font-size:12px;color:#6b7280}
+    .strong{font-weight:900}
+
+    .grid-4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+    .grid-2{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:12px}
+
+    .chips{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      max-width:100%;
+    }
+
+    .chip{
+      border:1px solid rgba(13,64,96,.14);
+      background:#fff;
+      border-radius:999px;
+      padding:8px 12px;
+      cursor:pointer;
+      font-weight:900;
+      font-size:12px;
+    }
+
+    .chip.active{background:rgba(10,111,191,.12);border-color:rgba(10,111,191,.35)}
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:4px 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:900
+    }
+
+    .ok{background:#ecfdf3;color:#15803d}
+    .warn{background:#fef9c3;color:#92400e}
+    .bad{background:#fee2e2;color:#b91c1c}
+    .info{background:#eef2ff;color:#3730a3}
+
+    .table-wrap{
+      overflow-x:auto;
+      overflow-y:hidden;
+      border:1px solid rgba(13,64,96,.10);
+      border-radius:12px;
+      max-width:100%;
+      -webkit-overflow-scrolling:touch
+    }
+
+    table{width:100%;border-collapse:separate;border-spacing:0;min-width:1200px;background:#fff}
+    th,td{padding:10px 12px;border-bottom:1px solid rgba(13,64,96,.08);vertical-align:middle}
+    th{
+      font-size:12px;
+      color:#6b7280;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+      text-align:left;
+      background:rgba(13,64,96,.03);
+      position:sticky;
+      top:0;
+      z-index:1
+    }
+
+    tr:hover td{background:rgba(10,111,191,.04)}
+
+    .btn-xs{
+      padding:6px 8px;
+      border-radius:10px;
+      border:1px solid rgba(13,64,96,.14);
+      background:#fff;
+      cursor:pointer;
+      font-size:12px
+    }
+
+    .btn-xs:hover{background:rgba(10,111,191,.06)}
+    .actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
+    .inline-form{display:inline}
+
+    .bulkbar{
+      display:none;
+      margin-top:10px;
+      padding:10px 12px;
+      border-radius:12px;
+      background:rgba(10,111,191,.08);
+      border:1px solid rgba(10,111,191,.18);
+      justify-content:space-between;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap
+    }
+
+    .bulkbar.show{display:flex}
+
+    .badge-count{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:26px;
+      height:22px;
+      padding:0 8px;
+      border-radius:999px;
+      background:#0a6fbf;
+      color:#fff;
+      font-size:12px;
+      font-weight:900
+    }
+
+    .note{
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px dashed rgba(13,64,96,.18);
+      background:rgba(13,64,96,.03)
+    }
+
+    .mini-list{display:grid;gap:10px;margin-top:10px}
+    .mini-item{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:center;
+      padding:10px 12px;
+      border:1px solid rgba(13,64,96,.10);
+      border-radius:12px;
+      background:#fff
+    }
+
+    .mini-item .left{display:grid;gap:2px;min-width:0}
+
+    .stats-grid-mini{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:12px}
+
+    .modal-backdrop{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.45);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      z-index:9999;
+      overflow-y:auto;
+      overflow-x:hidden;
+      -webkit-overflow-scrolling:touch
+    }
+
+    .modal-backdrop.show{display:flex}
+
+    .modal{
+      width:min(1000px,100%);
+      max-width:100%;
+      max-height:min(88vh,900px);
+      margin:auto;
+      background:#fff;
+      border-radius:20px;
+      box-shadow:0 24px 70px rgba(0,0,0,.24);
+      overflow:hidden;
+      display:flex;
+      flex-direction:column
+    }
+
+    .modal-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      padding:16px 18px;
+      border-bottom:1px solid rgba(13,64,96,.10);
+      flex:0 0 auto;
+      background:#fff
+    }
+
+    .modal-title{font-weight:900}
+
+    .modal-body{
+      padding:16px 18px;
+      overflow-y:auto;
+      overflow-x:hidden;
+      flex:1 1 auto;
+      min-height:0
+    }
+
+    .modal-footer{
+      display:flex;
+      justify-content:flex-end;
+      gap:10px;
+      padding:14px 18px;
+      border-top:1px solid rgba(13,64,96,.10);
+      background:#fff;
+      flex:0 0 auto;
+      flex-wrap:wrap
+    }
+
+    .form-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+    .field{min-width:0}
+    .field label{display:block;font-size:12px;color:#6b7280;margin-bottom:6px}
+    .field input,.field select,.field textarea{width:100%;min-width:0}
+
+    .detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .detail-card{
+      border:1px solid rgba(13,64,96,.10);
+      border-radius:16px;
+      padding:14px;
+      background:#fff;
+      min-width:0
+    }
+
+    .detail-card .label{font-size:12px;color:#6b7280;margin-bottom:4px}
+    .detail-card .value{font-weight:800;color:#0f172a;word-break:break-word}
+
+    .detail-list{display:grid;gap:10px}
+    .detail-list .item{
+      padding:12px 14px;
+      border:1px solid rgba(13,64,96,.10);
+      border-radius:16px;
+      background:#fff
+    }
+
+    @media(max-width:980px){
+      .grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .grid-2{grid-template-columns:1fr}
+      .form-grid,.detail-grid,.stats-grid-mini{grid-template-columns:1fr}
+      .input{min-width:180px}
+    }
+
+    @media (max-width: 768px){
+      .toolbar{
+        flex-direction:column;
+        align-items:stretch;
+      }
+
+      .toolbar .left,
+      .toolbar .right{
+        width:100%;
+        display:grid;
+        grid-template-columns:1fr;
+        gap:8px;
+      }
+
+      .toolbar .left > *,
+      .toolbar .right > *{
+        width:100%;
+        min-width:0;
+      }
+
+      .input,
+      .select,
+      .btn,
+      .chip{
+        width:100%;
+        min-width:0;
+      }
+
+      .chips{
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:8px;
+        width:100%;
+      }
+
+      .chip{
+        justify-content:center;
+        text-align:center;
+      }
+
+      .grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .modal-backdrop{align-items:flex-start;padding:12px}
+      .modal{width:100%;max-height:calc(100vh - 24px);border-radius:18px}
+      .modal-header,.modal-body,.modal-footer{padding-left:14px;padding-right:14px}
+    }
+
+    @media(max-width:560px){
+      .grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .card{overflow:hidden}
+      .actions{justify-content:flex-start}
+      .top-actions .btn{flex:1 1 calc(50% - 8px)}
+      .modal-footer .btn{flex:1 1 140px}
+      .chips{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <%- include("../../partials/flash") %>
+  <%- include("../../partials/navbar") %>
+  <main class="main">
+    
+
+    <div class="topbar">
+      <div>
+        <div class="title">Library</div>
+        <div class="subtitle">Manage catalog, borrowing, returns, reservations, fines, and holds.</div>
+      </div>
+      <div class="top-actions">
+        <button class="btn light" id="btnImport" type="button"><i class="fa-solid fa-file-import"></i> Import</button>
+        <button class="btn light" id="btnExport" type="button"><i class="fa-solid fa-file-arrow-down"></i> Export</button>
+        <button class="btn light" id="btnReports" type="button"><i class="fa-solid fa-chart-column"></i> Reports</button>
+        <button class="btn primary" id="btnAddBook" type="button"><i class="fa-solid fa-plus"></i> Add Book</button>
+      </div>
+    </div>
+
+    <div class="grid-4">
+      <div class="card"><div class="section-title">Total Titles</div><div class="kpi-value"><%= kpis.titles || 0 %></div><div class="muted">Unique books</div></div>
+      <div class="card"><div class="section-title">Copies</div><div class="kpi-value"><%= kpis.copies || 0 %></div><div class="muted">All physical copies</div></div>
+      <div class="card"><div class="section-title">Borrowed</div><div class="kpi-value" style="color:#92400e"><%= kpis.borrowed || 0 %></div><div class="muted">Currently out</div></div>
+      <div class="card"><div class="section-title">Overdue</div><div class="kpi-value" style="color:#dc2626"><%= kpis.overdue || 0 %></div><div class="muted">Late returns</div></div>
+    </div>
+
+    <section class="card" style="margin-top:12px;">
+      <form method="GET" action="/admin/library">
+        <div class="toolbar">
+          <div class="left">
+            <input class="input" id="q" name="q" value="<%= query.q || '' %>" placeholder="Search title / author / ISBN / category..." />
+            <select class="select" id="fCategory" name="category">
+              <option value="all">All Categories</option>
+              <% (categories || []).forEach(function(cat){ %>
+                <option value="<%= cat %>" <%= query.category === cat ? 'selected' : '' %>><%= cat %></option>
+              <% }) %>
+            </select>
+            <select class="select" id="fStatus" name="status">
+              <option value="all" <%= query.status === 'all' ? 'selected' : '' %>>All Status</option>
+              <option value="Available" <%= query.status === 'Available' ? 'selected' : '' %>>Available</option>
+              <option value="Borrowed" <%= query.status === 'Borrowed' ? 'selected' : '' %>>Borrowed</option>
+              <option value="Reserved" <%= query.status === 'Reserved' ? 'selected' : '' %>>Reserved</option>
+              <option value="Damaged" <%= query.status === 'Damaged' ? 'selected' : '' %>>Damaged</option>
+            </select>
+          </div>
+
+          <div class="right">
+            <div class="chips" id="viewChips">
+              <button class="chip <%= (query.view || 'catalog') === 'catalog' ? 'active' : '' %>" data-view="catalog" type="button"><i class="fa-solid fa-books"></i> Catalog</button>
+              <button class="chip <%= query.view === 'borrow' ? 'active' : '' %>" data-view="borrow" type="button"><i class="fa-solid fa-right-left"></i> Borrow/Return</button>
+              <button class="chip <%= query.view === 'reservations' ? 'active' : '' %>" data-view="reservations" type="button"><i class="fa-solid fa-clock"></i> Reservations</button>
+              <button class="chip <%= query.view === 'fines' ? 'active' : '' %>" data-view="fines" type="button"><i class="fa-solid fa-coins"></i> Fines</button>
+              <button class="chip <%= query.view === 'holds' ? 'active' : '' %>" data-view="holds" type="button"><i class="fa-solid fa-lock"></i> Holds</button>
+            </div>
+            <input type="hidden" id="viewInput" name="view" value="<%= query.view || 'catalog' %>">
+            <button class="btn light" id="btnBulk" type="button"><i class="fa-solid fa-layer-group"></i> Bulk</button>
+            <button class="btn light" type="submit"><i class="fa-solid fa-filter"></i> Apply</button>
+            <a class="btn light" href="/admin/library"><i class="fa-solid fa-rotate-left"></i> Reset</a>
+          </div>
+        </div>
+      </form>
+
+      <div class="bulkbar" id="bulkbar">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <strong>Selected</strong> <span class="badge-count" id="selCount">0</span>
+          <span class="muted">items</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <button class="btn-xs" id="bulkCategory" type="button"><i class="fa-solid fa-tag"></i> Set Category</button>
+          <button class="btn-xs" id="bulkMarkDamaged" type="button"><i class="fa-solid fa-triangle-exclamation"></i> Mark Damaged</button>
+          <button class="btn-xs" id="bulkArchive" type="button"><i class="fa-solid fa-box-archive"></i> Archive</button>
+          <button class="btn-xs" id="bulkClear" type="button"><i class="fa-solid fa-xmark"></i> Clear</button>
+        </div>
+      </div>
+    </section>
+
+    <% const currentView = query.view || 'catalog'; %>
+
+    <div class="grid-2" style="margin-top:12px;">
+      <section class="card">
+        <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;">
+          <div>
+            <div class="section-title" id="panelTitle">
+              <%= currentView === 'borrow' ? 'Borrow/Return'
+                : currentView === 'reservations' ? 'Reservations'
+                : currentView === 'fines' ? 'Fines'
+                : currentView === 'holds' ? 'Holds'
+                : 'Catalog' %>
+            </div>
+            <div class="section-sub" id="panelSub">
+              <%= currentView === 'borrow' ? 'Register loans, returns, and overdue status.'
+                : currentView === 'reservations' ? 'Approve/deny requests and manage queues.'
+                : currentView === 'fines' ? 'Create fines, record payments, and waive if needed.'
+                : currentView === 'holds' ? 'Block borrowing/clearance until resolved.'
+                : 'Manage books, copies, and availability.' %>
+            </div>
+          </div>
+          <div class="muted" id="resultMeta">
+            <% if (currentView === 'catalog') { %><%= (books || []).length %> item(s)<% } %>
+            <% if (currentView === 'borrow') { %><%= (borrows || []).length %> active record(s)<% } %>
+            <% if (currentView === 'reservations') { %><%= (reservations || []).length %> request(s)<% } %>
+            <% if (currentView === 'fines') { %><%= (fines || []).length %> fine(s)<% } %>
+            <% if (currentView === 'holds') { %><%= (holds || []).length %> hold(s)<% } %>
+          </div>
+        </div>
+
+        <div id="view-catalog" style="<%= currentView === 'catalog' ? '' : 'display:none;' %>;margin-top:10px;">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:42px;"><input type="checkbox" id="checkAll"/></th>
+                  <th>Book</th>
+                  <th>Category</th>
+                  <th>ISBN</th>
+                  <th>Copies</th>
+                  <th>Available</th>
+                  <th>Status</th>
+                  <th style="text-align:right;width:280px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyCatalog">
+                <% if (!(books || []).length) { %>
+                  <tr><td colspan="8" style="padding:18px;"><div class="muted">No books found.</div></td></tr>
+                <% } %>
+                <% (books || []).forEach(function(book){ %>
+                  <tr data-id="<%= book._id %>">
+                    <td><input type="checkbox" class="rowCheck" data-id="<%= book._id %>"></td>
+                    <td>
+                      <div class="strong"><%= book.title %></div>
+                      <div class="muted"><%= book.author %> • Shelf <%= book.shelf || '—' %></div>
+                    </td>
+                    <td><%= book.category %></td>
+                    <td class="muted"><%= book.isbn %></td>
+                    <td><span class="pill info"><i class="fa-solid fa-copy"></i> <%= book.copies || 0 %></span></td>
+                    <td><span class="pill <%= (book.available || 0) > 0 ? 'ok' : 'bad' %>"><i class="fa-solid fa-box-open"></i> <%= book.available || 0 %></span></td>
+                    <td>
+                      <% if (book.status === 'Available') { %>
+                        <span class="pill ok"><i class="fa-solid fa-check"></i> Available</span>
+                      <% } else if (book.status === 'Borrowed') { %>
+                        <span class="pill warn"><i class="fa-solid fa-right-left"></i> Borrowed</span>
+                      <% } else if (book.status === 'Reserved') { %>
+                        <span class="pill info"><i class="fa-solid fa-clock"></i> Reserved</span>
+                      <% } else { %>
+                        <span class="pill bad"><i class="fa-solid fa-triangle-exclamation"></i> Damaged</span>
+                      <% } %>
+                    </td>
+                    <td>
+                      <div class="actions">
+                        <button class="btn-xs actView" type="button"
+                          data-book='<%- JSON.stringify(book) %>' title="View">
+                          <i class="fa-solid fa-eye"></i>
+                        </button>
+
+                        <button class="btn-xs actEdit" type="button"
+                          data-book='<%- JSON.stringify(book) %>' title="Edit">
+                          <i class="fa-solid fa-pen"></i>
+                        </button>
+
+                        <form class="inline-form" method="POST" action="/admin/library/books/<%= book._id %>/add-copy">
+                          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                          <button class="btn-xs" type="submit" title="Add Copy"><i class="fa-solid fa-plus"></i></button>
+                        </form>
+
+                        <form class="inline-form" method="POST" action="/admin/library/books/<%= book._id %>/mark-damaged">
+                          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                          <button class="btn-xs" type="submit" title="Mark Damaged"><i class="fa-solid fa-triangle-exclamation"></i></button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="view-borrow" style="<%= currentView === 'borrow' ? '' : 'display:none;' %>;margin-top:10px;">
+          <div class="note">
+            Register borrow and return transactions using the real backend forms below.
+          </div>
+
+          <form method="POST" action="/admin/library/borrow" style="margin-top:10px;">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <div class="toolbar">
+              <div class="left">
+                <input class="input" name="studentName" placeholder="Student Name..." required>
+                <input class="input" name="regNo" placeholder="Student Reg No...">
+                <select class="select" name="bookId" required>
+                  <option value="">Select Book</option>
+                  <% (books || []).forEach(function(book){ %>
+                    <option value="<%= book._id %>"><%= book.title %> — <%= book.isbn %></option>
+                  <% }) %>
+                </select>
+                <input class="input" name="copyId" placeholder="Copy ID (optional)">
+                <input class="input" type="date" name="dueDate">
+              </div>
+              <div class="right">
+                <button class="btn primary" id="btnBorrow" type="submit"><i class="fa-solid fa-right-to-bracket"></i> Borrow</button>
+              </div>
+            </div>
+          </form>
+
+          <div class="table-wrap" style="margin-top:10px;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Student</th>
+                  <th>Book</th>
+                  <th>Borrowed</th>
+                  <th>Due</th>
+                  <th>Status</th>
+                  <th style="text-align:right;width:210px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (!(borrows || []).length) { %>
+                  <tr><td colspan="6" style="padding:18px;"><div class="muted">No borrow records.</div></td></tr>
+                <% } %>
+                <% (borrows || []).forEach(function(item){ %>
+                  <tr>
+                    <td>
+                      <div class="strong"><%= item.studentName %></div>
+                      <div class="muted"><%= item.regNo || item.loanId || '—' %></div>
+                    </td>
+                    <td><%= item.bookTitle %></td>
+                    <td class="muted"><%= helpers.formatDate(item.borrowedAt) %></td>
+                    <td class="muted"><%= helpers.formatDate(item.dueDate) %></td>
+                    <td>
+                      <% if (item.status === 'Overdue') { %>
+                        <span class="pill bad"><i class="fa-solid fa-clock"></i> Overdue</span>
+                      <% } else if (item.status === 'Returned') { %>
+                        <span class="pill ok"><i class="fa-solid fa-check"></i> Returned</span>
+                      <% } else { %>
+                        <span class="pill warn"><i class="fa-solid fa-right-left"></i> Borrowed</span>
+                      <% } %>
+                    </td>
+                    <td style="text-align:right;">
+                      <% if (item.status !== 'Returned') { %>
+                        <form class="inline-form" method="POST" action="/admin/library/books/<%= item.bookMongoId %>/borrows/<%= item._id %>/return">
+                          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                          <button class="btn-xs" type="submit"><i class="fa-solid fa-rotate-left"></i> Return</button>
+                        </form>
+                      <% } %>
+
+                      <button class="btn-xs brFine" type="button"
+                        data-student="<%= item.studentName %>"
+                        data-reg="<%= item.regNo || '' %>"
+                        data-book-id="<%= item.bookMongoId %>"
+                        data-ref="Overdue return (<%= item.loanId || item._id %>)">
+                        <i class="fa-solid fa-coins"></i> Fine
+                      </button>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="view-reservations" style="<%= currentView === 'reservations' ? '' : 'display:none;' %>;margin-top:10px;">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Request</th>
+                  <th>Student</th>
+                  <th>Book</th>
+                  <th>Requested</th>
+                  <th>Priority</th>
+                  <th>Status</th>
+                  <th style="text-align:right;width:210px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (!(reservations || []).length) { %>
+                  <tr><td colspan="7" style="padding:18px;"><div class="muted">No reservations.</div></td></tr>
+                <% } %>
+                <% (reservations || []).forEach(function(item){ %>
+                  <tr>
+                    <td><div class="strong"><%= item.reservationId || item._id %></div><div class="muted">Queue item</div></td>
+                    <td><%= item.studentName %><% if (item.regNo) { %> — <%= item.regNo %><% } %></td>
+                    <td><%= item.bookTitle %></td>
+                    <td class="muted"><%= helpers.formatDate(item.requestedAt) %></td>
+                    <td>
+                      <% if (item.priority === 'High') { %>
+                        <span class="pill bad"><i class="fa-solid fa-bolt"></i> High</span>
+                      <% } else { %>
+                        <span class="pill info"><i class="fa-solid fa-flag"></i> Normal</span>
+                      <% } %>
+                    </td>
+                    <td>
+                      <% if (item.status === 'Pending') { %>
+                        <span class="pill warn"><i class="fa-solid fa-hourglass"></i> Pending</span>
+                      <% } else if (item.status === 'Approved') { %>
+                        <span class="pill ok"><i class="fa-solid fa-check"></i> Approved</span>
+                      <% } else if (item.status === 'Denied') { %>
+                        <span class="pill bad"><i class="fa-solid fa-xmark"></i> Denied</span>
+                      <% } else { %>
+                        <span class="pill info"><i class="fa-solid fa-box-open"></i> Fulfilled</span>
+                      <% } %>
+                    </td>
+                    <td style="text-align:right;">
+                      <form class="inline-form" method="POST" action="/admin/library/books/<%= item.bookMongoId %>/reservations/<%= item._id %>/status">
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                        <input type="hidden" name="status" value="Approved">
+                        <button class="btn-xs" type="submit"><i class="fa-solid fa-check"></i> Approve</button>
+                      </form>
+
+                      <form class="inline-form" method="POST" action="/admin/library/books/<%= item.bookMongoId %>/reservations/<%= item._id %>/status">
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                        <input type="hidden" name="status" value="Denied">
+                        <button class="btn-xs" type="submit"><i class="fa-solid fa-xmark"></i> Deny</button>
+                      </form>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="view-fines" style="<%= currentView === 'fines' ? '' : 'display:none;' %>;margin-top:10px;">
+          <div class="stats-grid-mini">
+            <div class="card"><div class="section-title">Fine Rate</div><div class="kpi-value">UGX <%= Number(kpis.fineRate || 1000).toLocaleString() %></div><div class="muted">per day overdue</div></div>
+            <div class="card"><div class="section-title">Outstanding</div><div class="kpi-value" style="color:#dc2626">UGX <%= Number(kpis.fineOutstanding || 0).toLocaleString() %></div><div class="muted">unpaid</div></div>
+            <div class="card"><div class="section-title">Collected</div><div class="kpi-value" style="color:#16a34a">UGX <%= Number(kpis.finePaid || 0).toLocaleString() %></div><div class="muted">paid</div></div>
+            <div class="card"><div class="section-title">Holds</div><div class="kpi-value"><%= kpis.activeHolds || 0 %></div><div class="muted">students blocked</div></div>
+          </div>
+
+          <div class="toolbar" style="margin-top:12px;">
+            <div class="left">
+              <input class="input" id="fineStudent" placeholder="Search student reg/name..." />
+            </div>
+            <div class="right">
+              <button class="btn light" id="btnSetRate" type="button"><i class="fa-solid fa-gear"></i> Set Rate</button>
+              <button class="btn primary" id="btnRecordPay" type="button"><i class="fa-solid fa-receipt"></i> Record Payment</button>
+            </div>
+          </div>
+
+          <div class="table-wrap" style="margin-top:10px;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Student</th>
+                  <th>Reason</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Created</th>
+                  <th style="text-align:right;width:220px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyFines">
+                <% if (!(fines || []).length) { %>
+                  <tr><td colspan="6" style="padding:18px;"><div class="muted">No fines.</div></td></tr>
+                <% } %>
+                <% (fines || []).forEach(function(item){ %>
+                  <tr>
+                    <td><div class="strong"><%= item.studentName %></div><div class="muted"><%= item.fineId || item._id %></div></td>
+                    <td class="muted"><%= item.reason %></td>
+                    <td><span class="pill info"><i class="fa-solid fa-coins"></i> UGX <%= Number(item.amount || 0).toLocaleString() %></span></td>
+                    <td>
+                      <% if (item.status === 'Paid') { %>
+                        <span class="pill ok"><i class="fa-solid fa-check"></i> Paid</span>
+                      <% } else if (item.status === 'Waived') { %>
+                        <span class="pill info"><i class="fa-solid fa-ban"></i> Waived</span>
+                      <% } else { %>
+                        <span class="pill bad"><i class="fa-solid fa-triangle-exclamation"></i> Pending</span>
+                      <% } %>
+                    </td>
+                    <td class="muted"><%= helpers.formatDate(item.createdAt) %></td>
+                    <td style="text-align:right;">
+                      <form class="inline-form" method="POST" action="/admin/library/books/<%= item.bookMongoId %>/fines/<%= item._id %>/status">
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                        <input type="hidden" name="status" value="Paid">
+                        <button class="btn-xs" type="submit"><i class="fa-solid fa-receipt"></i> Pay</button>
+                      </form>
+
+                      <form class="inline-form" method="POST" action="/admin/library/books/<%= item.bookMongoId %>/fines/<%= item._id %>/status">
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                        <input type="hidden" name="status" value="Waived">
+                        <button class="btn-xs" type="submit"><i class="fa-solid fa-ban"></i> Waive</button>
+                      </form>
+
+                      <button class="btn-xs fineHold" type="button"
+                        data-student="<%= item.studentName %>"
+                        data-reg="<%= item.regNo || '' %>"
+                        data-book-id="<%= item.bookMongoId %>"
+                        data-ref="Unpaid fine <%= item.fineId || item._id %>">
+                        <i class="fa-solid fa-lock"></i> Hold
+                      </button>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="view-holds" style="<%= currentView === 'holds' ? '' : 'display:none;' %>;margin-top:10px;">
+          <div class="note">
+            Holds block borrowing or clearance until resolved.
+          </div>
+
+          <div class="table-wrap" style="margin-top:10px;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Student</th>
+                  <th>Hold Type</th>
+                  <th>Reason</th>
+                  <th>Since</th>
+                  <th>Status</th>
+                  <th style="text-align:right;width:210px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (!(holds || []).length) { %>
+                  <tr><td colspan="6" style="padding:18px;"><div class="muted">No holds.</div></td></tr>
+                <% } %>
+                <% (holds || []).forEach(function(item){ %>
+                  <tr>
+                    <td><div class="strong"><%= item.studentName %></div><div class="muted"><%= item.holdId || item._id %></div></td>
+                    <td><span class="pill info"><i class="fa-solid fa-shield"></i> <%= item.type %></span></td>
+                    <td class="muted"><%= item.reason %></td>
+                    <td class="muted"><%= helpers.formatDate(item.since) %></td>
+                    <td>
+                      <% if (item.status === 'Active Hold') { %>
+                        <span class="pill bad"><i class="fa-solid fa-lock"></i> Active</span>
+                      <% } else { %>
+                        <span class="pill ok"><i class="fa-solid fa-lock-open"></i> Released</span>
+                      <% } %>
+                    </td>
+                    <td style="text-align:right;">
+                      <form class="inline-form" method="POST" action="/admin/library/books/<%= item.bookMongoId %>/holds/<%= item._id %>/status">
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                        <input type="hidden" name="status" value="Released">
+                        <button class="btn-xs" type="submit"><i class="fa-solid fa-lock-open"></i> Release</button>
+                      </form>
+
+                      <button class="btn-xs holdEdit" type="button"
+                        data-student="<%= item.studentName %>"
+                        data-reg="<%= item.regNo || '' %>"
+                        data-book-id="<%= item.bookMongoId %>"
+                        data-ref="<%= item.reason %>"
+                        data-status="<%= item.status %>">
+                        <i class="fa-solid fa-pen"></i> Edit
+                      </button>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="note" style="margin-top:12px;">
+          <strong>Admin controls included:</strong> add/edit books, view details, manage copies, approve reservations, create fines, apply holds, export reports.
+        </div>
+      </section>
+
+      <aside class="card">
+        <div class="section-title">Library Operations</div>
+        <div class="section-sub">Quick admin actions and audit trail.</div>
+
+        <div class="mini-list">
+          <div class="mini-item">
+            <div class="left"><div class="strong">Add Copy</div><div class="muted">Increase available units</div></div>
+            <button class="btn-xs" id="btnAddCopy" type="button"><i class="fa-solid fa-plus"></i></button>
+          </div>
+          <div class="mini-item">
+            <div class="left"><div class="strong">Mark Return</div><div class="muted">Close a borrow record</div></div>
+            <button class="btn-xs" id="btnQuickReturn" type="button"><i class="fa-solid fa-rotate-left"></i></button>
+          </div>
+          <div class="mini-item">
+            <div class="left"><div class="strong">Create Fine</div><div class="muted">Manual fine entry</div></div>
+            <button class="btn-xs" id="btnCreateFine" type="button"><i class="fa-solid fa-coins"></i></button>
+          </div>
+          <div class="mini-item">
+            <div class="left"><div class="strong">Place Hold</div><div class="muted">Block borrowing/clearance</div></div>
+            <button class="btn-xs" id="btnPlaceHold" type="button"><i class="fa-solid fa-lock"></i></button>
+          </div>
+        </div>
+
+        <div class="section-title" style="margin-top:14px;">Recent Activity</div>
+        <div class="section-sub">Real records can be added here later from movements/audit trail.</div>
+
+        <div class="mini-list">
+          <div class="mini-item"><div class="left"><div class="strong">Catalog</div><div class="muted"><%= (books || []).length %> book title(s)</div></div><span class="muted">Now</span></div>
+          <div class="mini-item"><div class="left"><div class="strong">Borrowed</div><div class="muted"><%= kpis.borrowed || 0 %> active loan(s)</div></div><span class="muted">Now</span></div>
+          <div class="mini-item"><div class="left"><div class="strong">Reservations</div><div class="muted"><%= (reservations || []).length %> request(s)</div></div><span class="muted">Now</span></div>
+          <div class="mini-item"><div class="left"><div class="strong">Fines</div><div class="muted"><%= (fines || []).length %> fine record(s)</div></div><span class="muted">Now</span></div>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <div class="modal-backdrop" id="mBook">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title" id="mBookTitle">Add Book</div>
+        <button class="btn-xs js-close-modal" type="button" data-modal="mBook"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="bookForm" method="POST" action="/admin/library/books">
+        <div class="modal-body">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+          <div class="form-grid">
+            <div class="field"><label>Title</label><input class="input" name="title" id="bTitle" placeholder="Book title"></div>
+            <div class="field"><label>Author</label><input class="input" name="author" id="bAuthor" placeholder="Author name"></div>
+            <div class="field"><label>ISBN</label><input class="input" name="isbn" id="bIsbn" placeholder="978-..."></div>
+
+            <div class="field">
+              <label>Category</label>
+              <select class="select" name="category" id="bCategory">
+                <option>Computer Science</option>
+                <option>Mathematics</option>
+                <option>Business</option>
+                <option>Literature</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="field"><label>Publisher</label><input class="input" name="publisher" id="bPublisher" placeholder="Publisher"></div>
+            <div class="field"><label>Year</label><input class="input" name="year" id="bYear" type="number" min="1900" max="2100" value="2020"></div>
+
+            <div class="field"><label>Total Copies</label><input class="input" name="copies" id="bCopies" type="number" min="0" value="1"></div>
+            <div class="field"><label>Available Copies</label><input class="input" name="available" id="bAvailable" type="number" min="0" value="1"></div>
+            <div class="field">
+              <label>Status</label>
+              <select class="select" name="status" id="bStatus">
+                <option>Available</option>
+                <option>Reserved</option>
+                <option>Borrowed</option>
+                <option>Damaged</option>
+              </select>
+            </div>
+
+            <div class="field"><label>Shelf/Location</label><input class="input" name="shelf" id="bShelf" placeholder="Shelf A-3"></div>
+            <div class="field" style="grid-column: span 2;">
+              <label>Notes</label>
+              <textarea class="textarea" name="notes" id="bNotes" placeholder="Internal notes"></textarea>
+            </div>
+          </div>
+
+          <div class="note" style="margin-top:12px;">
+            <strong>Copies:</strong> backend tracks title-level totals now. Later you can add per-copy barcode/copy records.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn light js-close-modal" type="button" data-modal="mBook">Cancel</button>
+          <button class="btn primary" id="saveBookBtn" type="submit"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="mViewBook">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">Book Details</div>
+        <button class="btn-xs js-close-modal" type="button" data-modal="mViewBook"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="detail-grid">
+          <div class="detail-card"><div class="label">Title</div><div class="value" id="vTitle">—</div></div>
+          <div class="detail-card"><div class="label">Author</div><div class="value" id="vAuthor">—</div></div>
+          <div class="detail-card"><div class="label">ISBN</div><div class="value" id="vIsbn">—</div></div>
+          <div class="detail-card"><div class="label">Category</div><div class="value" id="vCategory">—</div></div>
+          <div class="detail-card"><div class="label">Publisher</div><div class="value" id="vPublisher">—</div></div>
+          <div class="detail-card"><div class="label">Year</div><div class="value" id="vYear">—</div></div>
+          <div class="detail-card"><div class="label">Copies</div><div class="value" id="vCopies">—</div></div>
+          <div class="detail-card"><div class="label">Available</div><div class="value" id="vAvailable">—</div></div>
+          <div class="detail-card"><div class="label">Status</div><div class="value" id="vStatus">—</div></div>
+          <div class="detail-card"><div class="label">Shelf</div><div class="value" id="vShelf">—</div></div>
+        </div>
+
+        <div class="section-title" style="margin-top:16px;">Notes</div>
+        <div class="detail-card"><div class="value" id="vNotes">—</div></div>
+
+        <div class="section-title" style="margin-top:16px;">Quick Summary</div>
+        <div class="detail-list">
+          <div class="item"><strong>Borrowing:</strong> current active loans and returned records are tracked in backend subdocuments.</div>
+          <div class="item"><strong>Reservations:</strong> pending and approved reservation queue is tracked in backend subdocuments.</div>
+          <div class="item"><strong>Enforcement:</strong> fines and holds can be attached to the book record for admin workflows.</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn light js-close-modal" type="button" data-modal="mViewBook">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="mAction">
+    <div class="modal" style="width:min(760px,100%)">
+      <div class="modal-header">
+        <div class="modal-title" id="mActionTitle">Action</div>
+        <button class="btn-xs js-close-modal" type="button" data-modal="mAction"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="actionForm" method="POST" action="">
+        <div class="modal-body">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+          <div class="form-grid" style="grid-template-columns:repeat(2,minmax(0,1fr));">
+            <div class="field"><label>Student</label><input class="input" name="studentName" id="aStudent" placeholder="Reg/Name"></div>
+            <div class="field"><label>Reg No</label><input class="input" name="regNo" id="aReg" placeholder="Reg Number"></div>
+            <div class="field"><label>Reference / Reason</label><input class="input" name="reason" id="aRef" placeholder="Book/Copy/Reason"></div>
+            <div class="field"><label>Amount (UGX)</label><input class="input" name="amount" id="aAmount" type="number" min="0" value="0"></div>
+
+            <div class="field">
+              <label>Status</label>
+              <select class="select" name="status" id="aStatus">
+                <option>Pending</option>
+                <option>Paid</option>
+                <option>Waived</option>
+                <option>Active Hold</option>
+                <option>Released</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label>Hold Type</label>
+              <select class="select" name="type" id="aType">
+                <option>Library Hold</option>
+                <option>Clearance Hold</option>
+                <option>Borrowing Hold</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field" style="margin-top:12px;">
+            <label>Note</label>
+            <input class="input" name="note" id="aNote" placeholder="Internal note">
+          </div>
+
+          <input type="hidden" id="aMode">
+        </div>
+        <div class="modal-footer">
+          <button class="btn light js-close-modal" type="button" data-modal="mAction">Cancel</button>
+          <button class="btn primary" id="applyActionBtn" type="submit"><i class="fa-solid fa-check"></i> Apply</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="mBulk">
+    <div class="modal" style="width:min(720px,100%)">
+      <div class="modal-header">
+        <div class="modal-title">Bulk Actions</div>
+        <button class="btn-xs js-close-modal" type="button" data-modal="mBulk"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="muted">Bulk UI is ready. Wire it to a backend bulk endpoint when you want mass updates.</div>
+        <div class="form-grid" style="grid-template-columns:repeat(2,minmax(0,1fr));margin-top:12px;">
+          <div class="field">
+            <label>Set Category</label>
+            <select class="select" id="bulkSetCategory">
+              <option value="">— keep —</option>
+              <% (categories || []).forEach(function(cat){ %>
+                <option value="<%= cat %>"><%= cat %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="field">
+            <label>Mark Status</label>
+            <select class="select" id="bulkSetStatus">
+              <option value="">— keep —</option>
+              <option>Available</option>
+              <option>Reserved</option>
+              <option>Borrowed</option>
+              <option>Damaged</option>
+            </select>
+          </div>
+        </div>
+        <div class="field" style="margin-top:12px;">
+          <label>Reason / Note</label>
+          <input class="input" id="bulkNote" placeholder="Optional note">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn light js-close-modal" type="button" data-modal="mBulk">Cancel</button>
+        <button class="btn primary" id="applyBulkBtn" type="button"><i class="fa-solid fa-check"></i> Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/tenant-admin-library.js"></script>
+  <script src="/js/navbar.js"></script>
+</body>
+</html>

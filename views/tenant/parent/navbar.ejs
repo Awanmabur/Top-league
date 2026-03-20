@@ -1,0 +1,82 @@
+<!-- ======================
+     MOBILE GLASS TOP NAV
+======================= -->
+<header class="mglass-nav" id="mglassNav">
+  <div class="mglass-left">
+    <a class="mglass-home" href="/parent/dashboard" aria-label="Home">
+      <i class="fa fa-house"></i>
+    </a>
+    <div class="mglass-title">CAMPUS</div>
+  </div>
+
+  <button class="mglass-menu" id="mobileMenuBtn" type="button" aria-label="Open menu">
+    <i class="fa fa-bars"></i>
+  </button>
+</header>
+
+<div class="app">
+  <!-- transparent click-catcher for mobile -->
+  <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
+
+  <!-- ======================
+       SIDEBAR
+  ======================= -->
+  <aside class="sidebar" id="sidebar">
+    <button type="button" id="sbToggle" class="sbToggle" aria-label="Toggle sidebar">
+      <i class="fa fa-angle-left"></i>
+    </button>
+
+    <div class="brand">
+      <div class="brand-logo">CS</div>
+      <div class="brand-meta">
+        <h1 class="brand-title">
+          <%= tenant?.name || "Classic Campus" %>
+        </h1>
+        <div class="brand-sub">Classic Campus SaaS</div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <div class="navcat">CORE</div>
+      <div class="group">
+        <a class="navbutton" href="/parent/dashboard" data-label="Dashboard"><i
+            class="fa fa-house"></i><span>Dashboard</span></a>
+      </div>
+
+      <div class="navcat">MY CHILDREN</div>
+      <div class="group">
+        <a class="navbutton" href="/parent/children" data-label="Children"><i
+            class="fa fa-user-graduate"></i><span>Children</span></a>
+        <a class="navbutton" href="/parent/attendance" data-label="Attendance"><i
+            class="fa fa-user-check"></i><span>Attendance</span></a>
+        <a class="navbutton" href="/parent/results" data-label="Results"><i
+            class="fa fa-award"></i><span>Results</span></a>
+        <a class="navbutton" href="/parent/fees" data-label="Fees & Payments"><i
+            class="fa fa-credit-card"></i><span>Fees & Payments</span></a>
+        <a class="navbutton" href="/parent/timetable" data-label="Timetable"><i
+            class="fa fa-clock"></i><span>Timetable</span></a>
+      </div>
+
+      <div class="navcat">COMMUNICATIONS</div>
+      <div class="group">
+        <a class="navbutton" href="/parent/announcements" data-label="Announcements"><i
+            class="fa fa-bullhorn"></i><span>Announcements</span></a>
+        <a class="navbutton" href="/parent/notifications" data-label="Notifications"><i
+            class="fa fa-bell"></i><span>Notifications</span></a>
+        <a class="navbutton" href="/parent/support" data-label="Support"><i
+            class="fa fa-headset"></i><span>Support</span></a>
+      </div>
+
+      <div class="navcat">ACCOUNT</div>
+      <div class="group">
+        <a class="navbutton" href="/parent/profile" data-label="Profile"><i
+            class="fa fa-user"></i><span>Profile</span></a>
+        <a class="navbutton" href="/logout" data-label="Logout"><i
+            class="fa fa-right-from-bracket"></i><span>Logout</span></a>
+      </div>
+
+      <div class="navfoot">Portal: <strong>Parent</strong></div>
+    </nav>
+  </aside>
+
+  <!-- ✅ IMPORTANT: The dashboard page must close this .app by rendering MAIN and then closing tags -->

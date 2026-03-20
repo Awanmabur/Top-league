@@ -1,0 +1,130 @@
+<%
+  const safe = (v)=> (v===null||v===undefined) ? "" : String(v);
+  const bell = (typeof notifBell !== "undefined" && notifBell) ? notifBell : { unread:0, items:[] };
+  const unread = Number(bell.unread || 0);
+  const items = Array.isArray(bell.items) ? bell.items : [];
+  const csrf = (typeof csrfToken !== "undefined" && csrfToken) ? csrfToken : "";
+%>
+
+<style>
+  .bellWrap{position:relative;display:inline-flex}
+  .bellBtn{position:relative}
+  .bellBadge{
+    position:absolute;top:-6px;right:-6px;
+    min-width:18px;height:18px;padding:0 6px;
+    border-radius:999px;background:#ef4444;color:#fff;
+    font-size:11px;font-weight:1000;display:grid;place-items:center;
+    border:2px solid #fff;
+  }
+  .bellMenu{
+    position:absolute;right:0;top:44px;
+    width:min(420px, 92vw);
+    background:#fff;border:1px solid rgba(13,64,96,.12);
+    border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.12);
+    overflow:hidden;display:none;z-index:50;
+  }
+  .bellMenu.open{display:block}
+  .bellHead{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 12px;border-bottom:1px solid rgba(13,64,96,.10)}
+  .bellTitle{font-weight:1100}
+  .bellList{max-height:380px;overflow:auto}
+  .bellItem{padding:12px;border-bottom:1px solid rgba(13,64,96,.10)}
+  .bellItem:last-child{border-bottom:none}
+  .bellRow{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+  .bellT{font-weight:1000}
+  .bellM{color:#6b7280;font-size:12px;margin-top:4px;line-height:1.35}
+  .bellMeta{color:#6b7280;font-size:11px;margin-top:6px}
+  .dotUnread{display:inline-block;width:8px;height:8px;border-radius:999px;background:#0a6fbf;margin-right:6px}
+  .bellActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .miniBtn{
+    border:none;background:#f1f5f9;color:#0f172a;
+    padding:8px 10px;border-radius:12px;font-weight:1000;cursor:pointer;
+  }
+  .miniBtn.primary{background:#0a6fbf;color:#fff}
+  .miniBtn.danger{background:#ef4444;color:#fff}
+  .miniLink{color:#0a6fbf;font-weight:1000;text-decoration:none}
+</style>
+
+<div class="bellWrap" id="bellWrap">
+  <button type="button" class="btn light bellBtn" id="bellBtn" title="Notifications">
+    <i class="fa-solid fa-bell"></i>
+    <% if(unread>0){ %><span class="bellBadge"><%= unread>99 ? "99+" : unread %></span><% } %>
+  </button>
+
+  <div class="bellMenu" id="bellMenu" aria-hidden="true">
+    <div class="bellHead">
+      <div class="bellTitle">Notifications</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <a class="miniLink" href="/admin/notifications">Open All</a>
+        <form method="POST" action="/admin/notifications/mark-all-read" style="margin:0">
+          <input type="hidden" name="_csrf" value="<%= csrf %>"/>
+          <button class="miniBtn" type="submit">Mark all read</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="bellList">
+      <% if(!items.length){ %>
+        <div class="bellItem">
+          <div class="bellM">No notifications yet.</div>
+        </div>
+      <% } %>
+
+      <% items.forEach(n=>{ %>
+        <div class="bellItem">
+          <div class="bellRow">
+            <div>
+              <div class="bellT">
+                <% if(!n.isRead){ %><span class="dotUnread"></span><% } %>
+                <%= safe(n.title) %>
+              </div>
+              <div class="bellM"><%= safe(n.message).slice(0, 140) %><%= safe(n.message).length>140 ? "…" : "" %></div>
+              <div class="bellMeta"><%= n.createdAt ? new Date(n.createdAt).toLocaleString() : "" %></div>
+
+              <div class="bellActions">
+                <% if(n.url){ %>
+                  <a class="miniBtn primary" href="<%= safe(n.url) %>">Open</a>
+                <% } %>
+
+                <form method="POST" action="/admin/notifications/<%= n._id %>/read" style="margin:0">
+                  <input type="hidden" name="_csrf" value="<%= csrf %>"/>
+                  <button class="miniBtn" type="submit"><%= n.isRead ? "Read" : "Mark read" %></button>
+                </form>
+
+                <form method="POST" action="/admin/notifications/<%= n._id %>/delete" style="margin:0" onsubmit="return confirm('Delete notification?')">
+                  <input type="hidden" name="_csrf" value="<%= csrf %>"/>
+                  <button class="miniBtn danger" type="submit">Delete</button>
+                </form>
+              </div>
+            </div>
+
+            <div style="text-transform:uppercase;font-size:11px;color:#6b7280;font-weight:1000">
+              <%= safe(n.type || "info") %>
+            </div>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var btn = document.getElementById("bellBtn");
+  var menu = document.getElementById("bellMenu");
+  var wrap = document.getElementById("bellWrap");
+
+  if(!btn || !menu || !wrap) return;
+
+  btn.addEventListener("click", function(){
+    menu.classList.toggle("open");
+  });
+
+  document.addEventListener("click", function(e){
+    if(!wrap.contains(e.target)) menu.classList.remove("open");
+  });
+
+  document.addEventListener("keydown", function(e){
+    if(e.key === "Escape") menu.classList.remove("open");
+  });
+})();
+</script>

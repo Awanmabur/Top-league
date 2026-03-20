@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Staff Management — CampusSaaS</title>
+<style>
+  @font-face{font-family:PoppinsLocal;src:local("Poppins"),local("Segoe UI");}
+  :root{
+    --blue:#0a3d62;
+    --blue-2:#083454;
+    --accent:#0a6fbf;
+    --muted:#6b7280;
+    --bg:#f5f8ff;
+    --card:#ffffff;
+    --radius:12px;
+    --danger:#dc2626;
+    --success:#16a34a;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:PoppinsLocal,system-ui,-apple-system,"Segoe UI",Roboto,Arial;
+    background:var(--bg);
+    color:#0b1020;
+  }
+
+  .app{
+    display:flex;
+    min-height:100vh;
+  }
+
+  /* Sidebar */
+  .sidebar{
+    width:260px;
+    background:linear-gradient(180deg,var(--blue),var(--blue-2));
+    color:#fff;
+    padding:22px 20px;
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:18px;
+  }
+  .logo{
+    width:44px;
+    height:44px;
+    border-radius:10px;
+    background:linear-gradient(135deg,#00a1ff,#0049b7);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:700;
+    font-size:18px;
+  }
+  .brand h1{
+    margin:0;
+    font-size:16px;
+  }
+  .brand .sub{
+    font-size:12px;
+    color:rgba(255,255,255,0.75);
+  }
+  .nav{
+    margin-top:16px;
+  }
+  .nav-item{
+    padding:9px 10px;
+    border-radius:8px;
+    font-size:14px;
+    color:rgba(255,255,255,0.95);
+    cursor:pointer;
+    margin-bottom:6px;
+  }
+  .nav-item.active{
+    background:rgba(255,255,255,0.16);
+  }
+
+  /* Main */
+  .main{
+    flex:1;
+    padding:20px 26px;
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+    min-width:0;
+  }
+  .topbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+  .title{
+    font-size:20px;
+    font-weight:700;
+    color:var(--blue-2);
+  }
+  .subtitle{
+    font-size:13px;
+    color:var(--muted);
+  }
+
+  .top-actions{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+  .search-box{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    background:var(--card);
+    border-radius:10px;
+    border:1px solid #e1e9f7;
+    padding:7px 10px;
+  }
+  .search-box input{
+    border:none;
+    outline:none;
+    font-size:14px;
+    background:transparent;
+    min-width:190px;
+  }
+  .select{
+    padding:8px 10px;
+    border-radius:8px;
+    border:1px solid #dbe3f6;
+    background:#fff;
+    font-size:14px;
+  }
+  .btn{
+    padding:9px 12px;
+    border-radius:8px;
+    border:none;
+    cursor:pointer;
+    font-weight:700;
+    font-size:14px;
+  }
+  .btn.primary{
+    background:var(--blue);
+    color:#fff;
+  }
+  .btn.light{
+    background:#eef4ff;
+    color:var(--blue);
+    border:1px solid #dbe3f6;
+  }
+  .btn.ghost{
+    background:transparent;
+    color:#1e293b;
+    border:1px solid #e5e7eb;
+  }
+
+  /* Layout */
+  .content{
+    display:grid;
+    grid-template-columns:2fr 1fr;
+    gap:18px;
+    align-items:flex-start;
+  }
+  @media (max-width:1024px){
+    .sidebar{display:none;}
+    .content{grid-template-columns:1fr;}
+  }
+
+  .card{
+    background:var(--card);
+    border-radius:var(--radius);
+    padding:14px;
+    border:1px solid #e4ecfb;
+    box-shadow:0 6px 18px rgba(12,38,73,0.04);
+  }
+
+  /* Bulk row */
+  .bulk-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    margin-bottom:10px;
+    flex-wrap:wrap;
+  }
+  .bulk-left{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .bulk-left label{
+    font-size:13px;
+    color:#4b5563;
+  }
+
+  /* Staff grid */
+  .staff-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+    gap:12px;
+  }
+
+  .staff-card{
+    display:flex;
+    gap:10px;
+    padding:10px;
+    border-radius:10px;
+    border:1px solid #e5ecfb;
+    background:#fdfdff;
+    cursor:pointer;
+    transition:box-shadow .15s,transform .15s,border-color .15s;
+  }
+  .staff-card:hover{
+    box-shadow:0 8px 18px rgba(7,19,42,0.08);
+    transform:translateY(-1px);
+    border-color:#d2e2ff;
+  }
+  .staff-card.selected{
+    border-color:var(--accent);
+    box-shadow:0 0 0 1px rgba(10,111,191,0.35);
+  }
+  .staff-avatar{
+    flex-shrink:0;
+    width:52px;
+    height:52px;
+    border-radius:999px;
+    background:linear-gradient(135deg,#e0ecff,#b3c6ff);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:800;
+    color:var(--blue-2);
+    font-size:18px;
+  }
+  .staff-main{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+  }
+  .staff-header{
+    display:flex;
+    justify-content:space-between;
+    gap:6px;
+    align-items:flex-start;
+  }
+  .staff-name{
+    font-weight:700;
+    font-size:15px;
+    color:#111827;
+  }
+  .staff-role{
+    font-size:13px;
+    color:var(--muted);
+  }
+  .badge{
+    padding:4px 8px;
+    border-radius:999px;
+    font-size:11px;
+    font-weight:700;
+    background:#eef2ff;
+    color:var(--accent);
+  }
+  .badge.active{
+    background:#e6f9ee;
+    color:var(--success);
+  }
+  .badge.suspended{
+    background:#fef2f2;
+    color:#b91c1c;
+  }
+  .staff-meta{
+    font-size:12px;
+    color:#4b5563;
+  }
+  .staff-meta span{
+    display:inline-block;
+    margin-right:10px;
+  }
+  .staff-contact{
+    font-size:12px;
+    color:#6b7280;
+  }
+  .staff-actions{
+    display:flex;
+    gap:6px;
+    margin-top:6px;
+    flex-wrap:wrap;
+  }
+  .btn-xs{
+    padding:5px 7px;
+    border-radius:7px;
+    border:none;
+    font-size:11px;
+    font-weight:600;
+    cursor:pointer;
+    background:#eef4ff;
+    color:var(--blue-2);
+  }
+  .btn-xs.danger{
+    background:#fff1f2;
+    color:var(--danger);
+  }
+
+  /* Preview column */
+  .preview-title{
+    font-size:15px;
+    font-weight:700;
+    color:var(--blue-2);
+  }
+  .preview-label{
+    font-size:12px;
+    color:#6b7280;
+  }
+  .preview-value{
+    font-size:14px;
+    color:#111827;
+    margin-top:3px;
+  }
+  .preview-row{
+    margin-top:10px;
+  }
+  .tag{
+    display:inline-block;
+    padding:5px 8px;
+    border-radius:8px;
+    background:#eef4ff;
+    font-size:11px;
+    color:var(--blue-2);
+    margin-right:4px;
+    margin-top:4px;
+  }
+  .course-pill{
+    display:inline-block;
+    padding:4px 7px;
+    border-radius:999px;
+    background:#f1f5f9;
+    font-size:11px;
+    margin:3px 3px 0 0;
+  }
+
+  .preview-actions{
+    display:flex;
+    gap:8px;
+    margin-top:14px;
+    flex-wrap:wrap;
+  }
+
+  /* Modal */
+  .backdrop{
+    position:fixed;
+    inset:0;
+    background:rgba(15,23,42,0.55);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    z-index:50;
+  }
+  .modal{
+    width:920px;
+    max-width:100%;
+    max-height:90vh;
+    overflow:auto;
+    border-radius:14px;
+    background:#ffffff;
+    box-shadow:0 30px 60px rgba(15,23,42,0.6);
+    padding:16px 16px 18px;
+  }
+  .modal-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+  }
+  .modal-title{
+    font-size:18px;
+    font-weight:800;
+    color:var(--blue-2);
+  }
+  .modal-grid{
+    display:grid;
+    grid-template-columns:1.4fr 1fr;
+    gap:14px;
+    margin-top:12px;
+  }
+  @media (max-width:860px){
+    .modal-grid{grid-template-columns:1fr;}
+  }
+  .field{
+    display:flex;
+    flex-direction:column;
+    margin-bottom:8px;
+  }
+  .field label{
+    font-size:12px;
+    font-weight:700;
+    margin-bottom:4px;
+    color:#374151;
+  }
+  .field input,
+  .field select,
+  .field textarea{
+    border-radius:8px;
+    border:1px solid #dbe3f6;
+    padding:8px 9px;
+    font-size:14px;
+    outline:none;
+    background:#fff;
+  }
+  .field textarea{
+    min-height:90px;
+    resize:vertical;
+  }
+
+  .small-muted{
+    font-size:12px;
+    color:#6b7280;
+    margin-top:4px;
+  }
+  .role-tags{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-top:6px;
+  }
+  .role-tags label{
+    font-size:12px;
+    color:#111827;
+    display:flex;
+    align-items:center;
+    gap:4px;
+  }
+  .role-tags input{
+    width:14px;
+    height:14px;
+  }
+  .divider{
+    height:1px;
+    background:#eef2ff;
+    margin:10px 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">CS</div>
+      <div>
+        <h1>CampusSaaS</h1>
+        <div class="sub">University Admin</div>
+      </div>
+    </div>
+    <nav class="nav">
+      <div class="nav-item">🏠 Dashboard</div>
+      <div class="nav-item">📝 Admissions</div>
+      <div class="nav-item">🎓 Students</div>
+      <div class="nav-item">📚 Programs</div>
+      <div class="nav-item active">👥 Staff</div>
+      <div class="nav-item">💳 Finance</div>
+    </nav>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="title">Staff Management</div>
+        <div class="subtitle">Manage academic and non-academic staff, roles and assignments.</div>
+      </div>
+      <div class="top-actions">
+        <div class="search-box">
+          <svg width="16" height="16" viewBox="0 0 24 24" stroke="#94a3b8" fill="none" stroke-width="1.7">
+            <circle cx="11" cy="11" r="6"></circle>
+            <path d="M16 16L21 21" stroke-linecap="round"></path>
+          </svg>
+          <input id="searchInput" placeholder="Search name, email, staff ID..." />
+        </div>
+        <select id="deptFilter" class="select">
+          <option value="">All Departments</option>
+          <option>Computer Science</option>
+          <option>Business</option>
+          <option>Education</option>
+          <option>Registrar</option>
+          <option>IT Services</option>
+        </select>
+        <select id="roleFilter" class="select">
+          <option value="">All Roles</option>
+          <option>Lecturer</option>
+          <option>Head of Department</option>
+          <option>Administrator</option>
+          <option>Support Staff</option>
+        </select>
+        <select id="statusFilter" class="select">
+          <option value="">Any Status</option>
+          <option value="active">Active</option>
+          <option value="leave">On Leave</option>
+          <option value="suspended">Suspended</option>
+        </select>
+        <button class="btn primary" onclick="openModal()">➕ Add Staff</button>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- Staff list -->
+      <section class="card">
+        <div class="bulk-row">
+          <div class="bulk-left">
+            <label><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)"> Select all</label>
+            <select id="bulkAction" class="select">
+              <option value="">Bulk actions</option>
+              <option value="activate">Set Active</option>
+              <option value="suspend">Set Suspended</option>
+              <option value="export">Export Selected</option>
+            </select>
+            <button class="btn light" onclick="runBulk()">Apply</button>
+          </div>
+          <div>
+            <button class="btn light" onclick="exportAll()">Export All</button>
+          </div>
+        </div>
+
+        <div class="staff-grid" id="staffGrid">
+          <!-- cards rendered by JS -->
+        </div>
+      </section>
+
+      <!-- Preview / right column -->
+      <aside class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+          <div>
+            <div class="preview-title">Staff Profile Preview</div>
+            <div class="subtitle">Click a staff card to see full details.</div>
+          </div>
+          <button class="btn light" onclick="clearPreview()">Clear</button>
+        </div>
+
+        <div class="preview-row">
+          <div class="preview-label">Name</div>
+          <div class="preview-value" id="pvName">—</div>
+        </div>
+        <div class="preview-row">
+          <div class="preview-label">Role</div>
+          <div class="preview-value" id="pvRole">—</div>
+        </div>
+        <div class="preview-row">
+          <div class="preview-label">Department</div>
+          <div class="preview-value" id="pvDept">—</div>
+        </div>
+        <div class="preview-row">
+          <div class="preview-label">Staff ID</div>
+          <div class="preview-value" id="pvId">—</div>
+        </div>
+        <div class="preview-row">
+          <div class="preview-label">Email</div>
+          <div class="preview-value" id="pvEmail">—</div>
+        </div>
+        <div class="preview-row">
+          <div class="preview-label">Phone</div>
+          <div class="preview-value" id="pvPhone">—</div>
+        </div>
+        <div class="preview-row">
+          <div class="preview-label">Status</div>
+          <div class="preview-value" id="pvStatus">—</div>
+        </div>
+
+        <div class="preview-row">
+          <div class="preview-label">Joined</div>
+          <div class="preview-value" id="pvJoined">—</div>
+        </div>
+
+        <div class="preview-row">
+          <div class="preview-label">Assigned Courses</div>
+          <div id="pvCourses" style="margin-top:4px;"></div>
+        </div>
+
+        <div class="preview-row">
+          <div class="preview-label">Notes</div>
+          <div class="preview-value" id="pvNotes">—</div>
+        </div>
+
+        <div class="preview-row">
+          <div class="preview-label">Roles / Permissions</div>
+          <div id="pvRoles" style="margin-top:4px;"></div>
+        </div>
+
+        <div class="preview-actions">
+          <button class="btn primary" onclick="editCurrent()">Edit</button>
+          <button class="btn light" onclick="assignCourses()">Assign Courses</button>
+          <button class="btn ghost" onclick="resetPassword()">Reset Password</button>
+        </div>
+      </aside>
+    </div>
+  </main>
+</div>
+
+<!-- Modal: Add/Edit Staff -->
+<div class="backdrop" id="modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">Add Staff Member</div>
+      <button class="btn light" onclick="closeModal()">Close</button>
+    </div>
+
+    <div class="modal-grid">
+      <div>
+        <div class="field">
+          <label>Full Name</label>
+          <input id="mName" placeholder="e.g., Dr. Samuel Deng" />
+        </div>
+        <div class="field">
+          <label>Staff ID / Number</label>
+          <input id="mStaffId" placeholder="e.g., STF-0001" />
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input id="mEmail" type="email" placeholder="name@university.edu" />
+        </div>
+        <div class="field">
+          <label>Phone</label>
+          <input id="mPhone" placeholder="+211 ..." />
+        </div>
+
+        <div style="display:flex;gap:8px;">
+          <div class="field" style="flex:1">
+            <label>Role</label>
+            <select id="mRole">
+              <option>Lecturer</option>
+              <option>Head of Department</option>
+              <option>Administrator</option>
+              <option>Support Staff</option>
+            </select>
+          </div>
+          <div class="field" style="flex:1">
+            <label>Department</label>
+            <select id="mDept">
+              <option>Computer Science</option>
+              <option>Business</option>
+              <option>Education</option>
+              <option>Registrar</option>
+              <option>IT Services</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;">
+          <div class="field" style="flex:1">
+            <label>Employment Type</label>
+            <select id="mType">
+              <option>Full-time</option>
+              <option>Part-time</option>
+              <option>Contract</option>
+            </select>
+          </div>
+          <div class="field" style="flex:1">
+            <label>Status</label>
+            <select id="mStatus">
+              <option value="active">Active</option>
+              <option value="leave">On Leave</option>
+              <option value="suspended">Suspended</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Joined Date</label>
+          <input id="mJoined" type="date" />
+        </div>
+
+        <div class="field">
+          <label>Notes</label>
+          <textarea id="mNotes" placeholder="Internal notes (not visible to staff)..."></textarea>
+        </div>
+      </div>
+
+      <div>
+        <div class="field">
+          <label>Roles & Permissions</label>
+          <div class="role-tags">
+            <label><input type="checkbox" class="mPerm" value="Can review applicants" /> Can review applicants</label>
+            <label><input type="checkbox" class="mPerm" value="Can manage students" /> Can manage students</label>
+            <label><input type="checkbox" class="mPerm" value="Can manage programs" /> Can manage programs</label>
+            <label><input type="checkbox" class="mPerm" value="Finance access" /> Finance access</label>
+            <label><input type="checkbox" class="mPerm" value="Portal admin" /> Portal admin</label>
+          </div>
+          <div class="small-muted">These control what they see in the admin portal.</div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="field">
+          <label>Assigned Courses (comma-separated)</label>
+          <input id="mCourses" placeholder="e.g., CS101, CS201" />
+          <div class="small-muted">Detailed course mapping will be handled from the Courses/LMS module.</div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="small-muted">Login credentials will be generated by the system and emailed to the staff member (backend feature).</div>
+
+        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn primary" onclick="saveStaff()">Save</button>
+          <button class="btn ghost" onclick="closeModal()">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Mock staff data
+  const STAFF = [
+    {
+      id:1,
+      name:"Dr. Samuel Deng",
+      staffId:"STF-0001",
+      email:"samuel.deng@univ.edu",
+      phone:"+211 912 345 111",
+      role:"Head of Department",
+      department:"Computer Science",
+      type:"Full-time",
+      status:"active",
+      joined:"2021-08-10",
+      courses:["CS101","CS201","CS305"],
+      notes:"HOD for CS. Oversees curriculum and quality assurance.",
+      perms:["Can review applicants","Can manage students","Can manage programs","Portal admin"]
+    },
+    {
+      id:2,
+      name:"Ms. Lydia Makuei",
+      staffId:"STF-0002",
+      email:"lydia.makuei@univ.edu",
+      phone:"+211 912 345 222",
+      role:"Lecturer",
+      department:"Computer Science",
+      type:"Part-time",
+      status:"active",
+      joined:"2022-01-15",
+      courses:["CS110","CS220"],
+      notes:"Teaches programming and web development modules.",
+      perms:["Can manage students"]
+    },
+    {
+      id:3,
+      name:"Mr. James Okello",
+      staffId:"STF-0101",
+      email:"j.okello@univ.edu",
+      phone:"+256 701 234 555",
+      role:"Administrator",
+      department:"Registrar",
+      type:"Full-time",
+      status:"active",
+      joined:"2020-03-01",
+      courses:[],
+      notes:"Handles admissions records and student registration.",
+      perms:["Can review applicants","Can manage students"]
+    },
+    {
+      id:4,
+      name:"Eng. Amani Lado",
+      staffId:"STF-0203",
+      email:"amani.lado@univ.edu",
+      phone:"+211 917 000 333",
+      role:"Support Staff",
+      department:"IT Services",
+      type:"Full-time",
+      status:"leave",
+      joined:"2019-10-21",
+      courses:[],
+      notes:"Network & infrastructure support. Currently on study leave.",
+      perms:["Portal admin"]
+    },
+    {
+      id:5,
+      name:"Mrs. Mary Nam",
+      staffId:"STF-0305",
+      email:"mary.nam@univ.edu",
+      phone:"+211 913 555 999",
+      role:"Lecturer",
+      department:"Business",
+      type:"Contract",
+      status:"suspended",
+      joined:"2018-06-05",
+      courses:["BUS101","BUS230"],
+      notes:"Pending HR review; access restricted.",
+      perms:["Can manage students"]
+    }
+  ];
+
+  let filteredStaff = [...STAFF];
+  let currentPreviewId = null;
+  let editingId = null;
+
+  const staffGrid = document.getElementById("staffGrid");
+  const searchInput = document.getElementById("searchInput");
+  const deptFilter = document.getElementById("deptFilter");
+  const roleFilter = document.getElementById("roleFilter");
+  const statusFilter = document.getElementById("statusFilter");
+
+  function renderStaff(){
+    staffGrid.innerHTML = "";
+    filteredStaff.forEach(st => {
+      const card = document.createElement("div");
+      card.className = "staff-card";
+      card.dataset.id = st.id;
+      if(st.id === currentPreviewId) card.classList.add("selected");
+
+      const initials = st.name.split(" ").map(x=>x[0]).join("").slice(0,2).toUpperCase();
+
+      card.innerHTML = `
+        <div class="staff-avatar">${initials}</div>
+        <div class="staff-main">
+          <div class="staff-header">
+            <div>
+              <div class="staff-name">${st.name}</div>
+              <div class="staff-role">${st.role}</div>
+            </div>
+            <div class="badge ${st.status==='active'?'active':(st.status==='suspended'?'suspended':'')}">
+              ${st.status.charAt(0).toUpperCase()+st.status.slice(1)}
+            </div>
+          </div>
+          <div class="staff-meta">
+            <span>${st.department}</span>
+            <span>${st.type}</span>
+          </div>
+          <div class="staff-contact">
+            <div>${st.email}</div>
+            <div>${st.phone}</div>
+          </div>
+          <div class="staff-actions">
+            <button class="btn-xs" onclick="event.stopPropagation();previewStaff(${st.id});">View</button>
+            <button class="btn-xs" onclick="event.stopPropagation();openModal(${st.id});">Edit</button>
+            <button class="btn-xs" onclick="event.stopPropagation();assignCoursesSingle(${st.id});">Assign Courses</button>
+            <button class="btn-xs danger" onclick="event.stopPropagation();changeStatus(${st.id})">Toggle Active</button>
+            <span style="margin-left:auto;font-size:11px;color:#9ca3af;">
+              <input type="checkbox" class="selChk" data-id="${st.id}" onclick="event.stopPropagation();" /> Select
+            </span>
+          </div>
+        </div>
+      `;
+      card.onclick = ()=>previewStaff(st.id);
+      staffGrid.appendChild(card);
+    });
+  }
+
+  function applyFilters(){
+    const q = (searchInput.value || "").toLowerCase();
+    const dept = deptFilter.value;
+    const role = roleFilter.value;
+    const status = statusFilter.value;
+
+    filteredStaff = STAFF.filter(st => {
+      const matchQ =
+        !q ||
+        st.name.toLowerCase().includes(q) ||
+        st.email.toLowerCase().includes(q) ||
+        (st.staffId && st.staffId.toLowerCase().includes(q));
+
+      const matchDept = !dept || st.department === dept;
+      const matchRole = !role || st.role === role;
+      const matchStatus = !status || st.status === status;
+
+      return matchQ && matchDept && matchRole && matchStatus;
+    });
+    renderStaff();
+  }
+
+  searchInput.addEventListener("input", applyFilters);
+  deptFilter.addEventListener("change", applyFilters);
+  roleFilter.addEventListener("change", applyFilters);
+  statusFilter.addEventListener("change", applyFilters);
+
+  function previewStaff(id){
+    currentPreviewId = id;
+    renderStaff();
+    const st = STAFF.find(s => s.id === id);
+    if(!st) return;
+    document.getElementById("pvName").innerText = st.name || "—";
+    document.getElementById("pvRole").innerText = st.role || "—";
+    document.getElementById("pvDept").innerText = st.department || "—";
+    document.getElementById("pvId").innerText = st.staffId || "—";
+    document.getElementById("pvEmail").innerText = st.email || "—";
+    document.getElementById("pvPhone").innerText = st.phone || "—";
+    document.getElementById("pvStatus").innerText = st.status || "—";
+    document.getElementById("pvJoined").innerText = st.joined || "—";
+    document.getElementById("pvNotes").innerText = st.notes || "—";
+
+    const coursesWrap = document.getElementById("pvCourses");
+    coursesWrap.innerHTML = "";
+    (st.courses || []).forEach(c=>{
+      const span = document.createElement("span");
+      span.className="course-pill";
+      span.textContent = c;
+      coursesWrap.appendChild(span);
+    });
+    if(!st.courses || !st.courses.length){
+      coursesWrap.innerHTML = '<span class="small-muted">No courses assigned.</span>';
+    }
+
+    const rolesWrap = document.getElementById("pvRoles");
+    rolesWrap.innerHTML = "";
+    (st.perms || []).forEach(p=>{
+      const tag = document.createElement("span");
+      tag.className = "tag";
+      tag.textContent = p;
+      rolesWrap.appendChild(tag);
+    });
+    if(!st.perms || !st.perms.length){
+      rolesWrap.innerHTML = '<span class="small-muted">No special permissions.</span>';
+    }
+  }
+
+  function clearPreview(){
+    currentPreviewId = null;
+    renderStaff();
+    document.getElementById("pvName").innerText = "—";
+    document.getElementById("pvRole").innerText = "—";
+    document.getElementById("pvDept").innerText = "—";
+    document.getElementById("pvId").innerText = "—";
+    document.getElementById("pvEmail").innerText = "—";
+    document.getElementById("pvPhone").innerText = "—";
+    document.getElementById("pvStatus").innerText = "—";
+    document.getElementById("pvJoined").innerText = "—";
+    document.getElementById("pvCourses").innerHTML = "";
+    document.getElementById("pvNotes").innerText = "—";
+    document.getElementById("pvRoles").innerHTML = "";
+  }
+
+  // Bulk operations
+  function toggleSelectAll(el){
+    document.querySelectorAll(".selChk").forEach(cb => cb.checked = el.checked);
+  }
+
+  function getSelectedIds(){
+    return Array.from(document.querySelectorAll(".selChk"))
+      .filter(cb => cb.checked)
+      .map(cb => Number(cb.dataset.id));
+  }
+
+  function runBulk(){
+    const action = document.getElementById("bulkAction").value;
+    const ids = getSelectedIds();
+    if(!action || !ids.length){
+      alert("Choose an action and select at least one staff.");
+      return;
+    }
+    if(action === "export"){
+      alert("Exporting staff IDs: " + ids.join(", ") + " (placeholder)");
+      return;
+    }
+    ids.forEach(id=>{
+      const st = STAFF.find(s=>s.id===id);
+      if(!st) return;
+      if(action === "activate") st.status = "active";
+      if(action === "suspend") st.status = "suspended";
+    });
+    applyFilters();
+    alert("Bulk action applied (frontend only).");
+  }
+
+  function exportAll(){
+    alert("Export all staff to CSV (placeholder for backend).");
+  }
+
+  function changeStatus(id){
+    const st = STAFF.find(s=>s.id===id);
+    if(!st) return;
+    st.status = st.status === "active" ? "suspended" : "active";
+    applyFilters();
+  }
+
+  function assignCourses(){
+    if(!currentPreviewId){
+      alert("Select a staff member first.");
+      return;
+    }
+    alert("Open Assign Courses dialog for staff ID " + currentPreviewId + " (placeholder).");
+  }
+  function assignCoursesSingle(id){
+    alert("Open Assign Courses dialog for staff ID " + id + " (placeholder).");
+  }
+  function resetPassword(){
+    if(!currentPreviewId){
+      alert("Select a staff member first.");
+      return;
+    }
+    alert("Password reset link would be emailed (placeholder).");
+  }
+  function editCurrent(){
+    if(!currentPreviewId){
+      alert("Select a staff member first.");
+      return;
+    }
+    openModal(currentPreviewId);
+  }
+
+  // Modal logic
+  const modal = document.getElementById("modal");
+
+  function openModal(id){
+    modal.style.display = "flex";
+    editingId = id || null;
+    document.getElementById("modalTitle").innerText = editingId ? "Edit Staff Member" : "Add Staff Member";
+    if(editingId){
+      const st = STAFF.find(s=>s.id===editingId);
+      if(!st) return;
+      document.getElementById("mName").value = st.name || "";
+      document.getElementById("mStaffId").value = st.staffId || "";
+      document.getElementById("mEmail").value = st.email || "";
+      document.getElementById("mPhone").value = st.phone || "";
+      document.getElementById("mRole").value = st.role || "Lecturer";
+      document.getElementById("mDept").value = st.department || "Computer Science";
+      document.getElementById("mType").value = st.type || "Full-time";
+      document.getElementById("mStatus").value = st.status || "active";
+      document.getElementById("mJoined").value = st.joined || "";
+      document.getElementById("mNotes").value = st.notes || "";
+      document.getElementById("mCourses").value = (st.courses || []).join(", ");
+      document.querySelectorAll(".mPerm").forEach(cb=>{
+        cb.checked = st.perms ? st.perms.includes(cb.value) : false;
+      });
+    } else {
+      document.getElementById("mName").value = "";
+      document.getElementById("mStaffId").value = "";
+      document.getElementById("mEmail").value = "";
+      document.getElementById("mPhone").value = "";
+      document.getElementById("mRole").value = "Lecturer";
+      document.getElementById("mDept").value = "Computer Science";
+      document.getElementById("mType").value = "Full-time";
+      document.getElementById("mStatus").value = "active";
+      document.getElementById("mJoined").value = "";
+      document.getElementById("mNotes").value = "";
+      document.getElementById("mCourses").value = "";
+      document.querySelectorAll(".mPerm").forEach(cb=>cb.checked=false);
+    }
+  }
+
+  function closeModal(){
+    modal.style.display = "none";
+  }
+
+  function saveStaff(){
+    const name = document.getElementById("mName").value.trim();
+    if(!name){
+      alert("Name is required.");
+      return;
+    }
+    const staffId = document.getElementById("mStaffId").value.trim();
+    const email = document.getElementById("mEmail").value.trim();
+    const phone = document.getElementById("mPhone").value.trim();
+    const role = document.getElementById("mRole").value;
+    const dept = document.getElementById("mDept").value;
+    const type = document.getElementById("mType").value;
+    const status = document.getElementById("mStatus").value;
+    const joined = document.getElementById("mJoined").value;
+    const notes = document.getElementById("mNotes").value.trim();
+    const coursesStr = document.getElementById("mCourses").value.trim();
+    const courses = coursesStr ? coursesStr.split(",").map(x=>x.trim()).filter(Boolean) : [];
+    const perms = Array.from(document.querySelectorAll(".mPerm"))
+      .filter(cb=>cb.checked)
+      .map(cb=>cb.value);
+
+    if(editingId){
+      const st = STAFF.find(s=>s.id===editingId);
+      Object.assign(st,{name,staffId,email,phone,role,department:dept,type,status,joined,notes,courses,perms});
+      alert("Staff updated (frontend only).");
+      previewStaff(editingId);
+    } else {
+      const id = Date.now();
+      const newStaff = {id,name,staffId,email,phone,role,department:dept,type,status,joined,notes,courses,perms};
+      STAFF.unshift(newStaff);
+      alert("Staff added (frontend only).");
+      previewStaff(id);
+    }
+    closeModal();
+    applyFilters();
+  }
+
+  // Init
+  (function init(){
+    applyFilters();
+  })();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Roles — <%= (tenant && tenant.name) ? tenant.name : "Classic Campus" %></title>
+<style>
+  :root{--accent:#0a6fbf;--bg:#f4f8ff;--line:rgba(13,64,96,.12);--muted:#6b7280}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial;background:var(--bg);color:#0f172a}
+  .wrap{max-width:1200px;margin:0 auto;padding:18px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.08);padding:16px}
+  .top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start}
+  .title{margin:0;font-size:18px;font-weight:1000}
+  .muted{color:var(--muted);font-size:12px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;align-items:center}
+  input,select{padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:#fff}
+  button{padding:10px 14px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-weight:1000;cursor:pointer}
+  .btn2{background:#fff;color:#0f172a;border:1px solid var(--line)}
+  table{width:100%;border-collapse:collapse;margin-top:12px}
+  th,td{padding:10px;border-top:1px solid var(--line);text-align:left;font-size:13px;vertical-align:top}
+  .chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-weight:900;font-size:12px;background:#fff}
+  .flash{margin:12px 0;display:grid;gap:8px}
+  .ferr{padding:10px 12px;border-radius:12px;border:1px solid rgba(239,68,68,.25);background:#fee2e2;color:#991b1b;font-weight:900;font-size:13px}
+  .fok{padding:10px 12px;border-radius:12px;border:1px solid rgba(22,163,74,.25);background:#dcfce7;color:#166534;font-weight:900;font-size:13px}
+</style>
+</head>
+<body>
+<%
+  const rows = Array.isArray(users) ? users : [];
+  const RO = Array.isArray(roles) ? roles : [];
+  const q = (typeof query!=="undefined" && query) ? query : {};
+  const csrf = (typeof csrfToken!=="undefined" && csrfToken) ? csrfToken : "";
+  const msgs = (typeof messages!=="undefined" && messages) ? messages : {};
+  const errs = msgs.error ? ([]).concat(msgs.error) : [];
+  const oks = msgs.success ? ([]).concat(msgs.success) : [];
+%>
+<div class="wrap">
+  <div class="card">
+    <div class="top">
+      <div>
+        <h1 class="title">Roles</h1>
+        <div class="muted">Security → Roles & Access</div>
+      </div>
+      <div class="muted">Tip: Click “Edit roles” on a user.</div>
+    </div>
+
+    <% if (errs.length || oks.length) { %>
+      <div class="flash">
+        <% errs.forEach(m=>{ %><div class="ferr"><%= m %></div><% }) %>
+        <% oks.forEach(m=>{ %><div class="fok"><%= m %></div><% }) %>
+      </div>
+    <% } %>
+
+    <form class="row" method="GET" action="/admin/roles">
+      <input name="q" value="<%= q.q || '' %>" placeholder="Search: name, email, phone"/>
+      <select name="role">
+        <option value="">Any role</option>
+        <% RO.forEach(r=>{ %>
+          <option value="<%= r %>" <%= (q.role===r)?'selected':'' %>><%= r %></option>
+        <% }) %>
+      </select>
+      <button type="submit">Filter</button>
+      <a class="btn2" style="text-decoration:none;padding:10px 14px;border-radius:12px" href="/admin/roles">Reset</a>
+    </form>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width:30%">User</th>
+          <th style="width:40%">Roles</th>
+          <th style="width:30%"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if(!rows.length){ %>
+          <tr><td colspan="3" class="muted">No users found.</td></tr>
+        <% } %>
+        <% rows.forEach(u=>{ %>
+          <tr data-id="<%= u._id %>" data-roles="<%= JSON.stringify(u.roles||[]) %>">
+            <td>
+              <div><b><%= (u.firstName||'')+' '+(u.lastName||'') %></b></div>
+              <div class="muted"><%= u.email || '-' %> <%= u.phone ? ('• '+u.phone) : '' %></div>
+            </td>
+            <td>
+              <% (u.roles||[]).forEach(r=>{ %>
+                <span class="chip"><%= r %></span>
+              <% }) %>
+              <% if(!(u.roles||[]).length){ %><span class="muted">—</span><% } %>
+            </td>
+            <td>
+              <button type="button" class="btn2" data-edit> Edit roles </button>
+              <form method="POST" action="/admin/roles/<%= u._id %>" style="display:none" data-form>
+                <% if(csrf){ %><input type="hidden" name="_csrf" value="<%= csrf %>"><% } %>
+                <input type="hidden" name="roles" value="">
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script nonce="<%= cspNonce %>">
+(function(){
+  const ALL = <%- JSON.stringify(roles || []) %>;
+  function pickRoles(current){
+    const cur = Array.isArray(current)? current : [];
+    const raw = prompt("Enter roles comma-separated:\n"+ALL.join(", "), cur.join(", "));
+    if(raw==null) return null;
+    const roles = String(raw).split(",").map(s=>s.trim()).filter(Boolean);
+    return roles;
+  }
+
+  document.addEventListener('click',(e)=>{
+    const btn = e.target.closest('[data-edit]');
+    if(!btn) return;
+    const tr = btn.closest('tr[data-id]');
+    if(!tr) return;
+
+    let current=[];
+    try{ current = JSON.parse(tr.dataset.roles||"[]"); }catch(_){}
+
+    const selected = pickRoles(current);
+    if(!selected) return;
+
+    // basic validate against ALL
+    const set = {};
+    ALL.forEach(r=> set[r]=true);
+    for(const r of selected){
+      if(!set[r]){
+        alert("Invalid role: "+r+"\nAllowed: "+ALL.join(", "));
+        return;
+      }
+    }
+    if(!selected.length){
+      alert("Select at least one role.");
+      return;
+    }
+
+    const form = tr.querySelector('form[data-form]');
+    const inp = form ? form.querySelector('input[name="roles"]') : null;
+    if(!form || !inp) return;
+
+    inp.value = selected.join(",");
+    form.submit();
+  });
+})();
+</script>
+</body>
+</html>

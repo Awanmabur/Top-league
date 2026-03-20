@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Admin • Scholarships — CampusSaaS</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer"/>
+  <!-- Shared CSS (your project) -->
+  <link rel="stylesheet" href="./public/css/student-portal.css"/>
+
+  <style>
+    /* helpers only */
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
+    .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .input,.select,.textarea{
+      padding:10px 12px;border-radius:12px;border:1px solid rgba(13,64,96,.16);
+      background:#fff;outline:none
+    }
+    .input{min-width:240px}
+    .textarea{width:100%;min-height:110px;resize:vertical}
+    .input:focus,.select:focus,.textarea:focus{border-color:rgba(10,111,191,.45);box-shadow:0 0 0 3px rgba(10,111,191,.12)}
+    .muted{font-size:12px;color:#6b7280}
+    .strong{font-weight:900}
+    .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+    .grid-2{display:grid;grid-template-columns:1.2fr .8fr;gap:12px}
+    .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+
+    .chips{display:flex;gap:8px;flex-wrap:wrap}
+    .chip{border:1px solid rgba(13,64,96,.14);background:#fff;border-radius:999px;padding:8px 12px;cursor:pointer;font-weight:900;font-size:12px}
+    .chip.active{background:rgba(10,111,191,.12);border-color:rgba(10,111,191,.35)}
+
+    .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:900}
+    .ok{background:#ecfdf3;color:#15803d}
+    .warn{background:#fef9c3;color:#92400e}
+    .bad{background:#fee2e2;color:#b91c1c}
+    .info{background:#eef2ff;color:#3730a3}
+    .tag{background:rgba(13,64,96,.06);color:#0a3d62}
+
+    .table-wrap{overflow:auto;border:1px solid rgba(13,64,96,.10);border-radius:12px}
+    table{width:100%;border-collapse:separate;border-spacing:0;min-width:1250px;background:#fff}
+    th,td{padding:10px 12px;border-bottom:1px solid rgba(13,64,96,.08);vertical-align:middle}
+    th{font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;text-align:left;background:rgba(13,64,96,.03);position:sticky;top:0;z-index:1}
+    tr:hover td{background:rgba(10,111,191,.04)}
+    .actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
+    .btn-xs{padding:6px 8px;border-radius:10px;border:1px solid rgba(13,64,96,.14);background:#fff;cursor:pointer;font-size:12px}
+    .btn-xs:hover{background:rgba(10,111,191,.06)}
+
+    .bulkbar{
+      display:none;margin-top:10px;padding:10px 12px;border-radius:12px;
+      background:rgba(10,111,191,.08);border:1px solid rgba(10,111,191,.18);
+      justify-content:space-between;gap:10px;align-items:center
+    }
+    .bulkbar.show{display:flex}
+    .badge-count{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 8px;border-radius:999px;background:#0a6fbf;color:#fff;font-size:12px;font-weight:900}
+
+    .note{padding:10px 12px;border-radius:12px;border:1px dashed rgba(13,64,96,.18);background:rgba(13,64,96,.03)}
+    .mini-list{display:grid;gap:10px;margin-top:10px}
+    .mini-item{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 12px;border:1px solid rgba(13,64,96,.10);border-radius:12px;background:#fff}
+    .mini-item .left{display:grid;gap:2px}
+
+    /* Modals */
+    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:18px;z-index:9999}
+    .modal-backdrop.show{display:flex}
+    .modal{width:min(1100px,100%);background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden}
+    .modal-header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid rgba(13,64,96,.10)}
+    .modal-title{font-weight:900}
+    .modal-body{padding:16px}
+    .modal-footer{display:flex;justify-content:flex-end;gap:10px;padding:14px 16px;border-top:1px solid rgba(13,64,96,.10)}
+    .form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    .field label{display:block;font-size:12px;color:#6b7280;margin-bottom:6px}
+    .field input,.field select{width:100%}
+    .divider{height:1px;background:rgba(13,64,96,.10);margin:12px 0}
+
+    /* Attachments UI */
+    .attach{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .file-pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:rgba(13,64,96,.06);border:1px solid rgba(13,64,96,.10);font-size:12px}
+    .file-pill button{border:none;background:transparent;cursor:pointer;color:#b91c1c}
+
+    /* pipeline */
+    .pipe-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:10px}
+    .col{border:1px solid rgba(13,64,96,.10);border-radius:14px;background:#fff;overflow:hidden;min-height:240px}
+    .col-head{padding:10px 12px;border-bottom:1px solid rgba(13,64,96,.08);display:flex;justify-content:space-between;align-items:center}
+    .col-body{padding:10px 12px;display:grid;gap:10px}
+
+    @media(max-width:980px){
+      .grid-4{grid-template-columns:1fr 1fr}
+      .grid-2{grid-template-columns:1fr}
+      .grid-3{grid-template-columns:1fr}
+      .form-grid{grid-template-columns:1fr}
+      .pipe-grid{grid-template-columns:1fr}
+      .input{min-width:190px}
+    }
+    @media(max-width:560px){ .grid-4{grid-template-columns:1fr} }
+  </style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">CS</div>
+      <div><h1>CampusSaaS</h1><div class="sub">Admin Portal</div></div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section-title">Admin</div>
+      <a class="nav-item" href="admin-dashboard.html"><i class="fa-solid fa-chart-line"></i><span>Dashboard</span></a>
+      <a class="nav-item" href="admin-students.html"><i class="fa-solid fa-user-graduate"></i><span>Students</span></a>
+      <a class="nav-item" href="admin-analytics.html"><i class="fa-solid fa-chart-pie"></i><span>Analytics</span></a>
+      <a class="nav-item" href="admin-timetable.html"><i class="fa-solid fa-calendar-days"></i><span>Timetable</span></a>
+      <a class="nav-item" href="admin-library.html"><i class="fa-solid fa-book"></i><span>Library</span></a>
+      <a class="nav-item" href="admin-hostels.html"><i class="fa-solid fa-bed"></i><span>Hostels</span></a>
+      <a class="nav-item" href="admin-announcements.html"><i class="fa-solid fa-bullhorn"></i><span>Announcements</span></a>
+      <a class="nav-item" href="admin-jobs.html"><i class="fa-solid fa-briefcase"></i><span>Jobs</span></a>
+      <a class="nav-item active" href="admin-scholarships.html"><i class="fa-solid fa-award"></i><span>Scholarships</span></a>
+    </nav>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <div>
+        <div class="title">Scholarships Management</div>
+        <div class="subtitle">Create scholarship programs, manage cycles, screen applications, award recipients, and track budgets.</div>
+      </div>
+      <div class="top-actions">
+        <button class="btn light" id="btnExport"><i class="fa-solid fa-file-arrow-down"></i> Export</button>
+        <button class="btn light" id="btnAwards"><i class="fa-solid fa-trophy"></i> Awards List</button>
+        <button class="btn light" id="btnBudgets"><i class="fa-solid fa-wallet"></i> Budgets</button>
+        <button class="btn primary" id="btnCreate"><i class="fa-solid fa-plus"></i> Create Scholarship</button>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="grid-4">
+      <div class="card"><div class="section-title">Active Scholarships</div><div class="kpi-value" id="kActive">0</div><div class="muted">Published & open cycles</div></div>
+      <div class="card"><div class="section-title">Open Applications</div><div class="kpi-value" style="color:#0a6fbf" id="kOpenApps">0</div><div class="muted">Received this cycle</div></div>
+      <div class="card"><div class="section-title">Awarded</div><div class="kpi-value" style="color:#15803d" id="kAwarded">0</div><div class="muted">Selected recipients</div></div>
+      <div class="card"><div class="section-title">Budget Balance</div><div class="kpi-value" style="color:#92400e" id="kBalance">0</div><div class="muted">Across sponsors</div></div>
+    </div>
+
+    <!-- Filters + Views -->
+    <section class="card" style="margin-top:12px;">
+      <div class="toolbar">
+        <div class="left">
+          <input class="input" id="q" placeholder="Search scholarship, sponsor, eligibility, department..." />
+          <select class="select" id="fStatus">
+            <option value="all">All Status</option>
+            <option>Published</option>
+            <option>Draft</option>
+            <option>Closed</option>
+            <option>Archived</option>
+          </select>
+          <select class="select" id="fType">
+            <option value="all">All Types</option>
+            <option>Merit</option>
+            <option>Need-based</option>
+            <option>Athletic</option>
+            <option>Research</option>
+            <option>Partial</option>
+            <option>Full</option>
+          </select>
+          <select class="select" id="fCycle">
+            <option value="all">All Cycles</option>
+            <option>2025/2026 - Sem 1</option>
+            <option>2024/2025 - Sem 2</option>
+          </select>
+          <select class="select" id="fSponsor">
+            <option value="all">All Sponsors</option>
+            <option>Government Fund</option>
+            <option>Donor Program</option>
+            <option>University Fund</option>
+            <option>Private Sponsor</option>
+          </select>
+        </div>
+
+        <div class="right">
+          <div class="chips" id="viewChips">
+            <button class="chip active" data-view="scholarships"><i class="fa-solid fa-award"></i> Scholarships</button>
+            <button class="chip" data-view="applications"><i class="fa-solid fa-inbox"></i> Applications</button>
+            <button class="chip" data-view="pipeline"><i class="fa-solid fa-diagram-project"></i> Screening Pipeline</button>
+            <button class="chip" data-view="budgets"><i class="fa-solid fa-wallet"></i> Budgets</button>
+          </div>
+          <button class="btn light" id="btnBulk"><i class="fa-solid fa-layer-group"></i> Bulk</button>
+          <button class="btn light" id="btnReset"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+        </div>
+      </div>
+
+      <div class="bulkbar" id="bulkbar">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <strong>Selected</strong> <span class="badge-count" id="selCount">0</span>
+          <span class="muted">scholarship(s)</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <button class="btn-xs" id="bulkPublish"><i class="fa-solid fa-globe"></i> Publish</button>
+          <button class="btn-xs" id="bulkClose"><i class="fa-solid fa-circle-xmark"></i> Close</button>
+          <button class="btn-xs" id="bulkArchive"><i class="fa-solid fa-box-archive"></i> Archive</button>
+          <button class="btn-xs" id="bulkClear"><i class="fa-solid fa-xmark"></i> Clear</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="grid-2" style="margin-top:12px;">
+      <!-- Main panel -->
+      <section class="card">
+        <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;">
+          <div>
+            <div class="section-title" id="panelTitle">Scholarships</div>
+            <div class="section-sub" id="panelSub">Manage scholarship programs and cycles.</div>
+          </div>
+          <div class="muted" id="resultMeta">—</div>
+        </div>
+
+        <!-- SCHOLARSHIPS -->
+        <div id="view-scholarships" style="margin-top:10px;">
+          <div class="table-wrap">
+            <table>
+              <thead>
+              <tr>
+                <th style="width:42px;"><input type="checkbox" id="checkAll"/></th>
+                <th>Scholarship</th>
+                <th>Type</th>
+                <th>Sponsor</th>
+                <th>Cycle</th>
+                <th>Quota</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th style="text-align:right;width:270px;">Actions</th>
+              </tr>
+              </thead>
+              <tbody id="tbodySch"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- APPLICATIONS -->
+        <div id="view-applications" style="display:none;margin-top:10px;">
+          <div class="table-wrap">
+            <table>
+              <thead>
+              <tr>
+                <th>Applicant</th>
+                <th>Scholarship</th>
+                <th>Submitted</th>
+                <th>Stage</th>
+                <th>Score</th>
+                <th style="text-align:right;width:260px;">Actions</th>
+              </tr>
+              </thead>
+              <tbody id="tbodyApps"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- PIPELINE -->
+        <div id="view-pipeline" style="display:none;margin-top:10px;">
+          <div class="note">
+            Pipeline board is UI-only. Backend later will store screening decisions, committees, and approvals.
+          </div>
+          <div class="pipe-grid" id="pipeGrid"></div>
+        </div>
+
+        <!-- BUDGETS -->
+        <div id="view-budgets" style="display:none;margin-top:10px;">
+          <div class="grid-3" id="budgetCards"></div>
+          <div class="note" style="margin-top:10px;">
+            Budgets: track allocated funds, amount awarded, and remaining balance per sponsor.
+          </div>
+        </div>
+
+        <div class="note" style="margin-top:12px;">
+          <strong>Admin controls included:</strong> programs, cycles, eligibility & documents, screening pipeline, awarding, and budgets.
+        </div>
+      </section>
+
+      <!-- Right rail -->
+      <aside class="card">
+        <div class="section-title">Quick Actions</div>
+        <div class="section-sub">Common scholarship workflows.</div>
+
+        <div class="mini-list">
+          <div class="mini-item">
+            <div class="left"><div class="strong">Create Merit Scholarship</div><div class="muted">Template</div></div>
+            <button class="btn-xs" id="qMerit"><i class="fa-solid fa-bolt"></i></button>
+          </div>
+          <div class="mini-item">
+            <div class="left"><div class="strong">Open New Cycle</div><div class="muted">Set deadlines</div></div>
+            <button class="btn-xs" id="qCycle"><i class="fa-solid fa-calendar-plus"></i></button>
+          </div>
+          <div class="mini-item">
+            <div class="left"><div class="strong">Generate Awards List</div><div class="muted">Export recipients</div></div>
+            <button class="btn-xs" id="qAwards"><i class="fa-solid fa-trophy"></i></button>
+          </div>
+        </div>
+
+        <div class="section-title" style="margin-top:14px;">Screening Stages</div>
+        <div class="section-sub">Suggested review workflow.</div>
+        <div class="mini-list">
+          <div class="mini-item"><div class="left"><div class="strong">Received</div><div class="muted">New submissions</div></div><span class="pill info"><i class="fa-solid fa-inbox"></i></span></div>
+          <div class="mini-item"><div class="left"><div class="strong">Screening</div><div class="muted">Check eligibility</div></div><span class="pill warn"><i class="fa-solid fa-filter"></i></span></div>
+          <div class="mini-item"><div class="left"><div class="strong">Approved</div><div class="muted">Committee approved</div></div><span class="pill ok"><i class="fa-solid fa-check"></i></span></div>
+          <div class="mini-item"><div class="left"><div class="strong">Awarded</div><div class="muted">Funds assigned</div></div><span class="pill ok"><i class="fa-solid fa-trophy"></i></span></div>
+          <div class="mini-item"><div class="left"><div class="strong">Rejected</div><div class="muted">Not eligible</div></div><span class="pill bad"><i class="fa-solid fa-xmark"></i></span></div>
+        </div>
+      </aside>
+    </div>
+
+  </main>
+</div>
+
+<!-- Create/Edit Scholarship Modal -->
+<div class="modal-backdrop" id="mSch">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="mSchTitle">Create Scholarship</div>
+      <button class="btn-xs" onclick="closeModal('mSch')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="field"><label>Name</label><input class="input" id="sName" placeholder="e.g., Government Merit Scholarship"></div>
+        <div class="field"><label>Type</label>
+          <select class="select" id="sType">
+            <option>Merit</option><option>Need-based</option><option>Athletic</option><option>Research</option><option>Partial</option><option>Full</option>
+          </select>
+        </div>
+        <div class="field"><label>Sponsor</label>
+          <select class="select" id="sSponsor">
+            <option>Government Fund</option><option>Donor Program</option><option>University Fund</option><option>Private Sponsor</option>
+          </select>
+        </div>
+
+        <div class="field"><label>Cycle</label>
+          <select class="select" id="sCycle">
+            <option>2025/2026 - Sem 1</option>
+            <option>2024/2025 - Sem 2</option>
+          </select>
+        </div>
+        <div class="field"><label>Quota (slots)</label><input class="input" id="sQuota" type="number" min="0" placeholder="e.g., 100"></div>
+        <div class="field"><label>Amount</label><input class="input" id="sAmount" placeholder="e.g., Full tuition / UGX 2,000,000"></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="field">
+        <label>Eligibility Rules (summary)</label>
+        <input class="input" id="sElig" placeholder="e.g., GPA >= 3.5, Year 1-4, Computing students, etc.">
+        <div class="muted" style="margin-top:6px;">Backend later can store structured rules (min GPA, family income, program, year).</div>
+      </div>
+
+      <div class="form-grid" style="margin-top:12px;">
+        <div class="field"><label>Minimum GPA</label><input class="input" id="sMinGpa" placeholder="e.g., 3.0"></div>
+        <div class="field"><label>Target Department/Program</label><input class="input" id="sTarget" placeholder="e.g., Computing / All Programs"></div>
+        <div class="field"><label>Status</label>
+          <select class="select" id="sStatus">
+            <option>Draft</option><option>Published</option><option>Closed</option><option>Archived</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="strong">Required Documents</div>
+      <div class="muted" style="margin-top:4px;">UI only (backend later validates per application).</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
+        <label class="pill tag"><input type="checkbox" id="dTranscript" checked> Transcript</label>
+        <label class="pill tag"><input type="checkbox" id="dID" checked> National ID</label>
+        <label class="pill tag"><input type="checkbox" id="dLetter"> Recommendation Letter</label>
+        <label class="pill tag"><input type="checkbox" id="dIncome"> Income Proof</label>
+        <label class="pill tag"><input type="checkbox" id="dEssay"> Motivation Essay</label>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="strong">Attachments</div>
+      <div class="muted" style="margin-top:4px;">UI preview (backend later will upload files).</div>
+      <div class="attach" style="margin-top:10px;">
+        <input class="input" type="file" id="sFiles" multiple>
+        <div id="sFileList" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+      </div>
+
+      <input type="hidden" id="sId">
+    </div>
+    <div class="modal-footer">
+      <button class="btn light" onclick="closeModal('mSch')">Cancel</button>
+      <button class="btn primary" id="saveSchBtn"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Application Detail Modal -->
+<div class="modal-backdrop" id="mApp">
+  <div class="modal" style="width:min(920px,100%)">
+    <div class="modal-header">
+      <div class="modal-title" id="mAppTitle">Application Detail</div>
+      <button class="btn-xs" onclick="closeModal('mApp')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid" style="grid-template-columns:repeat(3,1fr);">
+        <div class="field"><label>Applicant</label><input class="input" id="aName" disabled></div>
+        <div class="field"><label>Reg No</label><input class="input" id="aReg" disabled></div>
+        <div class="field"><label>Scholarship</label><input class="input" id="aSch" disabled></div>
+
+        <div class="field"><label>Stage</label>
+          <select class="select" id="aStage">
+            <option>Received</option><option>Screening</option><option>Approved</option><option>Awarded</option><option>Rejected</option>
+          </select>
+        </div>
+        <div class="field"><label>Score (0-100)</label><input class="input" id="aScore" type="number" min="0" max="100"></div>
+        <div class="field"><label>Committee</label><input class="input" id="aCommittee" placeholder="e.g., Scholarship Board"></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="field">
+        <label>Review Notes</label>
+        <textarea class="textarea" id="aNotes" placeholder="Eligibility check, background, reasons..."></textarea>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="note">
+        <strong>Documents:</strong> Transcript, ID, Letters, Proofs (backend later).<br/>
+        <span class="muted">Here we will show uploaded docs + download links.</span>
+      </div>
+
+      <input type="hidden" id="aId">
+    </div>
+    <div class="modal-footer">
+      <button class="btn light" onclick="closeModal('mApp')">Cancel</button>
+      <button class="btn primary" id="saveAppBtn"><i class="fa-solid fa-check"></i> Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bulk Modal -->
+<div class="modal-backdrop" id="mBulk">
+  <div class="modal" style="width:min(760px,100%)">
+    <div class="modal-header">
+      <div class="modal-title">Bulk Scholarship Action</div>
+      <button class="btn-xs" onclick="closeModal('mBulk')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="note">Apply changes to selected scholarship programs.</div>
+      <div class="form-grid" style="grid-template-columns:repeat(2,1fr);margin-top:12px;">
+        <div class="field">
+          <label>Set Status</label>
+          <select class="select" id="bStatus">
+            <option value="">— keep —</option>
+            <option>Published</option>
+            <option>Closed</option>
+            <option>Archived</option>
+            <option>Draft</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Reason / Note</label>
+          <input class="input" id="bNote" placeholder="Optional note">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn light" onclick="closeModal('mBulk')">Cancel</button>
+      <button class="btn primary" id="applyBulk"><i class="fa-solid fa-check"></i> Apply</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const $ = (id)=>document.getElementById(id);
+  function openModal(id){ $(id).classList.add('show'); }
+  function closeModal(id){ $(id).classList.remove('show'); }
+
+  // Mock scholarships
+  const SCH = [
+    {id:'S001', name:'Government Merit Scholarship', type:'Merit', sponsor:'Government Fund', cycle:'2025/2026 - Sem 1', quota:120, amount:'Full tuition', status:'Published', elig:'GPA>=3.5; All programs', minGpa:'3.5', target:'All Programs', apps:84, awarded:40},
+    {id:'S002', name:'Donor Need Support', type:'Need-based', sponsor:'Donor Program', cycle:'2025/2026 - Sem 1', quota:60, amount:'UGX 2,000,000', status:'Published', elig:'Low income; GPA>=2.5', minGpa:'2.5', target:'All Programs', apps:51, awarded:20},
+    {id:'S003', name:'Research Excellence Fund', type:'Research', sponsor:'University Fund', cycle:'2024/2025 - Sem 2', quota:20, amount:'UGX 3,500,000', status:'Closed', elig:'Research proposal; GPA>=3.2', minGpa:'3.2', target:'Computing', apps:17, awarded:10},
+    {id:'S004', name:'Private Sponsor Partial', type:'Partial', sponsor:'Private Sponsor', cycle:'2025/2026 - Sem 1', quota:30, amount:'50% tuition', status:'Draft', elig:'GPA>=3.0; Year 2+', minGpa:'3.0', target:'Business', apps:0, awarded:0},
+  ];
+
+  // Mock applications
+  const APPS = [
+    {id:'P001', name:'Jonathan Kuipers', reg:'CS/2025/011', sch:'Government Merit Scholarship', submitted:'2025-11-18', stage:'Screening', score:78, notes:''},
+    {id:'P002', name:'Sarah Nabirye', reg:'BS/2025/031', sch:'Donor Need Support', submitted:'2025-11-17', stage:'Received', score:0, notes:''},
+    {id:'P003', name:'James Ouma', reg:'EN/2025/004', sch:'Government Merit Scholarship', submitted:'2025-11-16', stage:'Approved', score:88, notes:''},
+    {id:'P004', name:'Amina Hassan', reg:'BU/2025/015', sch:'Donor Need Support', submitted:'2025-11-15', stage:'Rejected', score:42, notes:'Missing income proof'},
+    {id:'P005', name:'Peter Okello', reg:'CS/2025/055', sch:'Government Merit Scholarship', submitted:'2025-11-14', stage:'Awarded', score:91, notes:'Top candidate'},
+  ];
+
+  // Mock budgets
+  const BUD = [
+    {sponsor:'Government Fund', allocated:300000000, spent:180000000},
+    {sponsor:'Donor Program', allocated:120000000, spent:60000000},
+    {sponsor:'University Fund', allocated:80000000, spent:50000000},
+    {sponsor:'Private Sponsor', allocated:50000000, spent:0},
+  ];
+
+  const state = { q:'', status:'all', type:'all', cycle:'all', sponsor:'all', view:'scholarships', selected:new Set() };
+
+  const fmt = (n)=> {
+    try { return new Intl.NumberFormat('en-US').format(n); } catch(e){ return String(n); }
+  };
+
+  function kpis(){
+    const active = SCH.filter(s=>s.status==='Published').length;
+    const openApps = APPS.filter(a=>a.stage!=='Awarded').length;
+    const awarded = APPS.filter(a=>a.stage==='Awarded').length;
+    const balance = BUD.reduce((acc,b)=>acc + (b.allocated-b.spent), 0);
+
+    $('kActive').textContent = active;
+    $('kOpenApps').textContent = openApps;
+    $('kAwarded').textContent = awarded;
+    $('kBalance').textContent = 'UGX ' + fmt(balance);
+  }
+
+  function syncBulkbar(){
+    $('selCount').textContent = state.selected.size;
+    $('bulkbar').classList.toggle('show', state.selected.size>0 && state.view==='scholarships');
+  }
+
+  function filteredScholarships(){
+    const q = state.q.trim().toLowerCase();
+    return SCH.filter(s=>{
+      const mq = !q || (s.name+s.sponsor+s.type+s.cycle+s.elig+s.target+s.status).toLowerCase().includes(q);
+      const ms = state.status==='all' || s.status===state.status;
+      const mt = state.type==='all' || s.type===state.type;
+      const mc = state.cycle==='all' || s.cycle===state.cycle;
+      const mp = state.sponsor==='all' || s.sponsor===state.sponsor;
+      return mq && ms && mt && mc && mp;
+    });
+  }
+
+  function pillStatus(s){
+    if(s==='Published') return `<span class="pill ok"><i class="fa-solid fa-globe"></i> Published</span>`;
+    if(s==='Draft') return `<span class="pill warn"><i class="fa-solid fa-pen-to-square"></i> Draft</span>`;
+    if(s==='Closed') return `<span class="pill bad"><i class="fa-solid fa-circle-xmark"></i> Closed</span>`;
+    return `<span class="pill info"><i class="fa-solid fa-box-archive"></i> Archived</span>`;
+  }
+
+  function setView(v){
+    state.view=v;
+    document.querySelectorAll('#viewChips .chip').forEach(b=>b.classList.remove('active'));
+    document.querySelector(`#viewChips .chip[data-view="${v}"]`).classList.add('active');
+
+    $('view-scholarships').style.display = v==='scholarships' ? '' : 'none';
+    $('view-applications').style.display = v==='applications' ? '' : 'none';
+    $('view-pipeline').style.display = v==='pipeline' ? '' : 'none';
+    $('view-budgets').style.display = v==='budgets' ? '' : 'none';
+
+    const titles={
+      scholarships:['Scholarships','Manage scholarship programs and cycles.'],
+      applications:['Applications','Review applicants, score and decide.'],
+      pipeline:['Screening Pipeline','Move applications through stages.'],
+      budgets:['Budgets','Track allocated, spent and remaining balance.']
+    };
+    $('panelTitle').textContent=titles[v][0];
+    $('panelSub').textContent=titles[v][1];
+
+    syncBulkbar();
+    render();
+  }
+
+  function renderScholarships(){
+    const list = filteredScholarships();
+    $('resultMeta').textContent = `${list.length} scholarship(s)`;
+    $('checkAll').checked = list.length && list.every(x=>state.selected.has(x.id));
+
+    $('tbodySch').innerHTML = list.map(s=>{
+      const checked = state.selected.has(s.id) ? 'checked' : '';
+      return `
+        <tr data-id="${s.id}">
+          <td><input type="checkbox" class="rowCheck" data-id="${s.id}" ${checked}></td>
+          <td>
+            <div class="strong">${s.name}</div>
+            <div class="muted">${s.id} • ${s.apps} apps • ${s.awarded} awarded</div>
+            <div class="muted" style="margin-top:6px;">
+              <span class="pill tag"><i class="fa-solid fa-shield"></i> Min GPA: ${s.minGpa}</span>
+              <span class="pill tag"><i class="fa-solid fa-sitemap"></i> ${s.target}</span>
+            </div>
+          </td>
+          <td><span class="pill info"><i class="fa-solid fa-tag"></i> ${s.type}</span></td>
+          <td class="muted">${s.sponsor}</td>
+          <td class="muted">${s.cycle}</td>
+          <td><span class="pill info"><i class="fa-solid fa-users"></i> ${s.quota}</span></td>
+          <td class="muted">${s.amount}</td>
+          <td>${pillStatus(s.status)}</td>
+          <td>
+            <div class="actions">
+              <button class="btn-xs actEdit" title="Edit"><i class="fa-solid fa-pen"></i></button>
+              <button class="btn-xs actApps" title="Applications"><i class="fa-solid fa-inbox"></i></button>
+              <button class="btn-xs actPublish" title="Publish"><i class="fa-solid fa-globe"></i></button>
+              <button class="btn-xs actClose" title="Close"><i class="fa-solid fa-circle-xmark"></i></button>
+              <button class="btn-xs actMore" title="More"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('') || `<tr><td colspan="9" style="padding:18px;"><div class="muted">No scholarships match filters.</div></td></tr>`;
+  }
+
+  function renderApps(){
+    $('resultMeta').textContent = `${APPS.length} application(s)`;
+    $('tbodyApps').innerHTML = APPS.map(a=>{
+      const stagePill = a.stage==='Received' ? 'info'
+        : a.stage==='Screening' ? 'warn'
+        : a.stage==='Approved' ? 'ok'
+        : a.stage==='Awarded' ? 'ok'
+        : 'bad';
+      return `
+        <tr data-id="${a.id}">
+          <td><div class="strong">${a.name}</div><div class="muted">${a.reg}</div></td>
+          <td class="muted">${a.sch}</td>
+          <td class="muted">${a.submitted}</td>
+          <td><span class="pill ${stagePill}"><i class="fa-solid fa-diagram-project"></i> ${a.stage}</span></td>
+          <td><span class="pill info"><i class="fa-solid fa-clipboard-check"></i> ${a.score || 0}/100</span></td>
+          <td style="text-align:right;">
+            <button class="btn-xs appOpen"><i class="fa-solid fa-user"></i> View</button>
+            <button class="btn-xs appApprove"><i class="fa-solid fa-check"></i> Approve</button>
+            <button class="btn-xs appReject"><i class="fa-solid fa-xmark"></i> Reject</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function renderPipeline(){
+    $('resultMeta').textContent = `Pipeline view`;
+    const stages = ['Received','Screening','Approved','Awarded','Rejected'];
+    const grid = $('pipeGrid');
+
+    grid.innerHTML = stages.map(s=>{
+      const items = APPS.filter(a=>a.stage===s);
+      const color = s==='Rejected'?'bad':(s==='Screening'?'warn':(s==='Approved' || s==='Awarded'?'ok':'info'));
+      return `
+        <div class="col">
+          <div class="col-head">
+            <span class="strong">${s}</span>
+            <span class="pill ${color}">${items.length}</span>
+          </div>
+          <div class="col-body">
+            ${items.map(a=>`
+              <div class="note" style="border-style:solid;border-color:rgba(13,64,96,.10);background:#fff;">
+                <div class="strong">${a.name}</div>
+                <div class="muted">${a.sch}</div>
+                <div class="muted">Score: ${a.score || 0}/100</div>
+                <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+                  <button class="btn-xs pipeOpen" data-id="${a.id}"><i class="fa-solid fa-user"></i> View</button>
+                  <button class="btn-xs pipeNext" data-id="${a.id}"><i class="fa-solid fa-arrow-right"></i> Next</button>
+                </div>
+              </div>
+            `).join('') || `<div class="muted">No applications.</div>`}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderBudgets(){
+    $('resultMeta').textContent = `Budget overview`;
+    const wrap = $('budgetCards');
+    wrap.innerHTML = BUD.map(b=>{
+      const bal = b.allocated - b.spent;
+      return `
+        <div class="card" style="border:1px solid rgba(13,64,96,.10)">
+          <div class="section-title">${b.sponsor}</div>
+          <div class="muted">Allocated: <b>UGX ${fmt(b.allocated)}</b></div>
+          <div class="muted">Spent: <b>UGX ${fmt(b.spent)}</b></div>
+          <div class="muted">Balance: <b>UGX ${fmt(bal)}</b></div>
+          <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn-xs"><i class="fa-solid fa-file-arrow-down"></i> Export</button>
+            <button class="btn-xs"><i class="fa-solid fa-pen"></i> Adjust</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function render(){
+    kpis();
+    syncBulkbar();
+    if(state.view==='scholarships') renderScholarships();
+    if(state.view==='applications') renderApps();
+    if(state.view==='pipeline') renderPipeline();
+    if(state.view==='budgets') renderBudgets();
+  }
+
+  // Filters
+  $('q').addEventListener('input', e=>{ state.q=e.target.value; render(); });
+  $('fStatus').addEventListener('change', e=>{ state.status=e.target.value; state.selected.clear(); render(); });
+  $('fType').addEventListener('change', e=>{ state.type=e.target.value; state.selected.clear(); render(); });
+  $('fCycle').addEventListener('change', e=>{ state.cycle=e.target.value; state.selected.clear(); render(); });
+  $('fSponsor').addEventListener('change', e=>{ state.sponsor=e.target.value; state.selected.clear(); render(); });
+
+  // Views
+  $('viewChips').addEventListener('click', (e)=>{
+    const btn = e.target.closest('.chip'); if(!btn) return;
+    setView(btn.dataset.view);
+  });
+
+  // Reset
+  $('btnReset').addEventListener('click', ()=>{
+    state.q=''; $('q').value='';
+    state.status='all'; $('fStatus').value='all';
+    state.type='all'; $('fType').value='all';
+    state.cycle='all'; $('fCycle').value='all';
+    state.sponsor='all'; $('fSponsor').value='all';
+    state.selected.clear();
+    setView('scholarships');
+  });
+
+  // Top actions
+  $('btnCreate').addEventListener('click', ()=>openScholarship());
+  $('btnExport').addEventListener('click', ()=>alert('Export scholarships/applications (backend later).'));
+  $('btnAwards').addEventListener('click', ()=>alert('Awards list page/modal (next).'));
+  $('btnBudgets').addEventListener('click', ()=>setView('budgets'));
+
+  // Selection (scholarships list)
+  $('checkAll').addEventListener('change', (e)=>{
+    const ids = filteredScholarships().map(x=>x.id);
+    if(e.target.checked) ids.forEach(id=>state.selected.add(id));
+    else ids.forEach(id=>state.selected.delete(id));
+    render();
+  });
+
+  $('tbodySch').addEventListener('change', (e)=>{
+    if(!e.target.classList.contains('rowCheck')) return;
+    const id = e.target.dataset.id;
+    if(e.target.checked) state.selected.add(id); else state.selected.delete(id);
+    render();
+  });
+
+  // Scholarships actions
+  $('tbodySch').addEventListener('click', (e)=>{
+    const tr = e.target.closest('tr[data-id]'); if(!tr) return;
+    const s = SCH.find(x=>x.id===tr.dataset.id);
+    if(e.target.closest('.actEdit')) return openScholarship(s);
+    if(e.target.closest('.actApps')){ setView('applications'); return; }
+    if(e.target.closest('.actPublish')){ s.status='Published'; return render(); }
+    if(e.target.closest('.actClose')){ s.status='Closed'; return render(); }
+    if(e.target.closest('.actMore')) return alert('More: duplicate, archive, open new cycle, publish results, generate letters.');
+  });
+
+  // Bulk actions
+  $('btnBulk').addEventListener('click', ()=>openModal('mBulk'));
+  $('bulkClear').addEventListener('click', ()=>{ state.selected.clear(); render(); });
+
+  $('bulkPublish').addEventListener('click', ()=>{
+    state.selected.forEach(id=>{ const s=SCH.find(x=>x.id===id); if(s) s.status='Published'; });
+    render();
+  });
+  $('bulkClose').addEventListener('click', ()=>{
+    state.selected.forEach(id=>{ const s=SCH.find(x=>x.id===id); if(s) s.status='Closed'; });
+    render();
+  });
+  $('bulkArchive').addEventListener('click', ()=>{
+    state.selected.forEach(id=>{ const s=SCH.find(x=>x.id===id); if(s) s.status='Archived'; });
+    render();
+  });
+
+  $('applyBulk').addEventListener('click', ()=>{
+    const st = $('bStatus').value;
+    if(st){
+      state.selected.forEach(id=>{ const s=SCH.find(x=>x.id===id); if(s) s.status=st; });
+    }
+    closeModal('mBulk');
+    render();
+  });
+
+  // Applications actions
+  $('tbodyApps').addEventListener('click', (e)=>{
+    const tr = e.target.closest('tr[data-id]'); if(!tr) return;
+    const a = APPS.find(x=>x.id===tr.dataset.id);
+    if(e.target.closest('.appOpen')) return openApplication(a);
+    if(e.target.closest('.appApprove')){ a.stage='Approved'; a.score = a.score || 75; return render(); }
+    if(e.target.closest('.appReject')){ a.stage='Rejected'; return render(); }
+  });
+
+  // Pipeline actions
+  $('pipeGrid').addEventListener('click', (e)=>{
+    const id = e.target.dataset.id;
+    if(!id) return;
+    const a = APPS.find(x=>x.id===id);
+    if(e.target.closest('.pipeOpen')) return openApplication(a);
+    if(e.target.closest('.pipeNext')){
+      const flow = ['Received','Screening','Approved','Awarded','Rejected'];
+      const idx = flow.indexOf(a.stage);
+      a.stage = flow[Math.min(idx+1, flow.length-1)];
+      if(a.stage==='Awarded' && !a.score) a.score = 85;
+      return render();
+    }
+  });
+
+  // Scholarship editor
+  function openScholarship(s=null){
+    $('mSchTitle').textContent = s ? 'Edit Scholarship' : 'Create Scholarship';
+    $('sId').value = s ? s.id : '';
+    $('sName').value = s ? s.name : '';
+    $('sType').value = s ? s.type : 'Merit';
+    $('sSponsor').value = s ? s.sponsor : 'Government Fund';
+    $('sCycle').value = s ? s.cycle : '2025/2026 - Sem 1';
+    $('sQuota').value = s ? s.quota : 0;
+    $('sAmount').value = s ? s.amount : '';
+    $('sElig').value = s ? s.elig : '';
+    $('sMinGpa').value = s ? s.minGpa : '';
+    $('sTarget').value = s ? s.target : '';
+    $('sStatus').value = s ? s.status : 'Draft';
+    $('sFiles').value = '';
+    $('sFileList').innerHTML = '';
+    openModal('mSch');
+  }
+
+  $('sFiles').addEventListener('change', ()=>{
+    const files = [...$('sFiles').files];
+    $('sFileList').innerHTML = files.map((f,idx)=>`
+      <span class="file-pill" data-idx="${idx}">
+        <i class="fa-solid fa-paperclip"></i> ${f.name}
+        <button type="button" class="rmFile" title="Remove"><i class="fa-solid fa-xmark"></i></button>
+      </span>
+    `).join('');
+  });
+  $('sFileList').addEventListener('click', (e)=>{
+    if(!e.target.closest('.rmFile')) return;
+    e.target.closest('.file-pill').remove();
+  });
+
+  $('saveSchBtn').addEventListener('click', ()=>{
+    const id = $('sId').value || ('S'+Math.floor(Math.random()*900+100));
+    const obj = {
+      id,
+      name: $('sName').value.trim() || 'Untitled Scholarship',
+      type: $('sType').value,
+      sponsor: $('sSponsor').value,
+      cycle: $('sCycle').value,
+      quota: Number($('sQuota').value || 0),
+      amount: $('sAmount').value.trim() || '—',
+      status: $('sStatus').value,
+      elig: $('sElig').value.trim() || '—',
+      minGpa: $('sMinGpa').value.trim() || '—',
+      target: $('sTarget').value.trim() || 'All Programs',
+      apps: $('sId').value ? (SCH.find(x=>x.id===id)?.apps || 0) : 0,
+      awarded: $('sId').value ? (SCH.find(x=>x.id===id)?.awarded || 0) : 0,
+    };
+    const idx = SCH.findIndex(x=>x.id===id);
+    if(idx>-1) SCH[idx]=obj; else SCH.unshift(obj);
+    closeModal('mSch');
+    render();
+  });
+
+  // Application detail
+  function openApplication(a){
+    $('mAppTitle').textContent = `Application • ${a.name}`;
+    $('aId').value = a.id;
+    $('aName').value = a.name;
+    $('aReg').value = a.reg;
+    $('aSch').value = a.sch;
+    $('aStage').value = a.stage;
+    $('aScore').value = a.score || 0;
+    $('aCommittee').value = 'Scholarship Board';
+    $('aNotes').value = a.notes || '';
+    openModal('mApp');
+  }
+
+  $('saveAppBtn').addEventListener('click', ()=>{
+    const id = $('aId').value;
+    const a = APPS.find(x=>x.id===id);
+    if(!a) return;
+    a.stage = $('aStage').value;
+    a.score = Number($('aScore').value || 0);
+    a.notes = $('aNotes').value;
+    closeModal('mApp');
+    render();
+  });
+
+  // Quick actions
+  $('qMerit').addEventListener('click', ()=>{
+    openScholarship();
+    $('sType').value='Merit';
+    $('sName').value='Merit Scholarship';
+    $('sStatus').value='Draft';
+  });
+  $('qCycle').addEventListener('click', ()=>alert('Cycle management page/modal (next).'));
+  $('qAwards').addEventListener('click', ()=>alert('Generate awards list (next).'));
+
+  // Close on backdrop click
+  ['mSch','mApp','mBulk'].forEach(mid=>{
+    $(mid).addEventListener('click', (e)=>{ if(e.target.id===mid) closeModal(mid); });
+  });
+
+  // Init
+  setView('scholarships');
+  render();
+</script>
+
+</body>
+</html>

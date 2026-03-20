@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title><%= (tenant && tenant.name) ? tenant.name : "CampusSaaS" %> — Timetable</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous"
+        referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/navbar.css"/>
+  <link rel="stylesheet" href="/css/parent-portal.css" />
+
+  <style>
+    .student-tabs{
+      margin-top:14px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .student-tab{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background:#fff;
+      box-shadow:var(--shadow);
+      cursor:pointer;
+      min-width:220px;
+      transition:.18s ease;
+      text-decoration:none;
+    }
+
+    .student-tab:hover{
+      transform:translateY(-1px);
+    }
+
+    .student-tab.active{
+      background:var(--primary-soft);
+      border-color:#bfd3ff;
+    }
+
+    .student-tab-avatar{
+      width:40px;
+      height:40px;
+      border-radius:999px;
+      background:linear-gradient(135deg,#dbeafe 0%, #bfdbfe 100%);
+      color:var(--primary-2);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:900;
+      flex-shrink:0;
+    }
+
+    .student-tab-name{
+      font-size:14px;
+      font-weight:900;
+      line-height:1.2;
+    }
+
+    .student-tab-sub{
+      font-size:12px;
+      color:var(--muted);
+      margin-top:3px;
+    }
+
+    .summary-grid{
+      margin-top:16px;
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:12px;
+    }
+
+    .summary-box{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+      background:#fbfdff;
+    }
+
+    .summary-label{
+      color:var(--muted);
+      font-size:12px;
+    }
+
+    .summary-value{
+      margin-top:6px;
+      font-size:24px;
+      font-weight:1000;
+      letter-spacing:-.02em;
+    }
+
+    .page-grid{
+      margin-top:16px;
+      display:grid;
+      grid-template-columns:1.35fr .9fr;
+      gap:14px;
+    }
+
+    .day-stack{
+      margin-top:14px;
+      display:grid;
+      gap:14px;
+    }
+
+    .day-card{
+      border:1px solid var(--line);
+      border-radius:16px;
+      background:#fff;
+      overflow:hidden;
+    }
+
+    .day-card.today{
+      border-color:#bfd3ff;
+      box-shadow:0 0 0 3px rgba(29,78,216,.08);
+    }
+
+    .day-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      padding:14px 16px;
+      background:#f8fbff;
+      border-bottom:1px solid var(--line);
+    }
+
+    .day-title{
+      font-weight:1000;
+      font-size:15px;
+    }
+
+    .day-sub{
+      font-size:12px;
+      color:var(--muted);
+      margin-top:3px;
+    }
+
+    .day-badge{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:7px 10px;
+      border-radius:999px;
+      background:#fff;
+      border:1px solid var(--line);
+      font-size:12px;
+      font-weight:900;
+    }
+
+    .slot-list{
+      padding:14px;
+      display:grid;
+      gap:10px;
+    }
+
+    .slot-item{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+      background:#fff;
+      display:grid;
+      grid-template-columns:140px 1fr auto;
+      gap:12px;
+      align-items:flex-start;
+    }
+
+    .slot-time{
+      font-size:13px;
+      font-weight:900;
+      color:var(--primary-2);
+    }
+
+    .slot-title{
+      font-size:14px;
+      font-weight:1000;
+    }
+
+    .slot-meta{
+      font-size:12px;
+      color:var(--muted);
+      margin-top:4px;
+      line-height:1.55;
+    }
+
+    .slot-mode{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      background:#f8fbff;
+      border:1px solid var(--line);
+      font-size:12px;
+      font-weight:900;
+      white-space:nowrap;
+    }
+
+    .side-stack{
+      display:grid;
+      gap:14px;
+    }
+
+    .metric-list{
+      margin-top:12px;
+      display:grid;
+      gap:10px;
+    }
+
+    .metric-item{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      border-bottom:1px solid #eef4fb;
+      padding-bottom:8px;
+      font-size:13px;
+      color:var(--muted);
+    }
+
+    .metric-item:last-child{
+      border-bottom:none;
+      padding-bottom:0;
+    }
+
+    .metric-item strong{
+      color:var(--text);
+      text-align:right;
+    }
+
+    .list{
+      margin-top:12px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+
+    .list-item{
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:10px;
+      background:#fff;
+    }
+
+    .list-icon{
+      width:34px;
+      height:34px;
+      border-radius:12px;
+      background:#e8f0ff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:var(--primary);
+      flex-shrink:0;
+    }
+
+    .list-title{
+      font-weight:1000;
+    }
+
+    .list-meta{
+      color:var(--muted);
+      font-size:12px;
+      margin-top:2px;
+    }
+
+    .list-text{
+      color:var(--muted);
+      font-size:13px;
+      margin-top:6px;
+      line-height:1.5;
+    }
+
+    .empty-state{
+      margin-top:16px;
+    }
+
+    .action-row{
+      margin-top:12px;
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+
+    @media (max-width: 1180px){
+      .page-grid{
+        grid-template-columns:1fr;
+      }
+
+      .summary-grid{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+      }
+    }
+
+    @media (max-width: 800px){
+      .slot-item{
+        grid-template-columns:1fr;
+      }
+    }
+
+    @media (max-width: 720px){
+      .summary-grid{
+        grid-template-columns:1fr;
+      }
+
+      .student-tab{
+        width:100%;
+        min-width:0;
+      }
+
+      .metric-item{
+        flex-direction:column;
+      }
+
+      .metric-item strong{
+        text-align:left;
+      }
+
+      .day-head{
+        flex-direction:column;
+        align-items:flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <%
+    const t = tenant || {};
+    const u = user || {};
+    const p = parent || null;
+    const kids = Array.isArray(children) ? children : [];
+    const tenantName = t.name || "CampusSaaS";
+    const tenantCode = (t.code || "CC").toString();
+    const allRows = Array.isArray(timetableRows) ? timetableRows : [];
+    const grouped = groupedTimetable || {};
+    const s = stats || {};
+    const today = todayName || "Monday";
+
+    function fullNameOfStudent(c) {
+      const name = (c && c.fullName) ? String(c.fullName).trim() : "";
+      if (name) return name;
+
+      const parts = [];
+      if (c && c.firstName) parts.push(String(c.firstName).trim());
+      if (c && c.middleName) parts.push(String(c.middleName).trim());
+      if (c && c.lastName) parts.push(String(c.lastName).trim());
+      return parts.filter(Boolean).join(" ").trim() || "Student";
+    }
+
+    function initials(name) {
+      const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+      const a = parts[0] && parts[0][0] ? parts[0][0] : "S";
+      const b = parts[1] && parts[1][0] ? parts[1][0] : "";
+      return (a + b).toUpperCase();
+    }
+
+    const orderedDays = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+  %>
+
+    <%-include("./navbar") %>
+
+    <main class="main">
+      <div class="topbar">
+        <div>
+          <div class="title">Timetable</div>
+          <div class="subtitle">
+            View weekly class schedules, active study days, session times and upcoming classes for your linked children.
+          </div>
+        </div>
+
+        <div class="top-actions">
+          <div class="chip">
+            <i class="fa-solid fa-calendar-week"></i>
+            <span>Sessions</span>
+            <b><%= Number(s.totalSessions || 0) %></b>
+          </div>
+
+          <button class="btn light" type="button" onclick="window.location.href='/parent/attendance<%= student ? ('?student=' + student._id) : '' %>'">
+            <i class="fa-solid fa-user-check"></i> Attendance
+          </button>
+
+          <button class="btn primary" type="button" onclick="window.location.href='/parent/children'">
+            <i class="fa-solid fa-children"></i> My Children
+          </button>
+        </div>
+      </div>
+
+      <% if (error) { %>
+        <section class="card empty-state">
+          <div class="empty">
+            <div class="empty-icon"><i class="fa-solid fa-calendar-week"></i></div>
+            <div class="empty-title">Unable to load timetable</div>
+            <div class="empty-text"><%= error %></div>
+          </div>
+        </section>
+      <% } else { %>
+
+        <div class="student-tabs">
+          <% kids.forEach(function(c){ const active = student && String(student._id) === String(c._id); %>
+            <a href="/parent/timetable?student=<%= c._id %>" class="student-tab <%= active ? 'active' : '' %>">
+              <div class="student-tab-avatar"><%= initials(fullNameOfStudent(c)) %></div>
+              <div>
+                <div class="student-tab-name"><%= fullNameOfStudent(c) %></div>
+                <div class="student-tab-sub"><%= c.regNo || "—" %> • <%= (c.classGroup && (c.classGroup.title || c.classGroup.name)) || "—" %></div>
+              </div>
+            </a>
+          <% }); %>
+        </div>
+
+        <div class="summary-grid">
+          <div class="summary-box">
+            <div class="summary-label">Weekly Sessions</div>
+            <div class="summary-value"><%= Number(s.totalSessions || 0) %></div>
+          </div>
+          <div class="summary-box">
+            <div class="summary-label">Active Days</div>
+            <div class="summary-value"><%= Number(s.activeDays || 0) %></div>
+          </div>
+          <div class="summary-box">
+            <div class="summary-label">On-campus</div>
+            <div class="summary-value"><%= Number(s.onCampusSessions || 0) %></div>
+          </div>
+          <div class="summary-box">
+            <div class="summary-label">Online / Remote</div>
+            <div class="summary-value"><%= Number(s.onlineSessions || 0) %></div>
+          </div>
+        </div>
+
+        <div class="page-grid">
+          <section class="card">
+            <div class="section-title">Weekly Timetable</div>
+            <div class="section-sub">
+              Class schedule for <%= student ? fullNameOfStudent(student) : "student" %>. Today is <strong><%= today %></strong>.
+            </div>
+
+            <div class="day-stack">
+              <% let shownDay = false; %>
+              <% orderedDays.forEach(function(day){ const rows = grouped[day] || []; if (rows.length) { shownDay = true; %>
+                <div class="day-card <%= day === today ? 'today' : '' %>">
+                  <div class="day-head">
+                    <div>
+                      <div class="day-title"><%= day %></div>
+                      <div class="day-sub"><%= rows.length %> scheduled session(s)</div>
+                    </div>
+                    <div class="day-badge">
+                      <i class="fa-solid <%= day === today ? 'fa-star' : 'fa-clock' %>"></i>
+                      <%= day === today ? 'Today' : 'Scheduled' %>
+                    </div>
+                  </div>
+
+                  <div class="slot-list">
+                    <% rows.forEach(function(slot){ %>
+                      <div class="slot-item">
+                        <div class="slot-time">
+                          <%= slot.startTime %> — <%= slot.endTime %>
+                        </div>
+
+                        <div>
+                          <div class="slot-title"><%= slot.subject %></div>
+                          <div class="slot-meta">
+                            Teacher: <strong><%= slot.teacher || "—" %></strong>
+                            <span class="dot">•</span>
+                            Room: <strong><%= slot.room || "—" %></strong>
+                            <span class="dot">•</span>
+                            Class: <strong><%= slot.classGroup || "—" %></strong>
+                          </div>
+                          <div class="slot-meta">
+                            <%= slot.notes || "No extra notes" %>
+                          </div>
+                        </div>
+
+                        <div class="slot-mode">
+                          <i class="fa-solid fa-location-dot"></i>
+                          <%= slot.mode || "On-campus" %>
+                        </div>
+                      </div>
+                    <% }); %>
+                  </div>
+                </div>
+              <% } }); %>
+
+              <% if (!shownDay) { %>
+                <div class="empty">
+                  <div class="empty-icon"><i class="fa-solid fa-calendar-week"></i></div>
+                  <div class="empty-title">No timetable entries found</div>
+                  <div class="empty-text">
+                    This student does not yet have timetable sessions recorded.
+                  </div>
+                </div>
+              <% } %>
+            </div>
+
+            <div class="action-row">
+              <a class="btn-xs" href="/parent/attendance<%= student ? ('?student=' + student._id) : '' %>">
+                <i class="fa-solid fa-user-check"></i> Attendance
+              </a>
+              <a class="btn-xs" href="/parent/results<%= student ? ('?student=' + student._id) : '' %>">
+                <i class="fa-solid fa-file-lines"></i> Results
+              </a>
+              <a class="btn-xs" href="/parent/support<%= student ? ('?student=' + student._id) : '' %>">
+                <i class="fa-solid fa-headset"></i> Contact School
+              </a>
+            </div>
+          </section>
+
+          <aside class="side-stack">
+            <section class="card">
+              <div class="section-title">Schedule Summary</div>
+              <div class="section-sub">Quick overview of the current study timetable.</div>
+
+              <div class="metric-list">
+                <div class="metric-item">
+                  <span>Total sessions</span>
+                  <strong><%= Number(s.totalSessions || 0) %></strong>
+                </div>
+                <div class="metric-item">
+                  <span>Active learning days</span>
+                  <strong><%= Number(s.activeDays || 0) %></strong>
+                </div>
+                <div class="metric-item">
+                  <span>Today</span>
+                  <strong><%= today %></strong>
+                </div>
+                <div class="metric-item">
+                  <span>On-campus sessions</span>
+                  <strong><%= Number(s.onCampusSessions || 0) %></strong>
+                </div>
+                <div class="metric-item">
+                  <span>Online sessions</span>
+                  <strong><%= Number(s.onlineSessions || 0) %></strong>
+                </div>
+              </div>
+            </section>
+
+            <section class="card">
+              <div class="section-title">Upcoming Sessions</div>
+              <div class="section-sub">The next sessions visible in the current timetable.</div>
+
+              <% if (!allRows.length) { %>
+                <div class="empty small" style="margin-top:12px;">
+                  <div class="empty-title">No upcoming sessions</div>
+                  <div class="empty-text">When sessions are added, they will appear here.</div>
+                </div>
+              <% } else { %>
+                <div class="list">
+                  <% allRows.slice(0, 6).forEach(function(slot){ %>
+                    <div class="list-item">
+                      <div class="list-icon">
+                        <i class="fa-solid fa-book-open-reader"></i>
+                      </div>
+                      <div>
+                        <div class="list-title"><%= slot.subject %></div>
+                        <div class="list-meta">
+                          <%= slot.day %> • <%= slot.startTime %> — <%= slot.endTime %>
+                        </div>
+                        <div class="list-text">
+                          <strong><%= slot.room || "—" %></strong>
+                          <span class="dot">•</span>
+                          <%= slot.teacher || "—" %>
+                          <span class="dot">•</span>
+                          <%= slot.mode || "On-campus" %>
+                        </div>
+                      </div>
+                    </div>
+                  <% }); %>
+                </div>
+              <% } %>
+            </section>
+          </aside>
+        </div>
+      <% } %>
+    </main>
+  </div>
+<script src="/js/navbar.js"></script>
+</body>
+</html>

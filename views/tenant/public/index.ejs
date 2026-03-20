@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>University Portal — Powered by Classic Campus</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+
+  <!-- Font Awesome (real icons) -->
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer"/>
+
+  <style>
+    :root{
+      --brand:#0a3d62; --brand2:#083454; --accent:#0a6fbf;
+      --bg:#f4f8ff; --card:#ffffff; --text:#0f172a; --muted:#6b7280;
+      --line:rgba(13,64,96,.12);
+      --success:#16a34a; --warn:#f59e0b; --danger:#ef4444; --info:#4f46e5;
+      --radius:18px; --shadow:0 16px 60px rgba(0,0,0,.10); --shadow2:0 12px 40px rgba(0,0,0,.10);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      color:var(--text);
+      background:
+        radial-gradient(1100px 600px at 10% 0%, rgba(10,111,191,.18), transparent 55%),
+        radial-gradient(900px 600px at 90% 10%, rgba(10,61,98,.14), transparent 55%),
+        var(--bg);
+    }
+    a{color:inherit;text-decoration:none}
+    .container{max-width:1180px;margin:0 auto;padding:0 16px}
+    section{padding:22px 0}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+    .muted{color:var(--muted)}
+    .grid{display:grid;gap:14px}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+    .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+
+    /* Buttons */
+    .btn{
+      border:none;border-radius:14px;padding:11px 14px;font-weight:1000;cursor:pointer;
+      display:inline-flex;gap:10px;align-items:center;justify-content:center;white-space:nowrap
+    }
+    .btn.primary{background:var(--accent);color:#fff}
+    .btn.light{background:#fff;border:1px solid var(--line);color:var(--text)}
+    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,.25);color:#fff}
+    .btn.small{padding:9px 12px;border-radius:12px;font-size:12px}
+
+    .pill{
+      display:inline-flex;gap:8px;align-items:center;
+      padding:8px 12px;border-radius:999px;
+      background:rgba(10,111,191,.10);
+      border:1px solid rgba(10,111,191,.20);
+      font-size:12px;font-weight:1000;color:var(--brand)
+    }
+
+    /* Topbar */
+    .topbar{
+      position:sticky;top:0;z-index:1000;
+      background:rgba(244,248,255,.75);
+      backdrop-filter: blur(10px);
+      border-bottom:1px solid rgba(13,64,96,.08);
+    }
+    .topbar-inner{
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+      padding:10px 0;
+    }
+    .brand{
+      display:flex;gap:12px;align-items:center;
+      min-width:220px;
+    }
+    .logo{
+      width:44px;height:44px;border-radius:16px;
+      background:linear-gradient(135deg,var(--brand),var(--brand2));
+      display:grid;place-items:center;color:#fff;font-weight:1100;
+      box-shadow:0 14px 30px rgba(10,61,98,.20);
+    }
+    .brand-title{display:flex;flex-direction:column;line-height:1.1}
+    .brand-title b{font-size:14px}
+    .brand-title span{font-size:12px;color:var(--muted)}
+
+    .nav{
+      display:flex;gap:6px;align-items:center;flex-wrap:wrap;
+    }
+    .nav a{
+      font-size:13px;font-weight:900;color:rgba(15,23,42,.82);
+      padding:10px 10px;border-radius:12px
+    }
+    .nav a:hover{background:rgba(10,111,191,.08)}
+    .nav-actions{display:flex;gap:10px;align-items:center}
+
+    /* Clean hamburger */
+    .hamburger{
+      display:none;
+      width:44px;height:44px;border-radius:14px;
+      border:1px solid rgba(13,64,96,.14);
+      background:#fff;cursor:pointer;box-shadow:var(--shadow2);
+      align-items:center;justify-content:center;position:relative;
+    }
+    .hamburger:focus{outline:none;box-shadow:0 0 0 3px rgba(10,111,191,.14), var(--shadow2)}
+    .ham-lines{width:20px;height:14px;position:relative}
+    .ham-lines span{
+      position:absolute;left:0;right:0;height:2px;border-radius:999px;
+      background:rgba(15,23,42,.82);
+      transition:transform .18s ease, top .18s ease, opacity .18s ease;
+    }
+    .ham-lines span:nth-child(1){top:0}
+    .ham-lines span:nth-child(2){top:6px}
+    .ham-lines span:nth-child(3){top:12px}
+    .hamburger.open .ham-lines span:nth-child(1){top:6px;transform:rotate(45deg)}
+    .hamburger.open .ham-lines span:nth-child(2){opacity:0}
+    .hamburger.open .ham-lines span:nth-child(3){top:6px;transform:rotate(-45deg)}
+
+    .panelWrap{position:relative}
+    .mobilePanel{
+      display:none;position:absolute;right:0;top:58px;
+      width:min(360px, calc(100vw - 32px));
+      background:rgba(255,255,255,.92);
+      backdrop-filter: blur(10px);
+      border:1px solid rgba(13,64,96,.12);
+      border-radius:18px;
+      box-shadow:0 24px 70px rgba(0,0,0,.18);
+      padding:10px;
+      transform-origin: top right;
+      animation: pop .14s ease;
+    }
+    @keyframes pop{
+      from{opacity:0; transform: translateY(-6px) scale(.98)}
+      to{opacity:1; transform: translateY(0) scale(1)}
+    }
+    .mobilePanel a{
+      display:flex;align-items:center;gap:10px;
+      padding:12px 12px;border-radius:14px;
+      font-weight:1000;color:rgba(15,23,42,.86)
+    }
+    .mobilePanel a:hover{background:rgba(10,111,191,.08)}
+    .sep{height:1px;background:rgba(13,64,96,.10);margin:8px 6px}
+    .row{display:flex;gap:10px;flex-wrap:wrap;padding:6px}
+    .row a.btn{flex:1}
+
+    /* Hero */
+    .hero{padding:28px 0 10px}
+    .heroWrap{
+      display:grid;grid-template-columns:1.1fr .9fr;gap:14px;align-items:stretch
+    }
+    .heroLeft{
+      padding:22px;border-radius:var(--radius);
+      border:1px solid rgba(13,64,96,.10);
+      background:rgba(255,255,255,.75);
+      box-shadow:0 14px 50px rgba(0,0,0,.08);
+      position:relative;overflow:hidden;
+    }
+    .heroLeft::after{
+      content:"";
+      position:absolute;inset:-70px -70px auto auto;
+      width:340px;height:340px;border-radius:70px;
+      background:radial-gradient(circle at 30% 30%, rgba(10,111,191,.20), transparent 55%);
+      transform:rotate(12deg);
+      pointer-events:none;
+    }
+    .h1{margin:12px 0 10px;font-size:40px;line-height:1.05;letter-spacing:-.02em}
+    .heroDesc{font-size:14px;color:rgba(15,23,42,.78);max-width:70ch;margin:0}
+    .heroCtas{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+    .quickBadges{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+    .mini{
+      display:flex;gap:10px;align-items:center;
+      padding:10px 12px;border-radius:14px;
+      border:1px solid rgba(13,64,96,.12);
+      background:#fff;
+      font-size:12px;font-weight:900;color:rgba(15,23,42,.82);
+    }
+    .mini i{color:var(--accent)}
+    .kpiRow{margin-top:14px}
+    .kpi{
+      padding:14px;border-radius:18px;border:1px solid rgba(13,64,96,.12);background:#fff;
+      display:flex;gap:12px;align-items:flex-start
+    }
+    .kpi i{color:var(--accent)}
+    .kpi b{display:block;font-size:18px}
+    .kpi span{display:block;color:var(--muted);font-size:12px;margin-top:4px}
+
+    /* Right: info card */
+    .infoCard{padding:18px}
+    .tabs{
+      display:flex;gap:8px;background:rgba(10,111,191,.06);
+      border:1px solid rgba(10,111,191,.12);
+      padding:6px;border-radius:14px
+    }
+    .tab{
+      flex:1;border:none;border-radius:12px;padding:10px 12px;
+      font-weight:1000;cursor:pointer;background:transparent
+    }
+    .tab.active{background:#fff;border:1px solid rgba(13,64,96,.12)}
+    .form{margin-top:12px;display:grid;gap:10px}
+    label{font-size:12px;font-weight:900;color:var(--muted)}
+    .field{display:grid;gap:6px}
+    .control{
+      display:flex;gap:10px;align-items:center;
+      padding:11px 12px;border-radius:14px;
+      border:1px solid rgba(13,64,96,.12);
+      background:#fff;
+    }
+    .control input,.control select,.control textarea{
+      border:none;outline:none;width:100%;font:inherit;background:transparent
+    }
+    .control:focus-within{border-color:rgba(10,111,191,.45);box-shadow:0 0 0 3px rgba(10,111,191,.12)}
+    .icon{width:18px;text-align:center;color:rgba(15,23,42,.55)}
+    .err{display:none;color:#b91c1c;font-size:12px;font-weight:900;margin-top:6px}
+    .ok{
+      display:none;background:#ecfdf3;border:1px solid rgba(22,163,74,.25);
+      padding:12px;border-radius:14px;margin-top:12px
+    }
+    .ok b{color:#15803d}
+    .hint{font-size:12px;color:var(--muted)}
+    .divider{display:flex;align-items:center;gap:12px;margin:12px 0;color:var(--muted);font-size:12px}
+    .divider:before,.divider:after{content:"";flex:1;height:1px;background:rgba(13,64,96,.12)}
+
+    /* Section head */
+    .sectionHead{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap}
+    .sectionHead h2{margin:0;font-size:22px}
+    .sectionHead p{margin:6px 0 0;color:var(--muted);font-size:13px;max-width:78ch}
+
+    /* Tiles */
+    .tile{padding:16px}
+    .tile .ico{
+      width:42px;height:42px;border-radius:16px;
+      background:rgba(10,111,191,.12);
+      display:grid;place-items:center;color:var(--brand);font-size:18px;font-weight:1000
+    }
+    .tile .t{font-weight:1000;margin:10px 0 6px}
+    .tile .d{margin:0;color:var(--muted);font-size:13px}
+
+    /* Lists */
+    .list{display:grid;gap:10px}
+    .listItem{
+      padding:14px;border-radius:18px;border:1px solid rgba(13,64,96,.12);background:#fff;
+      display:flex;gap:12px;align-items:flex-start
+    }
+    .listItem i{color:var(--accent);margin-top:2px}
+    .listItem b{display:block}
+    .listItem span{display:block;color:var(--muted);font-size:13px;margin-top:4px}
+    .badge{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:6px 10px;border-radius:999px;
+      font-size:12px;font-weight:1000;border:1px solid rgba(13,64,96,.14);
+      background:rgba(10,111,191,.06);color:rgba(15,23,42,.82)
+    }
+    .badge.green{background:#ecfdf3;border-color:rgba(22,163,74,.25);color:#15803d}
+    .badge.yellow{background:#fffbeb;border-color:rgba(245,158,11,.25);color:#92400e}
+    .badge.red{background:#fee2e2;border-color:rgba(239,68,68,.25);color:#991b1b}
+
+    /* CTA Strip */
+    .ctaStrip{
+      margin:18px 0 0;
+      background:linear-gradient(135deg,var(--brand),var(--brand2));
+      color:#fff;border-radius:22px;padding:18px;
+      display:flex;gap:12px;justify-content:space-between;align-items:center;flex-wrap:wrap
+    }
+    .ctaStrip h3{margin:0;font-size:18px}
+    .ctaStrip p{margin:6px 0 0;opacity:.85;font-size:13px;max-width:72ch}
+
+    /* Footer */
+    footer{padding:24px 0;border-top:1px solid rgba(13,64,96,.08);margin-top:14px}
+    .foot{display:flex;gap:14px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap}
+    .links{display:flex;gap:12px;flex-wrap:wrap}
+    .links a{font-size:13px;font-weight:900;color:rgba(15,23,42,.78)}
+    .links a:hover{color:var(--accent)}
+    .contact{display:grid;gap:8px}
+    .contact a{font-size:13px;font-weight:900;color:rgba(15,23,42,.78)}
+    .map{
+      border-radius:18px;border:1px solid rgba(13,64,96,.12);
+      background:linear-gradient(135deg, rgba(10,111,191,.12), rgba(10,61,98,.08));
+      min-height:160px;display:grid;place-items:center;color:rgba(15,23,42,.65);font-weight:1000;
+    }
+    .power{
+      display:inline-flex;gap:8px;align-items:center;
+      padding:8px 12px;border-radius:999px;
+      border:1px solid rgba(13,64,96,.12);
+      background:rgba(255,255,255,.75);
+      font-size:12px;font-weight:1000;color:rgba(15,23,42,.80)
+    }
+
+    /* Responsive */
+    @media(max-width:980px){
+      .heroWrap{grid-template-columns:1fr}
+      .grid4{grid-template-columns:1fr 1fr}
+      .grid3{grid-template-columns:1fr}
+      .grid2{grid-template-columns:1fr}
+      .h1{font-size:34px}
+      .nav{display:none}
+      .hamburger{display:inline-flex}
+    }
+    @media(max-width:560px){
+      .grid4{grid-template-columns:1fr}
+      .h1{font-size:30px}
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="container">
+    <div class="topbar-inner">
+      <a class="brand" href="#top">
+        <div class="logo">UJ</div>
+        <div class="brand-title">
+          <b>University of Juba</b>
+          <span>Official Portal • Admissions • Student Services</span>
+        </div>
+      </a>
+
+      <nav class="nav" aria-label="University primary navigation">
+        <a href="#admissions">Admissions</a>
+        <a href="#programs">Programs</a>
+        <a href="#news">News</a>
+        <a href="#events">Events</a>
+        <a href="#portals">Portals</a>
+        <a href="#contact">Contact</a>
+      </nav>
+
+      <div class="nav-actions panelWrap">
+        <a class="btn light small" href="/login"><i class="fa-solid fa-user-graduate"></i> Student Login</a>
+        <a class="btn primary small" href="/apply"><i class="fa-solid fa-file-pen"></i> Apply Now</a>
+
+        <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false" aria-controls="mobilePanel">
+          <div class="ham-lines" aria-hidden="true"><span></span><span></span><span></span></div>
+        </button>
+
+        <div class="mobilePanel" id="mobilePanel" aria-hidden="true">
+          <a href="#admissions"><i class="fa-solid fa-file-pen"></i> Admissions</a>
+          <a href="#programs"><i class="fa-solid fa-layer-group"></i> Programs</a>
+          <a href="#news"><i class="fa-solid fa-bullhorn"></i> News</a>
+          <a href="#events"><i class="fa-solid fa-calendar-days"></i> Events</a>
+          <a href="#portals"><i class="fa-solid fa-right-to-bracket"></i> Portals</a>
+          <a href="#contact"><i class="fa-solid fa-phone"></i> Contact</a>
+          <div class="sep"></div>
+          <div class="row">
+            <a class="btn light small" href="/login"><i class="fa-solid fa-user-graduate"></i> Login</a>
+            <a class="btn primary small" href="/apply"><i class="fa-solid fa-file-pen"></i> Apply</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero" id="top">
+  <div class="container">
+    <div class="heroWrap">
+
+      <div class="heroLeft">
+        <span class="pill"><i class="fa-solid fa-circle-info"></i> Official university portal • Powered by Classic Campus</span>
+
+        <h1 class="h1">Welcome to University of Juba Portal</h1>
+        <p class="heroDesc">
+          Apply online, check your application status, access student services, view academic programs,
+          and stay updated with announcements and events — all in one place.
+        </p>
+
+        <div class="heroCtas">
+          <a href="#apply" class="btn primary"><i class="fa-solid fa-file-pen"></i> Apply for Admission</a>
+          <a href="#status" class="btn light"><i class="fa-solid fa-magnifying-glass"></i> Check Status</a>
+          <a href="#portals" class="btn light"><i class="fa-solid fa-right-to-bracket"></i> Open Portals</a>
+        </div>
+
+        <div class="quickBadges">
+          <div class="mini"><i class="fa-solid fa-calendar-check"></i> Intake: Jan / May / Sep</div>
+          <div class="mini"><i class="fa-solid fa-file-arrow-down"></i> Prospectus available</div>
+          <div class="mini"><i class="fa-solid fa-headset"></i> Helpdesk & support</div>
+          <div class="mini"><i class="fa-solid fa-shield-halved"></i> Secure portal access</div>
+        </div>
+
+        <div class="grid2 kpiRow">
+          <div class="kpi"><i class="fa-solid fa-user-plus"></i><div><b>Online admissions</b><span>Submit documents and complete application remotely</span></div></div>
+          <div class="kpi"><i class="fa-solid fa-graduation-cap"></i><div><b>Student services</b><span>Courses, fees, results, transcripts and notifications</span></div></div>
+        </div>
+      </div>
+
+      <!-- Right: Apply / Status / Prospectus -->
+      <div class="card infoCard" id="apply">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap">
+          <div>
+            <div style="font-weight:1000;font-size:18px">Admissions Quick Access</div>
+            <div class="muted" style="font-size:13px;margin-top:6px">Apply, check status, download prospectus.</div>
+          </div>
+          <span class="pill"><i class="fa-solid fa-file-pen"></i> Admissions</span>
+        </div>
+
+        <div class="tabs" style="margin-top:12px">
+          <button class="tab active" data-tab="applyTab"><i class="fa-solid fa-file-pen"></i> Apply</button>
+          <button class="tab" data-tab="statusTab"><i class="fa-solid fa-magnifying-glass"></i> Status</button>
+          <button class="tab" data-tab="infoTab"><i class="fa-solid fa-circle-info"></i> Info</button>
+        </div>
+
+        <!-- Apply form (public lead -> applicant creation later) -->
+        <form class="form" id="applyForm" novalidate>
+          <div class="field">
+            <label>Full Name</label>
+            <div class="control">
+              <i class="fa-solid fa-id-card icon"></i>
+              <input id="a_name" placeholder="Your full name" required/>
+            </div>
+            <div class="err" id="e_a_name">Name is required.</div>
+          </div>
+
+          <div class="grid2">
+            <div class="field">
+              <label>Email</label>
+              <div class="control">
+                <i class="fa-solid fa-envelope icon"></i>
+                <input id="a_email" type="email" placeholder="you@email.com" required/>
+              </div>
+              <div class="err" id="e_a_email">Valid email is required.</div>
+            </div>
+
+            <div class="field">
+              <label>Phone</label>
+              <div class="control">
+                <i class="fa-solid fa-phone icon"></i>
+                <input id="a_phone" placeholder="+211 / +256 ..." required/>
+              </div>
+              <div class="err" id="e_a_phone">Phone is required.</div>
+            </div>
+          </div>
+
+          <div class="grid2">
+            <div class="field">
+              <label>Program Level</label>
+              <div class="control">
+                <i class="fa-solid fa-layer-group icon"></i>
+                <select id="a_level" required>
+                  <option value="">Select…</option>
+                  <option>Certificate</option>
+                  <option>Diploma</option>
+                  <option>Bachelor</option>
+                  <option>Postgraduate</option>
+                </select>
+              </div>
+              <div class="err" id="e_a_level">Select a level.</div>
+            </div>
+
+            <div class="field">
+              <label>Intake</label>
+              <div class="control">
+                <i class="fa-solid fa-calendar-days icon"></i>
+                <select id="a_intake" required>
+                  <option value="">Select…</option>
+                  <option>January Intake</option>
+                  <option>May Intake</option>
+                  <option>September Intake</option>
+                </select>
+              </div>
+              <div class="err" id="e_a_intake">Select intake.</div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Notes (optional)</label>
+            <div class="control">
+              <i class="fa-solid fa-pen icon"></i>
+              <textarea id="a_note" rows="3" placeholder="Any additional information..."></textarea>
+            </div>
+          </div>
+
+          <button class="btn primary" type="submit"><i class="fa-solid fa-paper-plane"></i> Submit Application</button>
+          <div class="hint">This is UI only now. Later backend will create applicant + allow document upload.</div>
+
+          <div class="ok" id="applyOk">
+            <b><i class="fa-solid fa-circle-check"></i> Submitted (UI)</b>
+            <div class="muted" style="margin-top:6px">Backend will generate Application ID + upload step.</div>
+          </div>
+        </form>
+
+        <!-- Status tab -->
+        <form class="form" id="statusForm" style="display:none" novalidate>
+          <div class="field">
+            <label>Application ID</label>
+            <div class="control">
+              <i class="fa-solid fa-hashtag icon"></i>
+              <input id="s_appid" placeholder="e.g. UJ-2025-000123" required/>
+            </div>
+            <div class="err" id="e_s_appid">Application ID is required.</div>
+          </div>
+
+          <div class="field">
+            <label>Email used during application</label>
+            <div class="control">
+              <i class="fa-solid fa-envelope icon"></i>
+              <input id="s_email" type="email" placeholder="you@email.com" required/>
+            </div>
+            <div class="err" id="e_s_email">Valid email is required.</div>
+          </div>
+
+          <button class="btn light" type="submit"><i class="fa-solid fa-magnifying-glass"></i> Check Status</button>
+
+          <div class="ok" id="statusOk">
+            <b><i class="fa-solid fa-circle-check"></i> Status loaded (UI)</b>
+            <div class="muted" style="margin-top:6px">
+              Example: <span class="badge green">Under Review</span> • Next step: upload missing documents.
+            </div>
+          </div>
+        </form>
+
+        <!-- Info tab -->
+        <div class="form" id="infoTab" style="display:none">
+          <div class="list">
+            <div class="listItem">
+              <i class="fa-solid fa-file-arrow-down"></i>
+              <div><b>Download Prospectus</b><span>Programs, requirements, fees structure and schedules.</span></div>
+            </div>
+            <div class="listItem">
+              <i class="fa-solid fa-list-check"></i>
+              <div><b>Admission Requirements</b><span>National ID, academic documents, photos, transcripts.</span></div>
+            </div>
+            <div class="listItem">
+              <i class="fa-solid fa-headset"></i>
+              <div><b>Helpdesk</b><span>Contact admissions office for guidance and support.</span></div>
+            </div>
+          </div>
+          <div class="divider">Quick Links</div>
+          <div class="grid2">
+            <a class="btn light" href="#contact"><i class="fa-solid fa-phone"></i> Contact Admissions</a>
+            <a class="btn primary" href="#portals"><i class="fa-solid fa-right-to-bracket"></i> Open Portals</a>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- PORTALS -->
+<section id="portals">
+  <div class="container">
+    <div class="sectionHead">
+      <div>
+        <h2>Portals</h2>
+        <p>Access the official portals for students, staff, and lecturers. Secure login with role-based access.</p>
+      </div>
+      <span class="pill"><i class="fa-solid fa-lock"></i> Secure Access</span>
+    </div>
+
+    <div class="grid4" style="margin-top:14px">
+      <div class="card tile">
+        <div class="ico"><i class="fa-solid fa-user-graduate"></i></div>
+        <div class="t">Student Portal</div>
+        <p class="d">Courses, fees, results, GPA, attendance, hostels, library, transcripts.</p>
+        <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
+          <a class="btn primary small" href="student-login.html"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
+          <a class="btn light small" href="#apply"><i class="fa-solid fa-file-pen"></i> Apply</a>
+        </div>
+      </div>
+
+      <div class="card tile">
+        <div class="ico"><i class="fa-solid fa-chalkboard-user"></i></div>
+        <div class="t">Lecturer Portal</div>
+        <p class="d">Upload materials, mark attendance, manage assessments and gradebook.</p>
+        <div style="margin-top:12px">
+          <a class="btn light small" href="lecturer-login.html"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
+        </div>
+      </div>
+
+      <div class="card tile">
+        <div class="ico"><i class="fa-solid fa-users-gear"></i></div>
+        <div class="t">Staff Portal</div>
+        <p class="d">Admissions review, student records, finance, reports, approvals.</p>
+        <div style="margin-top:12px">
+          <a class="btn light small" href="staff-login.html"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
+        </div>
+      </div>
+
+      <div class="card tile">
+        <div class="ico"><i class="fa-solid fa-building-shield"></i></div>
+        <div class="t">Admin Console</div>
+        <p class="d">System settings, roles, modules, templates, analytics dashboards.</p>
+        <div style="margin-top:12px">
+          <a class="btn light small" href="admin-login.html"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ADMISSIONS -->
+<section id="admissions">
+  <div class="container">
+    <div class="sectionHead">
+      <div>
+        <h2>Admissions</h2>
+        <p>Apply online and upload documents. Track your status, receive notifications, and get admission decisions securely.</p>
+      </div>
+      <a class="btn primary small" href="#apply"><i class="fa-solid fa-file-pen"></i> Apply Now</a>
+    </div>
+
+    <div class="grid3" style="margin-top:14px">
+      <div class="card tile">
+        <div class="ico"><i class="fa-solid fa-file-circle-check"></i></div>
+        <div class="t">Requirements</div>
+        <p class="d">Academic documents, ID/passport, passport photo, transcripts.</p>
+      </div>
+      <div class="card tile">
+        <div class="ico"><i class="fa-solid fa-upload"></i></div>
+        <div class="t">Document Upload</div>
+        <p class="d">Upload certificates and required documents (backend later).</p>
+      </div>
+      <div class="card tile">
+        <div class="ico"><i class="fa-solid fa-bell"></i></div>
+        <div class="t">Status Alerts</div>
+        <p class="d">Get emails/SMS notifications for missing docs and decisions.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROGRAMS -->
+<section id="programs">
+  <div class="container">
+    <div class="sectionHead">
+      <div>
+        <h2>Programs & Faculties</h2>
+        <p>Browse programs, requirements, and duration. (Later this will load dynamically from the database.)</p>
+      </div>
+      <span class="pill"><i class="fa-solid fa-layer-group"></i> Academic Catalog</span>
+    </div>
+
+    <div class="grid3" style="margin-top:14px">
+      <div class="card listItem">
+        <i class="fa-solid fa-flask"></i>
+        <div>
+          <b>Faculty of Science</b>
+          <span>BSc Computer Science • BSc IT • Mathematics • Physics</span>
+        </div>
+      </div>
+      <div class="card listItem">
+        <i class="fa-solid fa-scale-balanced"></i>
+        <div>
+          <b>Faculty of Law</b>
+          <span>LLB • Diploma in Legal Studies</span>
+        </div>
+      </div>
+      <div class="card listItem">
+        <i class="fa-solid fa-briefcase-medical"></i>
+        <div>
+          <b>Faculty of Health</b>
+          <span>Nursing • Public Health • Clinical Programs</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="ctaStrip" style="margin-top:14px">
+      <div>
+        <h3>Need help choosing a program?</h3>
+        <p>Request information and our admissions team will guide you through requirements and fees.</p>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <a class="btn ghost" href="#contact"><i class="fa-solid fa-phone"></i> Contact</a>
+        <a class="btn light" href="#apply"><i class="fa-solid fa-file-pen"></i> Apply</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- NEWS + EVENTS -->
+<section id="news">
+  <div class="container">
+    <div class="sectionHead">
+      <div>
+        <h2>Announcements & News</h2>
+        <p>Official communications from the university administration.</p>
+      </div>
+      <span class="pill"><i class="fa-solid fa-bullhorn"></i> Latest</span>
+    </div>
+
+    <div class="grid3" style="margin-top:14px">
+      <div class="card tile">
+        <span class="badge green"><i class="fa-solid fa-circle-check"></i> Active</span>
+        <div class="t">Semester Registration Open</div>
+        <p class="d">Registration is open for continuing students. Deadline: 20 Jan.</p>
+      </div>
+      <div class="card tile">
+        <span class="badge yellow"><i class="fa-solid fa-triangle-exclamation"></i> Notice</span>
+        <div class="t">Fee Payment Reminder</div>
+        <p class="d">Students with outstanding balances should clear dues before exams.</p>
+      </div>
+      <div class="card tile">
+        <span class="badge"><i class="fa-solid fa-circle-info"></i> Info</span>
+        <div class="t">Library Hours Update</div>
+        <p class="d">Library opens Mon–Sat 8:00AM–6:00PM. Renew online via portal.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="events">
+  <div class="container">
+    <div class="sectionHead">
+      <div>
+        <h2>Upcoming Events</h2>
+        <p>University calendar events and important dates.</p>
+      </div>
+      <span class="pill"><i class="fa-solid fa-calendar-days"></i> Calendar</span>
+    </div>
+
+    <div class="grid3" style="margin-top:14px">
+      <div class="card listItem">
+        <i class="fa-solid fa-calendar-check"></i>
+        <div><b>Orientation Week</b><span>For new students • 05 Feb • Main campus hall</span></div>
+      </div>
+      <div class="card listItem">
+        <i class="fa-solid fa-pen-to-square"></i>
+        <div><b>Mid-semester Exams</b><span>Exam schedule published • 12 Mar</span></div>
+      </div>
+      <div class="card listItem">
+        <i class="fa-solid fa-graduation-cap"></i>
+        <div><b>Graduation Ceremony</b><span>Graduation list review • 20 Jun</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact">
+  <div class="container">
+    <div class="sectionHead">
+      <div>
+        <h2>Contact & Support</h2>
+        <p>Reach the admissions office or IT helpdesk for portal issues.</p>
+      </div>
+      <span class="power"><i class="fa-solid fa-bolt"></i> Powered by Classic Campus</span>
+    </div>
+
+    <div class="grid2" style="margin-top:14px">
+      <div class="card" style="padding:18px">
+        <div class="list">
+          <div class="listItem">
+            <i class="fa-solid fa-phone"></i>
+            <div><b>Admissions Office</b><span>+211 XXX XXX XXX • admissions@university.edu</span></div>
+          </div>
+          <div class="listItem">
+            <i class="fa-solid fa-headset"></i>
+            <div><b>Helpdesk</b><span>helpdesk@university.edu • Response within 24h</span></div>
+          </div>
+          <div class="listItem">
+            <i class="fa-solid fa-location-dot"></i>
+            <div><b>Main Campus</b><span>Juba, South Sudan (example)</span></div>
+          </div>
+        </div>
+
+        <div class="divider">Social</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <a class="btn light small" href="#"><i class="fa-brands fa-facebook"></i> Facebook</a>
+          <a class="btn light small" href="#"><i class="fa-brands fa-x-twitter"></i> Twitter/X</a>
+          <a class="btn light small" href="#"><i class="fa-brands fa-youtube"></i> YouTube</a>
+        </div>
+      </div>
+
+      <div class="map">Map Placeholder (replace with Google Map iframe later)</div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="foot">
+      <div>
+        <div class="brand" style="gap:10px">
+          <div class="logo" style="width:40px;height:40px;border-radius:14px">UJ</div>
+          <div class="brand-title">
+            <b>University of Juba</b>
+            <span class="muted">Official University Portal</span>
+          </div>
+        </div>
+        <div class="muted" style="margin-top:10px;font-size:13px;max-width:62ch">
+          Admissions, announcements, events, and secure portals for students and staff.
+        </div>
+        <small class="muted">© <span id="y"></span> University of Juba • Powered by Classic Campus</small>
+      </div>
+
+      <div>
+        <b>Quick Links</b>
+        <div class="links" style="margin-top:10px">
+          <a href="#admissions">Admissions</a>
+          <a href="#programs">Programs</a>
+          <a href="#news">Announcements</a>
+          <a href="#events">Events</a>
+          <a href="#portals">Portals</a>
+          <a href="#apply">Apply</a>
+        </div>
+      </div>
+
+      <div class="contact">
+        <b>Portals</b>
+        <a href="student-login.html"><i class="fa-solid fa-user-graduate"></i> Student Portal</a>
+        <a href="lecturer-login.html"><i class="fa-solid fa-chalkboard-user"></i> Lecturer Portal</a>
+        <a href="staff-login.html"><i class="fa-solid fa-users-gear"></i> Staff Portal</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Year
+  document.getElementById('y').textContent = new Date().getFullYear();
+
+  // Clean hamburger
+  const hamburger = document.getElementById('hamburger');
+  const mobilePanel = document.getElementById('mobilePanel');
+
+  function openMenu(){
+    hamburger.classList.add('open');
+    hamburger.setAttribute('aria-expanded','true');
+    mobilePanel.style.display = 'block';
+    mobilePanel.setAttribute('aria-hidden','false');
+  }
+  function closeMenu(){
+    hamburger.classList.remove('open');
+    hamburger.setAttribute('aria-expanded','false');
+    mobilePanel.style.display = 'none';
+    mobilePanel.setAttribute('aria-hidden','true');
+  }
+  function isOpen(){ return hamburger.classList.contains('open'); }
+
+  hamburger.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    isOpen() ? closeMenu() : openMenu();
+  });
+
+  mobilePanel.querySelectorAll('a').forEach(a=>{
+    a.addEventListener('click', ()=> closeMenu());
+  });
+
+  document.addEventListener('click', (e)=>{
+    if(!isOpen()) return;
+    const within = mobilePanel.contains(e.target) || hamburger.contains(e.target);
+    if(!within) closeMenu();
+  });
+
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape' && isOpen()) closeMenu();
+  });
+
+  // Tabs inside admissions card
+  const tabs = document.querySelectorAll('.tab');
+  const applyForm = document.getElementById('applyForm');
+  const statusForm = document.getElementById('statusForm');
+  const infoTab = document.getElementById('infoTab');
+
+  tabs.forEach(t=>{
+    t.addEventListener('click', ()=>{
+      tabs.forEach(x=>x.classList.remove('active'));
+      t.classList.add('active');
+
+      const id = t.dataset.tab;
+      applyForm.style.display = (id==='applyTab') ? 'grid' : 'none';
+      statusForm.style.display = (id==='statusTab') ? 'grid' : 'none';
+      infoTab.style.display = (id==='infoTab') ? 'grid' : 'none';
+
+      document.getElementById('applyOk').style.display='none';
+      document.getElementById('statusOk').style.display='none';
+    });
+  });
+
+  // Validation helpers
+  const isEmail = (v)=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  function showErr(id, ok){
+    const el = document.getElementById(id);
+    if(el) el.style.display = ok ? 'none' : 'block';
+  }
+
+  // Apply form submit (UI only)
+  applyForm.addEventListener('submit',(e)=>{
+    e.preventDefault();
+    const name = document.getElementById('a_name').value.trim();
+    const email = document.getElementById('a_email').value.trim();
+    const phone = document.getElementById('a_phone').value.trim();
+    const level = document.getElementById('a_level').value.trim();
+    const intake = document.getElementById('a_intake').value.trim();
+
+    showErr('e_a_name', !!name);
+    showErr('e_a_email', isEmail(email));
+    showErr('e_a_phone', !!phone);
+    showErr('e_a_level', !!level);
+    showErr('e_a_intake', !!intake);
+
+    if(!name || !isEmail(email) || !phone || !level || !intake) return;
+
+    document.getElementById('applyOk').style.display='block';
+  });
+
+  // Status form submit (UI only)
+  statusForm.addEventListener('submit',(e)=>{
+    e.preventDefault();
+    const appid = document.getElementById('s_appid').value.trim();
+    const email = document.getElementById('s_email').value.trim();
+
+    showErr('e_s_appid', !!appid);
+    showErr('e_s_email', isEmail(email));
+    if(!appid || !isEmail(email)) return;
+
+    document.getElementById('statusOk').style.display='block';
+  });
+</script>
+
+</body>
+</html>

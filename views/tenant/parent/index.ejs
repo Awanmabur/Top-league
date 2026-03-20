@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <title>
+    <%= (tenant && tenant.name) ? tenant.name : "CampusSaaS" %> — Parent Portal
+  </title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+<link rel="stylesheet" href="/css/navbar.css"/>
+  <!-- Shared parent portal CSS -->
+  <link rel="stylesheet" href="/css/parent-portal.css" />
+</head>
+
+<body>
+  <% const t=tenant || {}; const u=user || {}; const p=parent || null; const kids=Array.isArray(children) ? children :
+    []; const anns=Array.isArray(announcements) ? announcements : []; const s=stats || {}; const tenantName=t.name
+    || "CampusSaaS" ; const tenantCode=(t.code || "CC" ).toString(); const unread=Number(s.unread || 0); const
+    kidCount=Number(s.children || kids.length || 0); function fullNameOfStudent(c) { const name=(c && c.fullName) ?
+    String(c.fullName).trim() : "" ; if (name) return name; const parts=[]; if (c && c.firstName)
+    parts.push(String(c.firstName).trim()); if (c && c.middleName) parts.push(String(c.middleName).trim()); if (c &&
+    c.lastName) parts.push(String(c.lastName).trim()); return parts.filter(Boolean).join(" ").trim() || " Student"; }
+    function initials(name) { const parts=String(name || "" ).trim().split(/\s+/).filter(Boolean); const a=(parts[0] &&
+    parts[0][0]) ? parts[0][0] : "S" ; const b=(parts[1] && parts[1][0]) ? parts[1][0] : "" ; return (a +
+    b).toUpperCase(); } function parentName() { const fn=p && p.firstName ? p.firstName : (u.firstName || "" ); const
+    ln=p && p.lastName ? p.lastName : (u.lastName || "" ); const nm=(String(fn).trim() + " " +
+    String(ln).trim()).trim(); return nm || "Parent" ; } function parentInitials() { return initials(parentName()); } %>
+
+     
+      <!-- SIDEBAR -->
+      <%-include("./navbar") %>
+      <!-- MAIN -->
+      <main class="main">
+        <div class="topbar">
+          <div>
+            <div class="title">Parent Dashboard</div>
+            <div class="subtitle">
+              Manage your children’s academics, attendance, fees and school communication in one place.
+            </div>
+          </div>
+
+          <div class="top-actions">
+            <div class="chip">
+              <i class="fa-solid fa-bell"></i>
+              <span>Unread</span>
+              <b>
+                <%= unread %>
+              </b>
+            </div>
+
+            <button class="btn light" type="button" onclick="window.location.href='/parent/fees'">
+              <i class="fa-solid fa-sack-dollar"></i> Fees
+            </button>
+
+            <button class="btn primary" type="button" onclick="window.location.href='/parent/children'">
+              <i class="fa-solid fa-children"></i> View Children
+            </button>
+          </div>
+        </div>
+
+        <% if (error) { %>
+          <div class="alert warn">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <div>
+              <div class="alert-title">Action needed</div>
+              <div class="alert-text">
+                <%= error %>
+              </div>
+            </div>
+          </div>
+          <% } %>
+
+            <div class="kpi-row">
+              <div class="card">
+                <div class="section-title">Linked Children</div>
+                <div class="section-sub">Students connected to this parent account</div>
+                <div class="big-number">
+                  <%= kidCount %>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="section-title">Unread Notifications</div>
+                <div class="section-sub">School updates and alerts</div>
+                <div class="big-number">
+                  <%= unread %>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="section-title">Account Email</div>
+                <div class="section-sub">Used for login and communication</div>
+                <div class="kpi-text">
+                  <%= u.email || "—" %>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="section-title">Phone</div>
+                <div class="section-sub">Primary contact number</div>
+                <div class="kpi-text">
+                  <%= (p && p.phone) ? p.phone : (u.phone || "—" ) %>
+                </div>
+              </div>
+            </div>
+
+            <div class="content">
+              <!-- LEFT -->
+              <section class="card">
+                <div class="section-title">My Children</div>
+                <div class="section-sub">Quick overview. Open a child to view more details.</div>
+
+                <% if (!kids.length) { %>
+                  <div class="empty">
+                    <div class="empty-icon"><i class="fa-solid fa-children"></i></div>
+                    <div class="empty-title">No children linked yet</div>
+                    <div class="empty-text">
+                      Ask the school admin to link your parent profile to your child’s student record.
+                    </div>
+                    <button class="btn light" type="button" onclick="window.location.href='/parent/support'">
+                      <i class="fa-solid fa-headset"></i> Contact Support
+                    </button>
+                  </div>
+                  <% } else { %>
+                    <div class="child-grid">
+                      <% kids.forEach(function(c){ const name=fullNameOfStudent(c); const reg=(c && c.regNo) ? c.regNo
+                        : "—" ; const prog=(c && c.program && (c.program.title || c.program.name)) ? (c.program.title ||
+                        c.program.name) : "—" ; const cls=(c && c.classGroup && (c.classGroup.title ||
+                        c.classGroup.name)) ? (c.classGroup.title || c.classGroup.name) : "—" ; const year=(c &&
+                        c.yearLevel) ? c.yearLevel : "—" ; const ay=(c && c.academicYear) ? c.academicYear : "—" ; const
+                        sem=(c && (c.semester || c.semester===0)) ? c.semester : "—" ; const status=(c && c.status) ?
+                        c.status : "active" ; %>
+                        <div class="child-card">
+                          <div class="child-top">
+                            <div class="avatar">
+                              <%= initials(name) %>
+                            </div>
+                            <div class="child-meta">
+                              <div class="child-name">
+                                <%= name %>
+                              </div>
+                              <div class="child-id">
+                                <span class="muted">RegNo:</span> <b>
+                                  <%= reg %>
+                                </b>
+                                <span class="dot">•</span>
+                                <span class="muted">Status:</span>
+                                <span class="pill <%= status === 'active' ? 'ok' : 'warn' %>">
+                                  <i class="fa-solid fa-circle-check"></i>
+                                  <%= status %>
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div class="mini-list">
+                            <div class="mini-item"><span>Program</span><span>
+                                <%= prog %>
+                              </span></div>
+                            <div class="mini-item"><span>Class</span><span>
+                                <%= cls %>
+                              </span></div>
+                            <div class="mini-item"><span>Academic Year</span><span>
+                                <%= ay %>
+                              </span></div>
+                            <div class="mini-item"><span>Year / Semester</span><span>
+                                <%= year %> • Sem <%= sem %>
+                              </span></div>
+                          </div>
+
+                          <div class="child-actions">
+                            <a class="btn-xs" href="/parent/children/<%= c._id %>">
+                              <i class="fa-solid fa-eye"></i> Open
+                            </a>
+                            <a class="btn-xs" href="/parent/attendance?student=<%= c._id %>">
+                              <i class="fa-solid fa-user-check"></i> Attendance
+                            </a>
+                            <a class="btn-xs" href="/parent/results?student=<%= c._id %>">
+                              <i class="fa-solid fa-file-lines"></i> Results
+                            </a>
+                            <a class="btn-xs" href="/parent/fees?student=<%= c._id %>">
+                              <i class="fa-solid fa-sack-dollar"></i> Fees
+                            </a>
+                          </div>
+                        </div>
+                        <% }); %>
+                    </div>
+                    <% } %>
+              </section>
+
+              <!-- RIGHT -->
+              <aside>
+                <section class="card">
+                  <div class="section-title">Parent Profile</div>
+                  <div class="section-sub">Your linked profile information</div>
+
+                  <div class="profile-box">
+                    <div class="avatar lg">
+                      <%= parentInitials() %>
+                    </div>
+                    <div>
+                      <div class="profile-name">
+                        <%= parentName() %>
+                      </div>
+                      <div class="profile-sub">
+                        <i class="fa-solid fa-envelope"></i>
+                        <%= u.email || ((p && p.email) ? p.email : "—" ) %>
+                      </div>
+                      <div class="profile-sub">
+                        <i class="fa-solid fa-phone"></i>
+                        <%= (p && p.phone) ? p.phone : (u.phone || "—" ) %>
+                      </div>
+                      <div class="profile-sub">
+                        <i class="fa-solid fa-people-roof"></i>
+                        Relationship: <%= (p && p.relationship) ? p.relationship : "Guardian" %>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="action-wrap">
+                    <a class="btn-xs" href="/parent/profile"><i class="fa-solid fa-pen"></i> Edit Profile</a>
+                    <a class="btn-xs" href="/parent/notifications"><i class="fa-solid fa-bell"></i> Notifications</a>
+                    <a class="btn-xs" href="/parent/support"><i class="fa-solid fa-headset"></i> Support</a>
+                  </div>
+                </section>
+
+                <section class="card mt-16">
+                  <div class="section-title">Latest Announcements</div>
+                  <div class="section-sub">From the school administration</div>
+
+                  <% if (!anns.length) { %>
+                    <div class="empty small">
+                      <div class="empty-title">No announcements yet</div>
+                      <div class="empty-text">When the school posts updates, you’ll see them here.</div>
+                    </div>
+                    <% } else { %>
+                      <div class="list">
+                        <% anns.forEach(function(a){ %>
+                          <div class="list-item">
+                            <div class="list-icon"><i class="fa-solid fa-bullhorn"></i></div>
+                            <div class="list-body">
+                              <div class="list-title">
+                                <%= a.title || "Announcement" %>
+                              </div>
+                              <div class="list-meta">
+                                <%= a.createdAt ? new Date(a.createdAt).toLocaleDateString() : "" %>
+                              </div>
+                              <div class="list-text">
+                                <%= String(a.body || a.message || "" ).slice(0,120) %>
+                                  <%= String(a.body || a.message || "" ).length> 120 ? "..." : "" %>
+                              </div>
+                            </div>
+                          </div>
+                          <% }); %>
+                      </div>
+
+                      <a class="btn light full" href="/parent/announcements">
+                        <i class="fa-solid fa-bullhorn"></i> View all announcements
+                      </a>
+                      <% } %>
+                </section>
+
+                <section class="card mt-16">
+                  <div class="section-title">Quick Actions</div>
+                  <div class="section-sub">Common parent tasks</div>
+
+                  <div class="quick-grid">
+                    <a class="quick" href="/parent/fees">
+                      <i class="fa-solid fa-sack-dollar"></i>
+                      <div>
+                        <div class="quick-title">Fees</div>
+                        <div class="quick-sub">Balance & payments</div>
+                      </div>
+                    </a>
+
+                    <a class="quick" href="/parent/attendance">
+                      <i class="fa-solid fa-user-check"></i>
+                      <div>
+                        <div class="quick-title">Attendance</div>
+                        <div class="quick-sub">Daily & term view</div>
+                      </div>
+                    </a>
+
+                    <a class="quick" href="/parent/results">
+                      <i class="fa-solid fa-file-lines"></i>
+                      <div>
+                        <div class="quick-title">Results</div>
+                        <div class="quick-sub">Reports & grades</div>
+                      </div>
+                    </a>
+
+                    <a class="quick" href="/parent/timetable">
+                      <i class="fa-solid fa-calendar-week"></i>
+                      <div>
+                        <div class="quick-title">Timetable</div>
+                        <div class="quick-sub">Weekly schedule</div>
+                      </div>
+                    </a>
+                  </div>
+                </section>
+              </aside>
+            </div>
+      </main>
+    </div>
+    <script src="/js/navbar.js"></script>
+</body>
+
+</html>

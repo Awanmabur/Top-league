@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Messages — Lecturer Portal — CampusSaaS</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <!-- Shared portal CSS -->
+  <link rel="stylesheet" href="../css/student-portal.css" />
+
+  <style>
+    .messages-layout{
+      display:grid;
+      grid-template-columns: minmax(260px, 320px) minmax(0,1fr);
+      gap:16px;
+      align-items:stretch;
+    }
+    @media (max-width:900px){
+      .messages-layout{
+        grid-template-columns:1fr;
+      }
+    }
+
+    .folder-pills{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      margin-top:8px;
+    }
+    .folder-pill{
+      padding:4px 9px;
+      border-radius:999px;
+      font-size:12px;
+      border:1px solid #dbe3f6;
+      background:#f9fbff;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:5px;
+      color:#0f172a;
+    }
+    .folder-pill.active{
+      background:#0a3d62;
+      color:#fff;
+      border-color:#0a3d62;
+    }
+
+    .conv-list{
+      margin-top:10px;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      font-size:13px;
+    }
+    .conv-item{
+      display:flex;
+      gap:8px;
+      padding:7px 9px;
+      border-radius:9px;
+      border:1px solid #e1e9fb;
+      background:#fdfdff;
+      cursor:pointer;
+    }
+    .conv-item:hover{
+      border-color:#cbdafe;
+      box-shadow:0 6px 14px rgba(15,23,42,0.06);
+    }
+    .conv-item.active{
+      border-color:#0a6fbf;
+      background:#eef4ff;
+    }
+    .conv-avatar{
+      width:32px;
+      height:32px;
+      border-radius:999px;
+      background:linear-gradient(135deg,#0a6fbf,#22c55e);
+      color:#fff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:15px;
+      font-weight:700;
+      flex-shrink:0;
+    }
+    .conv-meta{
+      flex:1;
+      min-width:0;
+    }
+    .conv-name-row{
+      display:flex;
+      justify-content:space-between;
+      gap:6px;
+      align-items:center;
+    }
+    .conv-name{
+      font-weight:600;
+      color:#0f172a;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .conv-time{
+      font-size:11px;
+      color:#6b7280;
+      white-space:nowrap;
+    }
+    .conv-subject{
+      font-size:12px;
+      color:#4b5563;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .conv-tags{
+      display:flex;
+      flex-wrap:wrap;
+      gap:4px;
+      margin-top:3px;
+      font-size:11px;
+      color:#6b7280;
+    }
+
+    .chip-small{
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
+      padding:3px 7px;
+      border-radius:999px;
+      font-size:11px;
+      background:#eef4ff;
+      color:#0f172a;
+    }
+    .chip-small.attn{
+      background:#fee2e2;
+      color:#b91c1c;
+    }
+    .chip-small.resolved{
+      background:#ecfdf3;
+      color:#15803d;
+    }
+
+    .badge-unread{
+      background:#0a6fbf;
+      color:#fff;
+      border-radius:999px;
+      padding:2px 6px;
+      font-size:10px;
+      font-weight:600;
+    }
+
+    .thread-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .thread-title{
+      font-size:15px;
+      font-weight:700;
+      color:#0f172a;
+    }
+    .thread-subtitle{
+      font-size:12px;
+      color:#6b7280;
+    }
+    .thread-actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+    }
+
+    .thread-body{
+      margin-top:10px;
+      border-radius:10px;
+      border:1px solid #e5edff;
+      background:#f9fbff;
+      padding:10px;
+      max-height:380px;
+      overflow-y:auto;
+      font-size:13px;
+    }
+
+    .msg-bubble{
+      max-width:80%;
+      margin-bottom:8px;
+      padding:7px 9px;
+      border-radius:12px;
+      display:inline-block;
+      position:relative;
+    }
+    .msg-meta-row{
+      display:flex;
+      justify-content:space-between;
+      gap:8px;
+      font-size:11px;
+      margin-top:2px;
+      color:#6b7280;
+    }
+    .msg-sender{
+      font-weight:600;
+      color:#0f172a;
+    }
+    .msg-time{
+      white-space:nowrap;
+    }
+
+    .msg-student{
+      background:#fff;
+      border:1px solid #dbe3f6;
+      border-bottom-left-radius:2px;
+    }
+    .msg-lecturer{
+      margin-left:auto;
+      background:#0a3d62;
+      color:#f9fafb;
+      border-bottom-right-radius:2px;
+    }
+
+    .thread-footer{
+      margin-top:10px;
+      border-top:1px dashed #e5edff;
+      padding-top:8px;
+    }
+    .reply-row{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+    .reply-row textarea{
+      width:100%;
+      min-height:80px;
+      border-radius:10px;
+      border:1px solid #dbe3f6;
+      padding:7px 9px;
+      font-family:inherit;
+      font-size:13px;
+      resize:vertical;
+    }
+    .reply-row textarea:focus{
+      outline:none;
+      border-color:#0a6fbf;
+      box-shadow:0 0 0 1px rgba(10,111,191,0.12);
+    }
+    .reply-meta{
+      display:flex;
+      justify-content:space-between;
+      gap:6px;
+      align-items:center;
+      flex-wrap:wrap;
+      font-size:12px;
+      color:#6b7280;
+    }
+    .reply-actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+    }
+
+    /* Modal styles */
+    .modal-backdrop{
+      position:fixed;
+      inset:0;
+      background:rgba(15,23,42,0.45);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:40;
+    }
+    .modal{
+      background:#fff;
+      border-radius:14px;
+      padding:14px 16px;
+      width:100%;
+      max-width:720px;
+      box-shadow:0 20px 45px rgba(15,23,42,0.22);
+    }
+    .modal-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:10px;
+    }
+    .modal-title{
+      font-size:15px;
+      font-weight:700;
+      color:#0f172a;
+    }
+    .modal-body{
+      margin-top:10px;
+      font-size:13px;
+    }
+    .modal-footer{
+      margin-top:12px;
+      display:flex;
+      justify-content:flex-end;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .modal-close{
+      border:none;
+      background:transparent;
+      cursor:pointer;
+      color:#6b7280;
+    }
+    .modal textarea{
+      width:100%;
+      min-height:110px;
+      border-radius:10px;
+      border:1px solid #dbe3f6;
+      padding:8px 9px;
+      font-family:inherit;
+      font-size:13px;
+      resize:vertical;
+    }
+    .modal textarea:focus{
+      outline:none;
+      border-color:#0a6fbf;
+      box-shadow:0 0 0 1px rgba(10,111,191,0.12);
+    }
+    .modal input[type="text"]{
+      width:100%;
+      padding:6px 8px;
+      border-radius:10px;
+      border:1px solid #dbe3f6;
+      font-size:13px;
+    }
+    .modal input[type="text"]:focus{
+      outline:none;
+      border-color:#0a6fbf;
+      box-shadow:0 0 0 1px rgba(10,111,191,0.12);
+    }
+    .modal select{
+      width:100%;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">CS</div>
+      <div>
+        <h1>CampusSaaS</h1>
+        <div class="sub">Lecturer Portal</div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-section-title">Main</div>
+      <a href="lecturer-dashboard.html" class="nav-item">
+        <i class="fa-solid fa-chart-line"></i>
+        <span>Dashboard</span>
+      </a>
+      <a href="lecturer-classes.html" class="nav-item">
+        <i class="fa-solid fa-people-group"></i>
+        <span>My Classes</span>
+      </a>
+      <a href="lecturer-attendance.html" class="nav-item">
+        <i class="fa-solid fa-user-check"></i>
+        <span>Attendance</span>
+      </a>
+      <a href="lecturer-assessments.html" class="nav-item">
+        <i class="fa-solid fa-clipboard-list"></i>
+        <span>Assessments & Grades</span>
+      </a>
+
+      <div class="nav-section-title">Teaching Tools</div>
+      <a href="lecturer-materials.html" class="nav-item">
+        <i class="fa-solid fa-file-arrow-up"></i>
+        <span>Materials</span>
+      </a>
+      <a href="lecturer-assignments.html" class="nav-item">
+        <i class="fa-solid fa-clock-rotate-left"></i>
+        <span>Assignments & Quizzes</span>
+      </a>
+      <a href="lecturer-announcements.html" class="nav-item">
+        <i class="fa-solid fa-bullhorn"></i>
+        <span>Announcements</span>
+      </a>
+      <a href="lecturer-messages.html" class="nav-item active">
+        <i class="fa-solid fa-envelope"></i>
+        <span>Messages</span>
+      </a>
+
+      <div class="nav-section-title">Performance</div>
+      <a href="lecturer-performance.html" class="nav-item">
+        <i class="fa-solid fa-user-tie"></i>
+        <span>Performance & Hours</span>
+      </a>
+      <a href="lecturer-settings.html" class="nav-item">
+        <i class="fa-solid fa-gear"></i>
+        <span>Settings</span>
+      </a>
+    </nav>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="title">Messages</div>
+        <div class="subtitle">
+          Manage conversations with students and staff, grouped by class and topic.
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="btn light" onclick="window.location.href='lecturer-dashboard.html'">
+          <i class="fa-solid fa-arrow-left"></i> Back to Lecturer Dashboard
+        </button>
+        <button class="btn primary" type="button" id="btnCompose">
+          <i class="fa-solid fa-pen"></i> New Message
+        </button>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <section class="card">
+      <div class="section-title">Filters</div>
+      <div class="section-sub">
+        Filter conversations by class, folder, participant type and keywords.
+      </div>
+
+      <div class="filters-row">
+        <div>
+          <label class="small-muted">Class / course</label><br/>
+          <select id="filterClass" class="select">
+            <option value="all" selected>All classes</option>
+            <option value="CS201">CS201 - Object-Oriented Programming</option>
+            <option value="IS204">IS204 - Database Systems</option>
+            <option value="MA210">MA210 - Statistics for Computing</option>
+            <option value="CS220">CS220 - Data Structures and Algorithms</option>
+          </select>
+        </div>
+        <div>
+          <label class="small-muted">Participant type</label><br/>
+          <select id="filterType" class="select">
+            <option value="all" selected>Students & staff</option>
+            <option value="student">Students only</option>
+            <option value="staff">Staff / admin only</option>
+          </select>
+        </div>
+        <div>
+          <label class="small-muted">Status</label><br/>
+          <select id="filterStatus" class="select">
+            <option value="all">All</option>
+            <option value="unread">Unread</option>
+            <option value="open">Open</option>
+            <option value="resolved">Resolved</option>
+          </select>
+        </div>
+        <div style="flex:1;min-width:220px;">
+          <label class="small-muted">Search</label><br/>
+          <input type="text" id="filterSearch" class="select"
+                 style="width:100%;padding:7px 10px;"
+                 placeholder="Search by name, subject or message content..." />
+        </div>
+      </div>
+
+      <div class="folder-pills">
+        <button class="folder-pill active" data-folder="inbox">
+          <i class="fa-solid fa-inbox"></i> Inbox
+          <span class="badge-unread">4</span>
+        </button>
+        <button class="folder-pill" data-folder="sent">
+          <i class="fa-solid fa-paper-plane"></i> Sent
+        </button>
+        <button class="folder-pill" data-folder="archived">
+          <i class="fa-solid fa-box-archive"></i> Archived
+        </button>
+      </div>
+    </section>
+
+    <!-- KPI row -->
+    <div class="kpi-row">
+      <div class="card">
+        <div class="section-title">Unread</div>
+        <div class="section-sub">Messages not yet opened</div>
+        <div style="margin-top:8px;">
+          <div style="font-size:22px;font-weight:800;">4</div>
+          <div class="small-muted">2 students • 2 staff.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">New today</div>
+        <div class="section-sub">Since 00:00 today</div>
+        <div style="margin-top:8px;">
+          <div style="font-size:22px;font-weight:800;">6</div>
+          <div class="small-muted">CS201: 3 • IS204: 2 • MA210: 1.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">Open threads</div>
+        <div class="section-sub">Awaiting your response</div>
+        <div style="margin-top:8px;">
+          <div style="font-size:22px;font-weight:800;">5</div>
+          <div class="small-muted">3 from students • 2 from faculty.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">Median response time</div>
+        <div class="section-sub">Last 30 days (mock)</div>
+        <div style="margin-top:8px;">
+          <div style="font-size:22px;font-weight:800;">3h 20m</div>
+          <div class="small-muted">Target: &lt; 24 hours.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Messages layout -->
+    <div class="messages-layout">
+      <!-- LEFT: Conversation list -->
+      <section class="card">
+        <div class="section-title">Conversations</div>
+        <div class="section-sub">
+          Click a conversation to view the full thread and reply.
+        </div>
+
+        <div class="conv-list" id="conversationList">
+          <!-- 1 -->
+          <div class="conv-item active"
+               data-id="conv1"
+               data-class="CS201"
+               data-type="student"
+               data-status="open"
+               data-folder="inbox">
+            <div class="conv-avatar">MA</div>
+            <div class="conv-meta">
+              <div class="conv-name-row">
+                <div class="conv-name">Mary Atwine</div>
+                <div class="conv-time">Today • 09:42</div>
+              </div>
+              <div class="conv-subject">Question about Assignment 2 rubric</div>
+              <div class="conv-tags">
+                <span>CS201 - Object-Oriented Programming</span>
+                <span class="chip-small">Student</span>
+                <span class="chip-small attn"><i class="fa-solid fa-circle-exclamation"></i> Awaiting reply</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2 -->
+          <div class="conv-item"
+               data-id="conv2"
+               data-class="IS204"
+               data-type="student"
+               data-status="unread"
+               data-folder="inbox">
+            <div class="conv-avatar">JO</div>
+            <div class="conv-meta">
+              <div class="conv-name-row">
+                <div class="conv-name">John Okello</div>
+                <div class="conv-time">Today • 08:15</div>
+              </div>
+              <div class="conv-subject">Clarification on ER diagram submission format</div>
+              <div class="conv-tags">
+                <span>IS204 - Database Systems</span>
+                <span class="chip-small">Student</span>
+                <span class="badge-unread">New</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3 -->
+          <div class="conv-item"
+               data-id="conv3"
+               data-class="MA210"
+               data-type="student"
+               data-status="resolved"
+               data-folder="inbox">
+            <div class="conv-avatar">SN</div>
+            <div class="conv-meta">
+              <div class="conv-name-row">
+                <div class="conv-name">Sylvia Namusoke</div>
+                <div class="conv-time">Yesterday • 19:02</div>
+              </div>
+              <div class="conv-subject">Missed class due to illness</div>
+              <div class="conv-tags">
+                <span>MA210 - Statistics for Computing</span>
+                <span class="chip-small">Student</span>
+                <span class="chip-small resolved"><i class="fa-solid fa-circle-check"></i> Resolved</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4 -->
+          <div class="conv-item"
+               data-id="conv4"
+               data-class="CS201"
+               data-type="staff"
+               data-status="open"
+               data-folder="inbox">
+            <div class="conv-avatar">HD</div>
+            <div class="conv-meta">
+              <div class="conv-name-row">
+                <div class="conv-name">Head of Department</div>
+                <div class="conv-time">Yesterday • 15:20</div>
+              </div>
+              <div class="conv-subject">Exam paper submission deadline</div>
+              <div class="conv-tags">
+                <span>Faculty of Computing</span>
+                <span class="chip-small"><i class="fa-solid fa-user-tie"></i> Staff</span>
+                <span class="chip-small attn"><i class="fa-solid fa-triangle-exclamation"></i> Priority</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 5 -->
+          <div class="conv-item"
+               data-id="conv5"
+               data-class="CS220"
+               data-type="student"
+               data-status="open"
+               data-folder="archived">
+            <div class="conv-avatar">GR</div>
+            <div class="conv-meta">
+              <div class="conv-name-row">
+                <div class="conv-name">Group 3 - CS220</div>
+                <div class="conv-time">16 Nov 2025 • 11:10</div>
+              </div>
+              <div class="conv-subject">Project topic approval request</div>
+              <div class="conv-tags">
+                <span>CS220 - Data Structures</span>
+                <span class="chip-small">Student group</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT: Thread view -->
+      <section class="card" id="threadCard">
+        <div class="thread-header">
+          <div>
+            <div class="thread-title" id="threadTitle">
+              Question about Assignment 2 rubric
+            </div>
+            <div class="thread-subtitle" id="threadSubtitle">
+              CS201 - Object-Oriented Programming • From: <strong>Mary Atwine</strong> (STU-2024-0101)
+            </div>
+          </div>
+          <div class="thread-actions">
+            <button class="btn light" type="button" id="btnMarkResolved">
+              <i class="fa-solid fa-circle-check"></i> Mark resolved
+            </button>
+            <button class="btn light" type="button" id="btnArchive">
+              <i class="fa-solid fa-box-archive"></i> Archive
+            </button>
+            <button class="btn light" type="button" id="btnOpenCompose">
+              <i class="fa-solid fa-up-right-from-square"></i> Open in full composer
+            </button>
+          </div>
+        </div>
+
+        <div class="thread-body" id="threadBody">
+          <!-- Student message -->
+          <div class="msg-bubble msg-student">
+            <div>
+              Dear Lecturer, I’m a bit confused about how Assignment 2 will be marked.
+              Could you please clarify how many marks are allocated to the UML diagrams
+              versus the Java implementation?
+            </div>
+            <div class="msg-meta-row">
+              <span class="msg-sender">Mary Atwine • Student</span>
+              <span class="msg-time">Today • 09:42</span>
+            </div>
+          </div>
+
+          <!-- Lecturer reply -->
+          <div class="msg-bubble msg-lecturer">
+            <div>
+              Hi Mary, great question. For Assignment 2, 40% of the marks are for
+              UML design (class & sequence diagrams) and 60% are for the code
+              implementation and documentation.
+            </div>
+            <div class="msg-meta-row">
+              <span class="msg-sender">You • Lecturer</span>
+              <span class="msg-time">Today • 10:05</span>
+            </div>
+          </div>
+
+          <!-- Student follow-up -->
+          <div class="msg-bubble msg-student">
+            <div>
+              Thank you! And is there any penalty if we submit a few minutes after
+              the deadline due to upload issues?
+            </div>
+            <div class="msg-meta-row">
+              <span class="msg-sender">Mary Atwine • Student</span>
+              <span class="msg-time">Today • 10:12</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="thread-footer">
+          <div class="reply-row">
+            <label class="small-muted">Reply to conversation</label>
+            <textarea id="replyText"
+              placeholder="Type your reply here. Students will see this in the LMS messages and, if enabled, via email."></textarea>
+
+            <div class="reply-meta">
+              <div class="reply-actions">
+                <button class="btn primary" type="button" id="btnSendReply">
+                  <i class="fa-solid fa-paper-plane"></i> Send reply (mock)
+                </button>
+                <button class="btn light" type="button" id="btnReplyAndResolve">
+                  <i class="fa-solid fa-check-double"></i> Reply & mark resolved
+                </button>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                <span class="chip-small">
+                  <i class="fa-solid fa-envelope"></i> Email copy to student
+                </span>
+                <span class="chip-small">
+                  <i class="fa-solid fa-users-rectangle"></i> Add course coordinator
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Bottom notes -->
+    <section class="card" style="margin-top:16px;">
+      <div class="section-title">Notes</div>
+      <div class="section-sub">
+        Messages here are scoped to courses and users within CampusSaaS. They are not personal email.
+      </div>
+      <p class="small-muted" style="margin-top:8px;">
+        In the full CampusSaaS implementation, this module will integrate with institutional email,
+        mobile app notifications and student records. Admins can see audit trails per conversation,
+        including who responded and when. Lecturers can optionally disable direct messages per course
+        and redirect students to discussion forums or support tickets where appropriate.
+      </p>
+    </section>
+  </main>
+</div>
+
+<!-- MODAL: Compose new message (hidden by default, only when clicked) -->
+<div class="modal-backdrop" id="modalCompose">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="modalComposeTitle">New Message</div>
+        <div class="small-muted">
+          Send a direct message to one or more students or staff members, linked to a course.
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modalCompose')">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <form id="composeForm" onsubmit="event.preventDefault(); sendCompose();">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <div style="flex:1;min-width:200px;">
+              <label class="small-muted">Course</label><br/>
+              <select id="composeCourse" class="select" style="width:100%;">
+                <option value="CS201">CS201 - Object-Oriented Programming</option>
+                <option value="IS204">IS204 - Database Systems</option>
+                <option value="MA210">MA210 - Statistics for Computing</option>
+                <option value="CS220">CS220 - Data Structures and Algorithms</option>
+              </select>
+            </div>
+            <div style="width:200px;">
+              <label class="small-muted">To</label><br/>
+              <select id="composeToType" class="select" style="width:100%;">
+                <option value="student">Student</option>
+                <option value="group">Student group</option>
+                <option value="class">Entire class</option>
+                <option value="staff">Staff / admin</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="small-muted">Recipient(s)</label><br/>
+            <input type="text" id="composeRecipients"
+                   placeholder="e.g. Mary Atwine, Group 3, or type to search..." />
+            <p class="small-muted" style="margin-top:4px;">
+              In the real system, this field would provide a searchable dropdown of enrolled students and staff.
+            </p>
+          </div>
+
+          <div>
+            <label class="small-muted">Subject</label><br/>
+            <input type="text" id="composeSubject"
+                   placeholder="e.g. Follow-up on your question about Assignment 2" required />
+          </div>
+
+          <div>
+            <label class="small-muted">Message</label><br/>
+            <textarea id="composeBody"
+                      placeholder="Write your message as it will appear to recipients."></textarea>
+          </div>
+
+          <div>
+            <label class="small-muted">Options</label><br/>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;">
+              <span class="chip-small">
+                <i class="fa-solid fa-envelope"></i> Send email copy
+              </span>
+              <span class="chip-small">
+                <i class="fa-solid fa-bell"></i> Mobile push (if enabled)
+              </span>
+              <span class="chip-small">
+                <i class="fa-solid fa-circle-info"></i> Mark as important
+              </span>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn light" type="button" onclick="closeModal('modalCompose')">Cancel</button>
+      <button class="btn primary" type="submit" form="composeForm">
+        <i class="fa-solid fa-paper-plane"></i> Send (mock)
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Confirm archive (simple confirm for demo) -->
+<div class="modal-backdrop" id="modalArchive">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Archive Conversation</div>
+        <div class="small-muted" id="modalArchiveText">
+          Are you sure you want to archive this conversation? It will move out of Inbox but remain searchable (mock).
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modalArchive')">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn light" type="button" onclick="closeModal('modalArchive')">Cancel</button>
+      <button class="btn primary" type="button" onclick="confirmArchive()">
+        <i class="fa-solid fa-box-archive"></i> Archive (mock)
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Modal helpers
+  function openModal(id){
+    const el = document.getElementById(id);
+    if(el) el.style.display = "flex";
+  }
+  function closeModal(id){
+    const el = document.getElementById(id);
+    if(el) el.style.display = "none";
+  }
+  document.querySelectorAll(".modal-backdrop").forEach(backdrop => {
+    backdrop.addEventListener("click", function(e){
+      if(e.target === backdrop){
+        backdrop.style.display = "none";
+      }
+    });
+  });
+
+  // Compose button
+  document.getElementById("btnCompose").addEventListener("click", () => {
+    openModal("modalCompose");
+  });
+
+  // Open compose from thread
+  document.getElementById("btnOpenCompose").addEventListener("click", () => {
+    openModal("modalCompose");
+  });
+
+  function sendCompose(){
+    const subject = (document.getElementById("composeSubject").value || "").trim();
+    const course = document.getElementById("composeCourse").value;
+    if(!subject){
+      alert("Please provide a subject for the message.");
+      return;
+    }
+    alert("Mock send: new message \"" + subject + "\" would be sent for course " + course + ".");
+    closeModal("modalCompose");
+  }
+
+  // Conversation list + simple thread switching (front-end demo)
+  const conversationList = document.getElementById("conversationList");
+  const threadTitle = document.getElementById("threadTitle");
+  const threadSubtitle = document.getElementById("threadSubtitle");
+  const threadBody = document.getElementById("threadBody");
+
+  // Very simple mapping of conversation id -> mock thread details
+  const THREAD_DATA = {
+    conv1: {
+      title: "Question about Assignment 2 rubric",
+      subtitle: "CS201 - Object-Oriented Programming • From: Mary Atwine (STU-2024-0101)",
+      body: `
+        <div class="msg-bubble msg-student">
+          <div>
+            Dear Lecturer, I’m a bit confused about how Assignment 2 will be marked.
+            Could you please clarify how many marks are allocated to the UML diagrams
+            versus the Java implementation?
+          </div>
+          <div class="msg-meta-row">
+            <span class="msg-sender">Mary Atwine • Student</span>
+            <span class="msg-time">Today • 09:42</span>
+          </div>
+        </div>
+
+        <div class="msg-bubble msg-lecturer">
+          <div>
+            Hi Mary, great question. For Assignment 2, 40% of the marks are for
+            UML design (class &amp; sequence diagrams) and 60% are for the code
+            implementation and documentation.
+          </div>
+          <div class="msg-meta-row">
+            <span class="msg-sender">You • Lecturer</span>
+            <span class="msg-time">Today • 10:05</span>
+          </div>
+        </div>
+
+        <div class="msg-bubble msg-student">
+          <div>
+            Thank you! And is there any penalty if we submit a few minutes after
+            the deadline due to upload issues?
+          </div>
+          <div class="msg-meta-row">
+            <span class="msg-sender">Mary Atwine • Student</span>
+            <span class="msg-time">Today • 10:12</span>
+          </div>
+        </div>
+      `
+    },
+    conv2: {
+      title: "Clarification on ER diagram submission format",
+      subtitle: "IS204 - Database Systems • From: John Okello (STU-2024-0174)",
+      body: `
+        <div class="msg-bubble msg-student">
+          <div>
+            Good morning sir, for the ER diagram in Assignment 1, should we submit a
+            hand-drawn version scanned as PDF, or must it be created with a drawing
+            tool like Draw.io or Lucidchart?
+          </div>
+          <div class="msg-meta-row">
+            <span class="msg-sender">John Okello • Student</span>
+            <span class="msg-time">Today • 08:15</span>
+          </div>
+        </div>
+
+        <div class="msg-bubble msg-lecturer">
+          <div>
+            Hi John, please submit a neat digital version (using any ER tool of your choice),
+            exported as a single PDF.
+          </div>
+          <div class="msg-meta-row">
+            <span class="msg-sender">You • Lecturer</span>
+            <span class="msg-time">Today • 08:40</span>
+          </div>
+        </div>
+      `
+    },
+    conv3: {
+      title: "Missed class due to illness",
+      subtitle: "MA210 - Statistics for Computing • From: Sylvia Namusoke (STU-2024-0213)",
+      body: `
+        <div class="msg-bubble msg-student">
+          <div>
+            Dear Lecturer, I missed yesterday’s MA210 class because I was unwell.
+            I have attached a medical note and wanted to ask if there was any graded
+            activity I missed.
+          </div>
+          <div class="msg-meta-row">
+            <span class="msg-sender">Sylvia Namusoke • Student</span>
+            <span class="msg-time">Yesterday • 19:02</span>
+          </div>
+        </div>
+
+        <div class="msg-bubble msg-lecturer">
+          <div>
+            Hi Sylvia, thank you for letting me know. There was a short quiz, but we can
+            arrange a make-up once you are fully recovered. I have noted this as an
+            excused absence.
+          </div>
+          <div class="msg-meta-row">
+            <span class="msg-sender">You • Lecturer</span>
+            <span class="msg-time">Yesterday • 20:15</span>
+          </div>
+        </div>
+
+        <div class="msg-bubble msg-student">
+          <div>
+            Thank you so much, I appreciate it.
+          </div>
+          <div class="msg-meta-row">
+            <span class="msg-sender">Sylvia Namusoke • Student</span>
+            <span class="msg-time">Yesterday • 20:30</span>
+          </div>
+        </div>
+      `
+    },
+    conv4: {
+      title: "Exam paper submission deadline",
+      subtitle: "Faculty of Computing • From: Head of Department",
+      body: `
+        <div class="msg-bubble msg-student">
+          <div>
+            Dear colleagues, this is a reminder that draft exam papers for all
+            undergraduate courses must be submitted to the Exams Office by
+            Friday 21 November, 4:00 pm.
+          </div>
+          <div class="msg-meta-row">
+            <span class="msg-sender">Head of Department • Staff</span>
+            <span class="msg-time">Yesterday • 15:20</span>
+          </div>
+        </div>
+
+        <div class="msg-bubble msg-lecturer">
+          <div>
+            Noted, thank you. My CS201 and IS204 papers are already in draft and will
+            be submitted by Wednesday.
+          </div>
+          <div class="msg-meta-row">
+            <span class="msg-sender">You • Lecturer</span>
+            <span class="msg-time">Yesterday • 16:05</span>
+          </div>
+        </div>
+      `
+    },
+    conv5: {
+      title: "Project topic approval request",
+      subtitle: "CS220 - Data Structures and Algorithms • From: Group 3",
+      body: `
+        <div class="msg-bubble msg-student">
+          <div>
+            Dear Lecturer, Group 3 would like to propose a mini-library system as our
+            project topic, focusing on balanced tree structures for indexing. Could
+            you please approve or suggest a modification?
+          </div>
+          <div class="msg-meta-row">
+            <span class="msg-sender">Group 3 • Students</span>
+            <span class="msg-time">16 Nov 2025 • 11:10</span>
+          </div>
+        </div>
+
+        <div class="msg-bubble msg-lecturer">
+          <div>
+            This is a solid topic. Please include both AVL trees and an alternative
+            indexing method (e.g. B+ trees) in your design so that you can compare
+            performance.
+          </div>
+          <div class="msg-meta-row">
+            <span class="msg-sender">You • Lecturer</span>
+            <span class="msg-time">16 Nov 2025 • 13:00</span>
+          </div>
+        </div>
+      `
+    }
+  };
+
+  conversationList.addEventListener("click", function(e){
+    const item = e.target.closest(".conv-item");
+    if(!item) return;
+
+    // set active
+    document.querySelectorAll(".conv-item").forEach(c => c.classList.remove("active"));
+    item.classList.add("active");
+
+    const id = item.getAttribute("data-id");
+    const data = THREAD_DATA[id];
+    if(data){
+      threadTitle.textContent = data.title;
+      threadSubtitle.textContent = data.subtitle;
+      threadBody.innerHTML = data.body;
+    }
+  });
+
+  // Filters + folders
+  (function(){
+    const filterClass = document.getElementById("filterClass");
+    const filterType = document.getElementById("filterType");
+    const filterStatus = document.getElementById("filterStatus");
+    const filterSearch = document.getElementById("filterSearch");
+    const folderButtons = document.querySelectorAll(".folder-pill");
+    const convItems = conversationList.querySelectorAll(".conv-item");
+    let currentFolder = "inbox";
+
+    folderButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        folderButtons.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentFolder = btn.getAttribute("data-folder") || "inbox";
+        applyFilters();
+      });
+    });
+
+    function applyFilters(){
+      const cls = filterClass.value;
+      const type = filterType.value;
+      const status = filterStatus.value;
+      const q = (filterSearch.value || "").toLowerCase().trim();
+
+      convItems.forEach(item => {
+        const iClass = item.getAttribute("data-class");
+        const iType = item.getAttribute("data-type");
+        const iStatus = item.getAttribute("data-status");
+        const iFolder = item.getAttribute("data-folder") || "inbox";
+        const text = item.textContent.toLowerCase();
+
+        let visible = true;
+        if(iFolder !== currentFolder) visible = false;
+        if(cls !== "all" && iClass !== cls) visible = false;
+        if(type !== "all" && iType !== type) visible = false;
+
+        if(status === "unread"){
+          visible = visible && (iStatus === "unread");
+        }else if(status === "open"){
+          visible = visible && (iStatus === "open");
+        }else if(status === "resolved"){
+          visible = visible && (iStatus === "resolved");
+        }
+
+        if(q && !text.includes(q)) visible = false;
+
+        item.style.display = visible ? "" : "none";
+      });
+    }
+
+    [filterClass, filterType, filterStatus].forEach(el => {
+      el.addEventListener("change", applyFilters);
+    });
+    filterSearch.addEventListener("input", applyFilters);
+
+    applyFilters();
+  })();
+
+  // Reply actions (mock)
+  function sendReply(resolveAlso){
+    const text = (document.getElementById("replyText").value || "").trim();
+    if(!text){
+      alert("Please type a reply message before sending.");
+      return;
+    }
+    alert("Mock send: your reply has been recorded" +
+      (resolveAlso ? " and the conversation would be marked as resolved." : "."));
+    if(resolveAlso){
+      // In real app, update status; here just show a quick information message.
+    }
+    document.getElementById("replyText").value = "";
+  }
+
+  document.getElementById("btnSendReply").addEventListener("click", () => {
+    sendReply(false);
+  });
+  document.getElementById("btnReplyAndResolve").addEventListener("click", () => {
+    sendReply(true);
+  });
+
+  // Mark resolved (without reply)
+  document.getElementById("btnMarkResolved").addEventListener("click", () => {
+    alert("Mock: this conversation would now be marked as resolved.");
+  });
+
+  // Archive flow
+  let currentArchivedConv = null;
+  document.getElementById("btnArchive").addEventListener("click", () => {
+    const active = document.querySelector(".conv-item.active");
+    if(!active){
+      alert("No conversation selected.");
+      return;
+    }
+    currentArchivedConv = active;
+    const subject = active.querySelector(".conv-subject")?.textContent || "this conversation";
+    const txt = document.getElementById("modalArchiveText");
+    if(txt){
+      txt.textContent = 'Are you sure you want to archive "' + subject +
+        '"? It will move out of Inbox but remain searchable (mock).';
+    }
+    openModal("modalArchive");
+  });
+
+  function confirmArchive(){
+    if(currentArchivedConv){
+      currentArchivedConv.setAttribute("data-folder","archived");
+      alert("Mock: conversation archived. It would move to Archived folder in production.");
+      currentArchivedConv = null;
+    }
+    closeModal("modalArchive");
+  }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title><%= (tenant?.name || "Classic Campus") %> • Offer Letters</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <% if (csrfToken) { %>
+    <meta name="csrf-token" content="<%= csrfToken %>">
+  <% } %>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/navbar.css" />
+  <link rel="stylesheet" href="/css/student-portal.css" />
+
+  <style>
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
+    .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+    .input,.select,.textarea,.view-input{
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(13,64,96,.16);
+      background:#fff;
+      outline:none;
+    }
+
+    .input{min-width:220px}
+    .textarea{width:100%;min-height:120px;resize:vertical}
+
+    .input:focus,.select:focus,.textarea:focus{
+      border-color:rgba(10,111,191,.45);
+      box-shadow:0 0 0 3px rgba(10,111,191,.12);
+    }
+
+    .view-input{
+      min-height:44px;
+      display:flex;
+      align-items:center;
+      font-weight:800;
+      color:#0f172a;
+      background:#fbfdff;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+
+    .view-input.multiline{
+      min-height:96px;
+      align-items:flex-start;
+      white-space:pre-wrap;
+      overflow:auto;
+      text-overflow:unset;
+      line-height:1.55;
+    }
+
+    .muted{font-size:12px;color:#6b7280}
+    .strong{font-weight:900}
+
+    .grid-4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+    .grid-2{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(320px,.55fr);gap:12px}
+
+    .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:900;white-space:nowrap}
+    .ok{background:#ecfdf3;color:#15803d}
+    .warn{background:#fef9c3;color:#92400e}
+    .bad{background:#fee2e2;color:#b91c1c}
+    .info{background:#eef2ff;color:#3730a3}
+
+    .table-wrap{
+      overflow-x:auto;
+      overflow-y:hidden;
+      border:1px solid rgba(13,64,96,.10);
+      border-radius:12px;
+      max-width:100%;
+      -webkit-overflow-scrolling:touch;
+    }
+
+    table{
+      width:100%;
+      min-width:1320px;
+      border-collapse:separate;
+      border-spacing:0;
+      background:#fff;
+      table-layout:fixed;
+    }
+
+    th,td{
+      padding:10px 12px;
+      border-bottom:1px solid rgba(13,64,96,.08);
+      vertical-align:middle;
+    }
+
+    th{
+      font-size:12px;
+      color:#6b7280;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+      text-align:left;
+      background:rgba(13,64,96,.03);
+      position:sticky;
+      top:0;
+      z-index:1;
+      white-space:nowrap;
+    }
+
+    tr:hover td{background:rgba(10,111,191,.04)}
+    tr.row-clickable{cursor:pointer}
+
+    .col-candidate{width:320px}
+    .col-program{width:250px}
+    .col-intake{width:150px}
+    .col-latest{width:210px}
+    .col-status{width:140px}
+    .col-actions{width:240px}
+
+    .cell-ellipsis{
+      display:block;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      max-width:100%;
+    }
+
+    .item-title{
+      font-weight:900;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+
+    .item-sub{
+      font-size:12px;
+      color:#6b7280;
+      margin-top:2px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+
+    .actions{
+      display:flex;
+      gap:6px;
+      justify-content:flex-end;
+      flex-wrap:nowrap;
+      overflow:hidden;
+    }
+
+    .btn-xs{
+      padding:6px 8px;
+      border-radius:10px;
+      border:1px solid rgba(13,64,96,.14);
+      background:#fff;
+      cursor:pointer;
+      font-size:12px;
+      position:relative;
+      z-index:2;
+      flex:0 0 auto;
+    }
+
+    .btn-xs:hover{background:rgba(10,111,191,.06)}
+
+    .flash-wrap{display:grid;gap:10px;margin-bottom:12px}
+    .flash{padding:12px 14px;border-radius:12px;font-weight:700}
+    .flash-success{background:#ecfdf3;color:#166534;border:1px solid #bbf7d0}
+    .flash-error{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:14px;
+      flex-wrap:nowrap;
+    }
+
+    .topbar > div:first-child{
+      min-width:0;
+      flex:1 1 auto;
+    }
+
+    .top-actions{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      align-items:center;
+      flex:0 0 auto;
+      margin-left:auto;
+    }
+
+    .modal-backdrop{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.45);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:30px 18px;
+      z-index:9999;
+      overflow-y:auto;
+    }
+
+    .modal-backdrop.show{display:flex}
+
+    .modal{
+      width:min(1120px,100%);
+      max-height:calc(100dvh - 60px);
+      background:#fff;
+      border-radius:22px;
+      box-shadow:0 24px 70px rgba(0,0,0,.25);
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .modal.sm{width:min(760px,100%)}
+    .modal.md{width:min(940px,100%)}
+    .modal.lg{width:min(1120px,100%)}
+
+    .modal > form{
+      display:flex;
+      flex-direction:column;
+      flex:1 1 auto;
+      min-height:0;
+      overflow:hidden;
+    }
+
+    .modal-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      padding:16px 18px;
+      border-bottom:1px solid rgba(13,64,96,.10);
+      background:#fff;
+    }
+
+    .modal-title{font-weight:900;font-size:18px}
+
+    .modal-body{
+      padding:16px 18px;
+      overflow-y:auto;
+      min-height:0;
+      flex:1 1 auto;
+    }
+
+    .modal-footer{
+      display:flex;
+      justify-content:flex-end;
+      gap:10px;
+      padding:14px 18px;
+      border-top:1px solid rgba(13,64,96,.10);
+      background:#fff;
+      flex-wrap:wrap;
+    }
+
+    .form-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+    .field label{display:block;font-size:12px;color:#6b7280;margin-bottom:6px}
+    .field input,.field select,.field textarea{width:100%}
+    .divider{height:1px;background:rgba(13,64,96,.10);margin:12px 0}
+    .json-data{display:none !important}
+
+    .preview-shell{
+      border:1px solid rgba(13,64,96,.10);
+      border-radius:16px;
+      overflow:hidden;
+      background:#f8fbff;
+      min-height:520px;
+    }
+
+    .preview-frame{
+      width:100%;
+      min-height:520px;
+      border:0;
+      background:#fff;
+    }
+
+    .mini-list{display:grid;gap:10px;margin-top:10px}
+    .mini-item{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 12px;border:1px solid rgba(13,64,96,.10);border-radius:12px;background:#fff}
+    .mini-item .left{display:grid;gap:2px}
+
+    .tokens{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top:10px;
+    }
+
+    .token{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      background:#eef2ff;
+      color:#3730a3;
+      font-size:12px;
+      font-weight:800;
+    }
+
+    @media (max-width: 1100px){
+      .grid-2{grid-template-columns:1fr}
+    }
+
+    @media (max-width: 900px){
+      .form-grid{grid-template-columns:1fr}
+      .topbar{flex-wrap:wrap}
+      .top-actions{width:100%;justify-content:flex-start}
+    }
+
+    @media (max-width: 680px){
+      .grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .input{min-width:160px}
+    }
+
+    @media (max-width: 520px){
+      .toolbar .left,
+      .toolbar .right{width:100%}
+      .toolbar .left > *,
+      .toolbar .right > *{max-width:100%}
+      table{min-width:1320px}
+    }
+
+    @media print{
+      body *{visibility:hidden !important}
+      #printPreview, #printPreview *{visibility:visible !important}
+      #printPreview{
+        position:absolute;
+        inset:0;
+        background:#fff;
+        padding:0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <%- include("../../partials/navbar") %>
+
+    <main class="main">
+      <% if (typeof messages !== "undefined" && (messages.success?.length || messages.error?.length)) { %>
+        <div class="flash-wrap">
+          <% (messages.success || []).forEach(function(msg){ %>
+            <div class="flash flash-success"><%= msg %></div>
+          <% }) %>
+          <% (messages.error || []).forEach(function(msg){ %>
+            <div class="flash flash-error"><%= msg %></div>
+          <% }) %>
+        </div>
+      <% } %>
+
+      <div class="topbar">
+        <div>
+          <div class="title">Offer Letters</div>
+          <div class="subtitle">Generate, preview, send, print and void offer letters from one page.</div>
+        </div>
+
+        <div class="top-actions">
+          <a class="btn light" href="/admin/admissions"><i class="fa-solid fa-arrow-left"></i> Admissions</a>
+          <a class="btn light" href="/admin/admissions/applicants"><i class="fa-solid fa-users"></i> Applicants</a>
+          <button class="btn primary" id="btnEditTemplate" type="button"><i class="fa-solid fa-file-signature"></i> Edit Template</button>
+        </div>
+      </div>
+
+      <div class="grid-4">
+        <div class="card">
+          <div class="section-title">Accepted</div>
+          <div class="kpi-value"><%= kpis?.accepted || 0 %></div>
+          <div class="muted">Ready for offers</div>
+        </div>
+        <div class="card">
+          <div class="section-title">Letters</div>
+          <div class="kpi-value"><%= kpis?.letters || 0 %></div>
+          <div class="muted">All generated letters</div>
+        </div>
+        <div class="card">
+          <div class="section-title">Draft</div>
+          <div class="kpi-value" style="color:#92400e"><%= kpis?.draft || 0 %></div>
+          <div class="muted">Not yet sent</div>
+        </div>
+        <div class="card">
+          <div class="section-title">Sent</div>
+          <div class="kpi-value" style="color:#15803d"><%= kpis?.sent || 0 %></div>
+          <div class="muted">Email delivered</div>
+        </div>
+      </div>
+
+      <section class="card" style="margin-top:12px;">
+        <form class="toolbar" method="GET" action="/admin/admissions/offer-letters">
+          <div class="left">
+            <input class="input" name="q" value="<%= query?.q || '' %>" placeholder="Search name, app ID, email, phone..." />
+
+            <select class="select" name="programId">
+              <option value="">All Programs</option>
+              <% (programs || []).forEach(function(p){ %>
+                <option value="<%= String(p._id) %>" <%= String(query?.programId || '') === String(p._id) ? 'selected' : '' %>>
+                  <%= (p.code ? p.code + ' — ' : '') + (p.name || p.title || 'Program') %>
+                </option>
+              <% }) %>
+            </select>
+
+            <select class="select" name="intakeId">
+              <option value="">All Intakes</option>
+              <% (intakes || []).forEach(function(it){ %>
+                <option value="<%= String(it._id) %>" <%= String(query?.intakeId || '') === String(it._id) ? 'selected' : '' %>>
+                  <%= (it.code ? it.code + ' — ' : '') + (it.name || 'Intake') %>
+                </option>
+              <% }) %>
+            </select>
+
+            <select class="select" name="status">
+              <option value="">All Letter Status</option>
+              <option value="draft" <%= query?.status === 'draft' ? 'selected' : '' %>>Draft</option>
+              <option value="sent" <%= query?.status === 'sent' ? 'selected' : '' %>>Sent</option>
+              <option value="void" <%= query?.status === 'void' ? 'selected' : '' %>>Void</option>
+            </select>
+          </div>
+
+          <div class="right">
+            <a class="btn light" href="/admin/admissions/offer-letters"><i class="fa-solid fa-rotate-left"></i> Reset</a>
+            <button class="btn primary" type="submit"><i class="fa-solid fa-magnifying-glass"></i> Filter</button>
+          </div>
+        </form>
+      </section>
+
+      <div class="grid-2" style="margin-top:12px;">
+        <section class="card" style="min-width:0;">
+          <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;">
+            <div>
+              <div class="section-title">Accepted Applicants</div>
+              <div class="section-sub">Generate draft offer letters for accepted applicants.</div>
+            </div>
+            <div class="muted"><%= (accepted || []).length %> candidate(s)</div>
+          </div>
+
+          <div style="margin-top:10px;">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="col-candidate">Applicant</th>
+                    <th class="col-program">Program</th>
+                    <th class="col-intake">Intake</th>
+                    <th class="col-latest">Latest Letter</th>
+                    <th class="col-actions" style="text-align:right;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="tbodyAccepted"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <aside class="card" style="min-width:0;">
+          <div class="section-title">Quick Actions</div>
+          <div class="section-sub">Fast shortcuts for admissions staff.</div>
+
+          <div class="mini-list">
+            <div class="mini-item">
+              <div class="left">
+                <div class="strong">Draft Letters</div>
+                <div class="muted">Show only unsent letters</div>
+              </div>
+              <a class="btn-xs" href="/admin/admissions/offer-letters?status=draft"><i class="fa-solid fa-pen"></i></a>
+            </div>
+            <div class="mini-item">
+              <div class="left">
+                <div class="strong">Sent Letters</div>
+                <div class="muted">Review delivered offers</div>
+              </div>
+              <a class="btn-xs" href="/admin/admissions/offer-letters?status=sent"><i class="fa-solid fa-paper-plane"></i></a>
+            </div>
+            <div class="mini-item">
+              <div class="left">
+                <div class="strong">Template Tokens</div>
+                <div class="muted">Available placeholders for subject and body</div>
+              </div>
+              <button class="btn-xs" id="btnShowTokens" type="button"><i class="fa-solid fa-code"></i></button>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <section class="card" style="margin-top:12px;min-width:0;">
+        <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;">
+          <div>
+            <div class="section-title">Letters Table</div>
+            <div class="section-sub">Preview, send and void generated letters.</div>
+          </div>
+          <div class="muted"><%= (letters || []).length %> letter(s)</div>
+        </div>
+
+        <div style="margin-top:10px;">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:160px;">Letter No</th>
+                  <th style="width:280px;">Applicant</th>
+                  <th style="width:240px;">Program</th>
+                  <th style="width:160px;">Intake</th>
+                  <th style="width:140px;">Status</th>
+                  <th style="width:230px;text-align:right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyLetters"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="mPreview">
+    <div class="modal lg">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title">Offer Letter Preview</div>
+          <div class="muted" id="previewMeta">—</div>
+        </div>
+        <button class="btn-xs" type="button" data-close-modal="mPreview"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="modal-body" id="printPreview">
+        <div class="form-grid">
+          <div class="field"><label>Letter No</label><div class="view-input" id="pvLetterNo">—</div></div>
+          <div class="field"><label>Status</label><div class="view-input" id="pvStatus">—</div></div>
+          <div class="field"><label>Recipient</label><div class="view-input" id="pvRecipient">—</div></div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="preview-shell">
+          <iframe class="preview-frame" id="previewFrame"></iframe>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn light" type="button" data-close-modal="mPreview">Close</button>
+        <button class="btn light" type="button" id="btnPrintPreview"><i class="fa-solid fa-print"></i> Print</button>
+        <button class="btn light" type="button" id="btnOpenSend"><i class="fa-solid fa-paper-plane"></i> Send</button>
+        <button class="btn light" type="button" id="btnOpenVoid"><i class="fa-solid fa-ban"></i> Void</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="mSend">
+    <div class="modal sm">
+      <div class="modal-header">
+        <div class="modal-title">Send Offer Letter</div>
+        <button class="btn-xs" type="button" data-close-modal="mSend"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <form id="sendForm" method="POST">
+        <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
+        <div class="modal-body">
+          <div class="field">
+            <label>Recipient Email</label>
+            <input class="input" id="sendTo" name="to" required />
+          </div>
+          <div class="muted" style="margin-top:10px;">This sends the current letter HTML by email using your configured mailer.</div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn light" type="button" data-close-modal="mSend">Cancel</button>
+          <button class="btn primary" type="submit"><i class="fa-solid fa-paper-plane"></i> Send Email</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="mVoid">
+    <div class="modal sm">
+      <div class="modal-header">
+        <div class="modal-title">Void Offer Letter</div>
+        <button class="btn-xs" type="button" data-close-modal="mVoid"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <form id="voidForm" method="POST">
+        <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
+        <div class="modal-body">
+          <div class="note">
+            This will mark the letter as <strong>void</strong> and block future sending from this record.
+          </div>
+          <div class="muted" style="margin-top:10px;">Use this only when the draft is no longer valid.</div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn light" type="button" data-close-modal="mVoid">Cancel</button>
+          <button class="btn" style="background:#fee2e2;border:1px solid rgba(239,68,68,.25);color:#b91c1c;" type="submit">
+            <i class="fa-solid fa-ban"></i> Void Letter
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="mTemplate">
+    <div class="modal lg">
+      <div class="modal-header">
+        <div class="modal-title">Edit Active Template</div>
+        <button class="btn-xs" type="button" data-close-modal="mTemplate"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <form method="POST" action="/admin/admissions/offer-letters/template">
+        <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
+
+        <div class="modal-body">
+          <div class="field">
+            <label>Email Subject</label>
+            <input class="input" name="subject" value="<%= template?.subject || '' %>" required />
+          </div>
+
+          <div class="field" style="margin-top:12px;">
+            <label>Body HTML</label>
+            <textarea class="textarea" name="bodyHtml" style="min-height:320px" required><%= template?.bodyHtml || '' %></textarea>
+          </div>
+
+          <div class="tokens">
+            <span class="token">{{letterNo}}</span>
+            <span class="token">{{date}}</span>
+            <span class="token">{{fullName}}</span>
+            <span class="token">{{email}}</span>
+            <span class="token">{{phone}}</span>
+            <span class="token">{{program}}</span>
+            <span class="token">{{intake}}</span>
+            <span class="token">{{studyMode}}</span>
+            <span class="token">{{academicYear}}</span>
+            <span class="token">{{subjectLine}}</span>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn light" type="button" data-close-modal="mTemplate">Cancel</button>
+          <button class="btn primary" type="submit"><i class="fa-solid fa-floppy-disk"></i> Save Template</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="mTokens">
+    <div class="modal sm">
+      <div class="modal-header">
+        <div class="modal-title">Template Tokens</div>
+        <button class="btn-xs" type="button" data-close-modal="mTokens"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="tokens">
+          <span class="token">{{letterNo}}</span>
+          <span class="token">{{date}}</span>
+          <span class="token">{{fullName}}</span>
+          <span class="token">{{email}}</span>
+          <span class="token">{{phone}}</span>
+          <span class="token">{{program}}</span>
+          <span class="token">{{intake}}</span>
+          <span class="token">{{studyMode}}</span>
+          <span class="token">{{academicYear}}</span>
+          <span class="token">{{subjectLine}}</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn light" type="button" data-close-modal="mTokens">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <form id="generateForm" method="POST" action="/admin/admissions/offer-letters/generate" style="display:none;">
+    <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
+    <input type="hidden" name="applicantId" id="generateApplicantId">
+  </form>
+
+  <textarea id="acceptedData" class="json-data" aria-hidden="true"><%- JSON.stringify((accepted || []).map(function(a){
+    const name = a.fullName || [a.firstName, a.middleName, a.lastName].filter(Boolean).join(' ');
+    const latest = latestByApplicant && latestByApplicant[String(a._id)] ? latestByApplicant[String(a._id)] : null;
+    return {
+      id: String(a._id || ''),
+      applicationId: a.applicationId || '',
+      name: name || '—',
+      email: a.email || '',
+      phone: a.phone || '',
+      intake: a.intakeCode || a.intakeName || a.intake || '',
+      programLabel: a.program1 ? ((a.program1.code ? a.program1.code + ' — ' : '') + (a.program1.name || a.program1.title || 'Program')) : 'Program',
+      latestLetterId: latest ? String(latest._id || '') : '',
+      latestLetterNo: latest ? (latest.letterNo || '') : '',
+      latestLetterStatus: latest ? (latest.status || 'draft') : '',
+      latestLetterIssuedAt: latest ? (latest.sentAt || latest.issuedAt || null) : null
+    };
+  })) %></textarea>
+
+  <textarea id="lettersData" class="json-data" aria-hidden="true"><%- JSON.stringify((letters || []).map(function(l){
+    const applicant = l.applicant || {};
+    const applicantName = applicant.fullName || [applicant.firstName, applicant.middleName, applicant.lastName].filter(Boolean).join(' ');
+    return {
+      id: String(l._id || ''),
+      letterNo: l.letterNo || '',
+      status: l.status || 'draft',
+      subject: l.subject || '',
+      bodyHtml: l.bodyHtml || '',
+      sentToEmail: l.sentToEmail || applicant.email || '',
+      issuedAt: l.issuedAt || null,
+      sentAt: l.sentAt || null,
+      applicantName: applicantName || '—',
+      applicantEmail: applicant.email || '',
+      programLabel: l.program ? ((l.program.code ? l.program.code + ' — ' : '') + (l.program.name || l.program.title || 'Program')) : '—',
+      intakeLabel: l.intakeId ? ((l.intakeId.code ? l.intakeId.code + ' — ' : '') + (l.intakeId.name || 'Intake')) : '—'
+    };
+  })) %></textarea>
+
+  <script src="/js/navbar.js" defer></script>
+  <script src="/js/offer-letters-admin.js" defer></script>
+</body>
+</html>

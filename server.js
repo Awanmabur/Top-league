@@ -1,3 +1,11 @@
+// server.js — Classic Academy (EJS + Booking API) — Heroku-safe + Debuggable
+// ✅ /robots.txt + /sitemap.xml
+// ✅ /api/health + /api/google-test
+// ✅ Availability routes require Google only
+// ✅ Booking route requires Google + Zoom
+// ✅ Better Google/Zoom error details returned to the browser
+// ✅ RFC3339 timestamps without milliseconds to avoid edge cases
+
 require("dotenv").config();
 
 const path = require("path");
@@ -14,35 +22,32 @@ const app = express();
    Security + parsing
    ============================================================ */
 
-// ✅ Fix “inline script blocked” problem for this 1-page view
 app.use(
   helmet({
-    contentSecurityPolicy: false,
+    contentSecurityPolicy: false, // keep inline scripts for your UI
   })
 );
 
 app.use(express.json({ limit: "200kb" }));
+app.use(express.urlencoded({ extended: true }));
 
-// ✅ Static assets (images/css/js in /public)
 app.use(express.static(path.join(__dirname, "public")));
 
-// Rate limit only API routes
 app.use(
   "/api/",
   rateLimit({
     windowMs: 60 * 1000,
-    max: 50,
+    max: 60,
     standardHeaders: true,
     legacyHeaders: false,
   })
 );
 
-// ✅ EJS setup
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
 /* ============================================================
-   Env (do NOT crash app if missing; disable features instead)
+   Env + feature flags
    ============================================================ */
 
 const env = {
@@ -69,12 +74,12 @@ const env = {
   ZOOM_HOST_USER_ID: process.env.ZOOM_HOST_USER_ID || "me",
 };
 
-const GOOGLE_ENABLED =
+const GOOGLE_OAUTH_CONFIGURED =
   Boolean(env.GOOGLE_OAUTH_CLIENT_ID) &&
   Boolean(env.GOOGLE_OAUTH_CLIENT_SECRET) &&
   Boolean(env.GOOGLE_OAUTH_REDIRECT_URI);
 
-const GOOGLE_BOOKING_ENABLED = GOOGLE_ENABLED && Boolean(env.GOOGLE_OAUTH_REFRESH_TOKEN);
+const GOOGLE_BOOKING_ENABLED = GOOGLE_OAUTH_CONFIGURED && Boolean(env.GOOGLE_OAUTH_REFRESH_TOKEN);
 
 const ZOOM_ENABLED =
   Boolean(env.ZOOM_ACCOUNT_ID) &&
@@ -83,7 +88,7 @@ const ZOOM_ENABLED =
 
 function featureStatus() {
   return {
-    googleOAuthConfigured: GOOGLE_ENABLED,
+    googleOAuthConfigured: GOOGLE_OAUTH_CONFIGURED,
     googleRefreshTokenConfigured: Boolean(env.GOOGLE_OAUTH_REFRESH_TOKEN),
     googleCalendarBookingEnabled: GOOGLE_BOOKING_ENABLED,
     zoomEnabled: ZOOM_ENABLED,
@@ -99,27 +104,34 @@ const render = (res, view, data = {}) => res.render(view, data);
 const pad = (n) => String(n).padStart(2, "0");
 const isoKey = (dt) => `${dt.year}-${pad(dt.month)}-${pad(dt.day)}`;
 
+function explainError(e) {
+  const msg =
+    e?.response?.data?.error?.message ||
+    e?.response?.data?.error_description ||
+    e?.response?.data?.error ||
+    e?.message ||
+    "Server error";
+
+  return {
+    ok: false,
+    message: msg,
+    status: e?.response?.status || null,
+    code: e?.code || null,
+    details: e?.response?.data || null,
+  };
+}
+
+// RFC3339 without milliseconds (safest for external APIs)
+function isoUtcNoMs(dt) {
+  return dt.toUTC().toISO({ suppressMilliseconds: true });
+}
+
 function overlapsAny(slotInterval, busyIntervals) {
   return busyIntervals.some((b) => slotInterval.overlaps(b));
 }
 
 function parseHostEmails() {
   return env.HOST_EMAILS.split(",").map((s) => s.trim()).filter(Boolean);
-}
-
-async function freeBusyBetween(calendarApi, timeMinISO, timeMaxISO) {
-  const fb = await calendarApi.freebusy.query({
-    requestBody: {
-      timeMin: timeMinISO,
-      timeMax: timeMaxISO,
-      items: [{ id: env.GOOGLE_CALENDAR_ID }],
-    },
-  });
-
-  const busy = fb.data.calendars?.[env.GOOGLE_CALENDAR_ID]?.busy || [];
-  return busy.map((b) =>
-    Interval.fromDateTimes(DateTime.fromISO(b.start), DateTime.fromISO(b.end))
-  );
 }
 
 function computeSlotsForDay({
@@ -133,14 +145,12 @@ function computeSlotsForDay({
   const slots = [];
   const now = DateTime.now().setZone(dayStart.zoneName).plus({ minutes: leadMinutes });
 
-  for (
-    let t = dayStart;
-    t.plus({ minutes: durationMin }) <= dayEnd;
-    t = t.plus({ minutes: slotIntervalMin })
-  ) {
+  for (let t = dayStart; t.plus({ minutes: durationMin }) <= dayEnd; t = t.plus({ minutes: slotIntervalMin })) {
     if (t < now) continue;
+
     const end = t.plus({ minutes: durationMin });
     const slotI = Interval.fromDateTimes(t.toUTC(), end.toUTC());
+
     if (overlapsAny(slotI, busyIntervals)) continue;
 
     slots.push({ time: t.toFormat("HH:mm"), startISO: t.toISO(), endISO: end.toISO() });
@@ -149,7 +159,45 @@ function computeSlotsForDay({
 }
 
 /* ============================================================
-   Google OAuth client + guards
+   Feature guards
+   ============================================================ */
+
+function requireGoogle(req, res) {
+  if (!GOOGLE_OAUTH_CONFIGURED) {
+    return res.status(503).json({
+      ok: false,
+      message:
+        "Google OAuth not configured. Set GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, GOOGLE_OAUTH_REDIRECT_URI.",
+      features: featureStatus(),
+    });
+  }
+  if (!env.GOOGLE_OAUTH_REFRESH_TOKEN) {
+    return res.status(503).json({
+      ok: false,
+      message:
+        "Missing GOOGLE_OAUTH_REFRESH_TOKEN. Visit /google/auth to generate it after setting OAuth vars.",
+      features: featureStatus(),
+    });
+  }
+  return null;
+}
+
+function requireGoogleAndZoom(req, res) {
+  const blockedGoogle = requireGoogle(req, res);
+  if (blockedGoogle) return blockedGoogle;
+
+  if (!ZOOM_ENABLED) {
+    return res.status(503).json({
+      ok: false,
+      message: "Zoom not configured. Set ZOOM_ACCOUNT_ID, ZOOM_CLIENT_ID, ZOOM_CLIENT_SECRET.",
+      features: featureStatus(),
+    });
+  }
+  return null;
+}
+
+/* ============================================================
+   Google OAuth + Calendar API
    ============================================================ */
 
 const oauth2Client = new google.auth.OAuth2(
@@ -158,70 +206,36 @@ const oauth2Client = new google.auth.OAuth2(
   env.GOOGLE_OAUTH_REDIRECT_URI || "missing"
 );
 
-function ensureGoogleAuth() {
-  if (!GOOGLE_BOOKING_ENABLED) {
-    const s = featureStatus();
-    if (!s.googleOAuthConfigured) {
-      throw new Error(
-        "Google OAuth not configured. Set GOOGLE_OAUTH_CLIENT_ID/SECRET/REDIRECT_URI in env vars."
-      );
-    }
-    throw new Error(
-      "Missing GOOGLE_OAUTH_REFRESH_TOKEN. Visit /google/auth to generate it (after setting OAuth vars)."
-    );
-  }
+function calendarApiFromEnv() {
   oauth2Client.setCredentials({ refresh_token: env.GOOGLE_OAUTH_REFRESH_TOKEN });
   return google.calendar({ version: "v3", auth: oauth2Client });
 }
 
-/* ============================================================
-   ✅ CLEAN ROUTES FOR EJS PAGES
-   ============================================================ */
+async function freeBusyBetween(calendarApi, timeMinISO, timeMaxISO) {
+  try {
+    const fb = await calendarApi.freebusy.query({
+      requestBody: {
+        timeMin: timeMinISO,
+        timeMax: timeMaxISO,
+        timeZone: env.BOOKING_TIMEZONE,
+        items: [{ id: env.GOOGLE_CALENDAR_ID }],
+      },
+    });
 
-// Home page
-app.get("/", (req, res) => {
-  const baseUrl = `${req.protocol}://${req.get("host")}`;
-  const pageUrl = `${baseUrl}/`;
-  return render(res, "index", { baseUrl, pageUrl });
-});
-
-// Map clean routes -> views/pages/*
-const pageRoutes = {
-  "/about": "pages/about",
-  "/features": "pages/features",
-  "/services": "pages/services",
-
-  "/schools": "pages/schools",
-  "/search": "pages/search",
-  "/contact": "pages/contact",
-
-  "/schedule": "pages/schedule",
-  "/plan": "pages/plan",
-  "/blog": "pages/blog",
-
-  "/careers": "pages/careers",
-  "/faq": "pages/faq",
-  "/privacy": "pages/privacy",
-  "/terms": "pages/terms",
-  "/admissions": "pages/admissions",
-  "/share": "pages/share",
-};
-
-// Register routes
-Object.entries(pageRoutes).forEach(([route, view]) => {
-  app.get(route, (req, res) => {
-    const baseUrl = `${req.protocol}://${req.get("host")}`;
-    const pageUrl = `${baseUrl}${route}`;
-    return render(res, view, { baseUrl, pageUrl });
-  });
-});
-
-// Booking page route: /book
-app.get("/book", (req, res) => {
-  const baseUrl = `${req.protocol}://${req.get("host")}`;
-  const pageUrl = `${baseUrl}/book`;
-  res.render("book", { baseUrl, pageUrl, features: featureStatus() });
-});
+    const busy = fb.data.calendars?.[env.GOOGLE_CALENDAR_ID]?.busy || [];
+    return busy.map((b) =>
+      Interval.fromDateTimes(DateTime.fromISO(b.start), DateTime.fromISO(b.end))
+    );
+  } catch (e) {
+    // Log full details for Heroku logs
+    console.error("Google freebusy error:", {
+      message: e?.message,
+      status: e?.response?.status,
+      data: e?.response?.data,
+    });
+    throw e;
+  }
+}
 
 /* ============================================================
    robots.txt + sitemap.xml
@@ -230,26 +244,57 @@ app.get("/book", (req, res) => {
 app.get("/robots.txt", (req, res) => {
   const baseUrl = `${req.protocol}://${req.get("host")}`;
   res.type("text/plain").send(
-    [
-      "User-agent: *",
-      "Allow: /",
-      "",
-      `Sitemap: ${baseUrl}/sitemap.xml`,
-    ].join("\n")
+    ["User-agent: *", "Allow: /", "", `Sitemap: ${baseUrl}/sitemap.xml`].join("\n")
   );
+});
+
+/* ============================================================
+   Pages
+   ============================================================ */
+
+const pageRoutes = {
+  "/about": "pages/about",
+  "/features": "pages/features",
+  "/services": "pages/services",
+  "/schools": "pages/schools",
+  "/search": "pages/search",
+  "/contact": "pages/contact",
+  "/schedule": "pages/schedule",
+  "/plan": "pages/plan",
+  "/blog": "pages/blog",
+  "/careers": "pages/careers",
+  "/faq": "pages/faq",
+  "/privacy": "pages/privacy",
+  "/terms": "pages/terms",
+  "/admissions": "pages/admissions",
+  "/share": "pages/share",
+};
+
+app.get("/", (req, res) => {
+  const baseUrl = `${req.protocol}://${req.get("host")}`;
+  const pageUrl = `${baseUrl}/`;
+  return render(res, "index", { baseUrl, pageUrl });
+});
+
+Object.entries(pageRoutes).forEach(([route, view]) => {
+  app.get(route, (req, res) => {
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const pageUrl = `${baseUrl}${route}`;
+    return render(res, view, { baseUrl, pageUrl });
+  });
+});
+
+app.get("/book", (req, res) => {
+  const baseUrl = `${req.protocol}://${req.get("host")}`;
+  const pageUrl = `${baseUrl}/book`;
+  res.render("book", { baseUrl, pageUrl, features: featureStatus() });
 });
 
 app.get("/sitemap.xml", (req, res) => {
   const baseUrl = `${req.protocol}://${req.get("host")}`;
   const now = new Date().toISOString();
 
-  const urls = [
-    "/", // home
-    ...Object.keys(pageRoutes),
-    "/book",
-    "/google/auth",
-    "/oauth2/callback",
-  ];
+  const urls = ["/", ...Object.keys(pageRoutes), "/book"];
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -270,12 +315,58 @@ ${urls
 });
 
 /* ============================================================
-   Google OAuth routes (only work when OAuth configured)
+   Diagnostics
    ============================================================ */
 
-// 1) Visit this once to generate refresh token
+app.get("/api/health", (req, res) => {
+  res.json({ ok: true, features: featureStatus(), calendarId: env.GOOGLE_CALENDAR_ID });
+});
+
+// Strong Google test endpoint (tells you EXACT failure reason)
+app.get("/api/google-test", async (req, res) => {
+  const blocked = requireGoogle(req, res);
+  if (blocked) return;
+
+  try {
+    const calendarApi = calendarApiFromEnv();
+
+    // 1) ensure token exchange works
+    await oauth2Client.getAccessToken();
+
+    // 2) list calendars
+    const list = await calendarApi.calendarList.list({ maxResults: 5 });
+
+    // 3) test freebusy for next hour
+    const now = DateTime.now().setZone(env.BOOKING_TIMEZONE);
+    const t1 = isoUtcNoMs(now);
+    const t2 = isoUtcNoMs(now.plus({ hours: 1 }));
+
+    const fb = await calendarApi.freebusy.query({
+      requestBody: {
+        timeMin: t1,
+        timeMax: t2,
+        items: [{ id: env.GOOGLE_CALENDAR_ID }],
+      },
+    });
+
+    res.json({
+      ok: true,
+      calendarId: env.GOOGLE_CALENDAR_ID,
+      calendars: (list.data.items || []).map((c) => ({ id: c.id, summary: c.summary })),
+      freebusySample: fb.data.calendars?.[env.GOOGLE_CALENDAR_ID] || null,
+    });
+  } catch (e) {
+    console.error("Google test error:", e?.response?.data || e);
+    res.status(500).json(explainError(e));
+  }
+});
+
+/* ============================================================
+   OAuth helper routes
+   ============================================================ */
+
 app.get("/google/auth", (req, res) => {
-  if (!GOOGLE_ENABLED) {
+  if (!GOOGLE_OAUTH_CONFIGURED) {
     return res
       .status(503)
       .type("text/plain")
@@ -289,12 +380,12 @@ app.get("/google/auth", (req, res) => {
     prompt: "consent select_account",
     scope: ["https://www.googleapis.com/auth/calendar"],
   });
+
   res.redirect(url);
 });
 
-// 2) Google redirects here
 app.get("/oauth2/callback", async (req, res) => {
-  if (!GOOGLE_ENABLED) {
+  if (!GOOGLE_OAUTH_CONFIGURED) {
     return res
       .status(503)
       .type("text/plain")
@@ -310,82 +401,44 @@ app.get("/oauth2/callback", async (req, res) => {
     const { tokens } = await oauth2Client.getToken(code);
     res.type("text/plain").send(
       `TOKENS RECEIVED:\n\n${JSON.stringify(tokens, null, 2)}\n\n` +
-        `Copy tokens.refresh_token into GOOGLE_OAUTH_REFRESH_TOKEN in your .env / Heroku Config Vars, then restart.`
+        `Copy tokens.refresh_token into GOOGLE_OAUTH_REFRESH_TOKEN (Heroku Config Vars), then restart.`
     );
   } catch (e) {
-    res.status(500).send(e.message || "OAuth error");
+    res.status(500).send(explainError(e).message);
   }
 });
 
 /* ============================================================
-   API: Booking (requires Google refresh token + Zoom)
+   Availability APIs (Google only)
    ============================================================ */
 
-let zoomTokenCache = { token: null, exp: 0 };
-
-async function getZoomAccessToken() {
-  if (!ZOOM_ENABLED) {
-    throw new Error(
-      "Zoom is not configured. Set ZOOM_ACCOUNT_ID, ZOOM_CLIENT_ID, ZOOM_CLIENT_SECRET."
-    );
-  }
-
-  const now = Date.now();
-  if (zoomTokenCache.token && zoomTokenCache.exp - now > 60_000) return zoomTokenCache.token;
-
-  const basic = Buffer.from(`${env.ZOOM_CLIENT_ID}:${env.ZOOM_CLIENT_SECRET}`).toString("base64");
-  const url = new URL("https://zoom.us/oauth/token");
-  url.searchParams.set("grant_type", "account_credentials");
-  url.searchParams.set("account_id", env.ZOOM_ACCOUNT_ID);
-
-  const r = await fetch(url.toString(), {
-    method: "POST",
-    headers: { Authorization: `Basic ${basic}` },
-  });
-  if (!r.ok) throw new Error(`Zoom token error: ${r.status} ${await r.text()}`);
-
-  const data = await r.json();
-  zoomTokenCache = { token: data.access_token, exp: now + data.expires_in * 1000 };
-  return zoomTokenCache.token;
-}
-
-function requireBookingFeatures(req, res) {
-  if (!GOOGLE_BOOKING_ENABLED || !ZOOM_ENABLED) {
-    const s = featureStatus();
-    return res.status(503).json({
-      ok: false,
-      message:
-        "Booking is disabled until Google Calendar + Zoom are configured in environment variables.",
-      features: s,
-    });
-  }
-  return null;
-}
-
-// ---------- API: Month availability ----------
 app.get("/api/month-availability", async (req, res) => {
-  const blocked = requireBookingFeatures(req, res);
+  const blocked = requireGoogle(req, res);
   if (blocked) return;
 
   try {
-    const calendarApi = ensureGoogleAuth();
+    const calendarApi = calendarApiFromEnv();
 
     const year = Number(req.query.year);
     const month = Number(req.query.month);
     const durationMin = Number(req.query.duration || env.DEFAULT_DURATION_MIN);
 
-    if (!Number.isInteger(year) || year < 2000 || year > 2100)
+    if (!Number.isInteger(year) || year < 2000 || year > 2100) {
       return res.status(400).json({ ok: false, message: "Invalid year" });
-    if (!Number.isInteger(month) || month < 1 || month > 12)
+    }
+    if (!Number.isInteger(month) || month < 1 || month > 12) {
       return res.status(400).json({ ok: false, message: "Invalid month" });
+    }
 
     const zone = env.BOOKING_TIMEZONE;
+
     const monthStart = DateTime.fromObject({ year, month, day: 1 }, { zone }).set({
       hour: env.BOOKING_START_HOUR,
       minute: 0,
       second: 0,
       millisecond: 0,
     });
+
     const monthEnd = monthStart.plus({ months: 1 }).set({
       hour: env.BOOKING_END_HOUR,
       minute: 0,
@@ -395,9 +448,10 @@ app.get("/api/month-availability", async (req, res) => {
 
     const busyUTC = await freeBusyBetween(
       calendarApi,
-      monthStart.toUTC().toISO(),
-      monthEnd.toUTC().toISO()
+      isoUtcNoMs(monthStart),
+      isoUtcNoMs(monthEnd)
     );
+
     const now = DateTime.now().setZone(zone);
 
     const days = [];
@@ -408,6 +462,7 @@ app.get("/api/month-availability", async (req, res) => {
         second: 0,
         millisecond: 0,
       });
+
       const dayEnd = DateTime.fromObject({ year, month, day: d }, { zone }).set({
         hour: env.BOOKING_END_HOUR,
         minute: 0,
@@ -424,6 +479,7 @@ app.get("/api/month-availability", async (req, res) => {
       const dayBusy = busyUTC.filter((b) => b.overlaps(dayWindowUTC));
 
       const leadMinutes = dayStart.hasSame(now, "day") ? env.LEAD_MINUTES : 0;
+
       const slots = computeSlotsForDay({
         dayStart,
         dayEnd,
@@ -442,30 +498,33 @@ app.get("/api/month-availability", async (req, res) => {
 
     res.json({ ok: true, timezone: zone, year, month, durationMin, days });
   } catch (e) {
-    res.status(500).json({ ok: false, message: e.message || "Server error" });
+    res.status(500).json(explainError(e));
   }
 });
 
-// ---------- API: Day availability ----------
 app.get("/api/availability", async (req, res) => {
-  const blocked = requireBookingFeatures(req, res);
+  const blocked = requireGoogle(req, res);
   if (blocked) return;
 
   try {
-    const calendarApi = ensureGoogleAuth();
+    const calendarApi = calendarApiFromEnv();
 
     const dateStr = String(req.query.date || "");
     const durationMin = Number(req.query.duration || env.DEFAULT_DURATION_MIN);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr))
-      return res.status(400).json({ ok: false, message: "Invalid date format" });
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      return res.status(400).json({ ok: false, message: "Invalid date format (YYYY-MM-DD)" });
+    }
 
     const zone = env.BOOKING_TIMEZONE;
+
     const dayStart = DateTime.fromISO(dateStr, { zone }).set({
       hour: env.BOOKING_START_HOUR,
       minute: 0,
       second: 0,
       millisecond: 0,
     });
+
     const dayEnd = DateTime.fromISO(dateStr, { zone }).set({
       hour: env.BOOKING_END_HOUR,
       minute: 0,
@@ -477,11 +536,7 @@ app.get("/api/availability", async (req, res) => {
       return res.json({ ok: true, timezone: zone, date: dateStr, durationMin, slots: [] });
     }
 
-    const busyUTC = await freeBusyBetween(
-      calendarApi,
-      dayStart.toUTC().toISO(),
-      dayEnd.toUTC().toISO()
-    );
+    const busyUTC = await freeBusyBetween(calendarApi, isoUtcNoMs(dayStart), isoUtcNoMs(dayEnd));
 
     const slots = computeSlotsForDay({
       dayStart,
@@ -494,11 +549,37 @@ app.get("/api/availability", async (req, res) => {
 
     res.json({ ok: true, timezone: zone, date: dateStr, durationMin, slots });
   } catch (e) {
-    res.status(500).json({ ok: false, message: e.message || "Server error" });
+    res.status(500).json(explainError(e));
   }
 });
 
-// ---------- API: Book ----------
+/* ============================================================
+   Booking API (Google + Zoom)
+   ============================================================ */
+
+let zoomTokenCache = { token: null, exp: 0 };
+
+async function getZoomAccessToken() {
+  const now = Date.now();
+  if (zoomTokenCache.token && zoomTokenCache.exp - now > 60_000) return zoomTokenCache.token;
+
+  const basic = Buffer.from(`${env.ZOOM_CLIENT_ID}:${env.ZOOM_CLIENT_SECRET}`).toString("base64");
+  const url = new URL("https://zoom.us/oauth/token");
+  url.searchParams.set("grant_type", "account_credentials");
+  url.searchParams.set("account_id", env.ZOOM_ACCOUNT_ID);
+
+  const r = await fetch(url.toString(), {
+    method: "POST",
+    headers: { Authorization: `Basic ${basic}` },
+  });
+
+  if (!r.ok) throw new Error(`Zoom token error: ${r.status} ${await r.text()}`);
+
+  const data = await r.json();
+  zoomTokenCache = { token: data.access_token, exp: now + data.expires_in * 1000 };
+  return zoomTokenCache.token;
+}
+
 const BookingSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   time: z.string().regex(/^\d{2}:\d{2}$/),
@@ -517,15 +598,16 @@ const BookingSchema = z.object({
 });
 
 app.post("/api/book", async (req, res) => {
-  const blocked = requireBookingFeatures(req, res);
+  const blocked = requireGoogleAndZoom(req, res);
   if (blocked) return;
 
   try {
-    const calendarApi = ensureGoogleAuth();
+    const calendarApi = calendarApiFromEnv();
 
     const parsed = BookingSchema.safeParse(req.body);
-    if (!parsed.success)
+    if (!parsed.success) {
       return res.status(400).json({ ok: false, message: "Invalid payload", issues: parsed.error.issues });
+    }
 
     const b = parsed.data;
     if (b.hp) return res.status(400).json({ ok: false, message: "Bot rejected" });
@@ -534,28 +616,26 @@ app.post("/api/book", async (req, res) => {
     const start = DateTime.fromISO(`${b.date}T${b.time}`, { zone });
     const end = start.plus({ minutes: b.durationMin });
 
-    const busyNow = await freeBusyBetween(calendarApi, start.toUTC().toISO(), end.toUTC().toISO());
-    if (busyNow.length > 0)
+    const busyNow = await freeBusyBetween(calendarApi, isoUtcNoMs(start), isoUtcNoMs(end));
+    if (busyNow.length > 0) {
       return res.status(409).json({ ok: false, message: "That slot was just taken. Choose another." });
+    }
 
     // 1) Create Zoom meeting
     const zoomToken = await getZoomAccessToken();
-    const zoomResp = await fetch(
-      `https://api.zoom.us/v2/users/${encodeURIComponent(env.ZOOM_HOST_USER_ID)}/meetings`,
-      {
-        method: "POST",
-        headers: { Authorization: `Bearer ${zoomToken}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          topic: `${b.product} — ${b.purpose} (${b.name})`,
-          type: 2,
-          start_time: start.toUTC().toISO(),
-          timezone: zone,
-          duration: b.durationMin,
-          agenda: b.notes ? b.notes.slice(0, 1800) : "",
-          settings: { waiting_room: true, mute_upon_entry: true },
-        }),
-      }
-    );
+    const zoomResp = await fetch(`https://api.zoom.us/v2/users/${encodeURIComponent(env.ZOOM_HOST_USER_ID)}/meetings`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${zoomToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        topic: `${b.product} — ${b.purpose} (${b.name})`,
+        type: 2,
+        start_time: isoUtcNoMs(start), // Zoom likes UTC start_time
+        timezone: zone,
+        duration: b.durationMin,
+        agenda: b.notes ? b.notes.slice(0, 1800) : "",
+        settings: { waiting_room: true, mute_upon_entry: true },
+      }),
+    });
 
     if (!zoomResp.ok) {
       return res.status(502).json({
@@ -563,6 +643,7 @@ app.post("/api/book", async (req, res) => {
         message: `Zoom create meeting failed: ${zoomResp.status} ${await zoomResp.text()}`,
       });
     }
+
     const zoom = await zoomResp.json();
 
     // 2) Create Calendar event + invite attendees
@@ -606,7 +687,7 @@ app.post("/api/book", async (req, res) => {
       calendar: { htmlLink: event.data.htmlLink, eventId: event.data.id },
     });
   } catch (e) {
-    res.status(500).json({ ok: false, message: e.message || "Server error" });
+    res.status(500).json(explainError(e));
   }
 });
 
@@ -623,7 +704,7 @@ app.use((req, res) => {
 });
 
 /* ============================================================
-   Start server (Heroku PORT)
+   Start server
    ============================================================ */
 
 app.listen(env.PORT, () => {

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Audit Logs — Classic Campus</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="/css/navbar.css" />
+  <style>
+    body{margin:0;background:#f5f8ff;font-family:Poppins,Segoe UI,Arial,sans-serif;color:#0f172a;overflow-x:hidden}
+    *{box-sizing:border-box;min-width:0}
+    .main{flex:1;padding:20px 26px;display:flex;flex-direction:column;gap:16px}
+    .title{font-size:20px;font-weight:700;color:#083454}
+    .subtitle{font-size:13px;color:#6b7280;line-height:1.5}
+    .card{background:#fff;border-radius:12px;padding:14px;border:1px solid #e4ecfb;box-shadow:0 6px 18px rgba(12,38,73,.04)}
+    .filters{display:grid;grid-template-columns:2fr 1fr auto;gap:12px}
+    input,select{width:100%;padding:10px 12px;border:1px solid #dbe3f6;border-radius:10px;background:#fff}
+    .btn{padding:10px 14px;border-radius:10px;border:1px solid #dbe3f6;background:#eef4ff;color:#0a3d62;text-decoration:none;font-weight:700;display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+    .table-wrap{overflow:auto}
+    table{width:100%;border-collapse:collapse;min-width:1050px}
+    th,td{padding:12px 10px;border-bottom:1px solid #edf2ff;text-align:left;font-size:13px;vertical-align:top}
+    th{font-size:12px;text-transform:uppercase;color:#6b7280}
+    .alert{padding:12px 14px;border-radius:10px;background:#fff1f2;color:#991b1b;border:1px solid #fecdd3}
+    @media (max-width:900px){.main{padding:16px}.filters{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <%- include("./navbar") %>
+
+  <main class="main">
+    <div>
+      <div class="title">Audit Logs</div>
+      <div class="subtitle">Review platform actions, actor history, entity changes and request metadata.</div>
+    </div>
+
+    <% if (error) { %>
+      <div class="alert"><%= error %></div>
+    <% } %>
+
+    <div class="card">
+      <form method="GET" action="/super-admin/audit-logs" class="filters">
+        <input type="text" name="q" value="<%= filters?.q || '' %>" placeholder="Search actor, action, description..." />
+        <input type="text" name="action" value="<%= filters?.action || '' %>" placeholder="Exact action" />
+        <button type="submit" class="btn">Filter</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>When</th>
+              <th>Actor</th>
+              <th>Action</th>
+              <th>Entity</th>
+              <th>Description</th>
+              <th>IP</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% (logs || []).forEach(function(log){ %>
+              <tr>
+                <td><%= log.createdAt ? new Date(log.createdAt).toLocaleString() : '—' %></td>
+                <td><%= log.actorName || '—' %><br><span style="font-size:12px;color:#6b7280;"><%= log.actorRole || '' %></span></td>
+                <td><%= log.action %></td>
+                <td><%= log.entityType || '—' %><br><span style="font-size:12px;color:#6b7280;"><%= log.entityId || '' %></span></td>
+                <td><%= log.description || '—' %></td>
+                <td><%= log.ipAddress || '—' %></td>
+                <td><a href="/super-admin/audit-logs/<%= log._id %>" class="btn">View</a></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  </div>
+  <script src="/js/navbar.js"></script>
+</body>
+</html>

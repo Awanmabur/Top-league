@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title><%= (tenant && tenant.name) ? tenant.name : "CampusSaaS" %> — My Children</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous"
+        referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/navbar.css" />
+  <link rel="stylesheet" href="/css/parent-portal.css" />
+
+  <style>
+    .toolbar{
+      margin-top:16px;
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+    }
+
+    .toolbar-left,
+    .toolbar-right{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      min-width:0;
+    }
+
+    .toolbar-left{
+      flex:1 1 420px;
+    }
+
+    .toolbar-right{
+      flex:0 1 auto;
+    }
+
+    .search-box,
+    .filter-box{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:10px 12px;
+      box-shadow:var(--shadow);
+      min-height:46px;
+      min-width:0;
+      width:100%;
+    }
+
+    .search-box{
+      flex:1 1 320px;
+    }
+
+    .filter-box{
+      min-width:220px;
+    }
+
+    .search-box i,
+    .filter-box i{
+      color:var(--primary);
+      flex-shrink:0;
+    }
+
+    .search-box input,
+    .filter-box select{
+      border:none;
+      outline:none;
+      background:transparent;
+      color:var(--text);
+      width:100%;
+      min-width:0;
+      font:inherit;
+    }
+
+    .children-stack{
+      margin-top:16px;
+      display:grid;
+      gap:14px;
+      min-width:0;
+    }
+
+    .student-record{
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:18px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      min-width:0;
+    }
+
+    .student-head{
+      display:flex;
+      justify-content:space-between;
+      gap:14px;
+      padding:16px;
+      border-bottom:1px solid var(--line);
+      align-items:flex-start;
+      flex-wrap:wrap;
+      min-width:0;
+    }
+
+    .student-main{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      min-width:0;
+      flex:1 1 360px;
+    }
+
+    .student-name{
+      font-size:18px;
+      font-weight:900;
+      line-height:1.2;
+      word-break:break-word;
+    }
+
+    .student-meta{
+      color:var(--muted);
+      font-size:13px;
+      margin-top:5px;
+      line-height:1.6;
+      word-break:break-word;
+    }
+
+    .student-badges{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      align-items:flex-start;
+      min-width:0;
+      flex:0 1 320px;
+    }
+
+    .badge-soft{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:7px 10px;
+      border-radius:999px;
+      background:#f8fbff;
+      border:1px solid var(--line);
+      font-size:12px;
+      font-weight:800;
+      color:var(--text);
+      max-width:100%;
+      white-space:normal;
+      line-height:1.35;
+    }
+
+    .badge-soft i{
+      color:var(--primary);
+      flex-shrink:0;
+    }
+
+    .student-body{
+      padding:16px;
+      display:grid;
+      grid-template-columns:minmax(0,1.2fr) minmax(0,.9fr) minmax(0,.9fr);
+      gap:14px;
+      min-width:0;
+    }
+
+    .panel{
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:14px;
+      background:#fff;
+      min-width:0;
+    }
+
+    .panel-title{
+      font-weight:900;
+      font-size:14px;
+      word-break:break-word;
+    }
+
+    .panel-sub{
+      color:var(--muted);
+      font-size:12px;
+      margin-top:4px;
+      line-height:1.5;
+      word-break:break-word;
+    }
+
+    .metric-grid{
+      margin-top:12px;
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:10px;
+      min-width:0;
+    }
+
+    .metric{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+      background:#fbfdff;
+      min-width:0;
+    }
+
+    .metric-label{
+      font-size:12px;
+      color:var(--muted);
+      word-break:break-word;
+    }
+
+    .metric-value{
+      margin-top:6px;
+      font-size:20px;
+      font-weight:900;
+      letter-spacing:-.02em;
+      word-break:break-word;
+    }
+
+    .status-good{ color:var(--ok); }
+    .status-warn{ color:var(--warn); }
+    .status-danger{ color:var(--danger); }
+
+    .info-list{
+      margin-top:12px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      min-width:0;
+    }
+
+    .info-row{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      font-size:13px;
+      color:var(--muted);
+      border-bottom:1px solid #eef4fb;
+      padding-bottom:8px;
+      min-width:0;
+    }
+
+    .info-row:last-child{
+      border-bottom:none;
+      padding-bottom:0;
+    }
+
+    .info-row strong{
+      color:var(--text);
+      text-align:right;
+      word-break:break-word;
+      min-width:0;
+    }
+
+    .action-row{
+      margin-top:14px;
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+
+    .table-wrap{
+      margin-top:12px;
+      overflow-x:auto;
+      overflow-y:hidden;
+      border:1px solid var(--line);
+      border-radius:14px;
+      -webkit-overflow-scrolling:touch;
+      background:#fff;
+      min-width:0;
+    }
+
+    table.data-table{
+      width:100%;
+      min-width:520px;
+      border-collapse:collapse;
+      background:#fff;
+    }
+
+    .data-table th,
+    .data-table td{
+      padding:10px 12px;
+      text-align:left;
+      font-size:13px;
+      border-bottom:1px solid #eef4fb;
+      vertical-align:top;
+    }
+
+    .data-table th{
+      color:var(--muted);
+      font-size:12px;
+      font-weight:800;
+      background:#f8fbff;
+      white-space:nowrap;
+    }
+
+    .data-table td{
+      word-break:break-word;
+    }
+
+    .data-table tr:last-child td{
+      border-bottom:none;
+    }
+
+    .section-gap{
+      margin-top:16px;
+    }
+
+    @media (max-width: 1180px){
+      .student-body{
+        grid-template-columns:1fr;
+      }
+    }
+
+    @media (max-width: 860px){
+      .student-head{
+        flex-direction:column;
+        align-items:stretch;
+      }
+
+      .student-main{
+        width:100%;
+      }
+
+      .student-badges{
+        width:100%;
+        justify-content:flex-start;
+      }
+    }
+
+    @media (max-width: 720px){
+      .toolbar{
+        flex-direction:column;
+        align-items:stretch;
+      }
+
+      .toolbar-left,
+      .toolbar-right{
+        width:100%;
+        flex:1 1 100%;
+      }
+
+      .search-box,
+      .filter-box{
+        width:100%;
+        min-width:0;
+      }
+
+      .metric-grid{
+        grid-template-columns:1fr;
+      }
+
+      .info-row{
+        flex-direction:column;
+        align-items:flex-start;
+      }
+
+      .info-row strong{
+        text-align:left;
+      }
+
+      .action-row{
+        flex-direction:column;
+        align-items:stretch;
+      }
+
+      .action-row .btn-xs{
+        width:100%;
+        justify-content:center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <%
+    const t = tenant || {};
+    const u = user || {};
+    const p = parent || null;
+    const kids = Array.isArray(children) ? children : [];
+    const tenantName = t.name || "CampusSaaS";
+    const tenantCode = (t.code || "CC").toString();
+    const stats = pageStats || {};
+
+    function fullNameOfStudent(c) {
+      const name = (c && c.fullName) ? String(c.fullName).trim() : "";
+      if (name) return name;
+
+      const parts = [];
+      if (c && c.firstName) parts.push(String(c.firstName).trim());
+      if (c && c.middleName) parts.push(String(c.middleName).trim());
+      if (c && c.lastName) parts.push(String(c.lastName).trim());
+      return parts.filter(Boolean).join(" ").trim() || "Student";
+    }
+
+    function initials(name) {
+      const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+      const a = parts[0] && parts[0][0] ? parts[0][0] : "S";
+      const b = parts[1] && parts[1][0] ? parts[1][0] : "";
+      return (a + b).toUpperCase();
+    }
+
+    function fmtMoney(n) {
+      const num = Number(n || 0);
+      return num.toLocaleString();
+    }
+  %>
+
+    <%-include("./navbar") %>
+
+    <main class="main">
+      <div class="topbar">
+        <div>
+          <div class="title">My Children</div>
+          <div class="subtitle">
+            View all linked children, their academic status, attendance snapshot, fee position and quick access actions.
+          </div>
+        </div>
+
+        <div class="top-actions">
+          <div class="chip">
+            <i class="fa-solid fa-children"></i>
+            <span>Total Children</span>
+            <b><%= Number(stats.totalChildren || kids.length || 0) %></b>
+          </div>
+
+          <button class="btn light" type="button" onclick="window.location.href='/parent/attendance'">
+            <i class="fa-solid fa-user-check"></i> Attendance
+          </button>
+
+          <button class="btn primary" type="button" onclick="window.location.href='/parent/results'">
+            <i class="fa-solid fa-file-lines"></i> Results
+          </button>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="childSearch" placeholder="Search by student name, reg number, class or program" />
+          </div>
+        </div>
+
+        <div class="toolbar-right">
+          <div class="filter-box">
+            <i class="fa-solid fa-filter"></i>
+            <select id="statusFilter">
+              <option value="all">All statuses</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="suspended">Suspended</option>
+              <option value="graduated">Graduated</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <% if (!kids.length) { %>
+        <section class="card section-gap">
+          <div class="empty">
+            <div class="empty-icon"><i class="fa-solid fa-children"></i></div>
+            <div class="empty-title">No children linked yet</div>
+            <div class="empty-text">
+              Your account does not yet have any linked student records. Contact the school administrator to connect your profile.
+            </div>
+            <button class="btn light" type="button" onclick="window.location.href='/parent/support'">
+              <i class="fa-solid fa-headset"></i> Contact Support
+            </button>
+          </div>
+        </section>
+      <% } else { %>
+        <div class="children-stack" id="childrenStack">
+          <% kids.forEach(function(c){ 
+            const studentName = fullNameOfStudent(c);
+            const regNo = c && c.regNo ? c.regNo : "—";
+            const status = c && c.status ? String(c.status).toLowerCase() : "active";
+            const className = c && c.classGroup && (c.classGroup.title || c.classGroup.name) ? (c.classGroup.title || c.classGroup.name) : "—";
+            const programName = c && c.program && (c.program.title || c.program.name) ? (c.program.title || c.program.name) : "—";
+            const academicYear = c && c.academicYear ? c.academicYear : "—";
+            const yearLevel = c && c.yearLevel ? c.yearLevel : "—";
+            const semester = (c && (c.semester || c.semester === 0)) ? c.semester : "—";
+            const attendance = Number(c.attendanceRate || c.attendance || 0);
+            const feeBalance = Number(c.feeBalance || c.balance || 0);
+            const avgScore = Number(c.averageScore || c.avgScore || c.cgpa || 0);
+            const guardianRelation = c && c.parentRelationship ? c.parentRelationship : ((p && p.relationship) ? p.relationship : "Guardian");
+            const homeroom = c && c.homeroomTeacher ? c.homeroomTeacher : "—";
+            const campus = c && c.campus ? c.campus : "Main Campus";
+            const nextEvent = c && c.nextEvent ? c.nextEvent : "No upcoming event";
+            const attendanceClass = attendance >= 75 ? "status-good" : (attendance >= 50 ? "status-warn" : "status-danger");
+            const balanceClass = feeBalance <= 0 ? "status-good" : "status-warn";
+          %>
+            <section class="student-record child-search-item"
+                     data-status="<%= status %>"
+                     data-search="<%= [
+                       studentName,
+                       regNo,
+                       className,
+                       programName,
+                       academicYear,
+                       yearLevel
+                     ].join(' ').toLowerCase() %>">
+
+              <div class="student-head">
+                <div class="student-main">
+                  <div class="avatar lg"><%= initials(studentName) %></div>
+                  <div>
+                    <div class="student-name"><%= studentName %></div>
+                    <div class="student-meta">
+                      Reg No: <strong><%= regNo %></strong>
+                      <span class="dot">•</span>
+                      Class: <strong><%= className %></strong>
+                      <span class="dot">•</span>
+                      Program: <strong><%= programName %></strong>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="student-badges">
+                  <span class="badge-soft">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <%= status.charAt(0).toUpperCase() + status.slice(1) %>
+                  </span>
+                  <span class="badge-soft">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                    Year <%= yearLevel %>
+                  </span>
+                  <span class="badge-soft">
+                    <i class="fa-solid fa-calendar-days"></i>
+                    Sem <%= semester %>
+                  </span>
+                </div>
+              </div>
+
+              <div class="student-body">
+                <div class="panel">
+                  <div class="panel-title">Performance Snapshot</div>
+                  <div class="panel-sub">Quick academic and finance overview for this child.</div>
+
+                  <div class="metric-grid">
+                    <div class="metric">
+                      <div class="metric-label">Attendance</div>
+                      <div class="metric-value <%= attendanceClass %>"><%= attendance %>%</div>
+                    </div>
+                    <div class="metric">
+                      <div class="metric-label">Average / GPA</div>
+                      <div class="metric-value"><%= avgScore %></div>
+                    </div>
+                    <div class="metric">
+                      <div class="metric-label">Fee Balance</div>
+                      <div class="metric-value <%= balanceClass %>">
+                        UGX <%= fmtMoney(feeBalance) %>
+                      </div>
+                    </div>
+                    <div class="metric">
+                      <div class="metric-label">Academic Year</div>
+                      <div class="metric-value"><%= academicYear %></div>
+                    </div>
+                  </div>
+
+                  <div class="action-row">
+                    <a class="btn-xs" href="/parent/children/<%= c._id %>">
+                      <i class="fa-solid fa-eye"></i> Open Profile
+                    </a>
+                    <a class="btn-xs" href="/parent/results?student=<%= c._id %>">
+                      <i class="fa-solid fa-file-lines"></i> Results
+                    </a>
+                    <a class="btn-xs" href="/parent/fees?student=<%= c._id %>">
+                      <i class="fa-solid fa-sack-dollar"></i> Fees
+                    </a>
+                  </div>
+                </div>
+
+                <div class="panel">
+                  <div class="panel-title">Student Information</div>
+                  <div class="panel-sub">Current profile and school-related details.</div>
+
+                  <div class="info-list">
+                    <div class="info-row">
+                      <span>Campus</span>
+                      <strong><%= campus %></strong>
+                    </div>
+                    <div class="info-row">
+                      <span>Homeroom / Advisor</span>
+                      <strong><%= homeroom %></strong>
+                    </div>
+                    <div class="info-row">
+                      <span>Relationship</span>
+                      <strong><%= guardianRelation %></strong>
+                    </div>
+                    <div class="info-row">
+                      <span>Current Status</span>
+                      <strong><%= status.charAt(0).toUpperCase() + status.slice(1) %></strong>
+                    </div>
+                    <div class="info-row">
+                      <span>Next Event</span>
+                      <strong><%= nextEvent %></strong>
+                    </div>
+                  </div>
+
+                  <div class="action-row">
+                    <a class="btn-xs" href="/parent/timetable?student=<%= c._id %>">
+                      <i class="fa-solid fa-calendar-week"></i> Timetable
+                    </a>
+                    <a class="btn-xs" href="/parent/attendance?student=<%= c._id %>">
+                      <i class="fa-solid fa-user-check"></i> Attendance
+                    </a>
+                  </div>
+                </div>
+
+                <div class="panel">
+                  <div class="panel-title">Recent Summary</div>
+                  <div class="panel-sub">Recent academic and school activity at a glance.</div>
+
+                  <div class="table-wrap">
+                    <table class="data-table">
+                      <thead>
+                        <tr>
+                          <th>Area</th>
+                          <th>Latest</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>Latest Result</td>
+                          <td><%= c.latestResult || "No recent result" %></td>
+                        </tr>
+                        <tr>
+                          <td>Last Attendance Update</td>
+                          <td><%= c.lastAttendanceDate || "—" %></td>
+                        </tr>
+                        <tr>
+                          <td>Fee Reminder</td>
+                          <td><%= feeBalance > 0 ? ("Outstanding UGX " + fmtMoney(feeBalance)) : "Cleared / No balance" %></td>
+                        </tr>
+                        <tr>
+                          <td>Recent Announcement</td>
+                          <td><%= c.latestAnnouncement || "No new announcement" %></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div class="action-row">
+                    <a class="btn-xs" href="/parent/announcements">
+                      <i class="fa-solid fa-bullhorn"></i> Announcements
+                    </a>
+                    <a class="btn-xs" href="/parent/support?student=<%= c._id %>">
+                      <i class="fa-solid fa-headset"></i> Support
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </section>
+          <% }); %>
+        </div>
+      <% } %>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      const searchInput = document.getElementById("childSearch");
+      const statusFilter = document.getElementById("statusFilter");
+      const items = Array.from(document.querySelectorAll(".child-search-item"));
+
+      function applyFilters() {
+        const q = (searchInput?.value || "").trim().toLowerCase();
+        const status = statusFilter?.value || "all";
+
+        items.forEach(item => {
+          const hay = item.getAttribute("data-search") || "";
+          const st = item.getAttribute("data-status") || "";
+          const matchSearch = !q || hay.includes(q);
+          const matchStatus = status === "all" || st === status;
+          item.style.display = (matchSearch && matchStatus) ? "" : "none";
+        });
+      }
+
+      if (searchInput) searchInput.addEventListener("input", applyFilters);
+      if (statusFilter) statusFilter.addEventListener("change", applyFilters);
+    })();
+  </script>
+<script src="/js/navbar.js"></script>
+</body>
+</html>

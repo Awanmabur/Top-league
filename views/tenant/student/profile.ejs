@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title><%= pageTitle %> — <%= tenant?.name || "CampusSaaS" %></title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/navbar.css"/>
+  <link rel="stylesheet" href="/css/student-portal.css" />
+</head>
+<body>
+<%- include("./navbar") %>
+
+<main class="main">
+  <div class="topbar">
+    <div>
+      <div class="title">Profile</div>
+      <div class="subtitle">Your personal, academic, and emergency contact details.</div>
+    </div>
+    <div class="top-actions">
+      <button class="btn primary" type="button" disabled>
+        <i class="fa-solid fa-pen-to-square"></i> Edit Profile
+      </button>
+    </div>
+  </div>
+
+  <%-include("./.././partials/flash") %>
+
+  <div class="content">
+    <section class="card">
+      <div class="profile-top">
+        <div class="avatar"><%= studentName.split(" ").map(v => v[0]).slice(0,2).join("").toUpperCase() %></div>
+        <div>
+          <div class="profile-name"><%= profile.fullName %></div>
+          <div class="profile-id">Student ID: <%= profile.studentNumber %></div>
+          <div class="profile-row">
+            <span><%= profile.program %> • <%= profile.level %></span>
+            <span class="pill-status"><i class="fa-solid fa-circle-check"></i> Active</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;">
+        <div class="section-title">Personal information</div>
+        <div class="mini-list" style="margin-top:8px;">
+          <div class="mini-item"><span>Full name</span><span><%= profile.fullName %></span></div>
+          <div class="mini-item"><span>Email</span><span><%= profile.email || "-" %></span></div>
+          <div class="mini-item"><span>Phone</span><span><%= profile.phone || "-" %></span></div>
+          <div class="mini-item"><span>Gender</span><span><%= profile.gender || "-" %></span></div>
+          <div class="mini-item"><span>Date of birth</span><span><%= profile.dob ? new Date(profile.dob).toDateString() : "-" %></span></div>
+          <div class="mini-item"><span>Nationality</span><span><%= profile.nationality || "-" %></span></div>
+          <div class="mini-item"><span>Address</span><span><%= profile.address || "-" %></span></div>
+        </div>
+      </div>
+    </section>
+
+    <aside>
+      <section class="card">
+        <div class="section-title">Academic profile</div>
+        <div class="mini-list" style="margin-top:8px;">
+          <div class="mini-item"><span>Student number</span><span><%= profile.studentNumber %></span></div>
+          <div class="mini-item"><span>Programme</span><span><%= profile.program %></span></div>
+          <div class="mini-item"><span>Level</span><span><%= profile.level %></span></div>
+          <div class="mini-item"><span>Semester</span><span><%= profile.semester %></span></div>
+          <div class="mini-item"><span>Faculty</span><span><%= profile.faculty || "-" %></span></div>
+          <div class="mini-item"><span>Department</span><span><%= profile.department || "-" %></span></div>
+        </div>
+      </section>
+
+      <section class="card" style="margin-top:16px;">
+        <div class="section-title">Emergency / guardian contact</div>
+        <div class="mini-list" style="margin-top:8px;">
+          <div class="mini-item"><span>Guardian name</span><span><%= profile.guardianName || "-" %></span></div>
+          <div class="mini-item"><span>Guardian phone</span><span><%= profile.guardianPhone || "-" %></span></div>
+          <div class="mini-item"><span>Emergency contact</span><span><%= profile.emergencyContact || "-" %></span></div>
+        </div>
+      </section>
+    </aside>
+  </div>
+</main>
+</div>
+<script src="/js/navbar.js"></script>
+</body>
+</html>

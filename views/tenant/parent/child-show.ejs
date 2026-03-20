@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title><%= (tenant && tenant.name) ? tenant.name : "CampusSaaS" %> — Child Profile</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous"
+        referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/navbar.css"/>
+  <link rel="stylesheet" href="/css/parent-portal.css" />
+
+  <style>
+    .hero-card{
+      margin-top:16px;
+      padding:18px;
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:#fff;
+      box-shadow:var(--shadow);
+    }
+
+    .hero-top{
+      display:flex;
+      gap:14px;
+      align-items:center;
+      justify-content:space-between;
+      flex-wrap:wrap;
+    }
+
+    .hero-main{
+      display:flex;
+      gap:14px;
+      align-items:center;
+      min-width:260px;
+    }
+
+    .avatar-xl{
+      width:74px;
+      height:74px;
+      border-radius:999px;
+      background:linear-gradient(135deg,#dbeafe 0%, #bfdbfe 100%);
+      color:var(--primary-2);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:26px;
+      font-weight:1000;
+      flex-shrink:0;
+    }
+
+    .hero-name{
+      font-size:22px;
+      font-weight:1000;
+      line-height:1.2;
+    }
+
+    .hero-meta{
+      margin-top:5px;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.65;
+    }
+
+    .badge-row{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+
+    .badge-soft{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:7px 10px;
+      border-radius:999px;
+      background:#f8fbff;
+      border:1px solid var(--line);
+      font-size:12px;
+      font-weight:800;
+      color:var(--text);
+    }
+
+    .summary-grid{
+      margin-top:16px;
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:12px;
+    }
+
+    .summary-box{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+      background:#fbfdff;
+    }
+
+    .summary-label{
+      color:var(--muted);
+      font-size:12px;
+    }
+
+    .summary-value{
+      margin-top:6px;
+      font-size:24px;
+      font-weight:1000;
+      letter-spacing:-.02em;
+    }
+
+    .good{ color:var(--ok); }
+    .warn{ color:var(--warn); }
+    .danger{ color:var(--danger); }
+
+    .page-grid{
+      margin-top:16px;
+      display:grid;
+      grid-template-columns:1.25fr .85fr;
+      gap:14px;
+    }
+
+    .section-stack{
+      display:grid;
+      gap:14px;
+    }
+
+    .table-wrap{
+      margin-top:14px;
+      overflow:auto;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:#fff;
+    }
+
+    .data-table{
+      width:100%;
+      min-width:760px;
+      border-collapse:collapse;
+    }
+
+    .data-table th,
+    .data-table td{
+      padding:11px 12px;
+      border-bottom:1px solid #eef4fb;
+      text-align:left;
+      font-size:13px;
+      vertical-align:top;
+    }
+
+    .data-table th{
+      font-size:12px;
+      color:var(--muted);
+      font-weight:800;
+      background:#f8fbff;
+    }
+
+    .data-table tr:last-child td{
+      border-bottom:none;
+    }
+
+    .metric-list{
+      margin-top:12px;
+      display:grid;
+      gap:10px;
+    }
+
+    .metric-item{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      border-bottom:1px solid #eef4fb;
+      padding-bottom:8px;
+      font-size:13px;
+      color:var(--muted);
+    }
+
+    .metric-item:last-child{
+      border-bottom:none;
+      padding-bottom:0;
+    }
+
+    .metric-item strong{
+      color:var(--text);
+      text-align:right;
+    }
+
+    .status-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:900;
+      border:1px solid var(--line);
+      background:#fff;
+    }
+
+    .status-pill.present{
+      color:var(--ok);
+      background:#f6fff8;
+      border-color:#cdeed8;
+    }
+
+    .status-pill.absent{
+      color:var(--danger);
+      background:#fff7f7;
+      border-color:#f3d0d0;
+    }
+
+    .status-pill.late{
+      color:var(--warn);
+      background:#fffaf1;
+      border-color:#f5e2b8;
+    }
+
+    .action-row{
+      margin-top:14px;
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+
+    @media (max-width: 1180px){
+      .page-grid{
+        grid-template-columns:1fr;
+      }
+
+      .summary-grid{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+      }
+    }
+
+    @media (max-width: 720px){
+      .summary-grid{
+        grid-template-columns:1fr;
+      }
+
+      .hero-top{
+        flex-direction:column;
+        align-items:flex-start;
+      }
+
+      .metric-item{
+        flex-direction:column;
+      }
+
+      .metric-item strong{
+        text-align:left;
+      }
+    }
+  </style>
+</head>
+<body>
+  <%
+    const t = tenant || {};
+    const st = student || {};
+    const attendance = Array.isArray(attendanceRows) ? attendanceRows : [];
+    const results = Array.isArray(resultRows) ? resultRows : [];
+    const invoices = Array.isArray(invoiceRows) ? invoiceRows : [];
+    const payments = Array.isArray(paymentRows) ? paymentRows : [];
+    const aSum = attendanceSummary || {};
+    const rSum = resultsSummary || {};
+    const fSum = feesSummary || {};
+    const tenantName = t.name || "CampusSaaS";
+    const tenantCode = (t.code || "CC").toString();
+
+    function initials(name) {
+      const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+      const a = parts[0] && parts[0][0] ? parts[0][0] : "S";
+      const b = parts[1] && parts[1][0] ? parts[1][0] : "";
+      return (a + b).toUpperCase();
+    }
+
+    function money(v) {
+      return Number(v || 0).toLocaleString();
+    }
+  %>
+
+    <%-include("./navbar") %>
+
+    <main class="main">
+      <div class="topbar">
+        <div>
+          <div class="title">Child Profile</div>
+          <div class="subtitle">
+            Full student overview including academics, attendance, fees, and recent activity.
+          </div>
+        </div>
+
+        <div class="top-actions">
+          <button class="btn light" type="button" onclick="window.location.href='/parent/children'">
+            <i class="fa-solid fa-arrow-left"></i> Back to Children
+          </button>
+          <button class="btn primary" type="button" onclick="window.location.href='/parent/results?student=<%= st._id %>'">
+            <i class="fa-solid fa-file-lines"></i> View Results
+          </button>
+        </div>
+      </div>
+
+      <section class="hero-card">
+        <div class="hero-top">
+          <div class="hero-main">
+            <div class="avatar-xl"><%= initials(st.fullName) %></div>
+            <div>
+              <div class="hero-name"><%= st.fullName || "Student" %></div>
+              <div class="hero-meta">
+                Reg No: <strong><%= st.regNo || "—" %></strong>
+                <span class="dot">•</span>
+                Program: <strong><%= (st.program && (st.program.title || st.program.name)) || "—" %></strong>
+                <span class="dot">•</span>
+                Class: <strong><%= (st.classGroup && (st.classGroup.title || st.classGroup.name)) || "—" %></strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="badge-row">
+            <span class="badge-soft">
+              <i class="fa-solid fa-user-graduate"></i>
+              Year <%= st.yearLevel || "—" %>
+            </span>
+            <span class="badge-soft">
+              <i class="fa-solid fa-calendar-days"></i>
+              <%= st.academicYear || "—" %> • Sem <%= st.semester || "—" %>
+            </span>
+            <span class="badge-soft">
+              <i class="fa-solid fa-circle-check"></i>
+              <%= st.status || "active" %>
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <div class="summary-grid">
+        <div class="summary-box">
+          <div class="summary-label">Attendance Rate</div>
+          <div class="summary-value <%= Number(aSum.rate || 0) >= 75 ? 'good' : 'warn' %>"><%= Number(aSum.rate || 0) %>%</div>
+        </div>
+        <div class="summary-box">
+          <div class="summary-label">Average Score</div>
+          <div class="summary-value <%= Number(rSum.average || 0) >= 50 ? 'good' : 'warn' %>"><%= Number(rSum.average || 0) %>%</div>
+        </div>
+        <div class="summary-box">
+          <div class="summary-label">Outstanding Balance</div>
+          <div class="summary-value <%= Number(fSum.balance || 0) > 0 ? 'warn' : 'good' %>">UGX <%= money(fSum.balance || 0) %></div>
+        </div>
+        <div class="summary-box">
+          <div class="summary-label">Recent Results</div>
+          <div class="summary-value"><%= Number(rSum.total || 0) %></div>
+        </div>
+      </div>
+
+      <div class="page-grid">
+        <section class="section-stack">
+          <section class="card">
+            <div class="section-title">Recent Attendance</div>
+            <div class="section-sub">Latest class attendance records for this student.</div>
+
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Subject</th>
+                    <th>Status</th>
+                    <th>Teacher</th>
+                    <th>Note</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% if (!attendance.length) { %>
+                    <tr>
+                      <td colspan="5">No attendance records found.</td>
+                    </tr>
+                  <% } else { %>
+                    <% attendance.slice(0, 10).forEach(function(item){ %>
+                      <tr>
+                        <td><%= item.date || "—" %></td>
+                        <td><%= item.subject || "Class" %></td>
+                        <td>
+                          <span class="status-pill <%= item.status %>">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <%= item.status || "—" %>
+                          </span>
+                        </td>
+                        <td><%= item.teacher || "—" %></td>
+                        <td><%= item.note || "—" %></td>
+                      </tr>
+                    <% }); %>
+                  <% } %>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="action-row">
+              <a class="btn-xs" href="/parent/attendance?student=<%= st._id %>">
+                <i class="fa-solid fa-user-check"></i> Full Attendance
+              </a>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="section-title">Recent Results</div>
+            <div class="section-sub">Latest published academic results.</div>
+
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Subject</th>
+                    <th>Assessment</th>
+                    <th>Score</th>
+                    <th>Grade</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% if (!results.length) { %>
+                    <tr>
+                      <td colspan="5">No results found.</td>
+                    </tr>
+                  <% } else { %>
+                    <% results.slice(0, 10).forEach(function(item){ %>
+                      <tr>
+                        <td><%= item.subject || "Subject" %></td>
+                        <td><%= item.exam || "Assessment" %></td>
+                        <td><%= Number(item.score || 0) %>%</td>
+                        <td><%= item.grade || "—" %></td>
+                        <td><%= item.date || "—" %></td>
+                      </tr>
+                    <% }); %>
+                  <% } %>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="action-row">
+              <a class="btn-xs" href="/parent/results?student=<%= st._id %>">
+                <i class="fa-solid fa-file-lines"></i> Full Results
+              </a>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="section-title">Fee Overview</div>
+            <div class="section-sub">Recent fee items and payment records.</div>
+
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th>Due Date</th>
+                    <th>Amount</th>
+                    <th>Paid</th>
+                    <th>Balance</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% if (!invoices.length) { %>
+                    <tr>
+                      <td colspan="6">No fee items found.</td>
+                    </tr>
+                  <% } else { %>
+                    <% invoices.slice(0, 8).forEach(function(item){ %>
+                      <tr>
+                        <td><%= item.title || "Fee Item" %></td>
+                        <td><%= item.dueDate || "—" %></td>
+                        <td>UGX <%= money(item.amount || 0) %></td>
+                        <td>UGX <%= money(item.paid || 0) %></td>
+                        <td>UGX <%= money(item.balance || 0) %></td>
+                        <td><%= item.status || "—" %></td>
+                      </tr>
+                    <% }); %>
+                  <% } %>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="action-row">
+              <a class="btn-xs" href="/parent/fees?student=<%= st._id %>">
+                <i class="fa-solid fa-sack-dollar"></i> Full Fees Page
+              </a>
+            </div>
+          </section>
+        </section>
+
+        <aside class="section-stack">
+          <section class="card">
+            <div class="section-title">Student Summary</div>
+            <div class="section-sub">Profile and school information at a glance.</div>
+
+            <div class="metric-list">
+              <div class="metric-item">
+                <span>Full name</span>
+                <strong><%= st.fullName || "—" %></strong>
+              </div>
+              <div class="metric-item">
+                <span>Registration No</span>
+                <strong><%= st.regNo || "—" %></strong>
+              </div>
+              <div class="metric-item">
+                <span>Program</span>
+                <strong><%= (st.program && (st.program.title || st.program.name)) || "—" %></strong>
+              </div>
+              <div class="metric-item">
+                <span>Class Group</span>
+                <strong><%= (st.classGroup && (st.classGroup.title || st.classGroup.name)) || "—" %></strong>
+              </div>
+              <div class="metric-item">
+                <span>Academic Year</span>
+                <strong><%= st.academicYear || "—" %></strong>
+              </div>
+              <div class="metric-item">
+                <span>Semester</span>
+                <strong><%= st.semester || "—" %></strong>
+              </div>
+              <div class="metric-item">
+                <span>Status</span>
+                <strong><%= st.status || "active" %></strong>
+              </div>
+              <div class="metric-item">
+                <span>Campus</span>
+                <strong><%= st.campus || "—" %></strong>
+              </div>
+              <div class="metric-item">
+                <span>Homeroom / Advisor</span>
+                <strong><%= st.homeroomTeacher || "—" %></strong>
+              </div>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="section-title">Quick Actions</div>
+            <div class="section-sub">Jump to related parent pages for this student.</div>
+
+            <div class="action-row">
+              <a class="btn-xs" href="/parent/attendance?student=<%= st._id %>">
+                <i class="fa-solid fa-user-check"></i> Attendance
+              </a>
+              <a class="btn-xs" href="/parent/results?student=<%= st._id %>">
+                <i class="fa-solid fa-file-lines"></i> Results
+              </a>
+              <a class="btn-xs" href="/parent/fees?student=<%= st._id %>">
+                <i class="fa-solid fa-sack-dollar"></i> Fees
+              </a>
+              <a class="btn-xs" href="/parent/timetable?student=<%= st._id %>">
+                <i class="fa-solid fa-calendar-week"></i> Timetable
+              </a>
+              <a class="btn-xs" href="/parent/support?student=<%= st._id %>">
+                <i class="fa-solid fa-headset"></i> Support
+              </a>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="section-title">Payment Activity</div>
+            <div class="section-sub">Recent fee payment records.</div>
+
+            <div class="metric-list">
+              <% if (!payments.length) { %>
+                <div class="metric-item">
+                  <span>No payment records</span>
+                  <strong>—</strong>
+                </div>
+              <% } else { %>
+                <% payments.slice(0, 6).forEach(function(pay){ %>
+                  <div class="metric-item">
+                    <span><%= pay.date || "—" %> • <%= pay.method || "Payment" %></span>
+                    <strong>UGX <%= money(pay.amount || 0) %></strong>
+                  </div>
+                <% }); %>
+              <% } %>
+            </div>
+          </section>
+        </aside>
+      </div>
+    </main>
+  </div>
+<script src="/js/navbar.js"></script>
+</body>
+</html>

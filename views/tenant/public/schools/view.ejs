@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title><%= tenant.name %> — School Profile</title>
+  <link rel="icon" href="data:,"/>
+
+  <!-- Font Awesome (optional but nice for icons) -->
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer"/>
+
+  <style>
+    @font-face{font-family:'PoppinsLocal';src:local('Poppins'),local('Inter'),local('Segoe UI')}
+    :root{
+      --blue:#0a3d62;
+      --blue-2:#083454;
+      --muted:#6b7280;
+      --bg:#f4f8ff;
+      --card:#ffffff;
+      --accent:#0a6fbf;
+      --success:#16a34a;
+      --danger:#ef4444;
+      --glass: rgba(13,64,96,0.06);
+      --radius:12px;
+      --shadow: 0 10px 30px rgba(2,8,23,0.08);
+      --border: rgba(2,8,23,0.08);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:PoppinsLocal, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background:var(--bg);
+      color:#0f172a;
+    }
+    a{color:inherit;text-decoration:none}
+    .container{width:min(1120px,92%);margin:0 auto}
+
+    /* Topbar */
+    .topbar{
+      position:sticky;top:0;z-index:60;
+      background: rgba(244,248,255,0.86);
+      backdrop-filter: blur(10px);
+      border-bottom:1px solid var(--border);
+    }
+    .topbar-inner{display:flex;align-items:center;justify-content:space-between;padding:12px 0}
+    .brand{display:flex;align-items:center;gap:10px;font-weight:900;color:var(--blue)}
+    .brand-dot{
+      width:12px;height:12px;border-radius:999px;
+      background: linear-gradient(135deg, var(--accent), var(--blue));
+      box-shadow: 0 10px 24px rgba(10,111,191,0.22);
+    }
+    .topnav{display:flex;align-items:center;gap:18px}
+    .topnav a{font-weight:700;color:#0b2239;opacity:.92}
+    .topnav a:hover{opacity:1}
+
+    .hamburger{
+      display:none;width:44px;height:40px;border:1px solid var(--border);
+      background:#fff;border-radius:12px;box-shadow:0 8px 18px rgba(2,8,23,.05);
+      cursor:pointer;
+    }
+    .hamburger span{display:block;height:2px;width:18px;background:var(--blue);margin:4px auto}
+
+    .mobile-menu{
+      display:none;background:#fff;border-bottom:1px solid var(--border);padding:12px 0
+    }
+    .mobile-menu a{
+      display:flex;align-items:center;gap:10px;padding:10px 4%;
+      color:#0b2239;font-weight:800
+    }
+    .mobile-menu.show{display:block}
+
+    /* Hero */
+    .hero{position:relative}
+    .cover{
+      height:320px;
+      background:
+        radial-gradient(1200px 520px at 70% 20%, rgba(10,111,191,0.55), rgba(10,63,98,0.25) 50%, rgba(8,52,84,0.65) 100%),
+        linear-gradient(135deg, rgba(10,63,98,0.95), rgba(10,111,191,0.65));
+      border-bottom:1px solid var(--border);
+    }
+    .cover-overlay{height:100%;background:linear-gradient(180deg, rgba(8,52,84,0.05), rgba(8,52,84,0.50))}
+    .hero-inner{margin-top:-92px;padding-bottom:16px}
+
+    .school-head{
+      display:grid;
+      grid-template-columns:110px 1fr 320px;
+      gap:18px;
+      align-items:stretch;
+    }
+    .logo-wrap{
+      width:110px;height:110px;border-radius:18px;background:#fff;border:1px solid var(--border);
+      box-shadow:var(--shadow);padding:10px;
+      display:grid;place-items:center;
+    }
+    .logo{
+      width:100%;height:100%;border-radius:14px;
+      background:linear-gradient(135deg, rgba(10,111,191,0.18), rgba(10,63,98,0.10));
+      border:1px solid rgba(2,8,23,0.08);
+      display:grid;place-items:center;
+      font-weight:1000;color:var(--blue);letter-spacing:-0.5px;
+      font-size:20px;
+      overflow:hidden;
+    }
+    .logo img{width:100%;height:100%;object-fit:cover;display:block}
+
+    .school-meta{
+      background:#fff;border:1px solid var(--border);border-radius:18px;
+      padding:16px 16px 14px;box-shadow:var(--shadow);
+    }
+    .name-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+    .school-name{margin:0;font-size:24px;letter-spacing:-0.3px}
+    .school-tagline{margin:6px 0 10px;color:var(--muted);font-weight:650}
+
+    .quickline{display:flex;flex-wrap:wrap;gap:14px;color:#0b2239;opacity:.92;font-weight:800;font-size:13px}
+    .quickline i{color:var(--accent)}
+    .cta-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+
+    .stats{
+      background:#fff;border:1px solid var(--border);border-radius:18px;
+      padding:14px;box-shadow:var(--shadow);
+      display:grid;grid-template-columns:repeat(2,1fr);gap:10px;
+    }
+    .stat{
+      background: rgba(10,63,98,0.04);
+      border:1px solid rgba(10,63,98,0.10);
+      border-radius:14px;padding:10px;
+    }
+    .stat-val{font-weight:1000;font-size:18px;color:var(--blue)}
+    .stat-lbl{font-size:12px;color:var(--muted);font-weight:900}
+
+    .badge{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:6px 10px;border-radius:999px;font-size:12px;font-weight:1000;
+      border:1px solid rgba(2,8,23,0.10);
+    }
+    .badge-verified{background:#ecfdf3;color:#15803d;border-color:#bbf7d0}
+    .badge-soft{background:rgba(10,111,191,0.10);color:var(--blue-2);border-color:rgba(10,111,191,0.18)}
+
+    /* Main */
+    .main{padding:16px 0 40px}
+    .tabs{
+      display:flex;flex-wrap:wrap;gap:10px;padding:10px;background:#fff;
+      border:1px solid var(--border);border-radius:18px;
+      box-shadow:0 14px 36px rgba(2,8,23,0.06);
+      margin:12px 0 14px;
+    }
+    .tab{
+      border:1px solid rgba(2,8,23,0.10);
+      background:#fff;border-radius:999px;padding:10px 12px;
+      font-weight:1000;color:#0b2239;cursor:pointer;
+      display:inline-flex;align-items:center;gap:8px;font-size:13px;
+    }
+    .tab.active{background:linear-gradient(135deg,var(--blue),var(--accent));color:#fff;border-color:transparent}
+
+    .panel{display:none}
+    .panel.active{display:block}
+
+    .grid-2{display:grid;grid-template-columns:1.25fr .95fr;gap:14px}
+    .card{
+      background:#fff;border:1px solid var(--border);border-radius:18px;
+      box-shadow:0 14px 36px rgba(2,8,23,0.06);
+      padding:14px;margin-bottom:14px;
+    }
+    .card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+    .card h3{margin:0;font-size:16px;color:var(--blue)}
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:6px 10px;background:rgba(10,63,98,0.06);
+      border:1px solid rgba(10,63,98,0.10);
+      border-radius:999px;color:var(--blue-2);
+      font-weight:1000;font-size:12px;
+    }
+    .muted{color:var(--muted)}
+    .small{font-size:12px}
+
+    .highlights{display:grid;gap:10px;margin-top:12px}
+    .hl{
+      display:flex;gap:10px;align-items:flex-start;
+      padding:10px;background:rgba(10,111,191,0.06);
+      border:1px solid rgba(10,111,191,0.12);
+      border-radius:14px;
+    }
+    .hl i{color:var(--accent);margin-top:2px}
+    .hl b{display:block;color:#0b2239}
+    .hl span{display:block;color:var(--muted);font-weight:700;margin-top:2px}
+
+    .feature-list{display:grid;gap:10px}
+    .feature{display:flex;align-items:flex-start;gap:10px;font-weight:800;color:#0b2239}
+    .feature i{color:var(--success);margin-top:2px}
+
+    .mini-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
+    .mini{border:1px solid rgba(2,8,23,0.08);background:rgba(2,8,23,0.02);border-radius:14px;padding:10px}
+    .mini-top{display:flex;align-items:center;gap:8px;color:#0b2239}
+    .mini-top i{color:var(--accent)}
+    .mini-val{margin-top:6px;font-weight:1000;color:var(--blue)}
+
+    .chips{display:flex;flex-wrap:wrap;gap:10px}
+    .chip{
+      display:inline-flex;align-items:center;gap:8px;padding:8px 10px;border-radius:999px;
+      border:1px solid rgba(2,8,23,0.10);background:#fff;font-weight:1000;font-size:13px;
+    }
+    .chip i{font-size:8px;color:var(--accent)}
+
+    /* Programs */
+    .list{display:grid;gap:10px}
+    .row{
+      display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
+      border:1px solid rgba(2,8,23,0.08);background:rgba(2,8,23,0.02);
+      border-radius:14px;padding:12px;
+    }
+    .row-sub{margin-top:4px;font-weight:700}
+    .row-meta{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+    .tag{
+      display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;
+      background:#fff;border:1px solid rgba(2,8,23,0.10);
+      font-weight:1000;font-size:12px;color:#0b2239;
+    }
+    .tag i{color:var(--accent)}
+    .search{
+      display:flex;align-items:center;gap:10px;padding:8px 10px;
+      border:1px solid rgba(2,8,23,0.10);background:#fff;border-radius:999px;
+    }
+    .search i{color:var(--muted)}
+    .search input{border:none;outline:none;width:260px;font-weight:800}
+
+    /* Admissions */
+    .steps{margin:0;padding-left:20px;color:#0b2239;font-weight:800}
+    .steps li{margin:8px 0}
+    .docs{display:grid;gap:10px;margin-top:12px}
+    .doc{
+      display:flex;align-items:center;gap:10px;padding:10px;
+      border:1px solid rgba(2,8,23,0.08);background:rgba(2,8,23,0.02);
+      border-radius:14px;font-weight:1000;
+    }
+    .doc i{color:var(--accent)}
+    .fee-box{display:grid;gap:10px}
+    .fee{padding:12px;border-radius:14px;background:rgba(10,63,98,0.04);border:1px solid rgba(10,63,98,0.10)}
+    .fee b{display:block;color:#0b2239}
+    .fee-val{margin-top:6px;font-weight:1000;color:var(--blue)}
+    .note{display:flex;gap:10px;margin-top:12px;font-weight:800}
+    .note i{color:var(--accent);margin-top:2px}
+
+    /* Gallery */
+    .gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .g-item{
+      border:none;padding:0;background:transparent;cursor:pointer;
+      border-radius:16px;overflow:hidden;border:1px solid rgba(2,8,23,0.10);
+    }
+    .g-item img{width:100%;height:170px;object-fit:cover;display:block}
+    .lightbox{
+      position:fixed;inset:0;background:rgba(2,8,23,0.75);
+      display:none;align-items:center;justify-content:center;z-index:100;
+    }
+    .lightbox.show{display:flex}
+    #lbImg{
+      width:min(980px,90vw);height:min(620px,75vh);object-fit:contain;
+      border-radius:18px;box-shadow:0 22px 60px rgba(0,0,0,0.35);
+      background:#0b2239;
+    }
+    .lb-close{
+      position:absolute;top:18px;right:18px;width:46px;height:46px;border-radius:14px;
+      border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.08);
+      color:#fff;cursor:pointer;
+    }
+    .lb-nav{
+      position:absolute;top:50%;transform:translateY(-50%);
+      width:50px;height:50px;border-radius:16px;
+      border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.08);
+      color:#fff;cursor:pointer;
+    }
+    .lb-prev{left:18px}
+    .lb-next{right:18px}
+
+    /* Awards & news */
+    .awards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .award{
+      display:flex;gap:10px;align-items:flex-start;
+      padding:12px;border-radius:16px;border:1px solid rgba(2,8,23,0.08);
+      background:rgba(2,8,23,0.02);
+    }
+    .award-ic{
+      width:42px;height:42px;border-radius:14px;display:grid;place-items:center;
+      background:rgba(10,111,191,0.12);color:var(--blue);
+    }
+    .news{display:grid;gap:10px}
+    .news-item{padding:12px;border-radius:16px;border:1px solid rgba(2,8,23,0.08);background:rgba(2,8,23,0.02)}
+    .news-top{display:flex;justify-content:space-between;gap:10px;align-items:center}
+
+    /* Contact */
+    .contact-grid{display:grid;gap:10px}
+    .contact-item{
+      display:flex;gap:10px;align-items:flex-start;padding:12px;border-radius:16px;
+      border:1px solid rgba(2,8,23,0.08);background:rgba(2,8,23,0.02)
+    }
+    .contact-item i{color:var(--accent);margin-top:2px}
+    .contact-item b{display:block}
+    .socials{display:flex;gap:10px;margin-top:12px}
+    .soc{
+      width:44px;height:44px;border-radius:14px;display:grid;place-items:center;
+      border:1px solid rgba(2,8,23,0.10);background:#fff;box-shadow:0 10px 22px rgba(2,8,23,0.06)
+    }
+    .soc:hover{transform:translateY(-1px)}
+
+    .form{display:grid;gap:10px}
+    .frow label{display:block;font-weight:1000;color:#0b2239;font-size:13px;margin-bottom:6px}
+    .frow input,.frow textarea{
+      width:100%;padding:12px 12px;border-radius:14px;border:1px solid rgba(2,8,23,0.10);
+      background:#fff;outline:none;font-weight:800;
+    }
+    .frow input:focus,.frow textarea:focus{
+      border-color:rgba(10,111,191,0.55);box-shadow:0 0 0 4px rgba(10,111,191,0.12)
+    }
+
+    /* Buttons */
+    .btn{
+      display:inline-flex;align-items:center;gap:10px;padding:11px 14px;border-radius:14px;
+      border:1px solid transparent;font-weight:1000;cursor:pointer;
+    }
+    .btn-primary{background:linear-gradient(135deg,var(--blue),var(--accent));color:#fff;box-shadow:0 16px 30px rgba(10,63,98,0.20)}
+    .btn-soft{background:rgba(10,111,191,0.10);color:var(--blue-2);border-color:rgba(10,111,191,0.18)}
+    .btn-ghost{background:#fff;color:#0b2239;border-color:rgba(2,8,23,0.10)}
+
+    .footer{padding:18px 0 34px}
+    .footer-inner{
+      display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;
+      padding-top:12px;border-top:1px solid var(--border)
+    }
+
+    /* Responsive */
+    @media (max-width:980px){
+      .school-head{grid-template-columns:90px 1fr}
+      .stats{grid-column:1/-1;grid-template-columns:repeat(4,1fr)}
+    }
+    @media (max-width:760px){
+      .topnav{display:none}
+      .hamburger{display:block}
+      .cover{height:260px}
+      .hero-inner{margin-top:-72px}
+      .grid-2{grid-template-columns:1fr}
+      .gallery{grid-template-columns:repeat(2,1fr)}
+      .awards{grid-template-columns:1fr}
+      .stats{grid-template-columns:repeat(2,1fr)}
+      .search input{width:180px}
+    }
+  </style>
+
+  <!-- ✅ external JS (same behavior, CSP-friendly) -->
+  <script defer src="/js/admin-school-view.js"></script>
+</head>
+
+<body>
+<%
+  const p = tenant.settings?.profile || {};
+  const b = tenant.settings?.branding || {};
+  const stats = p.stats || {};
+  const contact = p.contact || {};
+  const socials = p.socials || {};
+  const summary = p.ratingSummary || { avg: 0, count: 0 };
+
+  // Admissions (optional)
+  const adm = p.admissions || {};
+  const admSteps = (adm.steps && adm.steps.length) ? adm.steps : [
+    "Fill the online application",
+    "Upload required documents",
+    "Pay application fee (if applicable)",
+    "Attend interview / entrance test (if required)",
+    "Receive admission decision",
+    "Complete enrollment & join classes",
+  ];
+  const admDocs = (adm.requiredDocs && adm.requiredDocs.length) ? adm.requiredDocs : [
+    "Passport photo",
+    "Report card / Results slip",
+    "Birth certificate / National ID",
+  ];
+
+  // Programs (optional)
+  const programs = (p.programs && p.programs.length) ? p.programs : null;
+
+  // Gallery (uses your profile.gallery from admin settings)
+  const gallery = p.gallery || [];
+
+  // Awards & announcements (already in your schema)
+  const awards = p.awards || [];
+  const news = p.announcements || [];
+
+  // Brand colors (optional; keep defaults if missing)
+  const primary = b.primaryColor || "#0a3d62";
+  const accent = b.accentColor || "#0a6fbf";
+%>
+
+<!-- set CSS vars without changing UI -->
+<style>
+  :root{ --blue:<%= primary %>; --accent:<%= accent %>; }
+</style>
+
+<header class="topbar">
+  <div class="container topbar-inner">
+    <a class="brand" href="/"><span class="brand-dot"></span> Classic Campus</a>
+
+    <nav class="topnav" id="topnav">
+      <a href="/schools">Schools</a>
+      <a href="/programs">Programs</a>
+      <a href="/admissions">Admissions</a>
+      <a href="/login" class="btn btn-soft"><i class="fa fa-right-to-bracket"></i> Login</a>
+    </nav>
+
+    <button class="hamburger" id="hamburger" aria-label="Open menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<div class="mobile-menu" id="mobileMenu">
+  <a href="/schools"><i class="fa fa-school"></i> Schools</a>
+  <a href="/programs"><i class="fa fa-book"></i> Programs</a>
+  <a href="/admissions"><i class="fa fa-file-signature"></i> Admissions</a>
+  <a href="/login"><i class="fa fa-right-to-bracket"></i> Login</a>
+</div>
+
+<section class="hero">
+  <div class="cover"
+       <% if (b.coverUrl) { %>
+         style="background-image:
+           radial-gradient(1200px 520px at 70% 20%, rgba(10,111,191,0.55), rgba(10,63,98,0.25) 50%, rgba(8,52,84,0.65) 100%),
+           linear-gradient(135deg, rgba(10,63,98,0.95), rgba(10,111,191,0.65)),
+           url('<%= b.coverUrl %>');
+           background-size: cover;
+           background-position: center;"
+       <% } %>
+  >
+    <div class="cover-overlay"></div>
+  </div>
+
+  <div class="container hero-inner">
+    <div class="school-head">
+      <div class="logo-wrap">
+        <div class="logo">
+          <% if (b.logoUrl) { %>
+            <img src="<%= b.logoUrl %>" alt="logo"/>
+          <% } else { %>
+            <%= (tenant.name || "S").slice(0,2).toUpperCase() %>
+          <% } %>
+        </div>
+      </div>
+
+      <div class="school-meta">
+        <div class="name-row">
+          <h1 class="school-name"><%= tenant.name %></h1>
+
+          <% if (p.verified) { %>
+            <span class="badge badge-verified"><i class="fa fa-circle-check"></i> Verified</span>
+          <% } %>
+
+          <% if (p.type) { %>
+            <span class="badge badge-soft"><i class="fa fa-building-columns"></i> <%= p.type %></span>
+          <% } %>
+        </div>
+
+        <p class="school-tagline"><%= p.tagline || "" %></p>
+
+        <div class="quickline">
+          <% if (p.city) { %><span><i class="fa fa-location-dot"></i> <%= p.city %></span><% } %>
+          <% if (contact.phone) { %><span><i class="fa fa-phone"></i> <%= contact.phone %></span><% } %>
+          <% if (contact.email) { %><span><i class="fa fa-envelope"></i> <%= contact.email %></span><% } %>
+        </div>
+
+        <div class="cta-row">
+          <a class="btn btn-primary" href="/admissions/apply?school=<%= tenant.code %>"><i class="fa fa-file-circle-plus"></i> Apply Now</a>
+          <a class="btn btn-soft" href="#contact"><i class="fa fa-paper-plane"></i> Contact</a>
+          <% if (contact.website) { %>
+            <a class="btn btn-ghost" href="<%= contact.website %>" target="_blank" rel="noopener"><i class="fa fa-arrow-up-right-from-square"></i> Website</a>
+          <% } else { %>
+            <a class="btn btn-ghost" href="#contact"><i class="fa fa-arrow-up-right-from-square"></i> Website</a>
+          <% } %>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><div class="stat-val"><%= stats.students || 0 %></div><div class="stat-lbl">Students</div></div>
+        <div class="stat"><div class="stat-val"><%= stats.programs || 0 %></div><div class="stat-lbl">Programs</div></div>
+        <div class="stat"><div class="stat-val"><%= stats.staff || 0 %></div><div class="stat-lbl">Staff</div></div>
+        <div class="stat"><div class="stat-val"><%= stats.campuses || 0 %></div><div class="stat-lbl">Campuses</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<main class="container main">
+  <div class="tabs" role="tablist">
+    <button class="tab active" data-tab="overview"><i class="fa fa-circle-info"></i> Overview</button>
+    <button class="tab" data-tab="programs"><i class="fa fa-graduation-cap"></i> Programs</button>
+    <button class="tab" data-tab="admissions"><i class="fa fa-file-signature"></i> Admissions</button>
+    <button class="tab" data-tab="gallery"><i class="fa fa-images"></i> Gallery</button>
+    <button class="tab" data-tab="awards"><i class="fa fa-award"></i> Awards</button>
+    <button class="tab" data-tab="news"><i class="fa fa-bullhorn"></i> News</button>
+    <button class="tab" data-tab="contact"><i class="fa fa-address-card"></i> Contact</button>
+  </div>
+
+  <!-- Overview -->
+  <section class="panel active" id="overview">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-h">
+          <h3>About <%= tenant.name %></h3>
+          <span class="pill"><i class="fa fa-shield-heart"></i> Student-first</span>
+        </div>
+        <p class="muted">
+          <%= p.about || "—" %>
+        </p>
+
+        <div class="highlights">
+          <div class="hl"><i class="fa fa-bullseye"></i><div><b>Mission</b><span><%= p.mission || "—" %></span></div></div>
+          <div class="hl"><i class="fa fa-eye"></i><div><b>Vision</b><span><%= p.vision || "—" %></span></div></div>
+          <div class="hl"><i class="fa fa-handshake"></i><div><b>Values</b>
+            <span>
+              <% if ((p.values||[]).length) { %>
+                <%= (p.values || []).slice(0,10).join(" • ") %>
+              <% } else { %>
+                —
+              <% } %>
+            </span>
+          </div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <h3>Why students choose us</h3>
+          <span class="pill"><i class="fa fa-star"></i> Top features</span>
+        </div>
+
+        <div class="feature-list">
+          <% if ((p.highlights||[]).length) { %>
+            <% (p.highlights||[]).slice(0,8).forEach(h => { %>
+              <div class="feature"><i class="fa fa-check"></i> <%= h %></div>
+            <% }) %>
+          <% } else { %>
+            <div class="feature"><i class="fa fa-check"></i> Modern learning environment & labs</div>
+            <div class="feature"><i class="fa fa-check"></i> Strong discipline and mentoring</div>
+            <div class="feature"><i class="fa fa-check"></i> Clubs, sports, and leadership programs</div>
+            <div class="feature"><i class="fa fa-check"></i> Affordable tuition with flexible payments</div>
+          <% } %>
+        </div>
+
+        <div class="mini-grid">
+          <div class="mini"><div class="mini-top"><i class="fa fa-clock"></i><b>Founded</b></div><div class="mini-val"><%= p.foundedYear || "—" %></div></div>
+          <div class="mini"><div class="mini-top"><i class="fa fa-chalkboard-user"></i><b>System</b></div><div class="mini-val"><%= p.system || "—" %></div></div>
+          <div class="mini"><div class="mini-top"><i class="fa fa-language"></i><b>Language</b></div><div class="mini-val"><%= p.language || "—" %></div></div>
+          <div class="mini"><div class="mini-top"><i class="fa fa-shield"></i><b>Accredited</b></div><div class="mini-val"><%= (p.accreditations && p.accreditations.length) ? "Yes" : (p.accredited ? "Yes" : "—") %></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h">
+        <h3>Facilities</h3>
+        <span class="pill"><i class="fa fa-building"></i> Campus life</span>
+      </div>
+      <div class="chips">
+        <% if ((p.facilities||[]).length) { %>
+          <% (p.facilities||[]).slice(0,18).forEach(f => { %>
+            <span class="chip"><i class="fa fa-circle"></i> <%= f %></span>
+          <% }) %>
+        <% } else { %>
+          <span class="chip"><i class="fa fa-circle"></i> Library</span>
+          <span class="chip"><i class="fa fa-circle"></i> Computer Lab</span>
+          <span class="chip"><i class="fa fa-circle"></i> Science Lab</span>
+          <span class="chip"><i class="fa fa-circle"></i> Sports Grounds</span>
+          <span class="chip"><i class="fa fa-circle"></i> Dormitories</span>
+          <span class="chip"><i class="fa fa-circle"></i> Canteen</span>
+        <% } %>
+      </div>
+    </div>
+  </section>
+
+  <!-- Programs -->
+  <section class="panel" id="programs">
+    <div class="card">
+      <div class="card-h">
+        <h3>Programs & Levels</h3>
+        <div class="search">
+          <i class="fa fa-magnifying-glass"></i>
+          <input id="programSearch" placeholder="Search programs (e.g. Science, Arts, ICT)..." />
+        </div>
+      </div>
+
+      <div class="list" id="programList">
+        <% if (programs) { %>
+          <% programs.slice(0,40).forEach(pr => { %>
+            <div class="row program-row" data-name="<%= (pr.searchText || (pr.name||'') + ' ' + (pr.description||'')).toLowerCase() %>">
+              <div class="row-main">
+                <b><%= pr.name || "Program" %></b>
+                <div class="row-sub muted"><%= pr.description || "—" %></div>
+              </div>
+              <div class="row-meta">
+                <span class="tag"><i class="fa fa-layer-group"></i> <%= pr.level || "—" %></span>
+                <span class="tag"><i class="fa fa-hourglass"></i> <%= pr.duration || "—" %></span>
+              </div>
+            </div>
+          <% }) %>
+        <% } else { %>
+          <!-- fallback: your exact mock rows -->
+          <div class="row program-row" data-name="science track physics chemistry biology">
+            <div class="row-main">
+              <b>Science Track</b>
+              <div class="row-sub muted">Physics, Chemistry, Biology</div>
+            </div>
+            <div class="row-meta">
+              <span class="tag"><i class="fa fa-layer-group"></i> Senior</span>
+              <span class="tag"><i class="fa fa-hourglass"></i> 4 Years</span>
+            </div>
+          </div>
+
+          <div class="row program-row" data-name="arts track history literature economics">
+            <div class="row-main">
+              <b>Arts Track</b>
+              <div class="row-sub muted">History, Literature, Economics</div>
+            </div>
+            <div class="row-meta">
+              <span class="tag"><i class="fa fa-layer-group"></i> Senior</span>
+              <span class="tag"><i class="fa fa-hourglass"></i> 4 Years</span>
+            </div>
+          </div>
+
+          <div class="row program-row" data-name="ict computing coding computer fundamentals">
+            <div class="row-main">
+              <b>ICT & Computing</b>
+              <div class="row-sub muted">Coding, Computer Fundamentals</div>
+            </div>
+            <div class="row-meta">
+              <span class="tag"><i class="fa fa-layer-group"></i> Both</span>
+              <span class="tag"><i class="fa fa-hourglass"></i> —</span>
+            </div>
+          </div>
+
+          <div class="row program-row" data-name="business commerce accounting entrepreneurship">
+            <div class="row-main">
+              <b>Business & Commerce</b>
+              <div class="row-sub muted">Accounting, Entrepreneurship</div>
+            </div>
+            <div class="row-meta">
+              <span class="tag"><i class="fa fa-layer-group"></i> Both</span>
+              <span class="tag"><i class="fa fa-hourglass"></i> —</span>
+            </div>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </section>
+
+  <!-- Admissions -->
+  <section class="panel" id="admissions">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-h">
+          <h3>Admission Requirements</h3>
+          <span class="pill"><i class="fa fa-clipboard-check"></i> Clear steps</span>
+        </div>
+
+        <ol class="steps">
+          <% admSteps.forEach(s => { %><li><%= s %></li><% }) %>
+        </ol>
+
+        <div class="docs">
+          <% admDocs.forEach(d => { %>
+            <div class="doc"><i class="fa fa-file-lines"></i> <%= d %></div>
+          <% }) %>
+        </div>
+
+        <div class="cta-row">
+          <a class="btn btn-primary" href="/admissions/apply?school=<%= tenant.code %>"><i class="fa fa-file-circle-plus"></i> Start Application</a>
+          <a class="btn btn-ghost" href="#contact"><i class="fa fa-question"></i> Ask a question</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <h3>Tuition & Fees</h3>
+          <span class="pill"><i class="fa fa-coins"></i> Transparent</span>
+        </div>
+
+        <div class="fee-box">
+          <div class="fee">
+            <b>Estimated term fees</b>
+            <div class="fee-val"><%= p.feesRange || "—" %></div>
+          </div>
+          <div class="fee">
+            <b>Payment options</b>
+            <div class="fee-val"><%= p.paymentOptions || "—" %></div>
+          </div>
+        </div>
+
+        <div class="note muted">
+          <i class="fa fa-circle-info"></i>
+          Fees vary by class and program. Contact the school for latest details.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Gallery -->
+  <section class="panel" id="gallery">
+    <div class="card">
+      <div class="card-h">
+        <h3>School Gallery</h3>
+        <span class="pill"><i class="fa fa-camera"></i> Photos</span>
+      </div>
+
+      <div class="gallery" id="galleryGrid" data-has-real="<%= gallery.length ? '1' : '0' %>">
+        <!-- keep same 6 elements; fill with real images if available, else JS generates SVG placeholders -->
+        <% for (let i=0; i<6; i++) { 
+             const img = gallery[i] ? gallery[i].url : "";
+             const id = `g${i+1}`;
+        %>
+          <button class="g-item" data-src="<%= img %>" aria-label="Open photo">
+            <img alt="Gallery" id="<%= id %>" src="<%= img %>">
+          </button>
+        <% } %>
+      </div>
+    </div>
+
+    <div class="lightbox" id="lightbox" aria-hidden="true">
+      <button class="lb-close" id="lbClose" aria-label="Close"><i class="fa fa-xmark"></i></button>
+      <button class="lb-nav lb-prev" id="lbPrev" aria-label="Previous"><i class="fa fa-chevron-left"></i></button>
+      <img id="lbImg" alt="Preview"/>
+      <button class="lb-nav lb-next" id="lbNext" aria-label="Next"><i class="fa fa-chevron-right"></i></button>
+    </div>
+  </section>
+
+  <!-- Awards -->
+  <section class="panel" id="awards">
+    <div class="card">
+      <div class="card-h">
+        <h3>Awards & Achievements</h3>
+        <span class="pill"><i class="fa fa-trophy"></i> Proud moments</span>
+      </div>
+
+      <div class="awards">
+        <% if (awards.length) { %>
+          <% awards.slice(0,12).forEach(a => { %>
+            <div class="award">
+              <div class="award-ic"><i class="fa fa-award"></i></div>
+              <div>
+                <b><%= a.title || "Award" %></b>
+                <div class="muted"><%= a.organization || "" %> <%= a.year ? "• " + a.year : "" %></div>
+              </div>
+            </div>
+          <% }) %>
+        <% } else { %>
+          <!-- fallback mock -->
+          <div class="award">
+            <div class="award-ic"><i class="fa fa-award"></i></div>
+            <div><b>Best Discipline Award</b><div class="muted">District Education Office • 2024</div></div>
+          </div>
+          <div class="award">
+            <div class="award-ic"><i class="fa fa-award"></i></div>
+            <div><b>Top Performing School</b><div class="muted">National Exams Board • 2023</div></div>
+          </div>
+          <div class="award">
+            <div class="award-ic"><i class="fa fa-award"></i></div>
+            <div><b>Sports Champions</b><div class="muted">Regional Games • 2022</div></div>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </section>
+
+  <!-- News -->
+  <section class="panel" id="news">
+    <div class="card">
+      <div class="card-h">
+        <h3>Announcements & News</h3>
+        <span class="pill"><i class="fa fa-bullhorn"></i> Updates</span>
+      </div>
+
+      <div class="news">
+        <% if (news.length) { %>
+          <% news.slice(0,12).forEach(n => { %>
+            <div class="news-item">
+              <div class="news-top">
+                <b><%= n.title || "Update" %></b>
+                <span class="tag"><i class="fa fa-calendar"></i> <%= n.date ? new Date(n.date).toISOString().slice(0,10) : "" %></span>
+              </div>
+              <div class="muted"><%= n.body || "" %></div>
+            </div>
+          <% }) %>
+        <% } else { %>
+          <!-- fallback mock -->
+          <div class="news-item">
+            <div class="news-top">
+              <b>Admissions now open</b>
+              <span class="tag"><i class="fa fa-calendar"></i> 2026-01-10</span>
+            </div>
+            <div class="muted">Apply online via Classic Campus portal.</div>
+          </div>
+
+          <div class="news-item">
+            <div class="news-top">
+              <b>Parents meeting scheduled</b>
+              <span class="tag"><i class="fa fa-calendar"></i> 2026-01-20</span>
+            </div>
+            <div class="muted">All parents/guardians are requested to attend.</div>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact -->
+  <section class="panel" id="contact">
+    <div class="grid-2">
+      <div class="card" id="contactCard">
+        <div class="card-h">
+          <h3>Contact & Location</h3>
+          <span class="pill"><i class="fa fa-location-dot"></i> Reach us</span>
+        </div>
+
+        <div class="contact-grid">
+          <div class="contact-item"><i class="fa fa-location-dot"></i><div><b>Address</b><span class="muted"><%= p.address || "—" %></span></div></div>
+          <div class="contact-item"><i class="fa fa-phone"></i><div><b>Phone</b><span class="muted"><%= contact.phone || "—" %></span></div></div>
+          <div class="contact-item"><i class="fa fa-envelope"></i><div><b>Email</b><span class="muted"><%= contact.email || "—" %></span></div></div>
+          <div class="contact-item"><i class="fa fa-globe"></i><div><b>Website</b><span class="muted"><%= contact.website || "—" %></span></div></div>
+        </div>
+
+        <div class="socials">
+          <% if (socials.facebook) { %><a class="soc" href="<%= socials.facebook %>" target="_blank" rel="noopener"><i class="fa-brands fa-facebook"></i></a><% } %>
+          <% if (socials.instagram) { %><a class="soc" href="<%= socials.instagram %>" target="_blank" rel="noopener"><i class="fa-brands fa-instagram"></i></a><% } %>
+          <% if (socials.x) { %><a class="soc" href="<%= socials.x %>" target="_blank" rel="noopener"><i class="fa-brands fa-x-twitter"></i></a><% } %>
+          <% if (socials.youtube) { %><a class="soc" href="<%= socials.youtube %>" target="_blank" rel="noopener"><i class="fa-brands fa-youtube"></i></a><% } %>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <h3>Send a message</h3>
+          <span class="pill"><i class="fa fa-paper-plane"></i> Quick inquiry</span>
+        </div>
+
+        <!-- UI unchanged: still “mock”, but now points to a real endpoint if you create it -->
+        <form class="form" id="inquiryForm" data-school="<%= tenant.code %>">
+          <div class="frow">
+            <label>Full Name</label>
+            <input name="name" placeholder="Your name" required />
+          </div>
+          <div class="frow">
+            <label>Phone / Email</label>
+            <input name="contact" placeholder="e.g. +256..." required />
+          </div>
+          <div class="frow">
+            <label>Message</label>
+            <textarea name="message" rows="5" placeholder="Ask about admissions, fees, programs..." required></textarea>
+          </div>
+
+          <button class="btn btn-primary" type="submit"><i class="fa fa-paper-plane"></i> Submit</button>
+          <p class="muted small" id="inquiryMsg">Mock only — connect backend when ready.</p>
+        </form>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <span class="muted">© <%= new Date().getFullYear() %> Classic Campus</span>
+    <span class="muted">Powered by <b>Classic Technologies</b></span>
+  </div>
+</footer>
+
+</body>
+</html>

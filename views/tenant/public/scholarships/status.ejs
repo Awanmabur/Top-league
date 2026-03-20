@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Scholarship Status — <%= (tenant && tenant.name) ? tenant.name : "Classic Campus" %></title>
+  <style>
+    body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial;background:#f4f8ff;color:#0f172a}
+    .wrap{max-width:800px;margin:0 auto;padding:18px}
+    .card{background:#fff;border:1px solid rgba(13,64,96,.12);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.08);padding:16px}
+    .muted{color:#6b7280;font-size:12px}
+    input{width:100%;padding:10px;border-radius:12px;border:1px solid rgba(13,64,96,.14)}
+    .btn{background:#0a6fbf;color:#fff;border:none;padding:10px 14px;border-radius:12px;font-weight:1000;cursor:pointer}
+    .bad{margin-top:10px;background:#fee2e2;color:#991b1b;border:1px solid rgba(153,27,27,.2);padding:10px 12px;border-radius:12px;font-weight:900}
+    .ok{margin-top:10px;background:#ecfdf3;color:#15803d;border:1px solid rgba(21,128,61,.2);padding:10px 12px;border-radius:12px;font-weight:900}
+  </style>
+</head>
+<body>
+<%
+  const safe=(v)=> (v===null||v===undefined) ? "" : String(v);
+  const r = (typeof result!=="undefined" && result) ? result : null;
+  const err = (typeof error!=="undefined" && error) ? error : null;
+%>
+
+<div class="wrap">
+  <div class="card">
+    <a class="btn" style="text-decoration:none;display:inline-block" href="/scholarships">← Scholarships</a>
+    <h1 style="margin:10px 0 0">Check Application Status</h1>
+    <div class="muted">Search by Application ID or Email/Phone</div>
+
+    <form method="POST" action="/scholarships/status" style="margin-top:12px">
+      <% if(csrfToken){ %><input type="hidden" name="_csrf" value="<%= csrfToken %>"/><% } %>
+      <input name="q" placeholder="e.g. APP-XXXX or email or phone"/>
+      <div style="margin-top:10px;display:flex;justify-content:flex-end">
+        <button class="btn" type="submit">Check</button>
+      </div>
+    </form>
+
+    <% if(err){ %><div class="bad"><%= safe(err) %></div><% } %>
+
+    <% if(r){ %>
+      <div class="ok">
+        <div><b>Scholarship:</b> <%= r.scholarship ? safe(r.scholarship.title) : "-" %></div>
+        <div><b>Applicant:</b> <%= safe(r.fullName) %></div>
+        <div><b>Status:</b> <%= safe(r.status) %></div>
+        <div class="muted"><b>Application ID:</b> <%= safe(r.applicationId) %></div>
+      </div>
+    <% } %>
+  </div>
+</div>
+</body>
+</html>

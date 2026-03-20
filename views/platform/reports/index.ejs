@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Reports — Classic Campus</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="/css/navbar.css" />
+  <style>
+    body { margin:0; background:#f5f8ff; font-family:Poppins,Segoe UI,Arial,sans-serif; color:#0f172a; overflow-x:hidden; }
+    * { box-sizing:border-box; min-width:0; }
+    .main { flex:1; padding:20px 26px; display:flex; flex-direction:column; gap:16px; }
+    .title { font-size:20px; font-weight:700; color:#083454; }
+    .subtitle { font-size:13px; color:#6b7280; line-height:1.5; margin-top:4px; }
+    .kpi-row { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+    .card, .kpi-card { background:#fff; border-radius:12px; padding:14px; border:1px solid #e4ecfb; box-shadow:0 6px 18px rgba(12,38,73,.04); }
+    .kpi-label { font-size:12px; color:#6b7280; }
+    .kpi-value { font-size:22px; font-weight:800; color:#083454; margin-top:4px; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px; }
+    .report-card { border:1px solid #e2ebff; border-radius:12px; padding:14px; background:#fdfdff; display:flex; flex-direction:column; gap:10px; }
+    .report-title { font-size:15px; font-weight:800; color:#083454; }
+    .meta { font-size:12px; color:#6b7280; line-height:1.5; }
+    .btn { padding:10px 14px; border-radius:10px; border:1px solid #dbe3f6; background:#eef4ff; color:#0a3d62; text-decoration:none; font-weight:700; display:inline-flex; align-items:center; gap:8px; }
+    @media (max-width:1100px){ .kpi-row{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
+    @media (max-width:700px){ .main{ padding:16px; } .kpi-row{ grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <%- include("./navbar") %>
+
+  <main class="main">
+    <div>
+      <div class="title">Reports</div>
+      <div class="subtitle">Cross-tenant reporting for universities, plans, payments, and platform performance.</div>
+    </div>
+
+    <% if (error) { %>
+      <div class="card" style="color:#991b1b;"><%= error %></div>
+    <% } %>
+
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-label">Universities</div>
+        <div class="kpi-value"><%= summary?.tenantCount || 0 %></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Active Tenants</div>
+        <div class="kpi-value"><%= summary?.activeCount || 0 %></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Plans</div>
+        <div class="kpi-value"><%= summary?.planCount || 0 %></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Total Revenue</div>
+        <div class="kpi-value">$<%= Number(summary?.totalRevenue || 0).toLocaleString() %></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="grid">
+        <a href="/super-admin/reports/tenants" class="report-card" style="text-decoration:none;color:inherit;">
+          <div class="report-title">Tenant Report</div>
+          <div class="meta">See all universities, their plans, ownership, status, and platform setup.</div>
+          <span class="btn">Open Report</span>
+        </a>
+
+        <a href="/super-admin/reports/plans" class="report-card" style="text-decoration:none;color:inherit;">
+          <div class="report-title">Plan Report</div>
+          <div class="meta">Track usage of each billing plan and compare active package distribution.</div>
+          <span class="btn">Open Report</span>
+        </a>
+
+        <a href="/super-admin/reports/payments" class="report-card" style="text-decoration:none;color:inherit;">
+          <div class="report-title">Payment Report</div>
+          <div class="meta">Inspect platform payments, subscriptions, manual adjustments and revenue flow.</div>
+          <span class="btn">Open Report</span>
+        </a>
+      </div>
+    </div>
+  </main>
+
+  </div>
+  <script src="/js/navbar.js"></script>
+</body>
+</html>

@@ -1,0 +1,84 @@
+<!-- ======================
+     MOBILE GLASS TOP NAV
+======================= -->
+<header class="mglass-nav" id="mglassNav">
+  <div class="mglass-left">
+    <a class="mglass-home" href="/parent/dashboard" aria-label="Home">
+      <i class="fa fa-house"></i>
+    </a>
+    <div class="mglass-title"><%= tenant?.name || "Classic Campus" %></div>
+  </div>
+
+  <button class="mglass-menu" id="mobileMenuBtn" type="button" aria-label="Open menu">
+    <i class="fa fa-bars"></i>
+  </button>
+</header>
+
+<div class="app">
+  <!-- transparent click-catcher for mobile -->
+  <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
+
+  <!-- ======================
+       SIDEBAR
+  ======================= -->
+  <aside class="sidebar" id="sidebar">
+    <button type="button" id="sbToggle" class="sbToggle" aria-label="Toggle sidebar">
+      <i class="fa fa-angle-left"></i>
+    </button>
+
+    <div class="brand">
+      <div class="brand-logo">CS</div>
+      <div class="brand-meta">
+        <h1 class="brand-title">
+          <%= tenant?.name || "Classic Campus" %>
+        </h1>
+        <div class="brand-sub">Classic Campus SaaS</div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <div class="navcat">MAIN</div>
+      <div class="group">
+        <a class="navbutton active" href="/student/dashboard" data-label="Dashboard"><i
+            class="fa fa-house"></i><span>Dashboard</span></a>
+        <a class="navbutton" href="/student/course-registration" data-label="Course Registration"><i
+            class="fa fa-list-check"></i><span>Course Registration</span></a>
+        <a class="navbutton" href="/student/courses" data-label="My Courses"><i class="fa fa-book-open-reader"></i><span>My
+            Courses</span></a>
+        <a class="navbutton" href="/student/timetable" data-label="My Timetable"><i class="fa fa-calendar-week"></i><span>My
+            Timetable</span></a>
+        <a class="navbutton" href="/student/assignments" data-label="Assignments"><i
+            class="fa fa-file-pen"></i><span>Assignments</span></a>
+        <a class="navbutton" href="/student/exams" data-label="Exams"><i
+            class="fa fa-clipboard-list"></i><span>Exams</span></a>
+      </div>
+    
+      <div class="navcat">RECORDS</div>
+      <div class="group">
+        <a class="navbutton" href="/student/transcript" data-label="Transcript"><i
+            class="fa fa-file-pdf"></i><span>Transcript</span></a>
+        <a class="navbutton" href="/student/results" data-label="Results"><i
+            class="fa fa-award"></i><span>Results</span></a>
+        <a class="navbutton" href="/student/finance" data-label="Finance"><i
+            class="fa fa-sack-dollar"></i><span>Finance</span></a>
+        <a class="navbutton" href="/student/attendance" data-label="Attendance"><i
+            class="fa fa-user-check"></i><span>Attendance</span></a>
+      </div>
+    
+      <div class="navcat">SERVICES</div>
+      <div class="group">
+        <a class="navbutton" href="/student/hostel" data-label="Hostel"><i class="fa fa-bed"></i><span>Hostel</span></a>
+        <a class="navbutton" href="/student/library" data-label="Library"><i class="fa fa-book"></i><span>Library</span></a>
+        <a class="navbutton" href="/student/jobs" data-label="Jobs"><i class="fa fa-briefcase"></i><span>Jobs</span></a>
+        <a class="navbutton" href="/student/notifications" data-label="Notifications"><i
+            class="fa fa-bell"></i><span>Notifications</span></a>
+        <a class="navbutton" href="/student/support" data-label="Support"><i class="fa fa-headset"></i><span>Support
+            Tickets</span></a>
+        <a class="navbutton" href="/student/profile" data-label="Profile"><i class="fa fa-user"></i><span>Profile</span></a>
+        <a class="navbutton" href="/logout" data-label="Logout"><i class="fa fa-right-from-bracket"></i><span>Logout</span></a>
+      </div>
+      <div class="navfoot">Portal: <strong>Student</strong></div>
+    </nav>
+    </aside>
+
+  <!-- ✅ IMPORTANT: The dashboard page must close this .app by rendering MAIN and then closing tags -->

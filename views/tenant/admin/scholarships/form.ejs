@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title><%= (mode==="edit" ? "Edit" : "New") %> Scholarship — <%= (tenant && tenant.name) ? tenant.name : "Classic Campus" %></title>
+
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer"/>
+  <link rel="stylesheet" href="/css/admin-finance.css"/>
+  <script src="/js/admin-scholarships.js" defer></script>
+
+  <style>
+    .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    @media(max-width:980px){.grid3{grid-template-columns:1fr}}
+    .err{margin-top:6px;color:#b91c1c;font-size:12px;font-weight:800}
+    textarea{min-height:120px}
+  </style>
+</head>
+<body>
+<%
+  const safe=(v)=> (v===null||v===undefined) ? "" : String(v);
+  const _mode = (typeof mode!=="undefined" && mode) ? String(mode) : "new";
+  const _csrf = (typeof csrfToken!=="undefined" && csrfToken) ? csrfToken : "";
+  const _programs = (typeof programs!=="undefined" && Array.isArray(programs)) ? programs : [];
+  const _errors = (typeof errors!=="undefined" && errors) ? errors : null;
+
+  const _sch = (_mode==="edit" && typeof scholarship!=="undefined" && scholarship) ? scholarship : null;
+  const _fd  = (_mode==="new" && typeof formData!=="undefined" && formData) ? formData : null;
+
+  const val=(k,def="")=>{
+    if(_fd && _fd[k]!==undefined && _fd[k]!==null) return safe(_fd[k]);
+    if(_sch && _sch[k]!==undefined && _sch[k]!==null) return safe(_sch[k]);
+    return def;
+  };
+
+  const action = (_mode==="edit" && _sch) ? ("/admin/scholarships/" + _sch._id) : "/admin/scholarships";
+
+  const reqText = (() => {
+    if (_fd && _fd.requirements) return safe(_fd.requirements);
+    if (_sch && Array.isArray(_sch.requirements)) return _sch.requirements.join("\n");
+    return "";
+  })();
+
+  const selectedPrograms = (() => {
+    const arr = _fd && _fd.programs ? [].concat(_fd.programs) : (_sch && _sch.programs ? [].concat(_sch.programs) : []);
+    return arr.map(safe).map(String);
+  })();
+
+  const selectedYearLevels = (() => {
+    const arr = _fd && _fd.yearLevels ? [].concat(_fd.yearLevels) : (_sch && _sch.yearLevels ? [].concat(_sch.yearLevels) : []);
+    return arr.map(safe);
+  })();
+
+  const selectedStudyModes = (() => {
+    const arr = _fd && _fd.studyModes ? [].concat(_fd.studyModes) : (_sch && _sch.studyModes ? [].concat(_sch.studyModes) : []);
+    return arr.map(safe);
+  })();
+%>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">CS</div>
+      <div>
+        <h1><%= (tenant && tenant.name) ? tenant.name : "CampusSaaS" %></h1>
+        <div class="sub">Admin Portal</div>
+      </div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section-title">Admissions</div>
+      <a class="nav-item active" href="/admin/scholarships"><i class="fa-solid fa-graduation-cap"></i><span>Scholarships</span></a>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h1 class="h1"><%= (_mode==="edit" ? "Edit" : "New") %> Scholarship</h1>
+        <div class="muted">Scholarships → Manage scholarship program & eligibility</div>
+      </div>
+      <div class="actions">
+        <a class="btn light" href="/admin/scholarships"><i class="fa-solid fa-arrow-left"></i> Back</a>
+        <% if(_mode==="edit" && _sch){ %>
+          <a class="btn light" href="/admin/scholarships/<%= _sch._id %>"><i class="fa-solid fa-eye"></i> View</a>
+        <% } %>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Scholarship Details</div>
+          <div class="card-sub">Fields marked * are required</div>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <% if(_errors && _errors.general){ %>
+          <div class="alert error"><%= safe(_errors.general) %></div>
+        <% } %>
+
+        <form method="POST" action="<%= action %>">
+          <% if(_csrf){ %><input type="hidden" name="_csrf" value="<%= _csrf %>"/><% } %>
+
+          <div class="grid3">
+            <div>
+              <div class="muted">Title *</div>
+              <input name="title" value="<%= val("title") %>" placeholder="Merit Scholarship 2026"/>
+              <% if(_errors && _errors.title){ %><div class="err"><%= safe(_errors.title) %></div><% } %>
+            </div>
+
+            <div>
+              <div class="muted">Code (optional)</div>
+              <input name="code" value="<%= val("code") %>" placeholder="MERIT-2026"/>
+            </div>
+
+            <div>
+              <div class="muted">Status</div>
+              <select name="status">
+                <option value="draft" <%= val("status","draft")==="draft" ? "selected":"" %>>draft</option>
+                <option value="open" <%= val("status","draft")==="open" ? "selected":"" %>>open</option>
+                <option value="closed" <%= val("status","draft")==="closed" ? "selected":"" %>>closed</option>
+                <option value="archived" <%= val("status","draft")==="archived" ? "selected":"" %>>archived</option>
+              </select>
+            </div>
+
+            <div>
+              <div class="muted">Provider</div>
+              <input name="provider" value="<%= val("provider") %>" placeholder="Donor / Sponsor"/>
+            </div>
+
+            <div>
+              <div class="muted">Category</div>
+              <input name="category" value="<%= val("category") %>" placeholder="Merit / Need / Sports"/>
+            </div>
+
+            <div>
+              <div class="muted">Banner URL (optional)</div>
+              <input name="bannerUrl" value="<%= val("bannerUrl") %>" placeholder="https://..."/>
+            </div>
+
+            <div>
+              <div class="muted">Currency</div>
+              <input name="currency" value="<%= val("currency","UGX") %>" placeholder="UGX"/>
+            </div>
+
+            <div>
+              <div class="muted">Amount</div>
+              <input name="amount" type="number" min="0" step="1" value="<%= val("amount","0") %>"/>
+            </div>
+
+            <div>
+              <div class="muted">Slots</div>
+              <input name="slots" type="number" min="0" step="1" value="<%= val("slots","0") %>"/>
+            </div>
+
+            <div>
+              <div class="muted">Open Date</div>
+              <input name="openDate" type="date" value="<%= val("openDate","").slice(0,10) %>"/>
+            </div>
+
+            <div>
+              <div class="muted">Close Date</div>
+              <input name="closeDate" type="date" value="<%= val("closeDate","").slice(0,10) %>"/>
+            </div>
+
+            <div>
+              <div class="muted">Minimum GPA</div>
+              <input name="minGpa" type="number" min="0" max="5" step="0.01" value="<%= val("minGpa","") %>" placeholder="e.g. 3.5"/>
+            </div>
+          </div>
+
+          <div style="height:10px"></div>
+
+          <div class="card-title">Eligibility (optional)</div>
+          <div class="muted">Leave blank to allow all programs</div>
+
+          <div class="grid3" style="margin-top:10px">
+            <div>
+              <div class="muted">Programs</div>
+              <select name="programs" multiple style="height:140px">
+                <% _programs.forEach(p=>{
+                  const id = String(p._id);
+                  const sel = selectedPrograms.includes(id);
+                %>
+                  <option value="<%= id %>" <%= sel ? "selected":"" %>>
+                    <%= (p.code ? p.code+" — ":"") + (p.name||p.title||"Program") %>
+                  </option>
+                <% }) %>
+              </select>
+            </div>
+
+            <div>
+              <div class="muted">Year Levels</div>
+              <select name="yearLevels" multiple style="height:140px">
+                <% ["Year 1","Year 2","Year 3","Year 4","Year 5","Year 6"].forEach(y=>{ %>
+                  <option value="<%= y %>" <%= selectedYearLevels.includes(y) ? "selected":"" %>><%= y %></option>
+                <% }) %>
+              </select>
+            </div>
+
+            <div>
+              <div class="muted">Study Modes</div>
+              <select name="studyModes" multiple style="height:140px">
+                <% ["Full-time","Part-time","Evening","Weekend","Online"].forEach(m=>{ %>
+                  <option value="<%= m %>" <%= selectedStudyModes.includes(m) ? "selected":"" %>><%= m %></option>
+                <% }) %>
+              </select>
+            </div>
+          </div>
+
+          <div style="height:10px"></div>
+
+          <div class="card-title">Description</div>
+          <textarea name="description" placeholder="Describe the scholarship..."><%= val("description") %></textarea>
+
+          <div style="height:10px"></div>
+
+          <div class="card-title">Requirements (one per line)</div>
+          <textarea name="requirements" placeholder="- Transcript&#10;- Recommendation letter&#10;- National ID"><%= reqText %></textarea>
+
+          <div style="height:12px"></div>
+
+          <div style="display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap">
+            <button class="btn primary" type="submit"><i class="fa-solid fa-save"></i> Save</button>
+          </div>
+        </form>
+
+        <% if(_mode==="edit" && _sch){ %>
+          <form method="POST" action="/admin/scholarships/<%= _sch._id %>/delete" style="margin-top:10px;display:flex;justify-content:flex-end">
+            <% if(_csrf){ %><input type="hidden" name="_csrf" value="<%= _csrf %>"/><% } %>
+            <button class="btn light" type="submit" onclick="return confirm('Delete this scholarship?')"><i class="fa-solid fa-trash"></i> Delete</button>
+          </form>
+        <% } %>
+
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

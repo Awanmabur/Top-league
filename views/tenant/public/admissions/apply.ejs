@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Apply Now — CampusSaaS</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer"/>
+
+  <style>
+    :root{
+      --blue:#0a3d62; --blue2:#083454; --accent:#0a6fbf;
+      --bg:#f4f8ff; --card:#fff; --muted:#6b7280; --text:#0f172a;
+      --success:#16a34a; --danger:#ef4444; --warn:#f59e0b;
+      --radius:16px; --line:rgba(13,64,96,.12); --shadow:0 10px 30px rgba(0,0,0,.08);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--text)}
+    a{color:inherit}
+    .wrap{min-height:100vh;display:flex;flex-direction:column}
+    .top{
+      background:linear-gradient(135deg,var(--blue),var(--blue2));
+      color:#fff;
+      padding:18px 16px;
+    }
+    .top-inner{max-width:1100px;margin:0 auto;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+    .brand{display:flex;gap:10px;align-items:center;text-decoration:none}
+    .logo{width:42px;height:42px;border-radius:14px;background:rgba(255,255,255,.14);display:grid;place-items:center;font-weight:1000}
+    .brand h1{margin:0;font-size:16px;line-height:1.1}
+    .sub{font-size:12px;opacity:.75}
+    .top-actions{display:flex;gap:10px;flex-wrap:wrap}
+    .btn{
+      border:none;border-radius:12px;padding:10px 12px;font-weight:900;cursor:pointer;
+      display:inline-flex;gap:8px;align-items:center;text-decoration:none
+    }
+    .btn.light{background:#fff;border:1px solid rgba(255,255,255,.25);color:#0f172a}
+    .btn.primary{background:var(--accent);color:#fff}
+    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,.25);color:#fff}
+    .btn.small{padding:8px 10px;border-radius:10px;font-size:12px}
+    .btn:hover{filter:brightness(.98)}
+
+    .container{max-width:1100px;margin:0 auto;padding:16px;display:grid;grid-template-columns:1.4fr .6fr;gap:14px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+    .card-head{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;gap:12px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+    .title{font-size:18px;font-weight:1000;margin:0}
+    .desc{margin:6px 0 0;color:rgba(255,255,255,.86);font-size:12px}
+    .card-body{padding:16px}
+    .section{padding:14px;border:1px dashed rgba(13,64,96,.2);border-radius:14px;background:rgba(10,111,191,.05);margin-bottom:12px}
+    .section h3{margin:0 0 10px;font-size:14px}
+    .muted{color:var(--muted);font-size:12px}
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+    .field{display:grid;gap:6px}
+    label{font-size:12px;color:var(--muted);font-weight:800}
+    .input,.select,.textarea{
+      padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:#fff;outline:none;
+    }
+    .textarea{min-height:88px;resize:vertical}
+    .input:focus,.select:focus,.textarea:focus{border-color:rgba(10,111,191,.45);box-shadow:0 0 0 3px rgba(10,111,191,.12)}
+    .req{color:var(--danger);font-weight:1000;margin-left:4px}
+    .hint{font-size:11px;color:var(--muted)}
+
+    .drop{
+      border:2px dashed rgba(13,64,96,.25);
+      border-radius:14px;
+      background:#fff;
+      padding:14px;
+      display:grid;
+      gap:10px;
+      place-items:center;
+      text-align:center;
+    }
+    .drop.drag{background:rgba(10,111,191,.06);border-color:rgba(10,111,191,.45)}
+    .file-list{width:100%;display:grid;gap:8px}
+    .file{
+      display:flex;gap:10px;align-items:center;justify-content:space-between;
+      padding:10px;border:1px solid rgba(13,64,96,.12);border-radius:12px;
+    }
+    .file .name{font-weight:900;font-size:12px}
+    .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:900}
+    .ok{background:#ecfdf3;color:#15803d}
+    .bad{background:#fee2e2;color:#b91c1c}
+    .warn{background:#fff7ed;color:#92400e}
+
+    .actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;margin-top:12px}
+    .error{color:#b91c1c;font-size:12px;font-weight:800;margin-top:6px;display:none}
+    .success-pane{
+      padding:18px;border-radius:16px;border:1px solid rgba(22,163,74,.25);
+      background:#ecfdf3;
+    }
+    .success-pane h2{margin:0 0 6px}
+    .success-pane .appId{font-weight:1000}
+    .right-stack{display:grid;gap:12px}
+    .progress{padding:14px}
+    .steps{display:grid;gap:10px;margin-top:8px}
+    .step{display:flex;gap:10px;align-items:flex-start}
+    .dot{width:28px;height:28px;border-radius:12px;display:grid;place-items:center;font-weight:1000;background:rgba(10,111,191,.12);color:var(--blue)}
+    .step .t{font-weight:1000;font-size:13px}
+    .step .d{font-size:12px;color:var(--muted);margin-top:2px}
+    .notice{padding:14px}
+    .notice ul{margin:8px 0 0;padding-left:18px}
+    .notice li{font-size:12px;color:var(--muted);margin:6px 0}
+
+    /* =========================
+       OVERFLOW FIX PATCH
+    ========================= */
+    html, body { max-width: 100%; overflow-x: hidden; }
+
+    .container,
+    .card,
+    .card-head,
+    .card-body,
+    .section,
+    .grid-2,
+    .grid-3,
+    .field,
+    .drop,
+    .file-list,
+    .file,
+    .steps,
+    .step { min-width: 0; }
+
+    .container{
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, .6fr);
+    }
+
+    .input, .select, .textarea{ width: 100%; max-width: 100%; }
+
+    .file{ width: 100%; }
+    .file > div{ min-width: 0; }
+    .file .name{
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 100%;
+    }
+
+    /* =========================
+       RESPONSIVE FIX (KEEP UI SAME)
+    ========================= */
+    @media (max-width: 1024px){
+      .container{ grid-template-columns: 1fr; }
+    }
+    @media (max-width: 820px){
+      .grid-3{ grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 640px){
+      .grid-2,.grid-3{ grid-template-columns: 1fr; }
+      .top-inner{ align-items:flex-start; }
+      .top-actions{ width:100%; justify-content:flex-start; }
+      .card-body{ padding:14px; }
+      .section{ padding:12px; }
+    }
+    @media (max-width: 420px){
+      .top{ padding:14px 12px; }
+      .container{ padding:12px; }
+      .card-head{ padding:12px; }
+      .btn{ width:100%; justify-content:center; }
+    }
+    .drop{ width:100%; }
+    .file{ flex-wrap:wrap; gap:8px; }
+    .file .badge{ white-space:nowrap; }
+
+    /* ✅ Fix VS Code warning: avoid inline style EJS and use a class */
+    .hidden{display:none !important;}
+  </style>
+</head>
+
+<body>
+<%
+  // -------- SAFE VARS (NO "is not defined") ----------
+  const _tenant = (typeof tenant !== "undefined" && tenant) ? tenant : null;
+  const _errors = (typeof errors !== "undefined" && errors) ? errors : null;
+  const _formData = (typeof formData !== "undefined" && formData) ? formData : null;
+
+  const programsArr = (typeof programs !== "undefined" && Array.isArray(programs)) ? programs : [];
+  const classesArr  = (typeof classes !== "undefined" && Array.isArray(classes)) ? classes : [];
+
+  const yearsArr = (typeof academicYears !== "undefined" && Array.isArray(academicYears) && academicYears.length)
+    ? academicYears
+    : (() => {
+        const y = new Date().getFullYear();
+        return [`${y}/${y+1}`, `${y+1}/${y+2}`];
+      })();
+
+  const intakesArr = (typeof intakes !== "undefined" && Array.isArray(intakes) && intakes.length)
+    ? intakes
+    : [{value:"jan",label:"January"},{value:"may",label:"May"},{value:"aug",label:"August"}];
+
+  const modesArr = (typeof studyModes !== "undefined" && Array.isArray(studyModes) && studyModes.length)
+    ? studyModes
+    : ["Full-time","Part-time","Evening","Weekend","Distance"];
+
+  const _appId = (typeof applicationId !== "undefined" && applicationId) ? applicationId : null;
+  const _csrf = (typeof csrfToken !== "undefined" && csrfToken) ? csrfToken : null;
+
+  const safe = (v) => (v === null || v === undefined) ? "" : String(v);
+
+  const val = (k, def="") => {
+    if (_formData && _formData[k] !== undefined && _formData[k] !== null) return safe(_formData[k]);
+    return def;
+  };
+
+  const err = (k) => (_errors && _errors[k]) ? safe(_errors[k]) : "";
+
+  const toDateInput = (v) => {
+    const s = safe(v).trim();
+    if (!s) return "";
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    const d = new Date(s);
+    if (!Number.isNaN(d.getTime())) {
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth()+1).padStart(2,"0");
+      const dd = String(d.getDate()).padStart(2,"0");
+      return `${yyyy}-${mm}-${dd}`;
+    }
+    return "";
+  };
+%>
+
+<div class="wrap">
+
+  <!-- Header -->
+  <header class="top">
+    <div class="top-inner">
+      <a class="brand" href="/">
+        <div class="logo">CS</div>
+        <div>
+          <h1>CampusSaaS</h1>
+          <div class="sub">Student Application Portal</div>
+        </div>
+      </a>
+
+      <div class="top-actions">
+        <a class="btn ghost small" href="/login"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
+        <a class="btn light small" href="/admissions/status"><i class="fa-solid fa-magnifying-glass"></i> Check Status</a>
+        <a class="btn primary small" href="/"><i class="fa-solid fa-house"></i> Back to Main Site</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- LEFT: FORM -->
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="title">Apply for Admission</h2>
+          <div class="muted">Fill the form and upload required documents. Your application will appear in Admissions → Applicants List after submission.</div>
+          <% if (err("general")) { %>
+            <div class="error" style="display:block;margin-top:8px"><%= err("general") %></div>
+          <% } %>
+        </div>
+        <span class="badge warn"><i class="fa-solid fa-lock"></i> Data saved as draft</span>
+      </div>
+
+      <div class="card-body">
+
+        <!-- ✅ SUCCESS (NO inline style EJS) -->
+        <div class="success-pane <%= _appId ? '' : 'hidden' %>" id="successPane">
+          <h2><i class="fa-solid fa-circle-check"></i> Application submitted</h2>
+          <div class="muted">Keep your Application ID to track status.</div>
+          <div style="margin-top:10px">
+            <div class="appId">Application ID: <span id="appIdText"><%= _appId ? _appId : "APP-XXXXX" %></span></div>
+            <div class="muted" style="margin-top:6px">You will receive updates via email/SMS once reviewed.</div>
+          </div>
+          <div class="actions" style="justify-content:flex-start">
+            <button class="btn light" id="btnNew" type="button"><i class="fa-solid fa-file-circle-plus"></i> New Application</button>
+            <a class="btn primary" href="/admissions/status"><i class="fa-solid fa-magnifying-glass"></i> Check Status</a>
+          </div>
+        </div>
+
+        <!-- ✅ FORM (NO inline style EJS) -->
+        <form action="/admissions/apply"
+              method="post"
+              id="applyForm"
+              enctype="multipart/form-data"
+              novalidate
+              class="<%= _appId ? 'hidden' : '' %>">
+          <% if (_csrf) { %><input type="hidden" name="_csrf" value="<%= _csrf %>"><% } %>
+
+          <!-- PERSONAL INFO -->
+          <div class="section">
+            <h3><i class="fa-solid fa-user"></i> Personal Information</h3>
+
+            <div class="grid-3">
+              <div class="field">
+                <label>First Name <span class="req">*</span></label>
+                <input class="input" name="firstName" required placeholder="First name" value="<%= val('firstName') %>">
+                <% if (err('firstName')) { %><div class="error" style="display:block"><%= err('firstName') %></div><% } %>
+              </div>
+
+              <div class="field">
+                <label>Middle Name</label>
+                <input class="input" name="middleName" placeholder="Middle name (optional)" value="<%= val('middleName') %>">
+              </div>
+
+              <div class="field">
+                <label>Last Name <span class="req">*</span></label>
+                <input class="input" name="lastName" required placeholder="Last name" value="<%= val('lastName') %>">
+                <% if (err('lastName')) { %><div class="error" style="display:block"><%= err('lastName') %></div><% } %>
+              </div>
+            </div>
+
+            <div class="grid-3" style="margin-top:12px">
+              <div class="field">
+                <label>Gender <span class="req">*</span></label>
+                <select class="select" name="gender" required>
+                  <option value="">Select</option>
+                  <option value="Male" <%= val('gender')==="Male" ? "selected" : "" %>>Male</option>
+                  <option value="Female" <%= val('gender')==="Female" ? "selected" : "" %>>Female</option>
+                  <option value="Other" <%= val('gender')==="Other" ? "selected" : "" %>>Other</option>
+                </select>
+                <% if (err('gender')) { %><div class="error" style="display:block"><%= err('gender') %></div><% } %>
+              </div>
+
+              <div class="field">
+                <label>Date of Birth <span class="req">*</span></label>
+                <input class="input" type="date" name="dob" required value="<%= toDateInput(val('dob')) %>">
+                <% if (err('dob')) { %><div class="error" style="display:block"><%= err('dob') %></div><% } %>
+              </div>
+
+              <div class="field">
+                <label>Nationality <span class="req">*</span></label>
+                <input class="input" name="nationality" required placeholder="Nationality" value="<%= val('nationality') %>">
+                <% if (err('nationality')) { %><div class="error" style="display:block"><%= err('nationality') %></div><% } %>
+              </div>
+            </div>
+
+            <div class="grid-3" style="margin-top:12px">
+              <div class="field">
+                <label>Phone <span class="req">*</span></label>
+                <input class="input" name="phone" required placeholder="+256 ..." value="<%= val('phone') %>">
+                <% if (err('phone')) { %><div class="error" style="display:block"><%= err('phone') %></div><% } %>
+              </div>
+
+              <div class="field">
+                <label>Email <span class="req">*</span></label>
+                <input class="input" type="email" name="email" required placeholder="email@example.com" value="<%= val('email') %>">
+                <% if (err('email')) { %><div class="error" style="display:block"><%= err('email') %></div><% } %>
+              </div>
+
+              <div class="field">
+                <label>Address <span class="req">*</span></label>
+                <input class="input" name="address" required placeholder="Address" value="<%= val('address') %>">
+                <% if (err('address')) { %><div class="error" style="display:block"><%= err('address') %></div><% } %>
+              </div>
+            </div>
+          </div>
+
+          <!-- PROGRAM / ACADEMIC -->
+          <div class="section">
+            <h3><i class="fa-solid fa-graduation-cap"></i> Program Selection</h3>
+
+            <div class="grid-3">
+              <div class="field">
+                <label>Academic Year <span class="req">*</span></label>
+                <select class="select" name="academicYear" required>
+                  <option value="">Select</option>
+                  <% yearsArr.forEach(y => { %>
+                    <option value="<%= y %>" <%= val('academicYear')===String(y) ? "selected" : "" %>><%= y %></option>
+                  <% }) %>
+                </select>
+                <% if (err('academicYear')) { %><div class="error" style="display:block"><%= err('academicYear') %></div><% } %>
+              </div>
+
+              <div class="field">
+                <label>Intake <span class="req">*</span></label>
+                <select class="select" name="intake" required>
+                  <option value="">Select</option>
+                  <% intakesArr.forEach(i => { %>
+                    <option value="<%= i.value %>" <%= val('intake')===String(i.value) ? "selected" : "" %>><%= i.label %></option>
+                  <% }) %>
+                </select>
+                <% if (err('intake')) { %><div class="error" style="display:block"><%= err('intake') %></div><% } %>
+              </div>
+
+              <div class="field">
+                <label>Study Mode <span class="req">*</span></label>
+                <select class="select" name="studyMode" required>
+                  <option value="">Select</option>
+                  <% modesArr.forEach(m => { %>
+                    <option value="<%= m %>" <%= val('studyMode')===String(m) ? "selected" : "" %>><%= m %></option>
+                  <% }) %>
+                </select>
+                <% if (err('studyMode')) { %><div class="error" style="display:block"><%= err('studyMode') %></div><% } %>
+              </div>
+            </div>
+
+            <div class="grid-3" style="margin-top:12px">
+              <div class="field">
+                <label>Semester <span class="req">*</span></label>
+                <input class="input" type="number" name="semester" min="0" max="6" required value="<%= val('semester','1') %>">
+                <% if (err('semester')) { %><div class="error" style="display:block"><%= err('semester') %></div><% } %>
+              </div>
+
+              <div class="field">
+                <label>Year Level <span class="req">*</span></label>
+                <input class="input" name="yearLevel" required placeholder="Year 1" value="<%= val('yearLevel','Year 1') %>">
+                <% if (err('yearLevel')) { %><div class="error" style="display:block"><%= err('yearLevel') %></div><% } %>
+              </div>
+
+              <div class="field">
+                <label>Preferred Class (optional)</label>
+                <select class="select" name="preferredClassGroup">
+                  <option value="">Optional</option>
+                  <% classesArr.forEach(c => { %>
+                    <option value="<%= c._id %>" <%= val('preferredClassGroup')===String(c._id) ? "selected" : "" %>>
+                      <%= (c.code ? c.code + " — " : "") + (c.name || c.title || "Class") %>
+                    </option>
+                  <% }) %>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid-2" style="margin-top:12px">
+              <div class="field">
+                <label>Program (First Choice) <span class="req">*</span></label>
+                <select class="select" name="program1" required>
+                  <option value="">Select program</option>
+                  <% programsArr.forEach(p => { %>
+                    <option value="<%= p._id %>" <%= val('program1')===String(p._id) ? "selected" : "" %>>
+                      <%= (p.code ? p.code + " — " : "") + (p.name || p.title || "Program") %>
+                    </option>
+                  <% }) %>
+                </select>
+                <% if (err('program1')) { %><div class="error" style="display:block"><%= err('program1') %></div><% } %>
+              </div>
+
+              <div class="field">
+                <label>Program (Second Choice)</label>
+                <select class="select" name="program2">
+                  <option value="">Optional</option>
+                  <% programsArr.forEach(p => { %>
+                    <option value="<%= p._id %>" <%= val('program2')===String(p._id) ? "selected" : "" %>>
+                      <%= (p.code ? p.code + " — " : "") + (p.name || p.title || "Program") %>
+                    </option>
+                  <% }) %>
+                </select>
+                <div class="hint">Optional, helps when intake is full.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- EDUCATION -->
+          <div class="section">
+            <h3><i class="fa-solid fa-school"></i> Education Background</h3>
+
+            <div class="grid-2">
+              <div class="field">
+                <label>Highest Qualification <span class="req">*</span></label>
+                <select class="select" name="qualification" required>
+                  <option value="">Select</option>
+                  <% ["Senior 4 / O-Level","Senior 6 / A-Level","Certificate","Diploma","Bachelor","Masters"].forEach(q => { %>
+                    <option value="<%= q %>" <%= val('qualification')===q ? "selected" : "" %>><%= q %></option>
+                  <% }) %>
+                </select>
+                <% if (err('qualification')) { %><div class="error" style="display:block"><%= err('qualification') %></div><% } %>
+              </div>
+
+              <div class="field">
+                <label>School / Institution <span class="req">*</span></label>
+                <input class="input" name="school" required placeholder="School / institution name" value="<%= val('school') %>">
+                <% if (err('school')) { %><div class="error" style="display:block"><%= err('school') %></div><% } %>
+              </div>
+            </div>
+
+            <div class="grid-2" style="margin-top:12px">
+              <div class="field">
+                <label>Year Completed <span class="req">*</span></label>
+                <input class="input" type="number" name="yearCompleted" required placeholder="e.g. 2024" value="<%= val('yearCompleted') %>">
+                <% if (err('yearCompleted')) { %><div class="error" style="display:block"><%= err('yearCompleted') %></div><% } %>
+              </div>
+
+              <div class="field">
+                <label>Results / Grades Summary</label>
+                <input class="input" name="grades" placeholder="e.g. A, B, C..." value="<%= val('grades') %>">
+                <div class="hint">Optional: admissions can see transcripts anyway.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- GUARDIAN / NEXT OF KIN -->
+          <div class="section">
+            <h3><i class="fa-solid fa-people-group"></i> Guardian / Next of Kin</h3>
+
+            <div class="grid-3">
+              <div class="field">
+                <label>Guardian Name <span class="req">*</span></label>
+                <input class="input" name="guardianName" required placeholder="Full name" value="<%= val('guardianName') %>">
+                <% if (err('guardianName')) { %><div class="error" style="display:block"><%= err('guardianName') %></div><% } %>
+              </div>
+
+              <div class="field">
+                <label>Guardian Phone <span class="req">*</span></label>
+                <input class="input" name="guardianPhone" required placeholder="+256 ..." value="<%= val('guardianPhone') %>">
+                <% if (err('guardianPhone')) { %><div class="error" style="display:block"><%= err('guardianPhone') %></div><% } %>
+              </div>
+
+              <div class="field">
+                <label>Guardian Email</label>
+                <input class="input" type="email" name="guardianEmail" placeholder="email@example.com" value="<%= val('guardianEmail') %>">
+              </div>
+            </div>
+
+            <div class="field" style="margin-top:12px">
+              <label>Additional Notes</label>
+              <textarea class="textarea" name="notes" placeholder="Anything admissions should know (optional)"><%= val('notes') %></textarea>
+            </div>
+          </div>
+
+          <!-- DOCUMENTS -->
+          <div class="section">
+            <h3><i class="fa-solid fa-folder-open"></i> Documents Upload</h3>
+            <div class="muted" style="margin-bottom:10px">
+              Required: Passport Photo + ID + Transcript. Optional: Other Docs.
+            </div>
+
+            <div class="grid-2">
+              <div class="field">
+                <label>Passport Photo <span class="req">*</span></label>
+                <input class="input" type="file" name="passportPhoto" accept=".jpg,.jpeg,.png,image/*" required>
+                <% if (err('passportPhoto')) { %><div class="error" style="display:block"><%= err('passportPhoto') %></div><% } %>
+              </div>
+
+              <div class="field">
+                <label>National ID / Passport Scan <span class="req">*</span></label>
+                <input class="input" type="file" name="idDocument" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/*" required>
+                <% if (err('idDocument')) { %><div class="error" style="display:block"><%= err('idDocument') %></div><% } %>
+              </div>
+            </div>
+
+            <div class="grid-2" style="margin-top:12px">
+              <div class="field">
+                <label>Transcript / Results Slip <span class="req">*</span></label>
+                <input class="input" type="file" name="transcript" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/*" required>
+                <% if (err('transcript')) { %><div class="error" style="display:block"><%= err('transcript') %></div><% } %>
+              </div>
+
+              <div class="field">
+                <label>Other Documents (optional)</label>
+                <input class="input" type="file" name="otherDocs" multiple accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/*">
+              </div>
+            </div>
+
+            <div style="margin-top:12px">
+              <div class="drop" id="dropZone">
+                <div style="font-size:28px"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                <div class="strong" style="font-weight:1000">Drag & Drop other documents here</div>
+                <div class="muted">or click to choose files</div>
+
+                <input id="quickFiles" type="file" multiple accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/*" hidden />
+                <button type="button" class="btn light small" id="pickQuick"><i class="fa-solid fa-paperclip"></i> Choose Files</button>
+
+                <div class="file-list" id="fileList"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- DECLARATION -->
+          <div class="section">
+            <h3><i class="fa-solid fa-file-signature"></i> Declaration</h3>
+            <div class="muted">By submitting, you confirm all information is correct and documents are authentic.</div>
+
+            <div style="margin-top:10px;display:flex;gap:10px;align-items:center">
+              <input type="checkbox" id="agree" name="agree" value="1" <%= val('agree')==="1" ? "checked" : "" %> required />
+              <label for="agree" style="margin:0;font-weight:900;color:#0f172a">I agree to the declaration <span class="req">*</span></label>
+            </div>
+            <% if (err('agree')) { %><div class="error" style="display:block"><%= err('agree') %></div><% } %>
+          </div>
+
+          <!-- ACTIONS -->
+          <div class="actions">
+            <button type="button" class="btn light" id="btnDraft"><i class="fa-solid fa-floppy-disk"></i> Save Draft</button>
+            <button type="reset" class="btn light" id="btnReset"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+            <button type="submit" class="btn primary"><i class="fa-solid fa-paper-plane"></i> Submit Application</button>
+          </div>
+
+        </form>
+
+      </div>
+    </section>
+
+    <!-- RIGHT: HELP -->
+    <aside class="right-stack">
+      <div class="card progress">
+        <div class="card-head">
+          <div>
+            <div class="card-title">How it works</div>
+            <div class="card-sub">Application → Review → Convert to Student</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="steps">
+            <div class="step">
+              <div class="dot">1</div>
+              <div>
+                <div class="t">Submit application</div>
+                <div class="d">Fill form and upload required docs.</div>
+              </div>
+            </div>
+            <div class="step">
+              <div class="dot">2</div>
+              <div>
+                <div class="t">Admissions review</div>
+                <div class="d">They verify documents and requirements.</div>
+              </div>
+            </div>
+            <div class="step">
+              <div class="dot">3</div>
+              <div>
+                <div class="t">Decision</div>
+                <div class="d">Accepted applicants are converted to students.</div>
+              </div>
+            </div>
+            <div class="step">
+              <div class="dot">4</div>
+              <div>
+                <div class="t">Student portal access</div>
+                <div class="d">You receive student number + login.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card notice">
+        <div class="card-head">
+          <div>
+            <div class="card-title">Before you apply</div>
+            <div class="card-sub">Keep these ready</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <ul>
+            <li>Valid ID/Passport scan</li>
+            <li>Transcript / Results slip</li>
+            <li>Passport photo</li>
+            <li>Correct phone and email for updates</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card notice">
+        <div class="card-head">
+          <div>
+            <div class="card-title">Need help?</div>
+            <div class="card-sub">Contact support</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="muted">If your documents are missing or unclear, admissions may request resubmission.</div>
+          <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap">
+            <a class="btn light small" href="/support"><i class="fa-solid fa-headset"></i> Support</a>
+            <a class="btn light small" href="/admissions/status"><i class="fa-solid fa-magnifying-glass"></i> Track Status</a>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+  </main>
+
+</div>
+
+<script src="/js/apply.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Scholarship — <%= (tenant && tenant.name) ? tenant.name : "Classic Campus" %></title>
+  <style>
+    body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial;background:#f4f8ff;color:#0f172a}
+    .wrap{max-width:900px;margin:0 auto;padding:18px}
+    .card{background:#fff;border:1px solid rgba(13,64,96,.12);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.08);padding:16px}
+    .muted{color:#6b7280;font-size:12px}
+    a.btn{display:inline-flex;gap:8px;align-items:center;text-decoration:none;background:#0a6fbf;color:#fff;padding:10px 14px;border-radius:12px;font-weight:900}
+  </style>
+</head>
+<body>
+<%
+  const safe=(v)=> (v===null||v===undefined) ? "" : String(v);
+  const s = (typeof scholarship!=="undefined" && scholarship) ? scholarship : null;
+%>
+
+<div class="wrap">
+  <div class="card">
+    <a class="btn" href="/scholarships">← Back</a>
+    <div style="height:10px"></div>
+
+    <% if(!s){ %>
+      <div class="muted">Not found</div>
+    <% } else { %>
+      <h1 style="margin:0"><%= safe(s.title) %></h1>
+      <div class="muted"><%= safe(s.provider) %> • <%= safe(s.category) %></div>
+      <div class="muted">
+        <%= s.openDate ? ("Open: " + new Date(s.openDate).toLocaleDateString()) : "" %>
+        <%= s.closeDate ? (" • Close: " + new Date(s.closeDate).toLocaleDateString()) : "" %>
+      </div>
+
+      <div style="height:12px"></div>
+
+      <div style="white-space:pre-wrap"><%= safe(s.description) %></div>
+
+      <% if(Array.isArray(s.requirements) && s.requirements.length){ %>
+        <div style="height:12px"></div>
+        <h3 style="margin:0">Requirements</h3>
+        <ul>
+          <% s.requirements.forEach(r=>{ %><li><%= safe(r) %></li><% }) %>
+        </ul>
+      <% } %>
+
+      <div style="margin-top:12px">
+        <a class="btn" href="/scholarships/<%= s._id %>/apply">Apply Now</a>
+        <a class="btn" href="/scholarships/status">Check Status</a>
+      </div>
+    <% } %>
+  </div>
+</div>
+</body>
+</html>

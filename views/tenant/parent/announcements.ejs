@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title><%= (tenant && tenant.name) ? tenant.name : "CampusSaaS" %> — Announcements</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous"
+        referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/navbar.css"/>
+  <link rel="stylesheet" href="/css/parent-portal.css" />
+
+  <style>
+    .toolbar{
+      margin-top:16px;
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+    }
+
+    .toolbar-left,
+    .toolbar-right{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    .search-box,
+    .filter-box{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:10px 12px;
+      box-shadow:var(--shadow);
+      min-height:46px;
+    }
+
+    .search-box{
+      min-width:280px;
+      flex:1;
+    }
+
+    .search-box i,
+    .filter-box i{
+      color:var(--primary);
+    }
+
+    .search-box input,
+    .filter-box select{
+      width:100%;
+      border:none;
+      outline:none;
+      background:transparent;
+      color:var(--text);
+      font:inherit;
+    }
+
+    .summary-grid{
+      margin-top:16px;
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:12px;
+    }
+
+    .summary-box{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+      background:#fbfdff;
+    }
+
+    .summary-label{
+      color:var(--muted);
+      font-size:12px;
+    }
+
+    .summary-value{
+      margin-top:6px;
+      font-size:24px;
+      font-weight:1000;
+      letter-spacing:-.02em;
+    }
+
+    .page-grid{
+      margin-top:16px;
+      display:grid;
+      grid-template-columns:1.3fr .9fr;
+      gap:14px;
+    }
+
+    .announcement-stack{
+      display:grid;
+      gap:14px;
+    }
+
+    .announcement-card{
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:#fff;
+      box-shadow:var(--shadow);
+      padding:16px;
+    }
+
+    .announcement-card.pinned{
+      border-color:#bfd3ff;
+      box-shadow:0 0 0 3px rgba(29,78,216,.06), var(--shadow);
+    }
+
+    .announcement-head{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:flex-start;
+      flex-wrap:wrap;
+    }
+
+    .announcement-title{
+      font-size:18px;
+      font-weight:1000;
+      line-height:1.25;
+    }
+
+    .announcement-meta{
+      color:var(--muted);
+      font-size:12px;
+      margin-top:6px;
+      line-height:1.6;
+    }
+
+    .badge-row{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+    .badge-soft{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:7px 10px;
+      border-radius:999px;
+      background:#f8fbff;
+      border:1px solid var(--line);
+      font-size:12px;
+      font-weight:800;
+      color:var(--text);
+    }
+
+    .badge-soft.high{
+      color:#b45309;
+      background:#fff7ed;
+      border-color:#fed7aa;
+    }
+
+    .badge-soft.urgent{
+      color:#b91c1c;
+      background:#fff1f2;
+      border-color:#fecdd3;
+    }
+
+    .announcement-body{
+      margin-top:14px;
+      color:var(--text);
+      font-size:14px;
+      line-height:1.75;
+      white-space:pre-line;
+    }
+
+    .announcement-footer{
+      margin-top:14px;
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+
+    .side-stack{
+      display:grid;
+      gap:14px;
+    }
+
+    .metric-list{
+      margin-top:12px;
+      display:grid;
+      gap:10px;
+    }
+
+    .metric-item{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      border-bottom:1px solid #eef4fb;
+      padding-bottom:8px;
+      font-size:13px;
+      color:var(--muted);
+    }
+
+    .metric-item:last-child{
+      border-bottom:none;
+      padding-bottom:0;
+    }
+
+    .metric-item strong{
+      color:var(--text);
+      text-align:right;
+    }
+
+    .list{
+      margin-top:12px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+
+    .list-item{
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:10px;
+      background:#fff;
+    }
+
+    .list-icon{
+      width:34px;
+      height:34px;
+      border-radius:12px;
+      background:#e8f0ff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:var(--primary);
+      flex-shrink:0;
+    }
+
+    .list-title{
+      font-weight:1000;
+    }
+
+    .list-meta{
+      color:var(--muted);
+      font-size:12px;
+      margin-top:2px;
+    }
+
+    .list-text{
+      color:var(--muted);
+      font-size:13px;
+      margin-top:6px;
+      line-height:1.5;
+    }
+
+    .empty-state{
+      margin-top:16px;
+    }
+
+    @media (max-width: 1180px){
+      .page-grid{
+        grid-template-columns:1fr;
+      }
+
+      .summary-grid{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+      }
+    }
+
+    @media (max-width: 720px){
+      .toolbar{
+        flex-direction:column;
+        align-items:stretch;
+      }
+
+      .toolbar-left,
+      .toolbar-right{
+        width:100%;
+      }
+
+      .search-box,
+      .filter-box{
+        width:100%;
+        min-width:0;
+      }
+
+      .summary-grid{
+        grid-template-columns:1fr;
+      }
+
+      .announcement-head{
+        flex-direction:column;
+      }
+
+      .badge-row{
+        justify-content:flex-start;
+      }
+
+      .metric-item{
+        flex-direction:column;
+      }
+
+      .metric-item strong{
+        text-align:left;
+      }
+    }
+  </style>
+</head>
+<body>
+  <%
+    const t = tenant || {};
+    const u = user || {};
+    const p = parent || null;
+    const rows = Array.isArray(announcements) ? announcements : [];
+    const tenantName = t.name || "CampusSaaS";
+    const tenantCode = (t.code || "CC").toString();
+    const opts = options || { categories: [], priorities: [] };
+
+    const totalAnnouncements = rows.length;
+    const pinnedCount = rows.filter((r) => r.pinned).length;
+    const highPriorityCount = rows.filter((r) => ["high","urgent"].includes(String(r.priority || "").toLowerCase())).length;
+    const categoryCount = new Set(rows.map((r) => String(r.category || "").trim()).filter(Boolean)).size;
+  %>
+
+    <%-include("./navbar") %>
+
+    <main class="main">
+      <div class="topbar">
+        <div>
+          <div class="title">Announcements</div>
+          <div class="subtitle">
+            Stay updated with school notices, important parent communication, academic reminders and administration updates.
+          </div>
+        </div>
+
+        <div class="top-actions">
+          <div class="chip">
+            <i class="fa-solid fa-bullhorn"></i>
+            <span>Total</span>
+            <b><%= totalAnnouncements %></b>
+          </div>
+
+          <button class="btn light" type="button" onclick="window.location.href='/parent/notifications'">
+            <i class="fa-solid fa-bell"></i> Notifications
+          </button>
+
+          <button class="btn primary" type="button" onclick="window.location.href='/parent/support'">
+            <i class="fa-solid fa-headset"></i> Support
+          </button>
+        </div>
+      </div>
+
+      <% if (error) { %>
+        <section class="card empty-state">
+          <div class="empty">
+            <div class="empty-icon"><i class="fa-solid fa-bullhorn"></i></div>
+            <div class="empty-title">Unable to load announcements</div>
+            <div class="empty-text"><%= error %></div>
+          </div>
+        </section>
+      <% } else { %>
+
+        <form method="GET" action="/parent/announcements" class="toolbar">
+          <div class="toolbar-left">
+            <div class="search-box">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" name="q" value="<%= filters?.q || '' %>" placeholder="Search title, content or category" />
+            </div>
+          </div>
+
+          <div class="toolbar-right">
+            <div class="filter-box">
+              <i class="fa-solid fa-layer-group"></i>
+              <select name="category">
+                <option value="">All categories</option>
+                <% (opts.categories || []).forEach(function(c){ %>
+                  <option value="<%= c %>" <%= String(filters?.category || '') === String(c) ? 'selected' : '' %>><%= c %></option>
+                <% }); %>
+              </select>
+            </div>
+
+            <div class="filter-box">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+              <select name="priority">
+                <option value="">All priorities</option>
+                <% (opts.priorities || []).forEach(function(pr){ %>
+                  <option value="<%= pr %>" <%= String(filters?.priority || '') === String(pr) ? 'selected' : '' %>><%= pr %></option>
+                <% }); %>
+              </select>
+            </div>
+
+            <button class="btn primary" type="submit">
+              <i class="fa-solid fa-filter"></i> Apply
+            </button>
+          </div>
+        </form>
+
+        <div class="summary-grid">
+          <div class="summary-box">
+            <div class="summary-label">Announcements</div>
+            <div class="summary-value"><%= totalAnnouncements %></div>
+          </div>
+          <div class="summary-box">
+            <div class="summary-label">Pinned</div>
+            <div class="summary-value"><%= pinnedCount %></div>
+          </div>
+          <div class="summary-box">
+            <div class="summary-label">High Priority</div>
+            <div class="summary-value"><%= highPriorityCount %></div>
+          </div>
+          <div class="summary-box">
+            <div class="summary-label">Categories</div>
+            <div class="summary-value"><%= categoryCount %></div>
+          </div>
+        </div>
+
+        <div class="page-grid">
+          <section class="announcement-stack">
+            <% 
+              const filtered = rows.filter(function(item){
+                const q = String(filters?.q || "").trim().toLowerCase();
+                const category = String(filters?.category || "").trim().toLowerCase();
+                const priority = String(filters?.priority || "").trim().toLowerCase();
+
+                const matchQ = !q || [
+                  item.title,
+                  item.body,
+                  item.category,
+                  item.author
+                ].join(" ").toLowerCase().includes(q);
+
+                const matchCategory = !category || String(item.category || "").toLowerCase() === category;
+                const matchPriority = !priority || String(item.priority || "").toLowerCase() === priority;
+
+                return matchQ && matchCategory && matchPriority;
+              });
+            %>
+
+            <% if (!filtered.length) { %>
+              <section class="card empty-state">
+                <div class="empty">
+                  <div class="empty-icon"><i class="fa-solid fa-bullhorn"></i></div>
+                  <div class="empty-title">No announcements found</div>
+                  <div class="empty-text">Try changing your search or filters to see more results.</div>
+                </div>
+              </section>
+            <% } else { %>
+              <% filtered.forEach(function(item){ %>
+                <article class="announcement-card <%= item.pinned ? 'pinned' : '' %>">
+                  <div class="announcement-head">
+                    <div>
+                      <div class="announcement-title"><%= item.title %></div>
+                      <div class="announcement-meta">
+                        Published: <strong><%= item.publishedAt %></strong>
+                        <span class="dot">•</span>
+                        Author: <strong><%= item.author %></strong>
+                        <span class="dot">•</span>
+                        Audience: <strong><%= item.audience %></strong>
+                      </div>
+                    </div>
+
+                    <div class="badge-row">
+                      <% if (item.pinned) { %>
+                        <span class="badge-soft">
+                          <i class="fa-solid fa-thumbtack"></i> Pinned
+                        </span>
+                      <% } %>
+
+                      <span class="badge-soft">
+                        <i class="fa-solid fa-tag"></i> <%= item.category || "General" %>
+                      </span>
+
+                      <span class="badge-soft <%= item.priority %>">
+                        <i class="fa-solid fa-circle-exclamation"></i> <%= item.priority || "normal" %>
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="announcement-body"><%= item.body || item.excerpt || "" %></div>
+
+                  <div class="announcement-footer">
+                    <a class="btn-xs" href="/parent/support">
+                      <i class="fa-solid fa-headset"></i> Ask Support
+                    </a>
+                    <a class="btn-xs" href="/parent/notifications">
+                      <i class="fa-solid fa-bell"></i> Notifications
+                    </a>
+                  </div>
+                </article>
+              <% }); %>
+            <% } %>
+          </section>
+
+          <aside class="side-stack">
+            <section class="card">
+              <div class="section-title">Announcement Summary</div>
+              <div class="section-sub">Quick overview of recent communication.</div>
+
+              <div class="metric-list">
+                <div class="metric-item">
+                  <span>Total records</span>
+                  <strong><%= totalAnnouncements %></strong>
+                </div>
+                <div class="metric-item">
+                  <span>Pinned notices</span>
+                  <strong><%= pinnedCount %></strong>
+                </div>
+                <div class="metric-item">
+                  <span>High or urgent</span>
+                  <strong><%= highPriorityCount %></strong>
+                </div>
+                <div class="metric-item">
+                  <span>Distinct categories</span>
+                  <strong><%= categoryCount %></strong>
+                </div>
+              </div>
+            </section>
+
+            <section class="card">
+              <div class="section-title">Recent Highlights</div>
+              <div class="section-sub">Latest important announcement headlines.</div>
+
+              <% if (!rows.length) { %>
+                <div class="empty small" style="margin-top:12px;">
+                  <div class="empty-title">No highlights yet</div>
+                  <div class="empty-text">Recent important notices will appear here.</div>
+                </div>
+              <% } else { %>
+                <div class="list">
+                  <% rows.slice(0, 6).forEach(function(item){ %>
+                    <div class="list-item">
+                      <div class="list-icon">
+                        <i class="fa-solid fa-bullhorn"></i>
+                      </div>
+                      <div>
+                        <div class="list-title"><%= item.title %></div>
+                        <div class="list-meta"><%= item.publishedAt %> • <%= item.category || "General" %></div>
+                        <div class="list-text"><%= item.excerpt || "" %></div>
+                      </div>
+                    </div>
+                  <% }); %>
+                </div>
+              <% } %>
+            </section>
+          </aside>
+        </div>
+      <% } %>
+    </main>
+  </div>
+<script src="/js/navbar.js"></script>
+</body>
+</html>

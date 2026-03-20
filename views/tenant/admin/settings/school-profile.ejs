@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>School Profile Settings — Classic Campus</title>
+  <link rel="icon" href="data:,"/>
+
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer"/>
+
+  <style>
+    @font-face{font-family:'PoppinsLocal';src:local('Poppins'),local('Inter'),local('Segoe UI')}
+    :root{
+      --blue:#0a3d62;
+      --blue-2:#083454;
+      --muted:#6b7280;
+      --bg:#f4f8ff;
+      --card:#ffffff;
+      --accent:#0a6fbf;
+      --success:#16a34a;
+      --danger:#ef4444;
+      --glass: rgba(13,64,96,0.06);
+      --radius:12px;
+      --border: rgba(2,8,23,0.08);
+      --shadow: 0 14px 36px rgba(2,8,23,0.06);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:PoppinsLocal, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background:var(--bg);
+      color:#0f172a;
+    }
+    .muted{color:var(--muted)}
+    .admin-wrap{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+
+    /* Aside */
+    .aside{
+      position:sticky;top:0;height:100vh;
+      background:#fff;border-right:1px solid var(--border);
+      padding:14px;display:flex;flex-direction:column;justify-content:space-between;
+    }
+    .aside-brand{
+      display:flex;gap:10px;align-items:center;padding:12px;border-radius:16px;
+      background:rgba(10,63,98,0.04);border:1px solid rgba(10,63,98,0.10);
+    }
+    .dot{
+      width:12px;height:12px;border-radius:999px;
+      background:linear-gradient(135deg,var(--accent),var(--blue));
+      box-shadow:0 8px 20px rgba(10,111,191,0.25);
+    }
+    .aside-links{display:grid;gap:8px;margin-top:12px}
+    .alink{
+      display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:14px;
+      border:1px solid rgba(2,8,23,0.08);background:#fff;
+      font-weight:1000;color:#0b2239;text-decoration:none;
+    }
+    .alink i{color:var(--accent)}
+    .alink.active{background:linear-gradient(135deg,var(--blue),var(--accent));color:#fff;border-color:transparent}
+    .alink.active i{color:#fff}
+    .aside-bottom .alink{justify-content:center}
+
+    /* Content */
+    .content{padding:18px 20px}
+    .top{
+      display:flex;justify-content:space-between;align-items:flex-start;
+      gap:12px;flex-wrap:wrap;
+    }
+    h1{margin:0;color:var(--blue);letter-spacing:-0.3px}
+    .top-actions{display:flex;gap:10px;flex-wrap:wrap}
+
+    /* Cards/Grid */
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+    .card{
+      background:#fff;border:1px solid var(--border);border-radius:18px;
+      box-shadow:var(--shadow);padding:14px;
+    }
+    .span-2{grid-column:1 / -1}
+    .card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+    .card h3{margin:0;font-size:16px;color:var(--blue)}
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;padding:6px 10px;
+      background:rgba(10,63,98,0.06);border:1px solid rgba(10,63,98,0.10);
+      border-radius:999px;color:var(--blue-2);
+      font-weight:1000;font-size:12px;
+    }
+
+    /* Form */
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .field{margin-bottom:10px}
+    label{display:block;font-weight:1000;font-size:13px;margin-bottom:6px;color:#0b2239}
+    input,select,textarea{
+      width:100%;padding:12px 12px;border-radius:14px;
+      border:1px solid rgba(2,8,23,0.10);background:#fff;
+      outline:none;font-weight:900;font-family:inherit;
+    }
+    textarea{font-weight:750}
+    input:focus,select:focus,textarea:focus{
+      border-color:rgba(10,111,191,0.55);
+      box-shadow:0 0 0 4px rgba(10,111,191,0.12);
+    }
+    .hint{margin-top:6px;font-weight:750;font-size:12px}
+    .divider{height:1px;background:var(--border);margin:12px 0}
+
+    /* Buttons */
+    .btn{
+      display:inline-flex;align-items:center;gap:10px;
+      padding:11px 14px;border-radius:14px;
+      border:1px solid transparent;font-weight:1000;cursor:pointer;
+    }
+    .btn-primary{background:linear-gradient(135deg,var(--blue),var(--accent));color:#fff;box-shadow:0 16px 30px rgba(10,63,98,0.20)}
+    .btn-soft{background:rgba(10,111,191,0.10);color:var(--blue-2);border-color:rgba(10,111,191,0.18)}
+    .btn-ghost{background:#fff;color:#0b2239;border-color:rgba(2,8,23,0.10)}
+
+    /* Uploads */
+    .media-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .upload-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+    .upload-box{
+      border:1px dashed rgba(2,8,23,0.18);
+      border-radius:18px;padding:12px;background:rgba(2,8,23,0.02);
+      position:relative;
+    }
+    .upload-box input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+    .preview{
+      width:110px;height:110px;border-radius:16px;background:#fff;border:1px solid rgba(2,8,23,0.10);
+      overflow:hidden;display:grid;place-items:center;
+    }
+    .preview.wide{width:100%;height:130px}
+    .preview img{width:100%;height:100%;object-fit:cover;display:block}
+    .upload-actions{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}
+
+    /* Gallery/Awards/News block */
+    .subgrid{display:grid;grid-template-columns:1.1fr .95fr .95fr;gap:12px}
+    .block{
+      border:1px solid rgba(2,8,23,0.08);
+      background:rgba(2,8,23,0.02);
+      border-radius:18px;padding:12px;
+    }
+    .block-h{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px}
+    .drop{
+      border:1px dashed rgba(10,111,191,0.35);
+      background:rgba(10,111,191,0.06);
+      border-radius:18px;padding:16px;position:relative;cursor:pointer;
+    }
+    .drop input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+    .drop-inner{display:flex;gap:12px;align-items:center;color:#0b2239;font-weight:1000}
+    .drop-inner i{font-size:22px;color:var(--accent)}
+    .thumbs{
+      display:grid;grid-template-columns:repeat(4,1fr);
+      gap:10px;margin-top:12px;
+    }
+    .thumb{
+      position:relative;border-radius:14px;overflow:hidden;
+      border:1px solid rgba(2,8,23,0.10);background:#fff;
+    }
+    .thumb img{width:100%;height:78px;object-fit:cover;display:block}
+    .thumb .x{
+      position:absolute;top:6px;right:6px;width:28px;height:28px;border-radius:10px;
+      border:1px solid rgba(255,255,255,0.35);
+      background:rgba(2,8,23,0.35);color:#fff;cursor:pointer;
+    }
+
+    /* Savebar */
+    .savebar{
+      position:sticky;top:12px;z-index:10;
+      display:none;margin-top:10px;padding:10px 12px;border-radius:16px;
+      border:1px solid rgba(10,111,191,0.18);background:rgba(10,111,191,0.08);
+      align-items:center;justify-content:space-between;gap:10px;
+    }
+    .savebar.show{display:flex}
+
+    /* Responsive */
+    @media (max-width:1100px){
+      .subgrid{grid-template-columns:1fr}
+      .thumbs{grid-template-columns:repeat(6,1fr)}
+    }
+    @media (max-width:920px){
+      .admin-wrap{grid-template-columns:1fr}
+      .aside{position:relative;height:auto}
+      .grid{grid-template-columns:1fr}
+      .row{grid-template-columns:1fr}
+      .media-grid{grid-template-columns:1fr}
+      .thumbs{grid-template-columns:repeat(4,1fr)}
+    }
+  </style>
+</head>
+
+<body>
+<%
+  var tenantObj = tenant || {};
+  var settings = tenantObj.settings || {};
+  var p = settings.profile || {};
+  var b = settings.branding || {};
+  var contact = p.contact || {};
+  var socials = p.socials || {};
+
+  var gallery = Array.isArray(p.gallery) ? p.gallery : [];
+  var faqs = Array.isArray(p.faqs) ? p.faqs : [];
+  var reviews = Array.isArray(p.reviews) ? p.reviews : [];
+
+  var pending = [];
+  var approved = [];
+  for (var i = 0; i < reviews.length; i++) {
+    var rr = reviews[i];
+    if (!rr) continue;
+    if (rr.status === "pending") pending.push(rr);
+    if (rr.status === "approved") approved.push(rr);
+  }
+
+  function safeStr(x){ return String(x == null ? "" : x); }
+
+  var valuesText = Array.isArray(p.values) ? p.values.join(", ") : safeStr(p.values);
+  var facilitiesText = Array.isArray(p.facilities) ? p.facilities.join(", ") : safeStr(p.facilities);
+
+  var whyText = "";
+  if (Array.isArray(p.highlights)) whyText = p.highlights.join("\n");
+  else if (Array.isArray(p.whyChooseUs)) whyText = p.whyChooseUs.join("\n");
+  else whyText = safeStr(p.whyChooseUs);
+
+  var awardsText = "";
+  if (Array.isArray(p.awards)) {
+    var alines = [];
+    for (var a = 0; a < p.awards.length; a++) {
+      var aw = p.awards[a] || {};
+      alines.push(
+        safeStr(aw.title) + " | " +
+        safeStr(aw.organization) + " | " +
+        safeStr(aw.year) + " | " +
+        safeStr(aw.description)
+      );
+    }
+    awardsText = alines.join("\n");
+  }
+
+  var newsText = "";
+  if (Array.isArray(p.announcements)) {
+    var nlines = [];
+    for (var n = 0; n < p.announcements.length; n++) {
+      var nn = p.announcements[n] || {};
+      var d = "";
+      try {
+        if (nn.date) d = new Date(nn.date).toISOString().slice(0,10);
+      } catch(e) {}
+      nlines.push(safeStr(nn.title) + " | " + d + " | " + safeStr(nn.body));
+    }
+    newsText = nlines.join("\n");
+  }
+%>
+
+<div class="admin-wrap">
+
+  <aside class="aside">
+    <div class="aside-top">
+      <div class="aside-brand">
+        <span class="dot"></span>
+        <div>
+          <b>Classic Campus</b>
+          <div class="muted">School Branding</div>
+        </div>
+      </div>
+
+      <div class="aside-links">
+        <a class="alink active" href="/admin/settings/school-profile"><i class="fa fa-id-card"></i> Profile</a>
+        <a class="alink" href="/admin/settings/school-profile#media"><i class="fa fa-images"></i> Media</a>
+        <a class="alink" href="/admin/settings/school-profile#seo"><i class="fa fa-magnifying-glass"></i> SEO</a>
+        <a class="alink" href="/admin/settings/school-profile#contacts"><i class="fa fa-phone"></i> Contacts</a>
+        <a class="alink" href="/admin/settings/school-profile#verification"><i class="fa fa-shield"></i> Verification</a>
+      </div>
+    </div>
+
+    <div class="aside-bottom">
+      <a class="alink" href="/schools/<%= tenantObj.code || "" %>" target="_blank"><i class="fa fa-arrow-left"></i> Back to school</a>
+    </div>
+  </aside>
+
+  <main class="content">
+    <div class="top">
+      <div>
+        <h1>School Profile & Branding</h1>
+        <p class="muted">Edit everything students see when they open your school profile page.</p>
+
+        <% if (success) { %>
+          <div style="margin-top:10px;padding:10px 12px;border-radius:16px;border:1px solid rgba(22,163,74,.25);background:rgba(22,163,74,.08);font-weight:900">
+            <i class="fa fa-circle-check"></i> <%= success %>
+          </div>
+        <% } %>
+
+        <% if (error) { %>
+          <div style="margin-top:10px;padding:10px 12px;border-radius:16px;border:1px solid rgba(239,68,68,.25);background:rgba(239,68,68,.08);font-weight:900">
+            <i class="fa fa-triangle-exclamation"></i> <%= error %>
+          </div>
+        <% } %>
+      </div>
+
+      <div class="top-actions">
+        <button class="btn btn-ghost" id="previewBtn" type="button"><i class="fa fa-arrow-up-right-from-square"></i> Preview public page</button>
+        <button class="btn btn-soft" id="btnReset" type="button"><i class="fa fa-rotate-left"></i> Reset changes</button>
+        <button class="btn btn-primary" id="btnSave" type="button"><i class="fa fa-floppy-disk"></i> Save</button>
+      </div>
+    </div>
+
+    <div class="savebar" id="savebar">
+      <span class="muted"><i class="fa fa-circle-info"></i> You have unsaved changes</span>
+      <button class="btn btn-primary" id="btnSave2" type="button"><i class="fa fa-floppy-disk"></i> Save</button>
+    </div>
+
+    <!-- IMPORTANT: POST to /admin/settings -->
+    <form class="grid" id="schoolForm" method="POST" action="/admin/settings">
+      <!-- Left: Identity -->
+      <section class="card">
+        <div class="card-h">
+          <h3>School Identity</h3>
+          <span class="pill"><i class="fa fa-id-card"></i> Core info</span>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label>School Name</label>
+            <input name="name" value="<%= tenantObj.name || "" %>" placeholder="e.g. Classic Academy" required />
+          </div>
+
+          <div class="field">
+            <label>School Type</label>
+            <select name="type">
+              <option value="">Select type</option>
+              <option <%= (p.type==="Secondary School") ? "selected" : "" %>>Secondary School</option>
+              <option <%= (p.type==="University") ? "selected" : "" %>>University</option>
+              <option <%= (p.type==="College") ? "selected" : "" %>>College</option>
+              <option <%= (p.type==="Primary School") ? "selected" : "" %>>Primary School</option>
+              <option <%= (p.type==="Institute") ? "selected" : "" %>>Institute</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Tagline</label>
+          <input name="tagline" value="<%= p.tagline || "" %>" placeholder="Short, strong statement that sells your school." />
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label>Founded Year</label>
+            <input name="foundedYear" value="<%= p.foundedYear || "" %>" placeholder="e.g. 2008" />
+          </div>
+          <div class="field">
+            <label>School System</label>
+            <input name="system" value="<%= p.system || "" %>" placeholder="e.g. Day & Boarding" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label>About School</label>
+          <textarea name="about" rows="6"><%= p.about || "" %></textarea>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label>Mission</label>
+            <textarea name="mission" rows="3"><%= p.mission || "" %></textarea>
+          </div>
+          <div class="field">
+            <label>Vision</label>
+            <textarea name="vision" rows="3"><%= p.vision || "" %></textarea>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Values (comma separated)</label>
+          <input name="values" value="<%= valuesText %>" placeholder="Integrity, Excellence, Respect" />
+        </div>
+
+        <div class="field">
+          <label>Why Choose Us (one per line)</label>
+          <textarea name="whyChooseUs" rows="6"><%= whyText %></textarea>
+        </div>
+      </section>
+
+      <!-- Right: Branding -->
+      <section class="card" id="media">
+        <div class="card-h">
+          <h3>Branding & Media</h3>
+          <span class="pill"><i class="fa fa-brush"></i> Look & feel</span>
+        </div>
+
+        <div class="media-grid">
+          <div class="upload">
+            <div class="upload-top"><b>School Logo</b><span class="muted">Square recommended</span></div>
+            <div class="upload-box">
+              <input type="file" accept="image/*" id="logoFile" />
+              <div class="preview"><img id="logoPreview" alt="logo" src="<%= b.logoUrl || "" %>"/></div>
+              <div class="upload-actions">
+                <button type="button" class="btn btn-soft"><i class="fa fa-upload"></i> Upload</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="upload">
+            <div class="upload-top"><b>Cover Image</b><span class="muted">Wide banner</span></div>
+            <div class="upload-box">
+              <input type="file" accept="image/*" id="coverFile" />
+              <div class="preview wide"><img id="coverPreview" alt="cover" src="<%= b.coverUrl || "" %>"/></div>
+              <div class="upload-actions">
+                <button type="button" class="btn btn-soft"><i class="fa fa-upload"></i> Upload</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label>Primary Color</label>
+            <input name="primaryColor" id="primaryColor" value="<%= b.primaryColor || "#0a3d62" %>" />
+            <div class="hint muted">Used for buttons, headings, and accents.</div>
+          </div>
+          <div class="field">
+            <label>Accent Color</label>
+            <input name="accentColor" id="accentColor" value="<%= b.accentColor || "#0a6fbf" %>" />
+            <div class="hint muted">Used for highlights and links.</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Facilities (comma separated)</label>
+          <input name="facilities" value="<%= facilitiesText %>" placeholder="Library, Computer Lab, Science Lab..." />
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="card-h" id="contacts">
+          <h3>Contacts & Socials</h3>
+          <span class="pill"><i class="fa fa-phone"></i> Reachability</span>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label>Phone</label>
+            <input name="phone" value="<%= contact.phone || "" %>" placeholder="+256..." />
+          </div>
+          <div class="field">
+            <label>Email</label>
+            <input name="email" value="<%= contact.email || "" %>" placeholder="info@school.com" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label>Website</label>
+            <input name="website" value="<%= contact.website || "" %>" placeholder="https://..." />
+          </div>
+          <div class="field">
+            <label>Address (full)</label>
+            <input name="addressFull" value="<%= contact.addressFull || p.address || "" %>" placeholder="Street, City, Country" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label>Facebook</label>
+            <input name="facebook" value="<%= socials.facebook || "" %>" />
+          </div>
+          <div class="field">
+            <label>Instagram</label>
+            <input name="instagram" value="<%= socials.instagram || "" %>" />
+          </div>
+        </div>
+      </section>
+
+      <!-- Full width: Gallery/Awards/News -->
+      <section class="card span-2">
+        <div class="card-h">
+          <h3>Gallery, Awards & News</h3>
+          <span class="pill"><i class="fa fa-stars"></i> Build trust</span>
+        </div>
+
+        <div class="subgrid">
+          <div class="block">
+            <div class="block-h"><b>Gallery Images</b><span class="muted">Upload multiple</span></div>
+
+            <div class="drop" id="galleryDrop">
+              <input type="file" accept="image/*" id="galleryFiles" multiple />
+              <div class="drop-inner">
+                <i class="fa fa-cloud-arrow-up"></i>
+                <div>
+                  <b>Drag & drop photos here</b>
+                  <div class="muted">or click to select</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="thumbs" id="galleryThumbs">
+              <% for (var gi = 0; gi < Math.min(24, gallery.length); gi++) { var img = gallery[gi]; %>
+                <div class="thumb">
+                  <img src="<%= img.url %>" alt="gallery"/>
+                  <button type="button" class="x" data-del="<%= img._id %>" aria-label="remove"><i class="fa fa-xmark"></i></button>
+                </div>
+              <% } %>
+            </div>
+            <div class="hint muted">Uploads are stored in Cloudinary.</div>
+          </div>
+
+          <div class="block">
+            <div class="block-h"><b>Awards</b><span class="muted">Title | Org | Year | Desc</span></div>
+            <textarea name="awardsText" rows="10"><%= awardsText %></textarea>
+          </div>
+
+          <div class="block">
+            <div class="block-h"><b>News / Announcements</b><span class="muted">Title | Date | Desc</span></div>
+            <textarea name="newsText" rows="10"><%= newsText %></textarea>
+          </div>
+        </div>
+      </section>
+    </form>
+
+    <!-- Reviews -->
+    <section class="card" id="verification" style="margin-top:14px">
+      <div class="card-h">
+        <h3>Reviews Moderation</h3>
+        <span class="pill"><i class="fa fa-shield"></i> Trust</span>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <b>Pending (<%= pending.length %>)</b>
+          <% if (!pending.length) { %><div class="muted" style="margin-top:8px">No pending reviews.</div><% } %>
+          <% for (var pi = 0; pi < pending.length; pi++) { var r = pending[pi]; %>
+            <div style="margin-top:10px;border:1px solid rgba(2,8,23,.08);background:rgba(2,8,23,.02);border-radius:14px;padding:12px">
+              <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap">
+                <b><%= r.name %></b><b><%= r.rating %>/5</b>
+              </div>
+              <% if (r.title) { %><div style="margin-top:6px;font-weight:950"><%= r.title %></div><% } %>
+              <% if (r.message) { %><div class="muted" style="margin-top:6px"><%= r.message %></div><% } %>
+
+              <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
+                <button type="button" class="btn btn-primary" data-approve="<%= r._id %>"><i class="fa fa-check"></i> Approve</button>
+                <button type="button" class="btn btn-ghost" data-reject="<%= r._id %>"><i class="fa fa-ban"></i> Reject</button>
+                <button type="button" class="btn btn-ghost" data-delreview="<%= r._id %>"><i class="fa fa-trash"></i> Delete</button>
+              </div>
+            </div>
+          <% } %>
+        </div>
+
+        <div>
+          <b>Approved (<%= approved.length %>)</b>
+          <% if (!approved.length) { %><div class="muted" style="margin-top:8px">No approved reviews.</div><% } %>
+          <% for (var ai = 0; ai < approved.length; ai++) { var r2 = approved[ai]; %>
+            <div style="margin-top:10px;border:1px solid rgba(2,8,23,.08);background:#fff;border-radius:14px;padding:12px">
+              <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap">
+                <b><%= r2.name %></b><b><%= r2.rating %>/5</b>
+              </div>
+              <% if (r2.title) { %><div style="margin-top:6px;font-weight:950"><%= r2.title %></div><% } %>
+              <% if (r2.message) { %><div class="muted" style="margin-top:6px"><%= r2.message %></div><% } %>
+
+              <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
+                <button type="button" class="btn btn-soft" data-feature="<%= r2._id %>">
+                  <i class="fa fa-star"></i> <%= r2.featured ? "Unfeature" : "Feature" %>
+                </button>
+                <button type="button" class="btn btn-ghost" data-delreview="<%= r2._id %>"><i class="fa fa-trash"></i> Delete</button>
+              </div>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ admin -->
+    <section class="card" style="margin-top:14px">
+      <div class="card-h">
+        <h3>FAQ (Public)</h3>
+        <span class="pill"><i class="fa fa-circle-question"></i> FAQ</span>
+      </div>
+
+      <form id="faqForm" style="display:grid;gap:10px">
+        <div class="row">
+          <div class="field">
+            <label>Question</label>
+            <input id="faqQ" placeholder="e.g. Do you offer boarding?" />
+          </div>
+          <div class="field">
+            <label>Answer</label>
+            <input id="faqA" placeholder="Short clear answer..." />
+          </div>
+        </div>
+        <button type="button" class="btn btn-primary" id="faqAdd"><i class="fa fa-plus"></i> Add FAQ</button>
+      </form>
+
+      <div style="margin-top:12px;display:grid;gap:10px" id="faqList">
+        <% for (var fi = 0; fi < faqs.length; fi++) { var f = faqs[fi]; %>
+          <div style="border:1px solid rgba(2,8,23,.08);background:rgba(2,8,23,.02);border-radius:14px;padding:12px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap">
+            <div style="min-width:260px">
+              <b><%= f.q %></b>
+              <div class="muted" style="margin-top:6px"><%= f.a %></div>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <button type="button" class="btn btn-soft"
+                      data-faqedit="<%= f._id %>"
+                      data-q="<%- safeStr(f.q).replace(/"/g,'&quot;') %>"
+                      data-a="<%- safeStr(f.a).replace(/"/g,'&quot;') %>">
+                <i class="fa fa-pen"></i> Edit
+              </button>
+              <button type="button" class="btn btn-ghost" data-faqdel="<%= f._id %>">
+                <i class="fa fa-trash"></i> Delete
+              </button>
+            </div>
+          </div>
+        <% } %>
+        <% if (!faqs.length) { %><div class="muted">No FAQs yet.</div><% } %>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+  window.__TENANT_CODE__ = "<%= tenantObj.code || '' %>";
+</script>
+<script src="/js/school-profile-settings.js"></script>
+</body>
+</html>

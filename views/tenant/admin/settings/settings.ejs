@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Admissions Settings — CampusSaaS</title>
+<style>
+  /* Simple Poppins-like fallback */
+  @font-face{font-family:PoppinsLocal;src:local('Poppins'), local('Segoe UI');}
+  :root{
+    --blue:#0a3d62; --blue-2:#083454; --muted:#6b7280; --bg:#f5f8ff;
+    --card:#fff; --radius:12px; --accent:#0a6fbf; --danger:#ef4444;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:PoppinsLocal, system-ui, -apple-system, "Segoe UI", Roboto, Arial; background:var(--bg); color:#0b1320}
+  .container{max-width:1200px;margin:26px auto;padding:18px}
+
+  /* Header */
+  .header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}
+  .hdr-left{display:flex;flex-direction:column}
+  .title{font-size:22px;color:var(--blue-2);font-weight:700}
+  .subtitle{font-size:13px;color:var(--muted)}
+
+  /* Tabs */
+  .tabs{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}
+  .tab{padding:10px 14px;border-radius:10px;background:#eef4ff;color:var(--blue-2);cursor:pointer;font-weight:600;border:1px solid #e0e8f8}
+  .tab.active{background:linear-gradient(180deg,var(--blue),var(--blue-2));color:white;border-color:transparent;box-shadow:0 6px 18px rgba(10,61,98,0.12)}
+
+  /* Card */
+  .card{background:var(--card);border-radius:var(--radius);padding:16px;border:1px solid #e6eefb;box-shadow:0 6px 18px rgba(12,38,73,0.04);margin-bottom:16px}
+  .section-title{font-weight:700;color:var(--blue-2);margin-bottom:8px}
+  .muted{color:var(--muted);font-size:13px}
+
+  /* two-column grid */
+  .grid-2{display:grid;grid-template-columns:1fr 320px;gap:16px}
+  @media (max-width:980px){ .grid-2{grid-template-columns:1fr} }
+
+  /* forms */
+  .field{display:flex;flex-direction:column;margin-bottom:10px}
+  label{font-size:13px;color:#334155;margin-bottom:6px;font-weight:600}
+  input[type="text"], input[type="date"], input[type="number"], select, textarea {
+    padding:10px 12px;border-radius:8px;border:1px solid #d6e2f4;background:white;outline:none;font-size:14px;
+  }
+  textarea{min-height:100px;resize:vertical}
+  .row{display:flex;gap:8px;align-items:center}
+  .small{font-size:13px;color:var(--muted)}
+
+  /* list / table */
+  .table {width:100%;border-collapse:collapse;margin-top:8px}
+  .table th, .table td {padding:10px;border-bottom:1px solid #f0f5fb;text-align:left;font-size:14px}
+  .table th{font-size:13px;color:var(--muted);font-weight:700;background:#fbfdff}
+  .badge{padding:6px 8px;border-radius:999px;background:#eef4ff;color:var(--accent);font-weight:700;font-size:13px}
+
+  /* controls */
+  .btn {padding:10px 12px;border-radius:8px;border:none;background:var(--blue);color:white;font-weight:700;cursor:pointer}
+  .btn.light{background:#eef4ff;color:var(--blue);border:1px solid #dbeffd}
+  .btn.warn{background:#f59e0b}
+  .btn.danger{background:#ef4444}
+  .muted-btn{background:#f8fafc;border:1px solid #e6eefb;color:#374151;padding:9px 12px;border-radius:8px;cursor:pointer}
+
+  /* repeatable lists */
+  .repeat-list{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+  .repeat-row{display:flex;gap:8px;align-items:center}
+  .repeat-row input, .repeat-row select{flex:1}
+
+  /* footer actions */
+  .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+
+  /* helper */
+  .note{font-size:13px;color:var(--muted);margin-top:6px}
+  .hr{height:1px;background:#eef4fb;margin:12px 0;border-radius:2px}
+
+  /* small components */
+  .switch{display:inline-flex;align-items:center;gap:8px}
+  input[type=checkbox]{width:16px;height:16px}
+
+  @media (max-width:700px){
+    .tabs{overflow:auto;padding-bottom:8px}
+    .header{flex-direction:column;align-items:flex-start;gap:8px}
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <div class="header">
+    <div class="hdr-left">
+      <div class="title">Admissions Settings</div>
+      <div class="subtitle">Configure intake, documents, scoring, fees, email templates and more.</div>
+    </div>
+
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn light" onclick="previewPortal()">Preview Portal</button>
+      <button class="btn" onclick="saveAll()">Save Settings</button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs" id="tabs">
+    <div class="tab active" data-tab="intakes">Intake Management</div>
+    <div class="tab" data-tab="documents">Required Documents</div>
+    <div class="tab" data-tab="eligibility">Program Eligibility</div>
+    <div class="tab" data-tab="scoring">Auto-Scoring Rules</div>
+    <div class="tab" data-tab="deadlines">Deadlines</div>
+    <div class="tab" data-tab="fees">Fee Settings</div>
+    <div class="tab" data-tab="emails">Email Templates</div>
+    <div class="tab" data-tab="instructions">Portal Instructions</div>
+    <div class="tab" data-tab="reviewers">Reviewer Management</div>
+    <div class="tab" data-tab="custom">Custom Fields</div>
+  </div>
+
+  <!-- Tab panels -->
+  <div id="panelContainer">
+
+    <!-- INTAKES -->
+    <section class="card tab-panel" id="intakes">
+      <div class="section-title">Intake Management</div>
+      <div class="muted">Add and manage intakes (e.g., Fall 2025, Spring 2026).</div>
+
+      <div style="margin-top:12px" class="grid-2">
+        <div>
+          <div class="field">
+            <label>Existing Intakes</label>
+            <table class="table">
+              <thead><tr><th>Intake</th><th>Start</th><th>End</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="intakeList">
+                <!-- JS fills -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div class="field">
+              <label>Intake Name</label>
+              <input type="text" id="newIntakeName" placeholder="e.g., August 2025 - Intake"/>
+            </div>
+            <div class="field">
+              <label>Start Date</label>
+              <input type="date" id="newIntakeStart"/>
+            </div>
+            <div class="field">
+              <label>End Date</label>
+              <input type="date" id="newIntakeEnd"/>
+            </div>
+            <div class="field">
+              <label>Status</label>
+              <select id="newIntakeStatus">
+                <option value="upcoming">Upcoming</option>
+                <option value="open">Open</option>
+                <option value="closed">Closed</option>
+              </select>
+            </div>
+
+            <div style="display:flex;gap:8px">
+              <button class="btn" onclick="addIntake()">Add Intake</button>
+              <button class="muted-btn" onclick="resetIntakeForm()">Reset</button>
+            </div>
+
+            <div class="note">Tip: set intake to <strong>Open</strong> to make application form visible to applicants.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DOCUMENTS -->
+    <section class="card tab-panel" id="documents" style="display:none">
+      <div class="section-title">Required Documents</div>
+      <div class="muted">Configure which documents applicants must upload per program or globally.</div>
+
+      <div style="margin-top:12px">
+        <div class="field">
+          <label>Global Document List (drag to reorder later)</label>
+          <div class="repeat-list" id="docList">
+            <!-- JS -->
+          </div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="field">
+          <label>Add New Document</label>
+          <div class="repeat-row">
+            <input type="text" id="docName" placeholder="e.g. High School Certificate"/>
+            <select id="docRequired"><option value="required">Required</option><option value="optional">Optional</option></select>
+            <button class="btn light" onclick="addDocument()">Add</button>
+          </div>
+          <div class="note">You can later map documents to specific programs and set custom instructions.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ELIGIBILITY -->
+    <section class="card tab-panel" id="eligibility" style="display:none">
+      <div class="section-title">Program Eligibility Criteria</div>
+      <div class="muted">Define program-specific rules: min grades, accepted qualifications, age limits.</div>
+
+      <div style="margin-top:12px" class="grid-2">
+        <div>
+          <div class="field">
+            <label>Program</label>
+            <select id="eligibilityProgram">
+              <option>Computer Science</option>
+              <option>Business Administration</option>
+              <option>Medicine</option>
+              <option>Education</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Minimum Grade (%)</label>
+            <input type="number" id="eligMinGrade" min="0" max="100" placeholder="e.g. 70"/>
+          </div>
+
+          <div class="field">
+            <label>Accepted Certificates</label>
+            <input type="text" id="eligCertificates" placeholder="e.g., National Diploma; International Baccalaureate"/>
+            <div class="note">Separate multiple with semicolons.</div>
+          </div>
+
+          <div class="field">
+            <label>Age Limit (optional)</label>
+            <input type="number" id="eligAge" min="0" placeholder="e.g., 30"/>
+          </div>
+
+          <div style="display:flex;gap:8px">
+            <button class="btn" onclick="saveEligibility()">Save</button>
+            <button class="muted-btn" onclick="resetEligibility()">Reset</button>
+          </div>
+        </div>
+
+        <div>
+          <div class="field">
+            <label>Current Rules for Selected Program</label>
+            <div class="card" style="padding:12px">
+              <div><strong>Min grade:</strong> <span id="showMinGrade">--</span></div>
+              <div><strong>Accepted certs:</strong> <span id="showCerts">--</span></div>
+              <div><strong>Age limit:</strong> <span id="showAge">--</span></div>
+              <div class="note" style="margin-top:8px">Tip: Use this to enforce eligibility before submission.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCORING -->
+    <section class="card tab-panel" id="scoring" style="display:none">
+      <div class="section-title">Auto-Scoring & Evaluation Rules</div>
+      <div class="muted">Create weighted criteria. The system will auto-calculate scores for applications.</div>
+
+      <div style="margin-top:12px">
+        <table class="table" id="scoringTable">
+          <thead><tr><th>Criteria</th><th style="width:120px">Weight (%)</th><th style="width:150px">Min (0-10)</th><th style="width:150px">Max (0-10)</th><th style="width:100px">Action</th></tr></thead>
+          <tbody id="scoringBody">
+            <!-- JS -->
+          </tbody>
+        </table>
+
+        <div style="display:flex;gap:8px;align-items:center;margin-top:12px">
+          <input type="text" id="scoreName" placeholder="e.g., Academic Performance" style="flex:1"/>
+          <input type="number" id="scoreWeight" placeholder="Weight" style="width:100px"/>
+          <input type="number" id="scoreMin" placeholder="Min" style="width:90px"/>
+          <input type="number" id="scoreMax" placeholder="Max" style="width:90px"/>
+          <button class="btn light" onclick="addScoring()">Add</button>
+        </div>
+
+        <div class="note" id="weightNote">Total weight must sum to <strong>100%</strong>. Current total: <strong id="weightTotal">0</strong>%</div>
+      </div>
+    </section>
+
+    <!-- DEADLINES -->
+    <section class="card tab-panel" id="deadlines" style="display:none">
+      <div class="section-title">Deadlines</div>
+      <div class="muted">Set important dates and automatic behaviors.</div>
+
+      <div style="margin-top:12px">
+        <div class="field">
+          <label>Application Open Date</label>
+          <input type="date" id="deadlineOpen"/>
+        </div>
+        <div class="field">
+          <label>Application Close Date</label>
+          <input type="date" id="deadlineClose"/>
+        </div>
+        <div class="field">
+          <label>Document Upload Deadline</label>
+          <input type="date" id="deadlineDocs"/>
+        </div>
+        <div class="field">
+          <label>Review Deadline</label>
+          <input type="date" id="deadlineReview"/>
+        </div>
+
+        <div style="display:flex;gap:8px">
+          <button class="btn" onclick="saveDeadlines()">Save Deadlines</button>
+          <button class="muted-btn" onclick="clearDeadlines()">Clear</button>
+        </div>
+
+        <div class="note">You can enable automatic closure of intake once the close date passes (settings in Intake Management).</div>
+      </div>
+    </section>
+
+    <!-- FEES -->
+    <section class="card tab-panel" id="fees" style="display:none">
+      <div class="section-title">Application Fee Settings</div>
+      <div class="muted">Configure fees, payment methods and waivers.</div>
+
+      <div class="grid-2" style="margin-top:12px">
+        <div>
+          <div class="field">
+            <label>Application Fee (amount)</label>
+            <input type="number" id="feeAmount" placeholder="e.g. 20"/>
+          </div>
+
+          <div class="field">
+            <label>Currency</label>
+            <select id="feeCurrency">
+              <option>USD</option>
+              <option>UGX</option>
+              <option>SSP</option>
+              <option>KES</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Payment Methods</label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <label><input type="checkbox" id="payCard" checked> Card</label>
+              <label><input type="checkbox" id="payMobile" checked> Mobile Money</label>
+              <label><input type="checkbox" id="payBank"> Bank Transfer</label>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Auto-waiver rules (simple)</label>
+            <input type="text" id="waiverRules" placeholder="e.g. Scholarships; Staff dependents"/>
+            <div class="note">Define keywords for auto-waiver matching.</div>
+          </div>
+
+          <div style="display:flex;gap:8px">
+            <button class="btn" onclick="saveFees()">Save Fees</button>
+            <button class="muted-btn" onclick="resetFees()">Reset</button>
+          </div>
+        </div>
+
+        <div>
+          <div class="card" style="padding:12px">
+            <div class="small">Recent Payments</div>
+            <div style="margin-top:8px">
+              <div style="display:flex;justify-content:space-between"><div>2025-07-18</div><div>$120 - CARD</div></div>
+              <div style="display:flex;justify-content:space-between"><div>2025-07-17</div><div>$20 - MOBILE</div></div>
+              <div style="display:flex;justify-content:space-between"><div>2025-07-16</div><div>$20 - MOBILE</div></div>
+            </div>
+            <div class="note" style="margin-top:8px">You will connect payment providers in the Finance > Integrations area.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- EMAIL TEMPLATES -->
+    <section class="card tab-panel" id="emails" style="display:none">
+      <div class="section-title">Email Templates</div>
+      <div class="muted">Manage templates used to communicate with applicants and reviewers. Use placeholders like <code>{{name}}</code>, <code>{{program}}</code>, <code>{{status}}</code>.</div>
+
+      <div style="margin-top:12px" class="grid-2">
+        <div>
+          <label>Choose Template</label>
+          <select id="templateSelect" onchange="loadTemplate()">
+            <option value="confirmation">Application Confirmation</option>
+            <option value="acceptance">Acceptance Letter</option>
+            <option value="rejection">Rejection Letter</option>
+            <option value="missing">Missing Documents Alert</option>
+            <option value="reviewer">Reviewer Assignment</option>
+          </select>
+
+          <div class="field">
+            <label>Subject</label>
+            <input type="text" id="templateSubject"/>
+          </div>
+
+          <div class="field">
+            <label>Body (simple rich text area)</label>
+            <textarea id="templateBody"></textarea>
+          </div>
+
+          <div style="display:flex;gap:8px">
+            <button class="btn" onclick="saveTemplate()">Save Template</button>
+            <button class="muted-btn" onclick="resetTemplate()">Reset</button>
+          </div>
+        </div>
+
+        <div>
+          <div class="card" style="padding:12px">
+            <div class="section-title" style="font-size:14px">Preview</div>
+            <div id="templatePreview" style="margin-top:8px;font-size:14px;color:#111"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- INSTRUCTIONS -->
+    <section class="card tab-panel" id="instructions" style="display:none">
+      <div class="section-title">Admissions Portal Instructions</div>
+      <div class="muted">Content shown on the public admissions portal. Use clear guidance and required document lists.</div>
+
+      <div style="margin-top:12px">
+        <div class="field">
+          <label>Intro Text (appears on portal)</label>
+          <textarea id="portalIntro">Welcome to the University Admissions Portal. Please read instructions carefully and attach required documents before submitting.</textarea>
+        </div>
+
+        <div class="field">
+          <label>FAQ / Guidelines</label>
+          <textarea id="portalFaq">Q: What documents do I need?\nA: High school certificate, transcript, ID, passport photo.</textarea>
+        </div>
+
+        <div style="display:flex;gap:8px">
+          <button class="btn" onclick="savePortalContent()">Save Content</button>
+          <button class="muted-btn" onclick="resetPortalContent()">Reset</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- REVIEWERS -->
+    <section class="card tab-panel" id="reviewers" style="display:none">
+      <div class="section-title">Reviewer Management</div>
+      <div class="muted">Add and manage staff who will review applications.</div>
+
+      <div style="margin-top:12px">
+        <div class="field">
+          <label>Current Reviewers</label>
+          <table class="table">
+            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Actions</th></tr></thead>
+            <tbody id="reviewerList"></tbody>
+          </table>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="field">
+          <label>Add Reviewer</label>
+          <div class="repeat-row">
+            <input type="text" id="revName" placeholder="Full name"/>
+            <input type="text" id="revEmail" placeholder="email@example.edu"/>
+            <select id="revRole">
+              <option>Reviewer</option>
+              <option>Senior Reviewer</option>
+              <option>Head of Admissions</option>
+            </select>
+            <button class="btn light" onclick="addReviewer()">Add</button>
+          </div>
+          <div class="note">Invite will be sent to the reviewer email once saved.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CUSTOM FIELDS -->
+    <section class="card tab-panel" id="custom" style="display:none">
+      <div class="section-title">Custom Application Fields</div>
+      <div class="muted">Create custom questions for your application form (text, dropdown, file, checkbox).</div>
+
+      <div style="margin-top:12px">
+        <div class="field">
+          <label>Existing Custom Fields</label>
+          <div class="repeat-list" id="customList"></div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="field">
+          <label>Add Custom Field</label>
+          <div class="repeat-row">
+            <input type="text" id="cfLabel" placeholder="Field label e.g., 'Have you studied abroad?'" />
+            <select id="cfType">
+              <option value="text">Text</option>
+              <option value="textarea">Long Text</option>
+              <option value="select">Dropdown</option>
+              <option value="file">File Upload</option>
+              <option value="checkbox">Checkbox</option>
+            </select>
+            <select id="cfRequired"><option value="required">Required</option><option value="optional">Optional</option></select>
+            <button class="btn light" onclick="addCustomField()">Add</button>
+          </div>
+          <div class="note">After adding, map this field to a program if needed.</div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- bottom actions -->
+  <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:8px">
+    <button class="muted-btn" onclick="resetAll()">Reset Changes</button>
+    <button class="btn" onclick="saveAll()">Save All Settings</button>
+  </div>
+
+</div>
+
+<script>
+/* Minimal JS: tabs + repeatable lists + weight validation + simple storage (in-memory) */
+
+/* TAB LOGIC */
+const tabs = document.querySelectorAll('.tab');
+const panels = document.querySelectorAll('.tab-panel');
+tabs.forEach(t=>{
+  t.addEventListener('click', ()=> {
+    tabs.forEach(x=>x.classList.remove('active'));
+    panels.forEach(p=>p.style.display='none');
+    t.classList.add('active');
+    document.getElementById(t.dataset.tab).style.display = 'block';
+    window.scrollTo({top:0,behavior:'smooth'});
+  });
+});
+
+/* MOCK DATA (so UI shows content) */
+const MOCK = {
+  intakes:[
+    {id:1,name:'August 2025',start:'2025-08-01',end:'2025-08-31',status:'open'},
+    {id:2,name:'Jan 2026',start:'2026-01-10',end:'2026-02-01',status:'upcoming'}
+  ],
+  documents:[
+    {id:1,name:'High School Certificate',required:true},
+    {id:2,name:'Transcript',required:true},
+    {id:3,name:'National ID / Passport',required:true},
+    {id:4,name:'Passport Photo',required:false}
+  ],
+  scoring:[
+    {id:1,name:'Academic Performance',weight:40,min:0,max:10},
+    {id:2,name:'English Proficiency',weight:20,min:0,max:10},
+    {id:3,name:'Entrance Exam',weight:25,min:0,max:10},
+    {id:4,name:'Supporting Documents',weight:15,min:0,max:10}
+  ],
+  reviewers:[
+    {id:1,name:'Dr. Samuel Deng',email:'sam.deng@univ.edu',role:'Head of Admissions'},
+    {id:2,name:'Lydia M',email:'lydia.m@univ.edu',role:'Reviewer'}
+  ],
+  custom:[ {id:1,label:'Have you studied abroad?', type:'select', required:true, options:'Yes;No'} ]
+};
+
+/* UTIL: render functions */
+function renderIntakes(){
+  const tbody = document.getElementById('intakeList'); tbody.innerHTML='';
+  MOCK.intakes.forEach(i=>{
+    tbody.insertAdjacentHTML('beforeend',`<tr>
+      <td><strong>${i.name}</strong></td>
+      <td>${i.start}</td>
+      <td>${i.end}</td>
+      <td><span class="badge">${i.status}</span></td>
+      <td><button class="muted-btn" onclick="editIntake(${i.id})">Edit</button> <button class="muted-btn" onclick="deleteIntake(${i.id})">Delete</button></td>
+    </tr>`);
+  });
+}
+function renderDocs(){
+  const list = document.getElementById('docList'); list.innerHTML='';
+  MOCK.documents.forEach(d=>{
+    list.insertAdjacentHTML('beforeend',`<div class="repeat-row"><input type="text" value="${d.name}" readonly><select disabled><option>${d.required?'Required':'Optional'}</option></select><button class="muted-btn" onclick="removeDoc(${d.id})">Remove</button></div>`);
+  });
+}
+function renderScoring(){
+  const body = document.getElementById('scoringBody'); body.innerHTML='';
+  MOCK.scoring.forEach(s=>{
+    body.insertAdjacentHTML('beforeend',`<tr id="scrow-${s.id}"><td>${s.name}</td><td><input type="number" min="0" max="100" value="${s.weight}" onchange="updateWeight(${s.id},this.value)"/></td><td><input type="number" min="0" max="10" value="${s.min}"/></td><td><input type="number" min="0" max="10" value="${s.max}"/></td><td><button class="muted-btn" onclick="removeScoring(${s.id})">Remove</button></td></tr>`);
+  });
+  updateWeightTotal();
+}
+function renderReviewers(){
+  const tbody = document.getElementById('reviewerList'); tbody.innerHTML='';
+  MOCK.reviewers.forEach(r=>{
+    tbody.insertAdjacentHTML('beforeend',`<tr><td>${r.name}</td><td>${r.email}</td><td>${r.role}</td><td><button class="muted-btn" onclick="removeReviewer('${r.email}')">Remove</button></td></tr>`);
+  });
+}
+function renderCustom(){
+  const list = document.getElementById('customList'); list.innerHTML='';
+  MOCK.custom.forEach(c=>{
+    list.insertAdjacentHTML('beforeend',`<div class="repeat-row"><input type="text" value="${c.label}" readonly><input type="text" value="${c.type}" readonly style="width:120px"><input type="text" value="${c.options||''}" readonly><button class="muted-btn" onclick="removeCustom(${c.id})">Remove</button></div>`);
+  });
+}
+
+/* Intakes functions */
+function addIntake(){
+  const name = document.getElementById('newIntakeName').value.trim();
+  const start = document.getElementById('newIntakeStart').value;
+  const end = document.getElementById('newIntakeEnd').value;
+  const status = document.getElementById('newIntakeStatus').value;
+  if(!name || !start || !end){ alert('Please fill intake name, start, and end'); return; }
+  const id = Date.now();
+  MOCK.intakes.push({id,name,start,end,status});
+  renderIntakes();
+  resetIntakeForm();
+}
+function resetIntakeForm(){
+  document.getElementById('newIntakeName').value='';
+  document.getElementById('newIntakeStart').value='';
+  document.getElementById('newIntakeEnd').value='';
+  document.getElementById('newIntakeStatus').value='upcoming';
+}
+function editIntake(id){ alert('Edit intake placeholder: '+id); }
+function deleteIntake(id){
+  if(!confirm('Delete intake?')) return;
+  MOCK.intakes = MOCK.intakes.filter(i=>i.id!==id);
+  renderIntakes();
+}
+
+/* Documents */
+function addDocument(){
+  const name = document.getElementById('docName').value.trim();
+  const req = document.getElementById('docRequired').value;
+  if(!name){ alert('Document name required'); return; }
+  MOCK.documents.push({id:Date.now(),name,required: req==='required'});
+  renderDocs();
+  document.getElementById('docName').value='';
+}
+function removeDoc(id){ MOCK.documents = MOCK.documents.filter(d=>d.id!==id); renderDocs(); }
+
+/* Eligibility */
+function saveEligibility(){
+  const p = document.getElementById('eligibilityProgram').value;
+  const mg = document.getElementById('eligMinGrade').value || '--';
+  const certs = document.getElementById('eligCertificates').value || '--';
+  const age = document.getElementById('eligAge').value || '--';
+  document.getElementById('showMinGrade').innerText = mg;
+  document.getElementById('showCerts').innerText = certs;
+  document.getElementById('showAge').innerText = age;
+  alert('Eligibility saved for ' + p);
+}
+function resetEligibility(){ document.getElementById('eligMinGrade').value=''; document.getElementById('eligCertificates').value=''; document.getElementById('eligAge').value=''; }
+
+/* Scoring */
+function addScoring(){
+  const name = document.getElementById('scoreName').value.trim();
+  const w = Number(document.getElementById('scoreWeight').value||0);
+  const min = Number(document.getElementById('scoreMin').value||0);
+  const max = Number(document.getElementById('scoreMax').value||10);
+  if(!name){ alert('Enter criteria name'); return; }
+  MOCK.scoring.push({id:Date.now(),name,weight:w,min,max});
+  renderScoring();
+  document.getElementById('scoreName').value=''; document.getElementById('scoreWeight').value=''; document.getElementById('scoreMin').value=''; document.getElementById('scoreMax').value='';
+}
+function removeScoring(id){ MOCK.scoring = MOCK.scoring.filter(s=>s.id!==id); renderScoring(); }
+function updateWeight(id,newWeight){
+  MOCK.scoring = MOCK.scoring.map(s => s.id===id? {...s, weight: Number(newWeight)} : s);
+  updateWeightTotal();
+}
+function updateWeightTotal(){
+  const total = MOCK.scoring.reduce((sum,s)=>sum + Number(s.weight||0),0);
+  document.getElementById('weightTotal').innerText = total;
+  const note = document.getElementById('weightNote');
+  if(total !== 100) note.style.color = 'var(--danger)'; else note.style.color = 'inherit';
+}
+
+/* Deadlines */
+function saveDeadlines(){ alert('Deadlines saved (placeholder)'); }
+function clearDeadlines(){ document.getElementById('deadlineOpen').value=''; document.getElementById('deadlineClose').value=''; document.getElementById('deadlineDocs').value=''; document.getElementById('deadlineReview').value=''; }
+
+/* Fees */
+function saveFees(){ alert('Fees saved (placeholder)'); }
+function resetFees(){ document.getElementById('feeAmount').value=''; document.getElementById('feeCurrency').value='USD'; document.getElementById('payCard').checked=true; document.getElementById('payMobile').checked=true; }
+
+/* Templates */
+const TEMPLATES = {
+  confirmation: {subject:'Application Received', body:'Dear {{name}}, your application for {{program}} has been received.'},
+  acceptance: {subject:'Congratulations — Offer', body:'Dear {{name}}, we are pleased to offer you admission to {{program}}.'},
+  rejection: {subject:'Application Outcome', body:'Dear {{name}}, we regret to inform you...'},
+  missing: {subject:'Missing Documents', body:'Dear {{name}}, the following documents are missing: {{missing_docs}}.'},
+  reviewer: {subject:'Reviewer Assignment', body:'Dear {{reviewer_name}}, you have been assigned to review {{applicant_name}}.'}
+};
+function loadTemplate(){
+  const k = document.getElementById('templateSelect').value;
+  const t = TEMPLATES[k] || {subject:'',body:''};
+  document.getElementById('templateSubject').value = t.subject;
+  document.getElementById('templateBody').value = t.body;
+  updatePreview();
+}
+function saveTemplate(){ alert('Template saved (placeholder)'); updatePreview(); }
+function resetTemplate(){ loadTemplate(); }
+function updatePreview(){
+  const sub = document.getElementById('templateSubject').value;
+  const body = document.getElementById('templateBody').value;
+  document.getElementById('templatePreview').innerHTML = `<strong>${sub}</strong><p style="white-space:pre-line;margin-top:8px">${body}</p>`;
+}
+
+/* Portal content */
+function savePortalContent(){ alert('Portal content saved (placeholder)'); }
+function resetPortalContent(){
+  document.getElementById('portalIntro').value=''; document.getElementById('portalFaq').value='';
+}
+
+/* Reviewers */
+function addReviewer(){
+  const name = document.getElementById('revName').value.trim();
+  const email = document.getElementById('revEmail').value.trim();
+  const role = document.getElementById('revRole').value;
+  if(!name||!email){ alert('Name and email required'); return; }
+  MOCK.reviewers.push({id:Date.now(),name,email,role});
+  renderReviewers();
+  document.getElementById('revName').value=''; document.getElementById('revEmail').value='';
+}
+function removeReviewer(email){ if(!confirm('Remove reviewer?')) return; MOCK.reviewers = MOCK.reviewers.filter(r=>r.email!==email); renderReviewers(); }
+
+/* Custom fields */
+function addCustomField(){
+  const label = document.getElementById('cfLabel').value.trim();
+  const type = document.getElementById('cfType').value;
+  const required = document.getElementById('cfRequired').value === 'required';
+  if(!label){ alert('Field label required'); return; }
+  MOCK.custom.push({id:Date.now(),label,type,required,options:''});
+  renderCustom();
+  document.getElementById('cfLabel').value='';
+}
+function removeCustom(id){ MOCK.custom = MOCK.custom.filter(c=>c.id!==id); renderCustom(); }
+
+/* Save / reset */
+function saveAll(){ alert('All settings saved (placeholder) — implement API calls to persist.'); }
+function resetAll(){ if(confirm('Reset all unsaved changes?')) location.reload(); }
+function resetIntakes(){ MOCK.intakes=[]; renderIntakes(); }
+function previewPortal(){ alert('Open admissions portal preview (placeholder)'); }
+
+/* INIT */
+(function init(){
+  renderIntakes();
+  renderDocs();
+  renderScoring();
+  renderReviewers();
+  renderCustom();
+  loadTemplate();
+})();
+</script>
+
+</body>
+</html>

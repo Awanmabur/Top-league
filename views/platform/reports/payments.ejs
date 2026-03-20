@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Payment Report — Classic Campus</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="/css/navbar.css" />
+  <style>
+    body{margin:0;background:#f5f8ff;font-family:Poppins,Segoe UI,Arial,sans-serif;color:#0f172a;overflow-x:hidden}
+    *{box-sizing:border-box;min-width:0}
+    .main{flex:1;padding:20px 26px;display:flex;flex-direction:column;gap:16px}
+    .title{font-size:20px;font-weight:700;color:#083454}
+    .subtitle{font-size:13px;color:#6b7280;line-height:1.5}
+    .card{background:#fff;border-radius:12px;padding:14px;border:1px solid #e4ecfb;box-shadow:0 6px 18px rgba(12,38,73,.04)}
+    .table-wrap{overflow:auto}
+    table{width:100%;border-collapse:collapse;min-width:1100px}
+    th,td{padding:12px 10px;border-bottom:1px solid #edf2ff;text-align:left;font-size:13px}
+    th{font-size:12px;text-transform:uppercase;color:#6b7280}
+    .badge{display:inline-flex;padding:5px 9px;border-radius:999px;font-size:11px;font-weight:800}
+    .green{background:#e6f9ee;color:#166534}
+    .amber{background:#fffbeb;color:#b45309}
+    .red{background:#fff1f2;color:#b91c1c}
+    .gray{background:#f1f5f9;color:#475569}
+    .alert{padding:12px 14px;border-radius:10px;background:#fff1f2;color:#991b1b;border:1px solid #fecdd3}
+    @media (max-width:900px){.main{padding:16px}}
+  </style>
+</head>
+<body>
+  <%- include("./navbar") %>
+
+  <main class="main">
+    <div>
+      <div class="title">Payment Report</div>
+      <div class="subtitle">All platform payments, references, providers, statuses and billing periods.</div>
+    </div>
+
+    <% if (error) { %>
+      <div class="alert"><%= error %></div>
+    <% } %>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>University</th>
+              <th>Plan</th>
+              <th>Type</th>
+              <th>Amount</th>
+              <th>Currency</th>
+              <th>Provider</th>
+              <th>Status</th>
+              <th>Reference</th>
+              <th>Paid At</th>
+              <th>Created</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% (rows || []).forEach(function(row){ %>
+              <tr>
+                <td><%= row.tenantId?.name || '—' %></td>
+                <td><%= row.planId?.name || '—' %></td>
+                <td><%= row.type %></td>
+                <td><%= Number(row.amount || 0).toLocaleString() %></td>
+                <td><%= row.currency || 'USD' %></td>
+                <td><%= row.provider || 'manual' %></td>
+                <td>
+                  <span class="badge <%= row.status === 'completed' ? 'green' : row.status === 'pending' ? 'amber' : row.status === 'failed' ? 'red' : 'gray' %>"><%= row.status %></span>
+                </td>
+                <td><%= row.reference || '—' %></td>
+                <td><%= row.paidAt ? new Date(row.paidAt).toLocaleString() : '—' %></td>
+                <td><%= row.createdAt ? new Date(row.createdAt).toLocaleString() : '—' %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  </div>
+  <script src="/js/navbar.js"></script>
+</body>
+</html>

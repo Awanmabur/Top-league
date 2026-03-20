@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title><%= (tenant && tenant.name) ? tenant.name : "CampusSaaS" %> — Fees & Payments</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous"
+        referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/navbar.css"/>
+  <link rel="stylesheet" href="/css/parent-portal.css" />
+
+  <style>
+    .student-tabs{
+      margin-top:14px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .student-tab{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background:#fff;
+      box-shadow:var(--shadow);
+      cursor:pointer;
+      min-width:220px;
+      transition:.18s ease;
+      text-decoration:none;
+    }
+
+    .student-tab:hover{
+      transform:translateY(-1px);
+    }
+
+    .student-tab.active{
+      background:var(--primary-soft);
+      border-color:#bfd3ff;
+    }
+
+    .student-tab-avatar{
+      width:40px;
+      height:40px;
+      border-radius:999px;
+      background:linear-gradient(135deg,#dbeafe 0%, #bfdbfe 100%);
+      color:var(--primary-2);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:900;
+      flex-shrink:0;
+    }
+
+    .student-tab-name{
+      font-size:14px;
+      font-weight:900;
+      line-height:1.2;
+    }
+
+    .student-tab-sub{
+      font-size:12px;
+      color:var(--muted);
+      margin-top:3px;
+    }
+
+    .summary-grid{
+      margin-top:16px;
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:12px;
+    }
+
+    .summary-box{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+      background:#fbfdff;
+    }
+
+    .summary-label{
+      color:var(--muted);
+      font-size:12px;
+    }
+
+    .summary-value{
+      margin-top:6px;
+      font-size:24px;
+      font-weight:1000;
+      letter-spacing:-.02em;
+    }
+
+    .good{ color:var(--ok); }
+    .warn{ color:var(--warn); }
+    .danger{ color:var(--danger); }
+
+    .page-grid{
+      margin-top:16px;
+      display:grid;
+      grid-template-columns:1.35fr .9fr;
+      gap:14px;
+    }
+
+    .table-wrap{
+      margin-top:14px;
+      overflow:auto;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:#fff;
+    }
+
+    .data-table{
+      width:100%;
+      min-width:900px;
+      border-collapse:collapse;
+    }
+
+    .data-table th,
+    .data-table td{
+      padding:11px 12px;
+      border-bottom:1px solid #eef4fb;
+      text-align:left;
+      font-size:13px;
+      vertical-align:top;
+    }
+
+    .data-table th{
+      font-size:12px;
+      color:var(--muted);
+      font-weight:800;
+      background:#f8fbff;
+    }
+
+    .data-table tr:last-child td{
+      border-bottom:none;
+    }
+
+    .status-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:900;
+      border:1px solid var(--line);
+      background:#fff;
+    }
+
+    .status-pill.paid{
+      color:var(--ok);
+      background:#f6fff8;
+      border-color:#cdeed8;
+    }
+
+    .status-pill.partial{
+      color:var(--warn);
+      background:#fffaf1;
+      border-color:#f5e2b8;
+    }
+
+    .status-pill.unpaid{
+      color:var(--danger);
+      background:#fff7f7;
+      border-color:#f3d0d0;
+    }
+
+    .amount-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      background:#f8fbff;
+      border:1px solid var(--line);
+      font-size:12px;
+      font-weight:900;
+    }
+
+    .side-stack{
+      display:grid;
+      gap:14px;
+    }
+
+    .metric-list{
+      margin-top:12px;
+      display:grid;
+      gap:10px;
+    }
+
+    .metric-item{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      border-bottom:1px solid #eef4fb;
+      padding-bottom:8px;
+      font-size:13px;
+      color:var(--muted);
+    }
+
+    .metric-item:last-child{
+      border-bottom:none;
+      padding-bottom:0;
+    }
+
+    .metric-item strong{
+      color:var(--text);
+      text-align:right;
+    }
+
+    .list{
+      margin-top:12px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+
+    .list-item{
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:10px;
+      background:#fff;
+    }
+
+    .list-icon{
+      width:34px;
+      height:34px;
+      border-radius:12px;
+      background:#e8f0ff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:var(--primary);
+      flex-shrink:0;
+    }
+
+    .list-title{
+      font-weight:1000;
+    }
+
+    .list-meta{
+      color:var(--muted);
+      font-size:12px;
+      margin-top:2px;
+    }
+
+    .list-text{
+      color:var(--muted);
+      font-size:13px;
+      margin-top:6px;
+      line-height:1.5;
+    }
+
+    .empty-state{
+      margin-top:16px;
+    }
+
+    .action-row{
+      margin-top:12px;
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+
+    .alert-inline{
+      margin-top:14px;
+    }
+
+    @media (max-width: 1180px){
+      .page-grid{
+        grid-template-columns:1fr;
+      }
+
+      .summary-grid{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+      }
+    }
+
+    @media (max-width: 720px){
+      .summary-grid{
+        grid-template-columns:1fr;
+      }
+
+      .student-tab{
+        width:100%;
+        min-width:0;
+      }
+
+      .metric-item{
+        flex-direction:column;
+      }
+
+      .metric-item strong{
+        text-align:left;
+      }
+    }
+  </style>
+</head>
+<body>
+  <%
+    const t = tenant || {};
+    const u = user || {};
+    const p = parent || null;
+    const kids = Array.isArray(children) ? children : [];
+    const tenantName = t.name || "CampusSaaS";
+    const tenantCode = (t.code || "CC").toString();
+    const invoiceRows = Array.isArray(invoices) ? invoices : [];
+    const paymentRows = Array.isArray(payments) ? payments : [];
+    const sum = summary || {};
+
+    function fullNameOfStudent(c) {
+      const name = (c && c.fullName) ? String(c.fullName).trim() : "";
+      if (name) return name;
+
+      const parts = [];
+      if (c && c.firstName) parts.push(String(c.firstName).trim());
+      if (c && c.middleName) parts.push(String(c.middleName).trim());
+      if (c && c.lastName) parts.push(String(c.lastName).trim());
+      return parts.filter(Boolean).join(" ").trim() || "Student";
+    }
+
+    function initials(name) {
+      const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+      const a = parts[0] && parts[0][0] ? parts[0][0] : "S";
+      const b = parts[1] && parts[1][0] ? parts[1][0] : "";
+      return (a + b).toUpperCase();
+    }
+
+    function money(v) {
+      return Number(v || 0).toLocaleString();
+    }
+  %>
+
+    <%-include("./navbar") %>
+
+    <main class="main">
+      <div class="topbar">
+        <div>
+          <div class="title">Fees & Payments</div>
+          <div class="subtitle">
+            Review billed fee items, payment history, outstanding balances and payment status for your linked children.
+          </div>
+        </div>
+
+        <div class="top-actions">
+          <div class="chip">
+            <i class="fa-solid fa-sack-dollar"></i>
+            <span>Outstanding</span>
+            <b>UGX <%= money(sum.balance || 0) %></b>
+          </div>
+
+          <button class="btn light" type="button" onclick="window.location.href='/parent/results<%= student ? ('?student=' + student._id) : '' %>'">
+            <i class="fa-solid fa-file-lines"></i> Results
+          </button>
+
+          <button class="btn primary" type="button" onclick="window.location.href='/parent/children'">
+            <i class="fa-solid fa-children"></i> My Children
+          </button>
+        </div>
+      </div>
+
+      <% if (error) { %>
+        <section class="card empty-state">
+          <div class="empty">
+            <div class="empty-icon"><i class="fa-solid fa-sack-dollar"></i></div>
+            <div class="empty-title">Unable to load fees</div>
+            <div class="empty-text"><%= error %></div>
+          </div>
+        </section>
+      <% } else { %>
+
+        <div class="student-tabs">
+          <% kids.forEach(function(c){ const active = student && String(student._id) === String(c._id); %>
+            <a href="/parent/fees?student=<%= c._id %>" class="student-tab <%= active ? 'active' : '' %>">
+              <div class="student-tab-avatar"><%= initials(fullNameOfStudent(c)) %></div>
+              <div>
+                <div class="student-tab-name"><%= fullNameOfStudent(c) %></div>
+                <div class="student-tab-sub"><%= c.regNo || "—" %> • <%= (c.classGroup && (c.classGroup.title || c.classGroup.name)) || "—" %></div>
+              </div>
+            </a>
+          <% }); %>
+        </div>
+
+        <div class="summary-grid">
+          <div class="summary-box">
+            <div class="summary-label">Total Billed</div>
+            <div class="summary-value">UGX <%= money(sum.billed || 0) %></div>
+          </div>
+          <div class="summary-box">
+            <div class="summary-label">Total Paid</div>
+            <div class="summary-value good">UGX <%= money(sum.paid || 0) %></div>
+          </div>
+          <div class="summary-box">
+            <div class="summary-label">Outstanding Balance</div>
+            <div class="summary-value <%= Number(sum.balance || 0) > 0 ? 'warn' : 'good' %>">
+              UGX <%= money(sum.balance || 0) %>
+            </div>
+          </div>
+          <div class="summary-box">
+            <div class="summary-label">Overdue / Unpaid Items</div>
+            <div class="summary-value <%= Number(sum.unpaidItems || 0) > 0 ? 'danger' : 'good' %>">
+              <%= Number(sum.unpaidItems || 0) %>
+            </div>
+          </div>
+        </div>
+
+        <% if (Number(sum.balance || 0) > 0) { %>
+          <div class="alert warn alert-inline">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <div>
+              <div class="alert-title">Outstanding school fees</div>
+              <div class="alert-text">
+                This student currently has an outstanding fee balance of UGX <%= money(sum.balance || 0) %>. Please review the unpaid items below.
+              </div>
+            </div>
+          </div>
+        <% } %>
+
+        <div class="page-grid">
+          <section class="card">
+            <div class="section-title">Fee Items / Invoices</div>
+            <div class="section-sub">
+              Charges, billed items and current payment status for <%= student ? fullNameOfStudent(student) : "student" %>.
+            </div>
+
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th>Category</th>
+                    <th>Academic Year</th>
+                    <th>Semester</th>
+                    <th>Due Date</th>
+                    <th>Amount</th>
+                    <th>Paid</th>
+                    <th>Balance</th>
+                    <th>Status</th>
+                    <th>Reference</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% if (!invoiceRows.length) { %>
+                    <tr>
+                      <td colspan="10">No fee records found for this student.</td>
+                    </tr>
+                  <% } else { %>
+                    <% invoiceRows.forEach(function(row){ %>
+                      <tr>
+                        <td>
+                          <strong><%= row.title %></strong>
+                          <div class="small-muted"><%= row.notes || "—" %></div>
+                        </td>
+                        <td><%= row.category || "—" %></td>
+                        <td><%= row.academicYear || "—" %></td>
+                        <td><%= row.semester || "—" %></td>
+                        <td><%= row.dueDate || "—" %></td>
+                        <td>
+                          <span class="amount-pill">
+                            <i class="fa-solid fa-coins"></i>
+                            UGX <%= money(row.amount || 0) %>
+                          </span>
+                        </td>
+                        <td>UGX <%= money(row.paid || 0) %></td>
+                        <td>UGX <%= money(row.balance || 0) %></td>
+                        <td>
+                          <span class="status-pill <%= String(row.status || '').toLowerCase() %>">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <%= row.status || "—" %>
+                          </span>
+                        </td>
+                        <td><%= row.reference || "—" %></td>
+                      </tr>
+                    <% }); %>
+                  <% } %>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="action-row">
+              <a class="btn-xs" href="/parent/results<%= student ? ('?student=' + student._id) : '' %>">
+                <i class="fa-solid fa-file-lines"></i> Academic Results
+              </a>
+              <a class="btn-xs" href="/parent/support<%= student ? ('?student=' + student._id) : '' %>">
+                <i class="fa-solid fa-headset"></i> Contact Finance Office
+              </a>
+            </div>
+          </section>
+
+          <aside class="side-stack">
+            <section class="card">
+              <div class="section-title">Finance Summary</div>
+              <div class="section-sub">Quick payment overview for this selected child.</div>
+
+              <div class="metric-list">
+                <div class="metric-item">
+                  <span>Paid items</span>
+                  <strong class="good"><%= Number(sum.paidItems || 0) %></strong>
+                </div>
+                <div class="metric-item">
+                  <span>Partial items</span>
+                  <strong class="warn"><%= Number(sum.partialItems || 0) %></strong>
+                </div>
+                <div class="metric-item">
+                  <span>Unpaid items</span>
+                  <strong class="<%= Number(sum.unpaidItems || 0) > 0 ? 'danger' : 'good' %>"><%= Number(sum.unpaidItems || 0) %></strong>
+                </div>
+                <div class="metric-item">
+                  <span>Overdue count</span>
+                  <strong class="<%= Number(sum.overdueCount || 0) > 0 ? 'warn' : 'good' %>"><%= Number(sum.overdueCount || 0) %></strong>
+                </div>
+                <div class="metric-item">
+                  <span>Current balance</span>
+                  <strong class="<%= Number(sum.balance || 0) > 0 ? 'warn' : 'good' %>">UGX <%= money(sum.balance || 0) %></strong>
+                </div>
+              </div>
+            </section>
+
+            <section class="card">
+              <div class="section-title">Recent Payments</div>
+              <div class="section-sub">Latest payment activity recorded for this student.</div>
+
+              <% if (!paymentRows.length) { %>
+                <div class="empty small" style="margin-top:12px;">
+                  <div class="empty-title">No payments recorded yet</div>
+                  <div class="empty-text">Completed fee payments will appear here once they are recorded.</div>
+                </div>
+              <% } else { %>
+                <div class="list">
+                  <% paymentRows.slice(0, 8).forEach(function(pay){ %>
+                    <div class="list-item">
+                      <div class="list-icon">
+                        <i class="fa-solid fa-receipt"></i>
+                      </div>
+                      <div>
+                        <div class="list-title">UGX <%= money(pay.amount || 0) %> • <%= pay.method || "Payment" %></div>
+                        <div class="list-meta"><%= pay.date || "—" %> • Ref: <%= pay.reference || "—" %></div>
+                        <div class="list-text">
+                          Status: <strong><%= pay.status || "completed" %></strong>
+                          <span class="dot">•</span>
+                          <%= pay.notes || "Payment recorded successfully." %>
+                        </div>
+                      </div>
+                    </div>
+                  <% }); %>
+                </div>
+              <% } %>
+            </section>
+          </aside>
+        </div>
+      <% } %>
+    </main>
+  </div>
+<script src="/js/navbar.js"></script>
+</body>
+</html>

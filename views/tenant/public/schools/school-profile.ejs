@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title><%= tenant.name %> — School Profile</title>
+  <link rel="icon" href="data:,"/>
+
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer"/>
+
+  <style>
+    @font-face{font-family:'PoppinsLocal';src:local('Poppins'),local('Inter'),local('Segoe UI')}
+
+    :root{
+      --blue:<%= tenant?.settings?.branding?.primaryColor || '#0a3d62' %>;
+      --accent:<%= tenant?.settings?.branding?.accentColor || '#0a6fbf' %>;
+
+      --blue-2:#083454;
+      --muted:#6b7280;
+      --bg:#f4f8ff;
+      --card:#ffffff;
+      --success:#16a34a;
+      --danger:#ef4444;
+      --glass: rgba(13,64,96,0.06);
+      --radius:12px;
+      --shadow: 0 10px 30px rgba(2,8,23,0.08);
+      --border: rgba(2,8,23,0.08);
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:PoppinsLocal, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background:var(--bg);
+      color:#0f172a;
+    }
+    a{color:inherit;text-decoration:none}
+    .container{width:min(1120px,92%);margin:0 auto}
+    .muted{color:var(--muted)}
+    .small{font-size:12px}
+
+    .topbar{
+      position:sticky;top:0;z-index:60;
+      background: rgba(244,248,255,0.86);
+      backdrop-filter: blur(10px);
+      border-bottom:1px solid var(--border);
+    }
+    .topbar-inner{display:flex;align-items:center;justify-content:space-between;padding:12px 0}
+    .brand{display:flex;align-items:center;gap:10px;font-weight:900;color:var(--blue)}
+    .brand-dot{
+      width:12px;height:12px;border-radius:999px;
+      background: linear-gradient(135deg, var(--accent), var(--blue));
+      box-shadow: 0 10px 24px rgba(10,111,191,0.22);
+    }
+    .topnav{display:flex;align-items:center;gap:18px}
+    .topnav a{font-weight:700;color:#0b2239;opacity:.92}
+    .topnav a:hover{opacity:1}
+
+    .hamburger{
+      display:none;width:44px;height:40px;border:1px solid var(--border);
+      background:#fff;border-radius:12px;box-shadow:0 8px 18px rgba(2,8,23,.05);
+      cursor:pointer;
+    }
+    .hamburger span{display:block;height:2px;width:18px;background:var(--blue);margin:4px auto}
+
+    .mobile-menu{
+      display:none;background:#fff;border-bottom:1px solid var(--border);padding:12px 0
+    }
+    .mobile-menu a{
+      display:flex;align-items:center;gap:10px;padding:10px 4%;
+      color:#0b2239;font-weight:800
+    }
+    .mobile-menu.show{display:block}
+
+    .hero{position:relative}
+    .cover{
+      height:320px;
+      --cover-url: none;
+      background-image:
+        var(--cover-url),
+        radial-gradient(1200px 520px at 70% 20%, rgba(10,111,191,0.55), rgba(10,63,98,0.25) 50%, rgba(8,52,84,0.65) 100%),
+        linear-gradient(135deg, rgba(10,63,98,0.95), rgba(10,111,191,0.65));
+      border-bottom:1px solid var(--border);
+      background-size:cover;
+      background-position:center;
+      background-repeat:no-repeat;
+    }
+    .cover-overlay{height:100%;background:linear-gradient(180deg, rgba(8,52,84,0.05), rgba(8,52,84,0.50))}
+    .hero-inner{margin-top:-92px;padding-bottom:16px}
+
+    .school-head{
+      display:grid;
+      grid-template-columns:110px 1fr 320px;
+      gap:18px;
+      align-items:stretch;
+    }
+    .logo-wrap{
+      width:110px;height:110px;border-radius:18px;background:#fff;border:1px solid var(--border);
+      box-shadow:var(--shadow);padding:10px;
+      display:grid;place-items:center;
+    }
+    .logo{
+      width:100%;height:100%;border-radius:14px;
+      background:linear-gradient(135deg, rgba(10,111,191,0.18), rgba(10,63,98,0.10));
+      border:1px solid rgba(2,8,23,0.08);
+      display:grid;place-items:center;
+      font-weight:1000;color:var(--blue);letter-spacing:-0.5px;
+      font-size:20px;
+      overflow:hidden;
+    }
+
+    .school-meta{
+      background:#fff;border:1px solid var(--border);border-radius:18px;
+      padding:16px 16px 14px;box-shadow:var(--shadow);
+    }
+    .name-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+    .school-name{margin:0;font-size:24px;letter-spacing:-0.3px}
+    .school-tagline{margin:6px 0 10px;color:var(--muted);font-weight:650}
+
+    .quickline{display:flex;flex-wrap:wrap;gap:14px;color:#0b2239;opacity:.92;font-weight:800;font-size:13px}
+    .quickline i{color:var(--accent)}
+    .cta-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+
+    .stats{
+      background:#fff;border:1px solid var(--border);border-radius:18px;
+      padding:14px;box-shadow:var(--shadow);
+      display:grid;grid-template-columns:repeat(2,1fr);gap:10px;
+    }
+    .stat{
+      background: rgba(10,63,98,0.04);
+      border:1px solid rgba(10,63,98,0.10);
+      border-radius:14px;padding:10px;
+    }
+    .stat-val{font-weight:1000;font-size:18px;color:var(--blue)}
+    .stat-lbl{font-size:12px;color:var(--muted);font-weight:900}
+
+    .badge{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:6px 10px;border-radius:999px;font-size:12px;font-weight:1000;
+      border:1px solid rgba(2,8,23,0.10);
+    }
+    .badge-verified{background:#ecfdf3;color:#15803d;border-color:#bbf7d0}
+    .badge-soft{background:rgba(10,111,191,0.10);color:var(--blue-2);border-color:rgba(10,111,191,0.18)}
+
+    .main{padding:16px 0 40px}
+    .tabs{
+      display:flex;flex-wrap:wrap;gap:10px;padding:10px;background:#fff;
+      border:1px solid var(--border);border-radius:18px;
+      box-shadow:0 14px 36px rgba(2,8,23,0.06);
+      margin:12px 0 14px;
+    }
+    .tab{
+      border:1px solid rgba(2,8,23,0.10);
+      background:#fff;border-radius:999px;padding:10px 12px;
+      font-weight:1000;color:#0b2239;cursor:pointer;
+      display:inline-flex;align-items:center;gap:8px;font-size:13px;
+    }
+    .tab.active{background:linear-gradient(135deg,var(--blue),var(--accent));color:#fff;border-color:transparent}
+
+    .panel{display:none}
+    .panel.active{display:block}
+
+    .grid-2{display:grid;grid-template-columns:1.25fr .95fr;gap:14px}
+    .card{
+      background:#fff;border:1px solid var(--border);border-radius:18px;
+      box-shadow:0 14px 36px rgba(2,8,23,0.06);
+      padding:14px;margin-bottom:14px;
+    }
+    .card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+    .card h3{margin:0;font-size:16px;color:var(--blue)}
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:6px 10px;background:rgba(10,63,98,0.06);
+      border:1px solid rgba(10,63,98,0.10);
+      border-radius:999px;color:var(--blue-2);
+      font-weight:1000;font-size:12px;
+    }
+
+    .highlights{display:grid;gap:10px;margin-top:12px}
+    .hl{
+      display:flex;gap:10px;align-items:flex-start;
+      padding:10px;background:rgba(10,111,191,0.06);
+      border:1px solid rgba(10,111,191,0.12);
+      border-radius:14px;
+    }
+    .hl i{color:var(--accent);margin-top:2px}
+    .hl b{display:block;color:#0b2239}
+    .hl span{display:block;color:var(--muted);font-weight:700;margin-top:2px}
+
+    .feature-list{display:grid;gap:10px}
+    .feature{display:flex;align-items:flex-start;gap:10px;font-weight:800;color:#0b2239}
+    .feature i{color:var(--success);margin-top:2px}
+
+    .mini-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
+    .mini{border:1px solid rgba(2,8,23,0.08);background:rgba(2,8,23,0.02);border-radius:14px;padding:10px}
+    .mini-top{display:flex;align-items:center;gap:8px;color:#0b2239}
+    .mini-top i{color:var(--accent)}
+    .mini-val{margin-top:6px;font-weight:1000;color:var(--blue)}
+
+    .chips{display:flex;flex-wrap:wrap;gap:10px}
+    .chip{
+      display:inline-flex;align-items:center;gap:8px;padding:8px 10px;border-radius:999px;
+      border:1px solid rgba(2,8,23,0.10);background:#fff;font-weight:1000;font-size:13px;
+    }
+    .chip i{font-size:8px;color:var(--accent)}
+
+    .list{display:grid;gap:10px}
+    .row{
+      display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
+      border:1px solid rgba(2,8,23,0.08);background:rgba(2,8,23,0.02);
+      border-radius:14px;padding:12px;
+    }
+    .row-sub{margin-top:4px;font-weight:700}
+    .row-meta{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+    .tag{
+      display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;
+      background:#fff;border:1px solid rgba(2,8,23,0.10);
+      font-weight:1000;font-size:12px;color:#0b2239;
+    }
+    .tag i{color:var(--accent)}
+    .search{
+      display:flex;align-items:center;gap:10px;padding:8px 10px;
+      border:1px solid rgba(2,8,23,0.10);background:#fff;border-radius:999px;
+    }
+    .search i{color:var(--muted)}
+    .search input{border:none;outline:none;width:260px;font-weight:800}
+
+    .steps{margin:0;padding-left:20px;color:#0b2239;font-weight:800}
+    .steps li{margin:8px 0}
+    .docs{display:grid;gap:10px;margin-top:12px}
+    .doc{
+      display:flex;align-items:center;gap:10px;padding:10px;
+      border:1px solid rgba(2,8,23,0.08);background:rgba(2,8,23,0.02);
+      border-radius:14px;font-weight:1000;
+    }
+    .doc i{color:var(--accent)}
+    .fee-box{display:grid;gap:10px}
+    .fee{padding:12px;border-radius:14px;background:rgba(10,63,98,0.04);border:1px solid rgba(10,63,98,0.10)}
+    .fee b{display:block;color:#0b2239}
+    .fee-val{margin-top:6px;font-weight:1000;color:var(--blue)}
+    .note{display:flex;gap:10px;margin-top:12px;font-weight:800}
+    .note i{color:var(--accent);margin-top:2px}
+
+    .gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .g-item{
+      border:none;padding:0;background:transparent;cursor:pointer;
+      border-radius:16px;overflow:hidden;border:1px solid rgba(2,8,23,0.10);
+    }
+    .g-item img{width:100%;height:170px;object-fit:cover;display:block}
+    .lightbox{
+      position:fixed;inset:0;background:rgba(2,8,23,0.75);
+      display:none;align-items:center;justify-content:center;z-index:100;
+    }
+    .lightbox.show{display:flex}
+    #lbImg{
+      width:min(980px,90vw);height:min(620px,75vh);object-fit:contain;
+      border-radius:18px;box-shadow:0 22px 60px rgba(0,0,0,0.35);
+      background:#0b2239;
+    }
+    .lb-close{
+      position:absolute;top:18px;right:18px;width:46px;height:46px;border-radius:14px;
+      border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.08);
+      color:#fff;cursor:pointer;
+    }
+    .lb-nav{
+      position:absolute;top:50%;transform:translateY(-50%);
+      width:50px;height:50px;border-radius:16px;
+      border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.08);
+      color:#fff;cursor:pointer;
+    }
+    .lb-prev{left:18px}
+    .lb-next{right:18px}
+
+    .awards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .award{
+      display:flex;gap:10px;align-items:flex-start;
+      padding:12px;border-radius:16px;border:1px solid rgba(2,8,23,0.08);
+      background:rgba(2,8,23,0.02);
+    }
+    .award-ic{
+      width:42px;height:42px;border-radius:14px;display:grid;place-items:center;
+      background:rgba(10,111,191,0.12);color:var(--blue);
+    }
+    .news{display:grid;gap:10px}
+    .news-item{padding:12px;border-radius:16px;border:1px solid rgba(2,8,23,0.08);background:rgba(2,8,23,0.02)}
+    .news-top{display:flex;justify-content:space-between;gap:10px;align-items:center}
+
+    .contact-grid{display:grid;gap:10px}
+    .contact-item{
+      display:flex;gap:10px;align-items:flex-start;padding:12px;border-radius:16px;
+      border:1px solid rgba(2,8,23,0.08);background:rgba(2,8,23,0.02)
+    }
+    .contact-item i{color:var(--accent);margin-top:2px}
+    .contact-item b{display:block}
+    .socials{display:flex;gap:10px;margin-top:12px}
+    .soc{
+      width:44px;height:44px;border-radius:14px;display:grid;place-items:center;
+      border:1px solid rgba(2,8,23,0.10);background:#fff;box-shadow:0 10px 22px rgba(2,8,23,0.06)
+    }
+
+    .form{display:grid;gap:10px}
+    .frow label{display:block;font-weight:1000;color:#0b2239;font-size:13px;margin-bottom:6px}
+    .frow input,.frow textarea{
+      width:100%;padding:12px 12px;border-radius:14px;border:1px solid rgba(2,8,23,0.10);
+      background:#fff;outline:none;font-weight:800;
+    }
+
+    .btn{
+      display:inline-flex;align-items:center;gap:10px;padding:11px 14px;border-radius:14px;
+      border:1px solid transparent;font-weight:1000;cursor:pointer;
+    }
+    .btn-primary{background:linear-gradient(135deg,var(--blue),var(--accent));color:#fff;box-shadow:0 16px 30px rgba(10,63,98,0.20)}
+    .btn-soft{background:rgba(10,111,191,0.10);color:var(--blue-2);border-color:rgba(10,111,191,0.18)}
+    .btn-ghost{background:#fff;color:#0b2239;border-color:rgba(2,8,23,0.10)}
+
+    .footer{padding:18px 0 34px}
+    .footer-inner{
+      display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;
+      padding-top:12px;border-top:1px solid var(--border)
+    }
+
+    @media (max-width:980px){
+      .school-head{grid-template-columns:90px 1fr}
+      .stats{grid-column:1/-1;grid-template-columns:repeat(4,1fr)}
+    }
+
+    @media (max-width:760px){
+      .topnav{display:none}
+      .hamburger{display:block}
+      .cover{height:260px}
+      .hero-inner{margin-top:-72px}
+      .grid-2{grid-template-columns:1fr}
+      .gallery{grid-template-columns:repeat(2,1fr)}
+      .awards{grid-template-columns:1fr}
+      .stats{grid-template-columns:repeat(2,1fr)}
+      .search input{width:180px}
+      .school-head{grid-template-columns:1fr}
+      .logo-wrap{margin:0 auto}
+      .school-meta{text-align:center}
+      .name-row{justify-content:center}
+      .quickline{justify-content:center}
+      .cta-row{justify-content:center}
+    }
+  </style>
+</head>
+
+<%
+  const p = tenant?.settings?.profile || {};
+  const b = tenant?.settings?.branding || {};
+  const c = p.contact || {};
+  const s = p.socials || {};
+  const stats = p.stats || {};
+  const programs = Array.isArray(p.programs) ? p.programs : [];
+  const gallery = Array.isArray(p.gallery) ? p.gallery : [];
+  const awards = Array.isArray(p.awards) ? p.awards : [];
+  const news = Array.isArray(p.announcements) ? p.announcements : [];
+  const faqs = Array.isArray(p.faqs) ? p.faqs : [];
+  const reviews = Array.isArray(p.reviews) ? p.reviews : [];
+  const adm = p.admissions || {};
+
+  const ratingAvg = (p.ratingAvg ?? 0);
+  const ratingCount = (p.ratingCount ?? 0);
+
+  const why = Array.isArray(p.whyChooseUs)
+    ? p.whyChooseUs
+    : (Array.isArray(p.highlights) ? p.highlights : []);
+
+  const coverUrlRaw = (tenant?.settings?.branding?.coverUrl || '').toString().trim();
+
+  const admSteps = Array.isArray(adm.steps) && adm.steps.length
+    ? adm.steps
+    : [
+        "Fill the online application",
+        "Upload required documents",
+        "Pay application fee (if applicable)",
+        "Attend interview / entrance test (if required)",
+        "Receive admission decision",
+        "Complete enrollment & join classes",
+      ];
+
+  const admDocs = Array.isArray(adm.requiredDocs) && adm.requiredDocs.length
+    ? adm.requiredDocs
+    : [
+        "Passport photo",
+        "Report card / Results slip",
+        "Birth certificate / National ID",
+      ];
+%>
+
+<body data-school-code="<%= tenant.code %>">
+
+<header class="topbar">
+  <div class="container topbar-inner">
+    <a class="brand" href="#"><span class="brand-dot"></span> Classic Campus</a>
+
+    <nav class="topnav" id="topnav">
+      <a href="#">Schools</a>
+      <a href="#programs" data-go-tab="programs">Programs</a>
+      <a href="#admissions" data-go-tab="admissions">Admissions</a>
+      <a href="/login" class="btn btn-soft"><i class="fa fa-right-to-bracket"></i> Login</a>
+    </nav>
+
+    <button class="hamburger" id="hamburger" aria-label="Open menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#"><i class="fa fa-school"></i> Schools</a>
+  <a href="#programs" data-go-tab="programs"><i class="fa fa-book"></i> Programs</a>
+  <a href="#admissions" data-go-tab="admissions"><i class="fa fa-file-signature"></i> Admissions</a>
+  <a href="/login"><i class="fa fa-right-to-bracket"></i> Login</a>
+</div>
+
+<section class="hero">
+  <div class="cover" id="cover" data-cover-url="<%= coverUrlRaw %>">
+    <div class="cover-overlay"></div>
+  </div>
+
+  <div class="container hero-inner">
+    <div class="school-head">
+      <div class="logo-wrap">
+        <div class="logo">
+          <% if (b.logoUrl) { %>
+            <img src="<%= b.logoUrl %>" alt="Logo" style="width:100%;height:100%;border-radius:14px;object-fit:cover"/>
+          <% } else { %>
+            <%= (tenant.name || 'S').split(' ').map(x=>x[0]).slice(0,2).join('').toUpperCase() %>
+          <% } %>
+        </div>
+      </div>
+
+      <div class="school-meta">
+        <div class="name-row">
+          <h1 class="school-name"><%= tenant.name %></h1>
+          <% if (p.verified) { %>
+            <span class="badge badge-verified"><i class="fa fa-circle-check"></i> Verified</span>
+          <% } %>
+          <% if (p.type) { %>
+            <span class="badge badge-soft"><i class="fa fa-building-columns"></i> <%= p.type %></span>
+          <% } %>
+        </div>
+
+        <p class="school-tagline"><%= p.tagline || '' %></p>
+
+        <div class="quickline">
+          <span><i class="fa fa-location-dot"></i> <%= p.city || p.location?.city || '—' %></span>
+          <span><i class="fa fa-phone"></i> <%= c.phone || '—' %></span>
+          <span><i class="fa fa-envelope"></i> <%= c.email || '—' %></span>
+        </div>
+
+        <div class="cta-row">
+          <a class="btn btn-primary" href="/apply" target="_blank" rel="noopener">
+            <i class="fa fa-file-circle-plus"></i> Apply Now
+          </a>
+
+          <a class="btn btn-soft" href="#contact" data-go-tab="contact">
+            <i class="fa fa-paper-plane"></i> Contact
+          </a>
+
+          <% if (p.websiteSafe) { %>
+            <a class="btn btn-ghost" href="<%= p.websiteSafe %>" target="_blank" rel="noopener">
+              <i class="fa fa-arrow-up-right-from-square"></i> Website
+            </a>
+          <% } %>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><div class="stat-val"><%= stats.students || 0 %></div><div class="stat-lbl">Students</div></div>
+        <div class="stat"><div class="stat-val"><%= stats.programs || 0 %></div><div class="stat-lbl">Programs</div></div>
+        <div class="stat"><div class="stat-val"><%= stats.staff || 0 %></div><div class="stat-lbl">Staff</div></div>
+        <div class="stat"><div class="stat-val"><%= stats.campuses || 0 %></div><div class="stat-lbl">Campuses</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<main class="container main">
+  <div class="tabs" role="tablist">
+    <button class="tab active" data-tab="overview"><i class="fa fa-circle-info"></i> Overview</button>
+    <button class="tab" data-tab="programs"><i class="fa fa-graduation-cap"></i> Programs</button>
+    <button class="tab" data-tab="admissions"><i class="fa fa-file-signature"></i> Admissions</button>
+    <button class="tab" data-tab="gallery"><i class="fa fa-images"></i> Gallery</button>
+    <button class="tab" data-tab="awards"><i class="fa fa-award"></i> Awards</button>
+    <button class="tab" data-tab="news"><i class="fa fa-bullhorn"></i> News</button>
+    <button class="tab" data-tab="faq"><i class="fa fa-circle-question"></i> FAQ</button>
+    <button class="tab" data-tab="reviews"><i class="fa fa-star"></i> Reviews</button>
+    <button class="tab" data-tab="contact"><i class="fa fa-address-card"></i> Contact</button>
+  </div>
+
+  <section class="panel active" id="overview">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-h">
+          <h3>About <%= tenant.name %></h3>
+          <span class="pill"><i class="fa fa-shield-heart"></i> Student-first</span>
+        </div>
+        <p class="muted"><%= p.about || '' %></p>
+
+        <div class="highlights">
+          <div class="hl"><i class="fa fa-bullseye"></i><div><b>Mission</b><span><%= p.mission || '—' %></span></div></div>
+          <div class="hl"><i class="fa fa-eye"></i><div><b>Vision</b><span><%= p.vision || '—' %></span></div></div>
+          <div class="hl"><i class="fa fa-handshake"></i><div><b>Values</b><span><%= (Array.isArray(p.values)?p.values:[]).join(' • ') || '—' %></span></div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <h3>Why students choose us</h3>
+          <span class="pill"><i class="fa fa-star"></i> Top features</span>
+        </div>
+
+        <div class="feature-list">
+          <% why.slice(0,12).forEach(x => { %>
+            <div class="feature"><i class="fa fa-check"></i> <%= x %></div>
+          <% }) %>
+          <% if (!why.length) { %>
+            <div class="muted">No highlights provided.</div>
+          <% } %>
+        </div>
+
+        <div class="mini-grid">
+          <div class="mini"><div class="mini-top"><i class="fa fa-clock"></i><b>Founded</b></div><div class="mini-val"><%= p.foundedYear || '—' %></div></div>
+          <div class="mini"><div class="mini-top"><i class="fa fa-chalkboard-user"></i><b>System</b></div><div class="mini-val"><%= p.system || '—' %></div></div>
+          <div class="mini"><div class="mini-top"><i class="fa fa-language"></i><b>Language</b></div><div class="mini-val"><%= p.language || 'English' %></div></div>
+          <div class="mini"><div class="mini-top"><i class="fa fa-shield"></i><b>Accredited</b></div><div class="mini-val"><%= (p.accredited ? 'Yes' : '—') %></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h">
+        <h3>Facilities</h3>
+        <span class="pill"><i class="fa fa-building"></i> Campus life</span>
+      </div>
+      <div class="chips">
+        <% (Array.isArray(p.facilities)?p.facilities:[]).forEach(f => { %>
+          <span class="chip"><i class="fa fa-circle"></i> <%= f %></span>
+        <% }) %>
+        <% if (!(Array.isArray(p.facilities) && p.facilities.length)) { %>
+          <span class="muted">No facilities added yet.</span>
+        <% } %>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="programs">
+    <div class="card">
+      <div class="card-h">
+        <h3>Programs & Levels</h3>
+        <div class="search">
+          <i class="fa fa-magnifying-glass"></i>
+          <input id="programSearch" placeholder="Search programs..." />
+        </div>
+      </div>
+
+      <div class="list" id="programList">
+        <% programs.forEach(pr => { %>
+          <div class="row program-row" data-name="<%= pr.hay || '' %>">
+            <div class="row-main">
+              <b><%= pr.title || 'Program' %></b>
+              <div class="row-sub muted"><%= pr.desc || '' %></div>
+            </div>
+            <div class="row-meta">
+              <span class="tag"><i class="fa fa-layer-group"></i> <%= pr.level || '—' %></span>
+              <span class="tag"><i class="fa fa-hourglass"></i> <%= pr.duration || '—' %></span>
+            </div>
+          </div>
+        <% }) %>
+        <% if (!programs.length) { %><div class="muted">No programs added yet.</div><% } %>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="admissions">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-h">
+          <h3>Admission Requirements</h3>
+          <span class="pill">
+            <i class="fa fa-clipboard-check"></i>
+            <%= adm.isOpen ? 'Admissions Open' : 'Admissions Closed' %>
+          </span>
+        </div>
+
+        <% if (adm.intakeLabel) { %>
+          <div class="note muted">
+            <i class="fa fa-calendar-lines-pen"></i>
+            Current intake: <b><%= adm.intakeLabel %></b>
+          </div>
+        <% } %>
+
+        <% if (adm.requirements) { %>
+          <p class="muted" style="margin-top:12px;"><%= adm.requirements %></p>
+        <% } %>
+
+        <ol class="steps">
+          <% admSteps.forEach(step => { %>
+            <li><%= step %></li>
+          <% }) %>
+        </ol>
+
+        <div class="docs">
+          <% admDocs.forEach(doc => { %>
+            <div class="doc"><i class="fa fa-file-lines"></i> <%= doc %></div>
+          <% }) %>
+        </div>
+
+        <div class="cta-row">
+          <a class="btn btn-primary" href="/apply" target="_blank" rel="noopener">
+            <i class="fa fa-file-circle-plus"></i> Start Application
+          </a>
+
+          <a class="btn btn-ghost" href="#faq" data-go-tab="faq">
+            <i class="fa fa-question"></i> Ask a question
+          </a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <h3>Tuition & Fees</h3>
+          <span class="pill"><i class="fa fa-coins"></i> Transparent</span>
+        </div>
+
+        <div class="fee-box">
+          <div class="fee">
+            <b>Estimated term fees</b>
+            <div class="fee-val"><%= adm.feesRange || 'Contact the school' %></div>
+          </div>
+
+          <div class="fee">
+            <b>Payment options</b>
+            <div class="fee-val"><%= adm.paymentOptions || 'Bank • Mobile Money • Installments' %></div>
+          </div>
+
+          <div class="fee">
+            <b>Application fee</b>
+            <div class="fee-val"><%= adm.applicationFeeText || 'Contact the school' %></div>
+          </div>
+
+          <div class="fee">
+            <b>Admissions office hours</b>
+            <div class="fee-val"><%= adm.officeHours || 'Contact the school' %></div>
+          </div>
+
+          <div class="fee">
+            <b>Admissions phone</b>
+            <div class="fee-val"><%= adm.admissionPhone || c.phone || '—' %></div>
+          </div>
+        </div>
+
+        <div class="note muted">
+          <i class="fa fa-circle-info"></i>
+          Fees vary by class and program. Contact the school for latest details.
+        </div>
+
+        <div class="cta-row">
+          <a class="btn btn-soft" href="#contact" data-go-tab="contact">
+            <i class="fa fa-address-card"></i> Contact admissions
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="gallery">
+    <div class="card">
+      <div class="card-h">
+        <h3>School Gallery</h3>
+        <span class="pill"><i class="fa fa-camera"></i> Photos</span>
+      </div>
+
+      <div class="gallery" id="galleryGrid">
+        <% gallery.slice(0,12).forEach(img => { %>
+          <button class="g-item" data-src="<%= img.url %>" aria-label="Open photo">
+            <img alt="Gallery" src="<%= img.url %>">
+          </button>
+        <% }) %>
+        <% if (!gallery.length) { %><div class="muted">No gallery images yet.</div><% } %>
+      </div>
+    </div>
+
+    <div class="lightbox" id="lightbox" aria-hidden="true">
+      <button class="lb-close" id="lbClose" aria-label="Close"><i class="fa fa-xmark"></i></button>
+      <button class="lb-nav lb-prev" id="lbPrev" aria-label="Previous"><i class="fa fa-chevron-left"></i></button>
+      <img id="lbImg" alt="Preview"/>
+      <button class="lb-nav lb-next" id="lbNext" aria-label="Next"><i class="fa fa-chevron-right"></i></button>
+    </div>
+  </section>
+
+  <section class="panel" id="awards">
+    <div class="card">
+      <div class="card-h">
+        <h3>Awards & Achievements</h3>
+        <span class="pill"><i class="fa fa-trophy"></i> Proud moments</span>
+      </div>
+
+      <div class="awards">
+        <% awards.forEach(a => { %>
+          <div class="award">
+            <div class="award-ic"><i class="fa fa-award"></i></div>
+            <div>
+              <b><%= a.title %></b>
+              <div class="muted"><%= a.organization || '—' %> • <%= a.year || '—' %></div>
+            </div>
+          </div>
+        <% }) %>
+        <% if (!awards.length) { %><div class="muted">No awards added yet.</div><% } %>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="news">
+    <div class="card">
+      <div class="card-h">
+        <h3>Announcements & News</h3>
+        <span class="pill"><i class="fa fa-bullhorn"></i> Updates</span>
+      </div>
+
+      <div class="news">
+        <% news.forEach(n => { %>
+          <div class="news-item">
+            <div class="news-top">
+              <b><%= n.title %></b>
+              <span class="tag"><i class="fa fa-calendar"></i> <%= n.date ? new Date(n.date).toISOString().slice(0,10) : '' %></span>
+            </div>
+            <div class="muted"><%= n.body || '' %></div>
+          </div>
+        <% }) %>
+        <% if (!news.length) { %><div class="muted">No news yet.</div><% } %>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="faq">
+    <div class="card">
+      <div class="card-h">
+        <h3>Frequently Asked Questions</h3>
+        <span class="pill"><i class="fa fa-circle-question"></i> FAQ</span>
+      </div>
+
+      <div class="list">
+        <% faqs.forEach(f => { %>
+          <div style="border:1px solid rgba(2,8,23,0.08);background:rgba(2,8,23,0.02);border-radius:16px;padding:12px;">
+            <div style="font-weight:1000;color:#0b2239;"><%= f.q %></div>
+            <div class="muted" style="margin-top:6px;font-weight:800;"><%= f.a %></div>
+          </div>
+        <% }) %>
+        <% if (!faqs.length) { %><div class="muted">No FAQs yet.</div><% } %>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="reviews">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-h">
+          <h3>Student & Parent Reviews</h3>
+          <span class="pill"><i class="fa fa-star"></i> Trust</span>
+        </div>
+
+        <div class="muted" style="margin-bottom:10px">
+          Rating: <b><%= ratingAvg %></b> / 5 • <b><%= ratingCount %></b> reviews
+        </div>
+
+        <% if (reviews.length) { %>
+          <div class="list">
+            <% reviews.forEach(r => { %>
+              <div class="row">
+                <div class="row-main">
+                  <b><%= r.title ? r.title : ('Review by ' + r.name) %></b>
+                  <div class="row-sub muted" style="margin-top:6px">
+                    <span style="font-weight:900;color:#0b2239;">
+                      <%= '★'.repeat(Math.max(0, Math.min(5, Number(r.rating)||0))) %>
+                      <span style="opacity:.55"><%= '★'.repeat(5 - Math.max(0, Math.min(5, Number(r.rating)||0))) %></span>
+                    </span>
+                    <span style="margin-left:8px;font-weight:900;"><%= r.name %></span>
+                    <span style="margin-left:8px;font-size:12px;opacity:.7">
+                      <%= r.createdAt ? new Date(r.createdAt).toISOString().slice(0,10) : '' %>
+                    </span>
+                  </div>
+                  <div class="row-sub muted" style="margin-top:6px"><%= r.message || '' %></div>
+                </div>
+                <% if (r.featured) { %>
+                  <div class="row-meta"><span class="tag"><i class="fa fa-badge-check"></i> Featured</span></div>
+                <% } %>
+              </div>
+            <% }) %>
+          </div>
+        <% } else { %>
+          <div class="muted">No approved reviews yet.</div>
+        <% } %>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <h3>Leave a Review</h3>
+          <span class="pill"><i class="fa fa-pen"></i> Public</span>
+        </div>
+
+        <form class="form" id="reviewForm" method="POST" action="/schools/<%= tenant.code %>/reviews">
+          <div class="frow">
+            <label>Your Name</label>
+            <input name="name" placeholder="e.g. John Doe" required />
+          </div>
+
+          <div class="frow">
+            <label>Email (optional)</label>
+            <input name="email" placeholder="name@email.com" />
+          </div>
+
+          <div class="frow">
+            <label>Rating (1–5)</label>
+            <input name="rating" type="number" min="1" max="5" value="5" required />
+          </div>
+
+          <div class="frow">
+            <label>Title (optional)</label>
+            <input name="title" placeholder="e.g. Great discipline" />
+          </div>
+
+          <div class="frow">
+            <label>Message</label>
+            <textarea name="message" rows="5" placeholder="Write your honest experience..." required></textarea>
+          </div>
+
+          <button class="btn btn-primary" type="submit">
+            <i class="fa fa-paper-plane"></i> Submit Review
+          </button>
+
+          <p class="muted small" id="reviewMsg"></p>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="contact">
+    <div class="grid-2">
+      <div class="card" id="contactCard">
+        <div class="card-h">
+          <h3>Contact & Location</h3>
+          <span class="pill"><i class="fa fa-location-dot"></i> Reach us</span>
+        </div>
+
+        <div class="contact-grid">
+          <div class="contact-item"><i class="fa fa-location-dot"></i><div><b>Address</b><span class="muted"><%= c.addressFull || p.addressSafe || p.address || '—' %></span></div></div>
+          <div class="contact-item"><i class="fa fa-phone"></i><div><b>Phone</b><span class="muted"><%= c.phone || '—' %></span></div></div>
+          <div class="contact-item"><i class="fa fa-envelope"></i><div><b>Email</b><span class="muted"><%= c.email || '—' %></span></div></div>
+          <div class="contact-item"><i class="fa fa-globe"></i><div><b>Website</b><span class="muted"><%= c.website || '—' %></span></div></div>
+        </div>
+
+        <div class="socials">
+          <a class="soc" href="<%= s.facebook || '#' %>" target="_blank" rel="noopener"><i class="fa-brands fa-facebook"></i></a>
+          <a class="soc" href="<%= s.instagram || '#' %>" target="_blank" rel="noopener"><i class="fa-brands fa-instagram"></i></a>
+          <a class="soc" href="<%= s.x || '#' %>" target="_blank" rel="noopener"><i class="fa-brands fa-x-twitter"></i></a>
+          <a class="soc" href="<%= s.youtube || '#' %>" target="_blank" rel="noopener"><i class="fa-brands fa-youtube"></i></a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h">
+          <h3>Send a message</h3>
+          <span class="pill"><i class="fa fa-paper-plane"></i> Quick inquiry</span>
+        </div>
+
+        <form class="form" id="inquiryForm" method="POST" action="/schools/<%= tenant.code %>/inquiry">
+          <div class="frow">
+            <label>Full Name</label>
+            <input name="name" placeholder="Your name" required />
+          </div>
+
+          <div class="frow">
+            <label>Phone / Email</label>
+            <input name="contact" placeholder="e.g. +256..." required />
+          </div>
+
+          <div class="frow">
+            <label>Message</label>
+            <textarea name="message" rows="5" placeholder="Ask about admissions, fees, programs..." required></textarea>
+          </div>
+
+          <button class="btn btn-primary" type="submit">
+            <i class="fa fa-paper-plane"></i> Submit
+          </button>
+
+          <p class="muted small" id="inquiryMsg"></p>
+        </form>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <span class="muted">© 2026 Classic Campus</span>
+    <span class="muted">Powered by <b>Classic Technologies</b></span>
+  </div>
+</footer>
+
+<script defer src="/js/school-profile-public.js?v=20260122fix_gallery1"></script>
+</body>
+</html>

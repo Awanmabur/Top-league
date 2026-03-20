@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Plans — Classic Campus</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="/css/navbar.css" />
+  <style>
+    body { margin:0; background:#f5f8ff; font-family:Poppins,Segoe UI,Arial,sans-serif; color:#0f172a; overflow-x:hidden; }
+    * { box-sizing:border-box; min-width:0; }
+    .main { flex:1; padding:20px 26px; display:flex; flex-direction:column; gap:16px; }
+    .topbar { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; }
+    .title { font-size:20px; font-weight:700; color:#083454; }
+    .subtitle { font-size:13px; color:#6b7280; line-height:1.5; margin-top:4px; }
+    .btn { padding:10px 14px; border-radius:10px; border:1px solid #dbe3f6; background:#eef4ff; color:#0a3d62; text-decoration:none; font-weight:700; display:inline-flex; align-items:center; gap:8px; }
+    .btn.primary { background:#0a3d62; color:#fff; border-color:#0a3d62; }
+    .card { background:#fff; border-radius:12px; padding:14px; border:1px solid #e4ecfb; box-shadow:0 6px 18px rgba(12,38,73,.04); }
+    .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; }
+    .plan-card { border:1px solid #e2ebff; border-radius:12px; padding:14px; background:#fdfdff; display:flex; flex-direction:column; gap:10px; }
+    .plan-name { font-size:16px; font-weight:800; color:#083454; }
+    .meta { font-size:12px; color:#6b7280; line-height:1.5; }
+    .badge { display:inline-flex; padding:5px 9px; border-radius:999px; font-size:11px; font-weight:800; }
+    .green { background:#e6f9ee; color:#166534; }
+    .gray { background:#f1f5f9; color:#475569; }
+    .actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
+    .alert { padding:12px 14px; border-radius:10px; background:#fff1f2; color:#991b1b; border:1px solid #fecdd3; }
+    @media (max-width:900px){ .main{ padding:16px; } }
+  </style>
+</head>
+<body>
+  <%- include("./navbar") %>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="title">Plans</div>
+        <div class="subtitle">Manage billing models, enabled modules, platform pricing, and feature limits.</div>
+      </div>
+      <div>
+        <a href="/super-admin/plans/create" class="btn primary">
+          <i class="fa-solid fa-layer-group"></i> Create Plan
+        </a>
+      </div>
+    </div>
+
+    <% if (error) { %>
+      <div class="alert"><%= error %></div>
+    <% } %>
+
+    <div class="card">
+      <% if (!plans || plans.length === 0) { %>
+        <div class="meta">No plans available yet.</div>
+      <% } else { %>
+        <div class="grid">
+          <% plans.forEach(function(plan){ %>
+            <div class="plan-card">
+              <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
+                <div>
+                  <div class="plan-name"><%= plan.name %></div>
+                  <div class="meta"><%= plan.code %> • <%= plan.billingModel %></div>
+                </div>
+                <span class="badge <%= plan.isActive ? 'green' : 'gray' %>"><%= plan.isActive ? 'Active' : 'Inactive' %></span>
+              </div>
+
+              <div class="meta">Per School: <strong>$<%= Number(plan.pricePerSchool || 0).toLocaleString() %></strong></div>
+              <div class="meta">Per Student: <strong>$<%= Number(plan.pricePerStudent || 0).toLocaleString() %></strong></div>
+              <div class="meta">Revenue Share: <strong><%= Number(plan.platformSharePercent || 0) %>%</strong></div>
+              <div class="meta">Max Students: <strong><%= Number(plan.maxStudents || 0).toLocaleString() %></strong></div>
+              <div class="meta">Universities Using Plan: <strong><%= plan.totalTenants || 0 %></strong></div>
+
+              <div class="meta">
+                Modules:
+                <%= Array.isArray(plan.enabledModules) && plan.enabledModules.length ? plan.enabledModules.join(", ") : "None" %>
+              </div>
+
+              <div class="actions">
+                <a href="/super-admin/plans/<%= plan._id %>/edit" class="btn">Edit</a>
+                <form action="/super-admin/plans/<%= plan._id %>/delete" method="POST" onsubmit="return confirm('Delete this plan?');">
+                  <button class="btn" type="submit">Delete</button>
+                </form>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+    </div>
+  </main>
+
+  </div>
+  <script src="/js/navbar.js"></script>
+</body>
+</html>

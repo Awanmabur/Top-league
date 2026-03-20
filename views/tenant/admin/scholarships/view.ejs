@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Scholarship — <%= (tenant && tenant.name) ? tenant.name : "Classic Campus" %></title>
+
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer"/>
+  <link rel="stylesheet" href="/css/admin-finance.css"/>
+</head>
+<body>
+<%
+  const safe=(v)=> (v===null||v===undefined) ? "" : String(v);
+  const s = (typeof scholarship!=="undefined" && scholarship) ? scholarship : null;
+  const st = (typeof stats!=="undefined" && stats) ? stats : {};
+%>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">CS</div>
+      <div>
+        <h1><%= (tenant && tenant.name) ? tenant.name : "CampusSaaS" %></h1>
+        <div class="sub">Admin Portal</div>
+      </div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section-title">Admissions</div>
+      <a class="nav-item active" href="/admin/scholarships"><i class="fa-solid fa-graduation-cap"></i><span>Scholarships</span></a>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h1 class="h1"><%= safe(s ? s.title : "Scholarship") %></h1>
+        <div class="muted"><%= safe(s ? s.code : "") %> • <%= safe(s ? s.status : "") %></div>
+      </div>
+      <div class="actions">
+        <a class="btn light" href="/admin/scholarships"><i class="fa-solid fa-arrow-left"></i> Back</a>
+        <% if(s){ %>
+          <a class="btn light" href="/admin/scholarships/<%= s._id %>/edit"><i class="fa-solid fa-pen"></i> Edit</a>
+          <a class="btn primary" href="/admin/scholarships/<%= s._id %>/applications"><i class="fa-solid fa-users"></i> Applications</a>
+        <% } %>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <% if(!s){ %>
+          <div class="muted">Not found</div>
+        <% } else { %>
+          <div class="grid2">
+            <div>
+              <div class="muted">Provider</div>
+              <div style="font-weight:900"><%= safe(s.provider) || "-" %></div>
+            </div>
+            <div>
+              <div class="muted">Category</div>
+              <div style="font-weight:900"><%= safe(s.category) || "-" %></div>
+            </div>
+          </div>
+
+          <div style="height:10px"></div>
+
+          <div class="card-title">Quick Stats</div>
+          <div class="muted">Applications by status</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
+            <% ["submitted","under_review","shortlisted","awarded","rejected","withdrawn"].forEach(k=>{ %>
+              <div class="pill"><b><%= k %>:</b> <%= st[k] || 0 %></div>
+            <% }) %>
+          </div>
+
+          <div style="height:12px"></div>
+
+          <div class="card-title">Description</div>
+          <div class="muted" style="white-space:pre-wrap"><%= safe(s.description) || "-" %></div>
+
+          <% if(Array.isArray(s.requirements) && s.requirements.length){ %>
+            <div style="height:12px"></div>
+            <div class="card-title">Requirements</div>
+            <ul class="muted">
+              <% s.requirements.forEach(r=>{ %><li><%= safe(r) %></li><% }) %>
+            </ul>
+          <% } %>
+        <% } %>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

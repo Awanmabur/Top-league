@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title><%= (tenant && tenant.name) ? tenant.name : "CampusSaaS" %> — Support</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous"
+        referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/navbar.css"/>
+  <link rel="stylesheet" href="/css/parent-portal.css" />
+
+  <style>
+    .summary-grid{
+      margin-top:16px;
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:12px;
+    }
+
+    .summary-box{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+      background:#fbfdff;
+    }
+
+    .summary-label{
+      color:var(--muted);
+      font-size:12px;
+    }
+
+    .summary-value{
+      margin-top:6px;
+      font-size:24px;
+      font-weight:1000;
+      letter-spacing:-.02em;
+    }
+
+    .page-grid{
+      margin-top:16px;
+      display:grid;
+      grid-template-columns:1fr 1.05fr;
+      gap:14px;
+    }
+
+    .form-grid{
+      display:grid;
+      gap:12px;
+      margin-top:14px;
+    }
+
+    .field{
+      display:grid;
+      gap:6px;
+    }
+
+    .field label{
+      font-size:13px;
+      font-weight:800;
+      color:var(--text);
+    }
+
+    .field input,
+    .field select,
+    .field textarea{
+      width:100%;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px 13px;
+      background:#fff;
+      color:var(--text);
+      font:inherit;
+      outline:none;
+    }
+
+    .field textarea{
+      min-height:150px;
+      resize:vertical;
+      line-height:1.65;
+    }
+
+    .ticket-stack{
+      display:grid;
+      gap:14px;
+      margin-top:14px;
+    }
+
+    .ticket-card{
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:#fff;
+      box-shadow:var(--shadow);
+      padding:16px;
+    }
+
+    .ticket-head{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:flex-start;
+      flex-wrap:wrap;
+    }
+
+    .ticket-title{
+      font-size:16px;
+      font-weight:1000;
+      line-height:1.3;
+    }
+
+    .ticket-meta{
+      color:var(--muted);
+      font-size:12px;
+      margin-top:6px;
+      line-height:1.6;
+    }
+
+    .badge-row{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+    .badge-soft{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:7px 10px;
+      border-radius:999px;
+      background:#f8fbff;
+      border:1px solid var(--line);
+      font-size:12px;
+      font-weight:800;
+      color:var(--text);
+    }
+
+    .badge-soft.high{
+      color:#b45309;
+      background:#fff7ed;
+      border-color:#fed7aa;
+    }
+
+    .badge-soft.urgent{
+      color:#b91c1c;
+      background:#fff1f2;
+      border-color:#fecdd3;
+    }
+
+    .badge-soft.open{
+      color:var(--primary-2);
+      background:#eef4ff;
+      border-color:#bfd3ff;
+    }
+
+    .badge-soft.pending,
+    .badge-soft.in_progress{
+      color:var(--warn);
+      background:#fffaf1;
+      border-color:#f5e2b8;
+    }
+
+    .badge-soft.resolved,
+    .badge-soft.closed{
+      color:var(--ok);
+      background:#f6fff8;
+      border-color:#cdeed8;
+    }
+
+    .ticket-body{
+      margin-top:14px;
+      color:var(--text);
+      font-size:14px;
+      line-height:1.75;
+      white-space:pre-line;
+    }
+
+    .flash-stack{
+      margin-top:16px;
+      display:grid;
+      gap:10px;
+    }
+
+    .flash{
+      padding:12px 14px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background:#fff;
+      box-shadow:var(--shadow);
+      font-size:13px;
+      font-weight:700;
+    }
+
+    .flash.success{
+      color:var(--ok);
+      background:#f6fff8;
+      border-color:#cdeed8;
+    }
+
+    .flash.error{
+      color:var(--danger);
+      background:#fff7f7;
+      border-color:#f3d0d0;
+    }
+
+    .empty-state{
+      margin-top:14px;
+    }
+
+    @media (max-width: 1180px){
+      .page-grid{
+        grid-template-columns:1fr;
+      }
+
+      .summary-grid{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+      }
+    }
+
+    @media (max-width: 720px){
+      .summary-grid{
+        grid-template-columns:1fr;
+      }
+
+      .ticket-head{
+        flex-direction:column;
+      }
+
+      .badge-row{
+        justify-content:flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <%
+    const t = tenant || {};
+    const rows = Array.isArray(tickets) ? tickets : [];
+    const kids = Array.isArray(children) ? children : [];
+    const s = stats || { total: 0, open: 0, pending: 0, resolved: 0 };
+    const form = formData || {};
+    const tenantName = t.name || "CampusSaaS";
+    const tenantCode = (t.code || "CC").toString();
+
+    function fullNameOfStudent(c) {
+      const name = (c && c.fullName) ? String(c.fullName).trim() : "";
+      if (name) return name;
+
+      const parts = [];
+      if (c && c.firstName) parts.push(String(c.firstName).trim());
+      if (c && c.middleName) parts.push(String(c.middleName).trim());
+      if (c && c.lastName) parts.push(String(c.lastName).trim());
+      return parts.filter(Boolean).join(" ").trim() || "Student";
+    }
+  %>
+
+    <%-include("./navbar") %>
+
+    <main class="main">
+      <div class="topbar">
+        <div>
+          <div class="title">Support</div>
+          <div class="subtitle">
+            Contact the school administration, raise parent concerns, report academic or fee issues, and track support requests from one place.
+          </div>
+        </div>
+
+        <div class="top-actions">
+          <div class="chip">
+            <i class="fa-solid fa-headset"></i>
+            <span>Open</span>
+            <b><%= Number(s.open || 0) %></b>
+          </div>
+        </div>
+      </div>
+
+      <% if ((success || []).length || (error || []).length) { %>
+        <div class="flash-stack">
+          <% (success || []).forEach(function(msg){ %>
+            <div class="flash success"><%= msg %></div>
+          <% }); %>
+          <% (error || []).forEach(function(msg){ %>
+            <div class="flash error"><%= msg %></div>
+          <% }); %>
+        </div>
+      <% } %>
+
+      <div class="summary-grid">
+        <div class="summary-box">
+          <div class="summary-label">Total Tickets</div>
+          <div class="summary-value"><%= Number(s.total || 0) %></div>
+        </div>
+        <div class="summary-box">
+          <div class="summary-label">Open</div>
+          <div class="summary-value"><%= Number(s.open || 0) %></div>
+        </div>
+        <div class="summary-box">
+          <div class="summary-label">Pending</div>
+          <div class="summary-value"><%= Number(s.pending || 0) %></div>
+        </div>
+        <div class="summary-box">
+          <div class="summary-label">Resolved</div>
+          <div class="summary-value"><%= Number(s.resolved || 0) %></div>
+        </div>
+      </div>
+
+      <div class="page-grid">
+        <section class="card">
+          <div class="section-title">Create Support Ticket</div>
+          <div class="section-sub">Send a message to the school or administration team.</div>
+
+          <form method="POST" action="/parent/support" class="form-grid">
+            <div class="field">
+              <label for="studentId">Related child</label>
+              <select id="studentId" name="studentId">
+                <option value="">General / Not linked to a child</option>
+                <% kids.forEach(function(c){ const val = String(c._id); %>
+                  <option value="<%= val %>" <%= String(form.studentId || '') === val ? 'selected' : '' %>>
+                    <%= fullNameOfStudent(c) %> • <%= c.regNo || "—" %>
+                  </option>
+                <% }); %>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="subject">Subject</label>
+              <input id="subject" name="subject" type="text" value="<%= form.subject || '' %>" placeholder="Example: Missing attendance records" required />
+            </div>
+
+            <div class="field">
+              <label for="category">Category</label>
+              <select id="category" name="category">
+                <option value="general" <%= String(form.category || '') === 'general' ? 'selected' : '' %>>General</option>
+                <option value="student_issue" <%= String(form.category || '') === 'student_issue' ? 'selected' : '' %>>Student Issue</option>
+                <option value="fees" <%= String(form.category || '') === 'fees' ? 'selected' : '' %>>Fees / Payments</option>
+                <option value="results" <%= String(form.category || '') === 'results' ? 'selected' : '' %>>Results / Academics</option>
+                <option value="attendance" <%= String(form.category || '') === 'attendance' ? 'selected' : '' %>>Attendance</option>
+                <option value="technical" <%= String(form.category || '') === 'technical' ? 'selected' : '' %>>Technical</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="priority">Priority</label>
+              <select id="priority" name="priority">
+                <option value="low" <%= String(form.priority || '') === 'low' ? 'selected' : '' %>>Low</option>
+                <option value="normal" <%= String(form.priority || 'normal') === 'normal' ? 'selected' : '' %>>Normal</option>
+                <option value="high" <%= String(form.priority || '') === 'high' ? 'selected' : '' %>>High</option>
+                <option value="urgent" <%= String(form.priority || '') === 'urgent' ? 'selected' : '' %>>Urgent</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="message">Message</label>
+              <textarea id="message" name="message" placeholder="Describe your issue or request clearly..." required><%= form.message || '' %></textarea>
+            </div>
+
+            <div>
+              <button class="btn primary" type="submit">
+                <i class="fa-solid fa-paper-plane"></i> Submit Ticket
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <section class="card">
+          <div class="section-title">My Support Tickets</div>
+          <div class="section-sub">Track the progress of your recent requests.</div>
+
+          <% if (!rows.length) { %>
+            <div class="empty empty-state">
+              <div class="empty-icon"><i class="fa-solid fa-headset"></i></div>
+              <div class="empty-title">No support tickets yet</div>
+              <div class="empty-text">Your submitted support requests will appear here.</div>
+            </div>
+          <% } else { %>
+            <div class="ticket-stack">
+              <% rows.forEach(function(item){ %>
+                <article class="ticket-card">
+                  <div class="ticket-head">
+                    <div>
+                      <div class="ticket-title"><%= item.subject %></div>
+                      <div class="ticket-meta">
+                        Created: <strong><%= item.createdLabel %></strong>
+                        <span class="dot">•</span>
+                        Updated: <strong><%= item.updatedLabel %></strong>
+                        <span class="dot">•</span>
+                        Child: <strong><%= item.studentName %></strong>
+                      </div>
+                    </div>
+
+                    <div class="badge-row">
+                      <span class="badge-soft <%= item.priority %>">
+                        <i class="fa-solid fa-triangle-exclamation"></i> <%= item.priority %>
+                      </span>
+                      <span class="badge-soft <%= item.status %>">
+                        <i class="fa-solid fa-circle-check"></i> <%= item.status %>
+                      </span>
+                      <span class="badge-soft">
+                        <i class="fa-solid fa-tag"></i> <%= item.category %>
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="ticket-body"><%= item.message || "" %></div>
+                </article>
+              <% }); %>
+            </div>
+          <% } %>
+        </section>
+      </div>
+    </main>
+  </div>
+<script src="/js/navbar.js"></script>
+</body>
+</html>

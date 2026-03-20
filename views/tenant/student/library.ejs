@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title><%= pageTitle %> — <%= tenant?.name || "CampusSaaS" %></title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/navbar.css"/>
+  <link rel="stylesheet" href="/css/student-portal.css" />
+</head>
+<body>
+<%- include("./navbar") %>
+
+<main class="main">
+  <div class="topbar">
+    <div>
+      <div class="title">Library</div>
+      <div class="subtitle">
+        Search books and e-resources, manage your loans, renew items, and track reservations.
+      </div>
+    </div>
+    <div class="top-actions">
+      <button class="btn primary" type="button" disabled>
+        <i class="fa-solid fa-magnifying-glass"></i> New Search
+      </button>
+    </div>
+  </div>
+
+  <%-include("./.././partials/flash") %>
+
+  <section class="card">
+    <div class="section-title">Search catalogue</div>
+    <div class="section-sub">Find books, journals, and digital resources.</div>
+
+    <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;">
+      <div style="flex:2;min-width:220px;">
+        <label class="small-muted">Keywords</label><br/>
+        <input type="text" class="select" style="width:100%;padding:7px 10px;" placeholder="Title, author, subject, ISBN..." />
+      </div>
+      <div>
+        <label class="small-muted">Type</label><br/>
+        <select class="select">
+          <option value="all">All</option>
+          <option value="book" selected>Books</option>
+          <option value="ebook">E-books</option>
+          <option value="journal">Journals</option>
+        </select>
+      </div>
+      <div>
+        <label class="small-muted">Location</label><br/>
+        <select class="select">
+          <option value="all">Any branch</option>
+          <option value="main" selected>Main library</option>
+        </select>
+      </div>
+      <div>
+        <button class="btn primary" disabled>
+          <i class="fa-solid fa-search"></i> Search
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <div class="content">
+    <section class="card">
+      <div class="section-title">Search results</div>
+      <div class="section-sub">Live catalogue items.</div>
+
+      <div id="libResults" style="margin-top:10px;">
+        <% if (catalogue?.length) { %>
+          <% catalogue.forEach(function(book){ %>
+            <div class="notif-item">
+              <div class="notif-icon">
+                <i class="fa-solid fa-book"></i>
+              </div>
+              <div>
+                <div class="notif-title"><%= book.title %></div>
+                <div class="notif-meta">Author: <%= book.author %> • Type: <%= book.type %> • Location: <%= book.location %></div>
+                <div class="small-muted">
+                  Call number: <%= book.callNo %> • Copies: <%= book.copies %> (<%= book.available %> available)
+                </div>
+              </div>
+            </div>
+          <% }) %>
+        <% } else { %>
+          <div class="small-muted">No catalogue items found.</div>
+        <% } %>
+      </div>
+    </section>
+
+    <aside>
+      <section class="card">
+        <div class="section-title">My current loans</div>
+        <div class="section-sub">Items you have borrowed.</div>
+
+        <div style="margin-top:8px;overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:13px;">
+            <thead>
+              <tr style="border-bottom:1px solid #e5edff;">
+                <th style="text-align:left;padding:6px 4px;">Title</th>
+                <th style="text-align:left;padding:6px 4px;">Due date</th>
+                <th style="text-align:left;padding:6px 4px;">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (loans?.length) { %>
+                <% loans.forEach(function(loan){ %>
+                  <tr>
+                    <td><%= loan.title %></td>
+                    <td><%= loan.dueDate ? new Date(loan.dueDate).toDateString() : "-" %></td>
+                    <td><%= loan.status %></td>
+                  </tr>
+                <% }) %>
+              <% } else { %>
+                <tr><td colspan="3">No active loans found.</td></tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card" style="margin-top:16px;">
+        <div class="section-title">Reservations</div>
+        <div class="section-sub">Items you have reserved.</div>
+        <div class="mini-list" style="margin-top:8px;">
+          <% if (reservations?.length) { %>
+            <% reservations.forEach(function(r){ %>
+              <div class="mini-item">
+                <span><%= r.title %></span>
+                <span><%= r.status %></span>
+              </div>
+            <% }) %>
+          <% } else { %>
+            <div class="small-muted">No reservations found.</div>
+          <% } %>
+        </div>
+
+        <div style="margin-top:12px;">
+          <div class="section-title" style="font-size:13px;">Fines</div>
+          <div class="mini-list" style="margin-top:8px;">
+            <div class="mini-item"><span>Total fines</span><span><%= fines.count %></span></div>
+            <div class="mini-item"><span>Amount</span><span>UGX <%= Number(fines.total || 0).toLocaleString() %></span></div>
+          </div>
+        </div>
+      </section>
+    </aside>
+  </div>
+</main>
+</div>
+
+<script src="/js/navbar.js"></script>
+</body>
+</html>

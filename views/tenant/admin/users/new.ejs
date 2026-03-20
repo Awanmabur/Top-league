@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>New User — Classic Campus</title>
+  <link rel="icon" href="data:,">
+  <style>
+    :root{
+      --blue:#0a3d62; --blue2:#083454; --bg:#f4f8ff; --card:#fff;
+      --muted:#6b7280; --text:#0f172a; --accent:#0a6fbf;
+      --success:#16a34a; --danger:#ef4444; --warn:#f59e0b;
+      --radius:14px; --shadow:0 10px 30px rgba(2,6,23,.08);
+      --line:rgba(2,6,23,.08);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--text)}
+    a{color:inherit;text-decoration:none}
+    .app{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+    aside{background:linear-gradient(180deg,var(--blue),var(--blue2));color:#fff;padding:18px;position:sticky;top:0;height:100vh}
+    .brand{display:flex;gap:10px;align-items:center;margin-bottom:18px}
+    .logo{width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.14);display:grid;place-items:center;font-weight:800}
+    .nav{margin-top:10px;display:flex;flex-direction:column;gap:8px}
+    .nav a{padding:10px 12px;border-radius:12px;display:flex;gap:10px;align-items:center;background:rgba(255,255,255,.08)}
+    .nav a.active{background:rgba(255,255,255,.16)}
+    main{padding:18px 18px 30px}
+    header{background:rgba(255,255,255,.7);backdrop-filter: blur(10px);border:1px solid var(--line);
+      padding:14px;border-radius:18px;box-shadow:var(--shadow);display:flex;justify-content:space-between;align-items:center}
+    .title h2{margin:0;font-size:16px}
+    .title span{font-size:12px;color:var(--muted)}
+    .grid{margin-top:14px;display:grid;grid-template-columns:1.2fr .8fr;gap:14px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow)}
+    .pad{padding:14px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    label{display:block;font-size:12px;color:var(--muted);font-weight:800;margin-bottom:6px}
+    input,select{width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--line);outline:none;background:#fff}
+    input:focus,select:focus{border-color:rgba(10,111,191,.5);box-shadow:0 0 0 4px rgba(10,111,191,.10)}
+    .btn{border:0;background:var(--accent);color:#fff;padding:11px 12px;border-radius:12px;font-weight:800;cursor:pointer}
+    .btn.secondary{background:#fff;color:var(--text);border:1px solid var(--line)}
+    .error{background:#fee2e2;border:1px solid rgba(185,28,28,.25);color:#991b1b;padding:10px 12px;border-radius:12px;font-weight:800;font-size:13px}
+    .hint{font-size:12px;color:var(--muted);line-height:1.5}
+    .box{background:rgba(10,111,191,.06);border:1px dashed rgba(10,111,191,.22);padding:12px;border-radius:14px}
+    .req{color:var(--danger);font-weight:900}
+    @media (max-width: 980px){
+      .app{grid-template-columns:1fr}
+      aside{height:auto;position:relative}
+      .grid{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <aside>
+    <div class="brand">
+      <div class="logo">CC</div>
+      <div>
+        <div style="font-weight:900;font-size:14px">Classic Campus</div>
+        <div style="font-size:12px;opacity:.85">Tenant Admin</div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <a href="/admin/dashboard">Dashboard</a>
+      <a class="active" href="/admin/users">Users</a>
+      <a href="/admin/students">Students</a>
+      <a href="/admin/staff">Staff</a>
+      <a href="/logout">Logout</a>
+    </nav>
+  </aside>
+
+  <main>
+    <header>
+      <div class="title">
+        <h2>Invite a new user</h2>
+        <span>Creates an account and generates a secure set-password link.</span>
+      </div>
+      <div style="display:flex;gap:10px">
+        <a class="btn secondary" href="/admin/users">← Back</a>
+      </div>
+    </header>
+
+    <div class="grid">
+      <div class="card">
+        <div class="pad">
+          <% if (error) { %>
+            <div class="error"><%= error %></div>
+            <div style="height:10px"></div>
+          <% } %>
+
+          <form method="POST" action="/admin/users" autocomplete="off">
+            <div class="row">
+              <div>
+                <label>First Name <span class="req">*</span></label>
+                <input name="firstName" required value="<%= (values && values.firstName) ? values.firstName : '' %>" />
+              </div>
+              <div>
+                <label>Last Name <span class="req">*</span></label>
+                <input name="lastName" required value="<%= (values && values.lastName) ? values.lastName : '' %>" />
+              </div>
+            </div>
+
+            <div style="height:12px"></div>
+
+            <div class="row">
+              <div>
+                <label>Email <span class="req">*</span></label>
+                <input name="email" type="email" required value="<%= (values && values.email) ? values.email : '' %>" />
+              </div>
+              <div>
+                <label>Phone</label>
+                <input name="phone" value="<%= (values && values.phone) ? values.phone : '' %>" />
+              </div>
+            </div>
+
+            <div style="height:12px"></div>
+
+            <div class="row">
+              <div>
+                <label>Role <span class="req">*</span></label>
+                <% const selectedRole = (values && values.role) ? values.role : ""; %>
+                <select id="role" name="role" required>
+                  <option value="" <%= !selectedRole ? "selected" : "" %>>Select role…</option>
+                  <option value="admin"     <%= selectedRole==="admin" ? "selected":"" %>>Admin</option>
+                  <option value="staff"     <%= selectedRole==="staff" ? "selected":"" %>>Staff</option>
+                  <option value="lecturer"  <%= selectedRole==="lecturer" ? "selected":"" %>>Lecturer</option>
+                  <option value="finance"   <%= selectedRole==="finance" ? "selected":"" %>>Finance</option>
+                  <option value="librarian" <%= selectedRole==="librarian" ? "selected":"" %>>Librarian</option>
+                  <option value="hostel"    <%= selectedRole==="hostel" ? "selected":"" %>>Hostel</option>
+                  <option value="student"   <%= selectedRole==="student" ? "selected":"" %>>Student</option>
+                </select>
+              </div>
+
+              <!-- ✅ Department dropdown (no more typing clean12) -->
+              <div id="deptWrap">
+                <label>Department</label>
+                <select name="departmentId" id="departmentId">
+                  <option value="">Select department…</option>
+                  <% (departments || []).forEach(d => { %>
+                    <option value="<%= String(d._id) %>"
+                      <%= (values && String(values.departmentId) === String(d._id)) ? "selected" : "" %>>
+                      <%= d.name %>
+                    </option>
+                  <% }) %>
+                </select>
+                <% if (!departments || departments.length === 0) { %>
+                  <div class="hint" style="margin-top:6px">
+                    No departments found. Create departments first.
+                  </div>
+                <% } %>
+              </div>
+            </div>
+
+            <!-- ✅ Student-only: Program + RegNo -->
+            <div id="studentWrap" style="display:none;margin-top:12px">
+              <div class="row">
+                <div>
+                  <label>Program <span class="req">*</span></label>
+                  <select name="programId" id="programId">
+                    <option value="">Select program…</option>
+                    <% (programs || []).forEach(p => { %>
+                      <option value="<%= String(p._id) %>"
+                        <%= (values && String(values.programId) === String(p._id)) ? "selected" : "" %>>
+                        <%= p.name %>
+                      </option>
+                    <% }) %>
+                  </select>
+                  <% if (!programs || programs.length === 0) { %>
+                    <div class="hint" style="margin-top:6px">
+                      No programs found. Create programs first.
+                    </div>
+                  <% } %>
+                </div>
+
+                <div>
+                  <label>Student Reg No</label>
+                  <input name="regNo" value="<%= (values && values.regNo) ? values.regNo : '' %>" />
+                </div>
+              </div>
+            </div>
+
+            <div style="height:14px"></div>
+
+            <button class="btn" type="submit">Invite User</button>
+            <span class="hint" style="margin-left:10px">
+              You will copy the invite link on the next page. If lost, use Resend Invite.
+            </span>
+          </form>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="pad">
+          <div style="font-weight:900;margin-bottom:8px">Production notes</div>
+
+          <div class="box">
+            <div class="hint">
+              ✅ Department is a dropdown (ObjectId) so casting errors can’t happen.<br/>
+              ✅ Students must select a program, so programId required error won’t happen.<br/>
+              ✅ Invite link includes the correct host + port in development.
+            </div>
+          </div>
+
+          <div style="height:12px"></div>
+          <div class="hint">
+            If Department/Program lists are empty, you must create departments/programs first.
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="/js/create.js" defer></script>
+</body>
+</html>

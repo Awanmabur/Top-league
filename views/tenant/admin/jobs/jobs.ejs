@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Admin • Jobs — CampusSaaS</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer"/>
+  <!-- Shared CSS (your project) -->
+  <link rel="stylesheet" href="./public/css/student-portal.css"/>
+
+  <style>
+    /* helpers only */
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
+    .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .input,.select,.textarea{
+      padding:10px 12px;border-radius:12px;border:1px solid rgba(13,64,96,.16);
+      background:#fff;outline:none
+    }
+    .input{min-width:240px}
+    .textarea{width:100%;min-height:110px;resize:vertical}
+    .input:focus,.select:focus,.textarea:focus{border-color:rgba(10,111,191,.45);box-shadow:0 0 0 3px rgba(10,111,191,.12)}
+    .muted{font-size:12px;color:#6b7280}
+    .strong{font-weight:900}
+    .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+    .grid-2{display:grid;grid-template-columns:1.2fr .8fr;gap:12px}
+
+    .chips{display:flex;gap:8px;flex-wrap:wrap}
+    .chip{border:1px solid rgba(13,64,96,.14);background:#fff;border-radius:999px;padding:8px 12px;cursor:pointer;font-weight:900;font-size:12px}
+    .chip.active{background:rgba(10,111,191,.12);border-color:rgba(10,111,191,.35)}
+
+    .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:900}
+    .ok{background:#ecfdf3;color:#15803d}
+    .warn{background:#fef9c3;color:#92400e}
+    .bad{background:#fee2e2;color:#b91c1c}
+    .info{background:#eef2ff;color:#3730a3}
+
+    .table-wrap{overflow:auto;border:1px solid rgba(13,64,96,.10);border-radius:12px}
+    table{width:100%;border-collapse:separate;border-spacing:0;min-width:1250px;background:#fff}
+    th,td{padding:10px 12px;border-bottom:1px solid rgba(13,64,96,.08);vertical-align:middle}
+    th{font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;text-align:left;background:rgba(13,64,96,.03);position:sticky;top:0;z-index:1}
+    tr:hover td{background:rgba(10,111,191,.04)}
+    .actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
+    .btn-xs{padding:6px 8px;border-radius:10px;border:1px solid rgba(13,64,96,.14);background:#fff;cursor:pointer;font-size:12px}
+    .btn-xs:hover{background:rgba(10,111,191,.06)}
+
+    .bulkbar{
+      display:none;margin-top:10px;padding:10px 12px;border-radius:12px;
+      background:rgba(10,111,191,.08);border:1px solid rgba(10,111,191,.18);
+      justify-content:space-between;gap:10px;align-items:center
+    }
+    .bulkbar.show{display:flex}
+    .badge-count{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 8px;border-radius:999px;background:#0a6fbf;color:#fff;font-size:12px;font-weight:900}
+
+    .note{padding:10px 12px;border-radius:12px;border:1px dashed rgba(13,64,96,.18);background:rgba(13,64,96,.03)}
+    .mini-list{display:grid;gap:10px;margin-top:10px}
+    .mini-item{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 12px;border:1px solid rgba(13,64,96,.10);border-radius:12px;background:#fff}
+    .mini-item .left{display:grid;gap:2px}
+
+    /* Modals */
+    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:18px;z-index:9999}
+    .modal-backdrop.show{display:flex}
+    .modal{width:min(1100px,100%);background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden}
+    .modal-header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid rgba(13,64,96,.10)}
+    .modal-title{font-weight:900}
+    .modal-body{padding:16px}
+    .modal-footer{display:flex;justify-content:flex-end;gap:10px;padding:14px 16px;border-top:1px solid rgba(13,64,96,.10)}
+    .form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    .field label{display:block;font-size:12px;color:#6b7280;margin-bottom:6px}
+    .field input,.field select{width:100%}
+    .divider{height:1px;background:rgba(13,64,96,.10);margin:12px 0}
+
+    /* Attachments UI */
+    .attach{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .file-pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:rgba(13,64,96,.06);border:1px solid rgba(13,64,96,.10);font-size:12px}
+    .file-pill button{border:none;background:transparent;cursor:pointer;color:#b91c1c}
+
+    /* Applicant rating */
+    .stars{display:inline-flex;gap:6px}
+    .star{cursor:pointer;color:rgba(13,64,96,.25)}
+    .star.on{color:#f59e0b}
+
+    @media(max-width:980px){
+      .grid-4{grid-template-columns:1fr 1fr}
+      .grid-2{grid-template-columns:1fr}
+      .form-grid{grid-template-columns:1fr}
+      .input{min-width:190px}
+    }
+    @media(max-width:560px){ .grid-4{grid-template-columns:1fr} }
+  </style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">CS</div>
+      <div><h1>CampusSaaS</h1><div class="sub">Admin Portal</div></div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section-title">Admin</div>
+      <a class="nav-item" href="admin-dashboard.html"><i class="fa-solid fa-chart-line"></i><span>Dashboard</span></a>
+      <a class="nav-item" href="admin-students.html"><i class="fa-solid fa-user-graduate"></i><span>Students</span></a>
+      <a class="nav-item" href="admin-analytics.html"><i class="fa-solid fa-chart-pie"></i><span>Analytics</span></a>
+      <a class="nav-item" href="admin-timetable.html"><i class="fa-solid fa-calendar-days"></i><span>Timetable</span></a>
+      <a class="nav-item" href="admin-library.html"><i class="fa-solid fa-book"></i><span>Library</span></a>
+      <a class="nav-item" href="admin-hostels.html"><i class="fa-solid fa-bed"></i><span>Hostels</span></a>
+      <a class="nav-item" href="admin-announcements.html"><i class="fa-solid fa-bullhorn"></i><span>Announcements</span></a>
+      <a class="nav-item active" href="admin-jobs.html"><i class="fa-solid fa-briefcase"></i><span>Jobs</span></a>
+      <a class="nav-item" href="admin-scholarships.html"><i class="fa-solid fa-award"></i><span>Scholarships</span></a>
+    </nav>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <div>
+        <div class="title">Jobs Management</div>
+        <div class="subtitle">Create job postings, manage employers, track applications and shortlist/interview candidates.</div>
+      </div>
+      <div class="top-actions">
+        <button class="btn light" id="btnExport"><i class="fa-solid fa-file-arrow-down"></i> Export</button>
+        <button class="btn light" id="btnReports"><i class="fa-solid fa-chart-column"></i> Reports</button>
+        <button class="btn light" id="btnEmployers"><i class="fa-solid fa-building"></i> Employers</button>
+        <button class="btn primary" id="btnCreate"><i class="fa-solid fa-plus"></i> Create Job</button>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="grid-4">
+      <div class="card"><div class="section-title">Open Jobs</div><div class="kpi-value" id="kOpen">0</div><div class="muted">Published & accepting</div></div>
+      <div class="card"><div class="section-title">Drafts</div><div class="kpi-value" style="color:#92400e" id="kDraft">0</div><div class="muted">Not visible</div></div>
+      <div class="card"><div class="section-title">Applications</div><div class="kpi-value" style="color:#0a6fbf" id="kApps">0</div><div class="muted">Received total</div></div>
+      <div class="card"><div class="section-title">Interviews</div><div class="kpi-value" style="color:#b91c1c" id="kInt">0</div><div class="muted">In progress</div></div>
+    </div>
+
+    <!-- Filters + Views -->
+    <section class="card" style="margin-top:12px;">
+      <div class="toolbar">
+        <div class="left">
+          <input class="input" id="q" placeholder="Search job title, employer, department, location..." />
+          <select class="select" id="fStatus">
+            <option value="all">All Status</option>
+            <option>Published</option>
+            <option>Draft</option>
+            <option>Closed</option>
+            <option>Archived</option>
+          </select>
+          <select class="select" id="fType">
+            <option value="all">All Types</option>
+            <option>Internship</option>
+            <option>Part-time</option>
+            <option>Full-time</option>
+            <option>Contract</option>
+            <option>Graduate Program</option>
+          </select>
+          <select class="select" id="fDept">
+            <option value="all">All Departments</option>
+            <option>Computing</option>
+            <option>Business</option>
+            <option>Engineering</option>
+            <option>Health Sciences</option>
+          </select>
+          <select class="select" id="fLoc">
+            <option value="all">All Locations</option>
+            <option>Kampala</option>
+            <option>Juba</option>
+            <option>Remote</option>
+            <option>Hybrid</option>
+          </select>
+        </div>
+
+        <div class="right">
+          <div class="chips" id="viewChips">
+            <button class="chip active" data-view="jobs"><i class="fa-solid fa-briefcase"></i> Jobs</button>
+            <button class="chip" data-view="applications"><i class="fa-solid fa-inbox"></i> Applications</button>
+            <button class="chip" data-view="pipeline"><i class="fa-solid fa-diagram-project"></i> Pipeline</button>
+          </div>
+          <button class="btn light" id="btnBulk"><i class="fa-solid fa-layer-group"></i> Bulk</button>
+          <button class="btn light" id="btnReset"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+        </div>
+      </div>
+
+      <div class="bulkbar" id="bulkbar">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <strong>Selected</strong> <span class="badge-count" id="selCount">0</span>
+          <span class="muted">jobs</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <button class="btn-xs" id="bulkPublish"><i class="fa-solid fa-globe"></i> Publish</button>
+          <button class="btn-xs" id="bulkClose"><i class="fa-solid fa-circle-xmark"></i> Close</button>
+          <button class="btn-xs" id="bulkArchive"><i class="fa-solid fa-box-archive"></i> Archive</button>
+          <button class="btn-xs" id="bulkClear"><i class="fa-solid fa-xmark"></i> Clear</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="grid-2" style="margin-top:12px;">
+      <!-- Main panel -->
+      <section class="card">
+        <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;">
+          <div>
+            <div class="section-title" id="panelTitle">Jobs</div>
+            <div class="section-sub" id="panelSub">Manage job postings and publishing workflow.</div>
+          </div>
+          <div class="muted" id="resultMeta">—</div>
+        </div>
+
+        <!-- JOBS LIST -->
+        <div id="view-jobs" style="margin-top:10px;">
+          <div class="table-wrap">
+            <table>
+              <thead>
+              <tr>
+                <th style="width:42px;"><input type="checkbox" id="checkAll"/></th>
+                <th>Job</th>
+                <th>Employer</th>
+                <th>Type</th>
+                <th>Dept</th>
+                <th>Location</th>
+                <th>Deadline</th>
+                <th>Status</th>
+                <th style="text-align:right;width:250px;">Actions</th>
+              </tr>
+              </thead>
+              <tbody id="tbodyJobs"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- APPLICATIONS -->
+        <div id="view-applications" style="display:none;margin-top:10px;">
+          <div class="table-wrap">
+            <table>
+              <thead>
+              <tr>
+                <th>Applicant</th>
+                <th>Job</th>
+                <th>Submitted</th>
+                <th>Stage</th>
+                <th>Rating</th>
+                <th style="text-align:right;width:240px;">Actions</th>
+              </tr>
+              </thead>
+              <tbody id="tbodyApps"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- PIPELINE -->
+        <div id="view-pipeline" style="display:none;margin-top:10px;">
+          <div class="note">
+            Pipeline board is UI-only. Backend later will store workflow transitions & audit logs.
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:10px;" id="pipeGrid"></div>
+        </div>
+
+        <div class="note" style="margin-top:12px;">
+          <strong>Admin controls included:</strong> job creation/editing, publishing, employer directory, applications, pipeline stages, and exports.
+        </div>
+      </section>
+
+      <!-- Right rail -->
+      <aside class="card">
+        <div class="section-title">Quick Actions</div>
+        <div class="section-sub">Common job management workflows.</div>
+
+        <div class="mini-list">
+          <div class="mini-item">
+            <div class="left"><div class="strong">Create Internship</div><div class="muted">Fast template</div></div>
+            <button class="btn-xs" id="qIntern"><i class="fa-solid fa-bolt"></i></button>
+          </div>
+          <div class="mini-item">
+            <div class="left"><div class="strong">Close Expired Jobs</div><div class="muted">Auto close (UI)</div></div>
+            <button class="btn-xs" id="qClose"><i class="fa-solid fa-clock"></i></button>
+          </div>
+          <div class="mini-item">
+            <div class="left"><div class="strong">Employer Directory</div><div class="muted">Companies & contacts</div></div>
+            <button class="btn-xs" id="qEmp"><i class="fa-solid fa-building"></i></button>
+          </div>
+        </div>
+
+        <div class="section-title" style="margin-top:14px;">Pipeline Stages</div>
+        <div class="section-sub">Suggested hiring workflow.</div>
+        <div class="mini-list">
+          <div class="mini-item"><div class="left"><div class="strong">Received</div><div class="muted">New applications</div></div><span class="pill info"><i class="fa-solid fa-inbox"></i></span></div>
+          <div class="mini-item"><div class="left"><div class="strong">Shortlisted</div><div class="muted">Meets requirements</div></div><span class="pill ok"><i class="fa-solid fa-check"></i></span></div>
+          <div class="mini-item"><div class="left"><div class="strong">Interview</div><div class="muted">Schedule meeting</div></div><span class="pill warn"><i class="fa-solid fa-video"></i></span></div>
+          <div class="mini-item"><div class="left"><div class="strong">Offered</div><div class="muted">Offer sent</div></div><span class="pill ok"><i class="fa-solid fa-handshake"></i></span></div>
+          <div class="mini-item"><div class="left"><div class="strong">Rejected</div><div class="muted">Not selected</div></div><span class="pill bad"><i class="fa-solid fa-xmark"></i></span></div>
+        </div>
+      </aside>
+    </div>
+
+  </main>
+</div>
+
+<!-- Create/Edit Job Modal -->
+<div class="modal-backdrop" id="mJob">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="mJobTitle">Create Job</div>
+      <button class="btn-xs" onclick="closeModal('mJob')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="field"><label>Job Title</label><input class="input" id="jTitle" placeholder="e.g., Junior Frontend Developer"></div>
+        <div class="field"><label>Employer</label><input class="input" id="jEmployer" placeholder="Company name"></div>
+        <div class="field"><label>Job Type</label>
+          <select class="select" id="jType">
+            <option>Internship</option><option>Part-time</option><option>Full-time</option><option>Contract</option><option>Graduate Program</option>
+          </select>
+        </div>
+
+        <div class="field"><label>Department</label>
+          <select class="select" id="jDept">
+            <option>Computing</option><option>Business</option><option>Engineering</option><option>Health Sciences</option>
+          </select>
+        </div>
+        <div class="field"><label>Location</label>
+          <select class="select" id="jLoc">
+            <option>Kampala</option><option>Juba</option><option>Remote</option><option>Hybrid</option>
+          </select>
+        </div>
+        <div class="field"><label>Deadline</label><input class="input" id="jDeadline" type="date"></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="field">
+        <label>Description</label>
+        <textarea class="textarea" id="jDesc" placeholder="Job overview, responsibilities..."></textarea>
+      </div>
+
+      <div class="form-grid" style="margin-top:12px;">
+        <div class="field"><label>Requirements</label><input class="input" id="jReq" placeholder="e.g., HTML, CSS, JS, teamwork"></div>
+        <div class="field"><label>Salary Range</label><input class="input" id="jSalary" placeholder="e.g., UGX 1,500,000 - 2,500,000"></div>
+        <div class="field"><label>Status</label>
+          <select class="select" id="jStatus">
+            <option>Draft</option><option>Published</option><option>Closed</option><option>Archived</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="strong">Attachments</div>
+      <div class="muted" style="margin-top:4px;">UI preview (backend later will upload).</div>
+      <div class="attach" style="margin-top:10px;">
+        <input class="input" type="file" id="jFiles" multiple>
+        <div id="jFileList" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+      </div>
+
+      <input type="hidden" id="jId">
+    </div>
+    <div class="modal-footer">
+      <button class="btn light" onclick="closeModal('mJob')">Cancel</button>
+      <button class="btn primary" id="saveJobBtn"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Applicant Detail Modal -->
+<div class="modal-backdrop" id="mApp">
+  <div class="modal" style="width:min(900px,100%)">
+    <div class="modal-header">
+      <div class="modal-title" id="mAppTitle">Applicant Detail</div>
+      <button class="btn-xs" onclick="closeModal('mApp')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid" style="grid-template-columns:repeat(2,1fr);">
+        <div class="field"><label>Applicant</label><input class="input" id="aName" disabled></div>
+        <div class="field"><label>Applied Job</label><input class="input" id="aJob" disabled></div>
+        <div class="field"><label>Stage</label>
+          <select class="select" id="aStage">
+            <option>Received</option><option>Shortlisted</option><option>Interview</option><option>Offered</option><option>Rejected</option>
+          </select>
+        </div>
+        <div class="field"><label>Rating</label>
+          <div class="stars" id="starWrap" aria-label="Rating">
+            <i class="fa-solid fa-star star" data-v="1"></i>
+            <i class="fa-solid fa-star star" data-v="2"></i>
+            <i class="fa-solid fa-star star" data-v="3"></i>
+            <i class="fa-solid fa-star star" data-v="4"></i>
+            <i class="fa-solid fa-star star" data-v="5"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="field">
+        <label>Admin Notes</label>
+        <textarea class="textarea" id="aNotes" placeholder="Interview notes, evaluation, follow-up..."></textarea>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="note">
+        <strong>Documents:</strong> CV/Resume, Cover Letter, Certificates (backend later).
+      </div>
+
+      <input type="hidden" id="aId">
+    </div>
+    <div class="modal-footer">
+      <button class="btn light" onclick="closeModal('mApp')">Cancel</button>
+      <button class="btn primary" id="saveAppBtn"><i class="fa-solid fa-check"></i> Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bulk Modal -->
+<div class="modal-backdrop" id="mBulk">
+  <div class="modal" style="width:min(760px,100%)">
+    <div class="modal-header">
+      <div class="modal-title">Bulk Job Action</div>
+      <button class="btn-xs" onclick="closeModal('mBulk')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="note">Apply changes to selected jobs.</div>
+      <div class="form-grid" style="grid-template-columns:repeat(2,1fr);margin-top:12px;">
+        <div class="field">
+          <label>Set Status</label>
+          <select class="select" id="bStatus">
+            <option value="">— keep —</option>
+            <option>Published</option>
+            <option>Closed</option>
+            <option>Archived</option>
+            <option>Draft</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Reason / Note</label>
+          <input class="input" id="bNote" placeholder="Optional note">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn light" onclick="closeModal('mBulk')">Cancel</button>
+      <button class="btn primary" id="applyBulk"><i class="fa-solid fa-check"></i> Apply</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const $ = (id)=>document.getElementById(id);
+  function openModal(id){ $(id).classList.add('show'); }
+  function closeModal(id){ $(id).classList.remove('show'); }
+
+  // Mock jobs
+  const JOBS = [
+    {id:'J001', title:'Junior Frontend Developer', employer:'ByteHarbor Ltd', type:'Full-time', dept:'Computing', loc:'Kampala', deadline:'2025-12-05', status:'Published', apps:22},
+    {id:'J002', title:'IT Support Intern', employer:'Classic Net', type:'Internship', dept:'Computing', loc:'Juba', deadline:'2025-11-28', status:'Published', apps:15},
+    {id:'J003', title:'Marketing Assistant', employer:'LucasGroupGlobal', type:'Part-time', dept:'Business', loc:'Hybrid', deadline:'2025-12-10', status:'Draft', apps:0},
+    {id:'J004', title:'Graduate Program — Data', employer:'Essex Consulting', type:'Graduate Program', dept:'Engineering', loc:'Remote', deadline:'2025-12-20', status:'Published', apps:39},
+    {id:'J005', title:'Nursing Attachment', employer:'City Clinic', type:'Internship', dept:'Health Sciences', loc:'Kampala', deadline:'2025-12-02', status:'Closed', apps:18},
+  ];
+
+  // Mock applications
+  const APPS = [
+    {id:'A001', name:'Jonathan Kuipers', job:'Junior Frontend Developer', submitted:'2025-11-18', stage:'Shortlisted', rating:4, notes:''},
+    {id:'A002', name:'Sarah Nabirye', job:'IT Support Intern', submitted:'2025-11-17', stage:'Received', rating:0, notes:''},
+    {id:'A003', name:'James Ouma', job:'Graduate Program — Data', submitted:'2025-11-16', stage:'Interview', rating:3, notes:''},
+    {id:'A004', name:'Amina Hassan', job:'Junior Frontend Developer', submitted:'2025-11-15', stage:'Received', rating:0, notes:''},
+  ];
+
+  const EMPLOYERS = [
+    {name:'ByteHarbor Ltd', contact:'hr@byteharbor.com', phone:'+256 700 000 000'},
+    {name:'Classic Net', contact:'admin@classicnet.ug', phone:'+211 900 000 000'},
+    {name:'LucasGroupGlobal', contact:'careers@lucasgroupglobal.com', phone:'+1 978 000 0000'},
+  ];
+
+  const state = { q:'', status:'all', type:'all', dept:'all', loc:'all', view:'jobs', selected:new Set() };
+
+  function kpis(){
+    $('kOpen').textContent = JOBS.filter(j=>j.status==='Published').length;
+    $('kDraft').textContent = JOBS.filter(j=>j.status==='Draft').length;
+    $('kApps').textContent = APPS.length;
+    $('kInt').textContent = APPS.filter(a=>a.stage==='Interview').length;
+  }
+
+  function syncBulkbar(){
+    $('selCount').textContent = state.selected.size;
+    $('bulkbar').classList.toggle('show', state.selected.size>0 && state.view==='jobs');
+  }
+
+  function filteredJobs(){
+    const q = state.q.trim().toLowerCase();
+    return JOBS.filter(j=>{
+      const mq = !q || (j.title+j.employer+j.dept+j.loc+j.type+j.status).toLowerCase().includes(q);
+      const ms = state.status==='all' || j.status===state.status;
+      const mt = state.type==='all' || j.type===state.type;
+      const md = state.dept==='all' || j.dept===state.dept;
+      const ml = state.loc==='all' || j.loc===state.loc;
+      return mq && ms && mt && md && ml;
+    });
+  }
+
+  function pillJobStatus(s){
+    if(s==='Published') return `<span class="pill ok"><i class="fa-solid fa-globe"></i> Published</span>`;
+    if(s==='Draft') return `<span class="pill warn"><i class="fa-solid fa-pen-to-square"></i> Draft</span>`;
+    if(s==='Closed') return `<span class="pill bad"><i class="fa-solid fa-circle-xmark"></i> Closed</span>`;
+    return `<span class="pill info"><i class="fa-solid fa-box-archive"></i> Archived</span>`;
+  }
+
+  function setView(v){
+    state.view=v;
+    document.querySelectorAll('#viewChips .chip').forEach(b=>b.classList.remove('active'));
+    document.querySelector(`#viewChips .chip[data-view="${v}"]`).classList.add('active');
+
+    $('view-jobs').style.display = v==='jobs' ? '' : 'none';
+    $('view-applications').style.display = v==='applications' ? '' : 'none';
+    $('view-pipeline').style.display = v==='pipeline' ? '' : 'none';
+
+    const titles={
+      jobs:['Jobs','Manage job postings and publishing workflow.'],
+      applications:['Applications','Review applicants, shortlist, interview and offer.'],
+      pipeline:['Pipeline','Move candidates through hiring stages.']
+    };
+    $('panelTitle').textContent=titles[v][0];
+    $('panelSub').textContent=titles[v][1];
+
+    syncBulkbar();
+    render();
+  }
+
+  function renderJobs(){
+    const list = filteredJobs();
+    $('resultMeta').textContent = `${list.length} job(s)`;
+    $('checkAll').checked = list.length && list.every(x=>state.selected.has(x.id));
+
+    $('tbodyJobs').innerHTML = list.map(j=>{
+      const checked = state.selected.has(j.id) ? 'checked' : '';
+      return `
+        <tr data-id="${j.id}">
+          <td><input type="checkbox" class="rowCheck" data-id="${j.id}" ${checked}></td>
+          <td>
+            <div class="strong">${j.title}</div>
+            <div class="muted">${j.id} • ${j.apps} applications</div>
+          </td>
+          <td><span class="pill info"><i class="fa-solid fa-building"></i> ${j.employer}</span></td>
+          <td><span class="pill info"><i class="fa-solid fa-tags"></i> ${j.type}</span></td>
+          <td class="muted">${j.dept}</td>
+          <td class="muted">${j.loc}</td>
+          <td class="muted">${j.deadline}</td>
+          <td>${pillJobStatus(j.status)}</td>
+          <td>
+            <div class="actions">
+              <button class="btn-xs actEdit" title="Edit"><i class="fa-solid fa-pen"></i></button>
+              <button class="btn-xs actViewApps" title="Applications"><i class="fa-solid fa-inbox"></i></button>
+              <button class="btn-xs actPublish" title="Publish"><i class="fa-solid fa-globe"></i></button>
+              <button class="btn-xs actClose" title="Close"><i class="fa-solid fa-circle-xmark"></i></button>
+              <button class="btn-xs actMore" title="More"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('') || `<tr><td colspan="9" style="padding:18px;"><div class="muted">No jobs match filters.</div></td></tr>`;
+  }
+
+  function renderApps(){
+    $('resultMeta').textContent = `${APPS.length} applicant(s)`;
+    $('tbodyApps').innerHTML = APPS.map(a=>{
+      const stagePill = a.stage==='Received' ? 'info' : (a.stage==='Shortlisted'?'ok':(a.stage==='Interview'?'warn':(a.stage==='Offered'?'ok':'bad')));
+      return `
+        <tr data-id="${a.id}">
+          <td><div class="strong">${a.name}</div><div class="muted">${a.id}</div></td>
+          <td class="muted">${a.job}</td>
+          <td class="muted">${a.submitted}</td>
+          <td><span class="pill ${stagePill}"><i class="fa-solid fa-diagram-project"></i> ${a.stage}</span></td>
+          <td><span class="pill info"><i class="fa-solid fa-star"></i> ${a.rating || 0}/5</span></td>
+          <td style="text-align:right;">
+            <button class="btn-xs appOpen"><i class="fa-solid fa-user"></i> View</button>
+            <button class="btn-xs appShort"><i class="fa-solid fa-check"></i> Shortlist</button>
+            <button class="btn-xs appReject"><i class="fa-solid fa-xmark"></i> Reject</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function renderPipeline(){
+    $('resultMeta').textContent = `Pipeline view`;
+    const stages = ['Received','Shortlisted','Interview','Offered','Rejected'];
+    const grid = $('pipeGrid');
+    grid.innerHTML = stages.map(s=>{
+      const items = APPS.filter(a=>a.stage===s);
+      const color = s==='Rejected'?'bad':(s==='Interview'?'warn':(s==='Shortlisted' || s==='Offered'?'ok':'info'));
+      return `
+        <div style="border:1px solid rgba(13,64,96,.10);border-radius:14px;background:#fff;overflow:hidden;min-height:240px;">
+          <div style="padding:10px 12px;border-bottom:1px solid rgba(13,64,96,.08);display:flex;justify-content:space-between;align-items:center;">
+            <span class="strong">${s}</span>
+            <span class="pill ${color}">${items.length}</span>
+          </div>
+          <div style="padding:10px 12px;display:grid;gap:10px;">
+            ${items.map(a=>`
+              <div class="note" style="border-style:solid;border-color:rgba(13,64,96,.10);background:#fff;">
+                <div class="strong">${a.name}</div>
+                <div class="muted">${a.job}</div>
+                <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+                  <button class="btn-xs pipeOpen" data-id="${a.id}"><i class="fa-solid fa-user"></i> View</button>
+                  <button class="btn-xs pipeNext" data-id="${a.id}"><i class="fa-solid fa-arrow-right"></i> Next</button>
+                </div>
+              </div>
+            `).join('') || `<div class="muted">No candidates.</div>`}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function render(){
+    kpis();
+    syncBulkbar();
+    if(state.view==='jobs') renderJobs();
+    if(state.view==='applications') renderApps();
+    if(state.view==='pipeline') renderPipeline();
+  }
+
+  // Filters
+  $('q').addEventListener('input', e=>{ state.q=e.target.value; render(); });
+  $('fStatus').addEventListener('change', e=>{ state.status=e.target.value; state.selected.clear(); render(); });
+  $('fType').addEventListener('change', e=>{ state.type=e.target.value; state.selected.clear(); render(); });
+  $('fDept').addEventListener('change', e=>{ state.dept=e.target.value; state.selected.clear(); render(); });
+  $('fLoc').addEventListener('change', e=>{ state.loc=e.target.value; state.selected.clear(); render(); });
+
+  // Views
+  $('viewChips').addEventListener('click', (e)=>{
+    const btn = e.target.closest('.chip'); if(!btn) return;
+    setView(btn.dataset.view);
+  });
+
+  // Reset
+  $('btnReset').addEventListener('click', ()=>{
+    state.q=''; $('q').value='';
+    state.status='all'; $('fStatus').value='all';
+    state.type='all'; $('fType').value='all';
+    state.dept='all'; $('fDept').value='all';
+    state.loc='all'; $('fLoc').value='all';
+    state.selected.clear();
+    setView('jobs');
+  });
+
+  // Top actions
+  $('btnCreate').addEventListener('click', ()=>openJobEditor());
+  $('btnExport').addEventListener('click', ()=>alert('Export jobs/applications (backend later).'));
+  $('btnReports').addEventListener('click', ()=>alert('Jobs reports page (next).'));
+  $('btnEmployers').addEventListener('click', ()=>alert('Employers directory modal/page (next).'));
+
+  // Selection
+  $('checkAll').addEventListener('change', (e)=>{
+    const ids = filteredJobs().map(x=>x.id);
+    if(e.target.checked) ids.forEach(id=>state.selected.add(id));
+    else ids.forEach(id=>state.selected.delete(id));
+    render();
+  });
+
+  $('tbodyJobs').addEventListener('change', (e)=>{
+    if(!e.target.classList.contains('rowCheck')) return;
+    const id = e.target.dataset.id;
+    if(e.target.checked) state.selected.add(id); else state.selected.delete(id);
+    render();
+  });
+
+  // Jobs actions
+  $('tbodyJobs').addEventListener('click', (e)=>{
+    const tr = e.target.closest('tr[data-id]'); if(!tr) return;
+    const j = JOBS.find(x=>x.id===tr.dataset.id);
+    if(e.target.closest('.actEdit')) return openJobEditor(j);
+    if(e.target.closest('.actViewApps')){ setView('applications'); return; }
+    if(e.target.closest('.actPublish')){ j.status='Published'; return render(); }
+    if(e.target.closest('.actClose')){ j.status='Closed'; return render(); }
+    if(e.target.closest('.actMore')) return alert('More: duplicate, archive, extend deadline, feature job, notify applicants.');
+  });
+
+  // Bulk actions
+  $('btnBulk').addEventListener('click', ()=>openModal('mBulk'));
+  $('bulkClear').addEventListener('click', ()=>{ state.selected.clear(); render(); });
+
+  $('bulkPublish').addEventListener('click', ()=>{
+    state.selected.forEach(id=>{ const j=JOBS.find(x=>x.id===id); if(j) j.status='Published'; });
+    render();
+  });
+  $('bulkClose').addEventListener('click', ()=>{
+    state.selected.forEach(id=>{ const j=JOBS.find(x=>x.id===id); if(j) j.status='Closed'; });
+    render();
+  });
+  $('bulkArchive').addEventListener('click', ()=>{
+    state.selected.forEach(id=>{ const j=JOBS.find(x=>x.id===id); if(j) j.status='Archived'; });
+    render();
+  });
+
+  $('applyBulk').addEventListener('click', ()=>{
+    const st = $('bStatus').value;
+    if(st){
+      state.selected.forEach(id=>{ const j=JOBS.find(x=>x.id===id); if(j) j.status=st; });
+    }
+    closeModal('mBulk');
+    render();
+  });
+
+  // Applications actions
+  $('tbodyApps').addEventListener('click', (e)=>{
+    const tr = e.target.closest('tr[data-id]'); if(!tr) return;
+    const a = APPS.find(x=>x.id===tr.dataset.id);
+    if(e.target.closest('.appOpen')) return openApplicant(a);
+    if(e.target.closest('.appShort')){ a.stage='Shortlisted'; return render(); }
+    if(e.target.closest('.appReject')){ a.stage='Rejected'; return render(); }
+  });
+
+  // Pipeline actions
+  $('pipeGrid').addEventListener('click', (e)=>{
+    const id = e.target.dataset.id;
+    if(!id) return;
+    const a = APPS.find(x=>x.id===id);
+    if(e.target.closest('.pipeOpen')) return openApplicant(a);
+    if(e.target.closest('.pipeNext')){
+      const flow = ['Received','Shortlisted','Interview','Offered','Rejected'];
+      const idx = flow.indexOf(a.stage);
+      a.stage = flow[Math.min(idx+1, flow.length-1)];
+      return render();
+    }
+  });
+
+  // Quick actions
+  $('qIntern').addEventListener('click', ()=>{
+    openJobEditor();
+    $('jType').value='Internship';
+    $('jTitle').value='Internship Opportunity';
+    $('jStatus').value='Draft';
+  });
+  $('qClose').addEventListener('click', ()=>{
+    JOBS.forEach(j=>{
+      if(j.status==='Published' && j.deadline && j.deadline < new Date().toISOString().slice(0,10)){
+        j.status='Closed';
+      }
+    });
+    alert('Expired jobs closed (UI).');
+    render();
+  });
+  $('qEmp').addEventListener('click', ()=>alert('Employer directory page/modal (next).'));
+
+  // Job editor
+  function openJobEditor(j=null){
+    $('mJobTitle').textContent = j ? 'Edit Job' : 'Create Job';
+    $('jId').value = j ? j.id : '';
+    $('jTitle').value = j ? j.title : '';
+    $('jEmployer').value = j ? j.employer : '';
+    $('jType').value = j ? j.type : 'Internship';
+    $('jDept').value = j ? j.dept : 'Computing';
+    $('jLoc').value = j ? j.loc : 'Kampala';
+    $('jDeadline').value = j ? j.deadline : '';
+    $('jDesc').value = j ? 'Edit job description here...' : '';
+    $('jReq').value = j ? 'Requirements...' : '';
+    $('jSalary').value = j ? 'Salary range...' : '';
+    $('jStatus').value = j ? j.status : 'Draft';
+    $('jFiles').value = '';
+    $('jFileList').innerHTML = '';
+    openModal('mJob');
+  }
+
+  $('jFiles').addEventListener('change', ()=>{
+    const files = [...$('jFiles').files];
+    $('jFileList').innerHTML = files.map((f,idx)=>`
+      <span class="file-pill" data-idx="${idx}">
+        <i class="fa-solid fa-paperclip"></i> ${f.name}
+        <button type="button" class="rmFile" title="Remove"><i class="fa-solid fa-xmark"></i></button>
+      </span>
+    `).join('');
+  });
+  $('jFileList').addEventListener('click', (e)=>{
+    if(!e.target.closest('.rmFile')) return;
+    e.target.closest('.file-pill').remove();
+  });
+
+  $('saveJobBtn').addEventListener('click', ()=>{
+    const id = $('jId').value || ('J'+Math.floor(Math.random()*900+100));
+    const obj = {
+      id,
+      title: $('jTitle').value.trim() || 'Untitled Job',
+      employer: $('jEmployer').value.trim() || 'Unknown Employer',
+      type: $('jType').value,
+      dept: $('jDept').value,
+      loc: $('jLoc').value,
+      deadline: $('jDeadline').value || '',
+      status: $('jStatus').value,
+      apps: $('jId').value ? (JOBS.find(x=>x.id===id)?.apps || 0) : 0
+    };
+    const idx = JOBS.findIndex(x=>x.id===id);
+    if(idx>-1) JOBS[idx]=obj; else JOBS.unshift(obj);
+    closeModal('mJob');
+    render();
+  });
+
+  // Applicant modal
+  let currentRating = 0;
+
+  function paintStars(n){
+    document.querySelectorAll('#starWrap .star').forEach(st=>{
+      st.classList.toggle('on', Number(st.dataset.v) <= n);
+    });
+  }
+
+  document.querySelectorAll('#starWrap .star').forEach(st=>{
+    st.addEventListener('click', ()=>{
+      currentRating = Number(st.dataset.v);
+      paintStars(currentRating);
+    });
+  });
+
+  function openApplicant(a){
+    $('mAppTitle').textContent = `Applicant • ${a.name}`;
+    $('aId').value = a.id;
+    $('aName').value = a.name;
+    $('aJob').value = a.job;
+    $('aStage').value = a.stage;
+    $('aNotes').value = a.notes || '';
+    currentRating = a.rating || 0;
+    paintStars(currentRating);
+    openModal('mApp');
+  }
+
+  $('saveAppBtn').addEventListener('click', ()=>{
+    const id = $('aId').value;
+    const a = APPS.find(x=>x.id===id);
+    if(!a) return;
+    a.stage = $('aStage').value;
+    a.notes = $('aNotes').value;
+    a.rating = currentRating;
+    closeModal('mApp');
+    render();
+  });
+
+  // Close on backdrop click
+  ['mJob','mApp','mBulk'].forEach(mid=>{
+    $(mid).addEventListener('click', (e)=>{ if(e.target.id===mid) closeModal(mid); });
+  });
+
+  // Init
+  setView('jobs');
+  render();
+</script>
+
+</body>
+</html>

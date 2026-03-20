@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Scholarships — <%= (tenant && tenant.name) ? tenant.name : "Classic Campus" %></title>
+
+  <link rel="stylesheet" href="/css/public.css"/>
+  <style>
+    body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial;background:#f4f8ff;color:#0f172a}
+    .wrap{max-width:1100px;margin:0 auto;padding:18px}
+    .card{background:#fff;border:1px solid rgba(13,64,96,.12);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.08);padding:16px}
+    .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+    @media(max-width:900px){.grid{grid-template-columns:1fr}}
+    .muted{color:#6b7280;font-size:12px}
+    a.btn{display:inline-flex;gap:8px;align-items:center;text-decoration:none;background:#0a6fbf;color:#fff;padding:10px 14px;border-radius:12px;font-weight:900}
+  </style>
+</head>
+<body>
+<%
+  const safe=(v)=> (v===null||v===undefined) ? "" : String(v);
+  const list = (typeof scholarships!=="undefined" && Array.isArray(scholarships)) ? scholarships : [];
+%>
+
+<div class="wrap">
+  <div class="card">
+    <h1 style="margin:0">Scholarships</h1>
+    <div class="muted">Apply online and track your application status.</div>
+    <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap">
+      <a class="btn" href="/scholarships/status">Check Application Status</a>
+    </div>
+  </div>
+
+  <div style="height:12px"></div>
+
+  <div class="grid">
+    <% if(!list.length){ %>
+      <div class="card"><div class="muted">No open scholarships at the moment.</div></div>
+    <% } %>
+
+    <% list.forEach(s=>{ %>
+      <div class="card">
+        <div style="font-weight:1000"><%= safe(s.title) %></div>
+        <div class="muted"><%= safe(s.provider) %> <%= s.closeDate ? ("• closes " + new Date(s.closeDate).toLocaleDateString()) : "" %></div>
+        <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap">
+          <a class="btn" href="/scholarships/<%= s._id %>">View</a>
+          <a class="btn" href="/scholarships/<%= s._id %>/apply">Apply</a>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+</div>
+</body>
+</html>

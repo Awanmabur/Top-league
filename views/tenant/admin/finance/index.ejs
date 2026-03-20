@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Admin • Finance — CampusSaaS</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/navbar.css" />
+  <link rel="stylesheet" href="/css/student-portal.css" />
+
+  <style>
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
+    .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .input,.select,.textarea{
+      padding:10px 12px;border-radius:12px;border:1px solid rgba(13,64,96,.16);background:#fff;outline:none
+    }
+    .input{min-width:240px}
+    .textarea{width:100%;min-height:110px;resize:vertical}
+    .input:focus,.select:focus,.textarea:focus{
+      border-color:rgba(10,111,191,.45);box-shadow:0 0 0 3px rgba(10,111,191,.12)
+    }
+
+    .muted{font-size:12px;color:#6b7280}
+    .strong{font-weight:900}
+
+    .grid-4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+    .grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+    .grid-2{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(340px,.65fr);gap:12px}
+
+    .chips{display:flex;gap:8px;flex-wrap:wrap}
+    .chip{
+      border:1px solid rgba(13,64,96,.14);background:#fff;border-radius:999px;
+      padding:8px 12px;cursor:pointer;font-weight:900;font-size:12px
+    }
+    .chip.active{background:rgba(10,111,191,.12);border-color:rgba(10,111,191,.35)}
+
+    .pill{
+      display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;
+      font-size:12px;font-weight:900;white-space:nowrap
+    }
+    .ok{background:#ecfdf3;color:#15803d}
+    .warn{background:#fef9c3;color:#92400e}
+    .bad{background:#fee2e2;color:#b91c1c}
+    .info{background:#eef2ff;color:#3730a3}
+    .primary-soft{background:rgba(10,111,191,.12);color:#0a6fbf}
+
+    .table-wrap{overflow:auto;border:1px solid rgba(13,64,96,.10);border-radius:12px;max-width:100%}
+    table{width:100%;border-collapse:separate;border-spacing:0;min-width:980px;background:#fff}
+    th,td{padding:10px 12px;border-bottom:1px solid rgba(13,64,96,.08);vertical-align:middle}
+    th{
+      font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;text-align:left;
+      background:rgba(13,64,96,.03);position:sticky;top:0;z-index:1
+    }
+    tr:hover td{background:rgba(10,111,191,.04)}
+
+    .topbar{
+      display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:nowrap
+    }
+    .topbar > div:first-child{min-width:0;flex:1 1 auto}
+
+    .top-actions{
+      display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;align-items:center;
+      flex:0 0 auto;margin-left:auto
+    }
+
+    .stat-card{
+      position:relative;overflow:hidden
+    }
+    .stat-card .stat-icon{
+      position:absolute;right:14px;top:14px;font-size:18px;opacity:.14
+    }
+    .stat-meta{
+      display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px
+    }
+    .stat-trend{
+      font-size:12px;font-weight:800
+    }
+
+    .section-head{
+      display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap
+    }
+
+    .mini-list{display:grid;gap:10px;margin-top:10px}
+    .mini-item{
+      display:flex;justify-content:space-between;gap:10px;align-items:center;
+      padding:10px 12px;border:1px solid rgba(13,64,96,.10);border-radius:12px;background:#fff
+    }
+    .mini-item .left{display:grid;gap:2px}
+
+    .empty-note{
+      padding:12px 14px;border:1px dashed rgba(13,64,96,.18);
+      border-radius:12px;background:rgba(13,64,96,.03)
+    }
+
+    .legend-list{display:grid;gap:8px}
+    .legend-row{
+      display:flex;justify-content:space-between;gap:10px;align-items:center;
+      padding:10px 12px;border:1px solid rgba(13,64,96,.10);border-radius:12px;background:#fff
+    }
+
+    .json-data{display:none !important}
+
+    @media (max-width: 1100px){
+      .grid-2{grid-template-columns:1fr}
+    }
+
+    @media (max-width: 900px){
+      .grid-4,.grid-3{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .topbar{flex-wrap:wrap}
+      .top-actions{width:100%;justify-content:flex-start}
+    }
+
+    @media (max-width: 680px){
+      .grid-4,.grid-3{grid-template-columns:1fr}
+      .input{min-width:160px}
+    }
+
+    @media (max-width: 520px){
+      .toolbar .left,.toolbar .right{width:100%}
+      .toolbar .left > *,.toolbar .right > *{max-width:100%}
+      table{min-width:900px}
+      .top-actions .btn{font-size:12px}
+    }
+  </style>
+</head>
+<body>
+  <%
+    const f = finance || {};
+    const totals = f.totals || {};
+    const recent = f.recent || {};
+    const charts = f.charts || {};
+    const models = f.availableModels || {};
+    const q = query || {};
+    const formatMoney = (n) => {
+      const num = Number(n || 0);
+      return num.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    };
+  %>
+
+  <div class="app">
+    <%- include("../../partials/navbar") %>
+
+    <main class="main">
+      <div class="topbar">
+        <div>
+          <div class="title">Finance</div>
+          <div class="subtitle">
+            Finance overview for invoices, collections, balances, fee structures, scholarships, reports and expenses.
+          </div>
+        </div>
+
+        <div class="top-actions">
+          <a class="btn light" href="/admin/invoices"><i class="fa-solid fa-file-invoice-dollar"></i> Invoices</a>
+          <a class="btn light" href="/admin/payments"><i class="fa-solid fa-money-bill-wave"></i> Payments</a>
+          <a class="btn light" href="/admin/finance-reports"><i class="fa-solid fa-chart-column"></i> Reports</a>
+          <a class="btn primary" href="/admin/expenses"><i class="fa-solid fa-plus"></i> Record Expense</a>
+        </div>
+      </div>
+
+      <div class="grid-4">
+        <div class="card stat-card">
+          <i class="fa-solid fa-file-invoice-dollar stat-icon"></i>
+          <div class="section-title">Total Billed</div>
+          <div class="kpi-value"><%= formatMoney(totals.billed || 0) %></div>
+          <div class="stat-meta">
+            <span class="muted"><%= totals.invoices || 0 %> invoice(s)</span>
+            <span class="pill info"><i class="fa-solid fa-receipt"></i> Invoices</span>
+          </div>
+        </div>
+
+        <div class="card stat-card">
+          <i class="fa-solid fa-wallet stat-icon"></i>
+          <div class="section-title">Collected</div>
+          <div class="kpi-value" style="color:#15803d;"><%= formatMoney(totals.collected || 0) %></div>
+          <div class="stat-meta">
+            <span class="muted"><%= totals.payments || 0 %> payment(s)</span>
+            <span class="pill ok"><i class="fa-solid fa-circle-check"></i> Cash In</span>
+          </div>
+        </div>
+
+        <div class="card stat-card">
+          <i class="fa-solid fa-hourglass-half stat-icon"></i>
+          <div class="section-title">Outstanding</div>
+          <div class="kpi-value" style="color:#b91c1c;"><%= formatMoney(totals.outstanding || 0) %></div>
+          <div class="stat-meta">
+            <span class="muted"><%= totals.unpaidInvoices || 0 %> unpaid invoice(s)</span>
+            <span class="pill bad"><i class="fa-solid fa-triangle-exclamation"></i> Due</span>
+          </div>
+        </div>
+
+        <div class="card stat-card">
+          <i class="fa-solid fa-chart-line stat-icon"></i>
+          <div class="section-title">Net Position</div>
+          <div class="kpi-value" style="color:<%= (totals.netPosition || 0) >= 0 ? '#0a6fbf' : '#b91c1c' %>;">
+            <%= formatMoney(totals.netPosition || 0) %>
+          </div>
+          <div class="stat-meta">
+            <span class="muted">Collections minus expenses</span>
+            <span class="pill <%= (totals.netPosition || 0) >= 0 ? 'primary-soft' : 'bad' %>">
+              <i class="fa-solid fa-scale-balanced"></i>
+              <%= (totals.netPosition || 0) >= 0 ? 'Positive' : 'Negative' %>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <section class="card" style="margin-top:12px;">
+        <form class="toolbar" method="GET" action="/admin/finance">
+          <div class="left">
+            <input class="input" name="q" value="<%= q.q || '' %>" placeholder="Search invoice no, receipt no, method, category..." />
+
+            <select class="select" name="period">
+              <option value="this_month" <%= q.period === 'this_month' ? 'selected' : '' %>>This Month</option>
+              <option value="today" <%= q.period === 'today' ? 'selected' : '' %>>Today</option>
+              <option value="last_30_days" <%= q.period === 'last_30_days' ? 'selected' : '' %>>Last 30 Days</option>
+              <option value="all_time" <%= q.period === 'all_time' ? 'selected' : '' %>>All Time</option>
+            </select>
+
+            <select class="select" name="program">
+              <option value="all" <%= q.program === 'all' ? 'selected' : '' %>>All Programs</option>
+              <% (programs || []).forEach(function(p){ %>
+                <option value="<%= p.id %>" <%= q.program === p.id ? 'selected' : '' %>><%= p.name %></option>
+              <% }) %>
+            </select>
+
+            <select class="select" name="status">
+              <option value="all" <%= q.status === 'all' ? 'selected' : '' %>>All Invoice Status</option>
+              <option value="Paid" <%= q.status === 'Paid' ? 'selected' : '' %>>Paid</option>
+              <option value="Unpaid" <%= q.status === 'Unpaid' ? 'selected' : '' %>>Unpaid</option>
+              <option value="Partially Paid" <%= q.status === 'Partially Paid' ? 'selected' : '' %>>Partially Paid</option>
+              <option value="Overdue" <%= q.status === 'Overdue' ? 'selected' : '' %>>Overdue</option>
+            </select>
+          </div>
+
+          <div class="right">
+            <div class="chips" id="viewChips">
+              <button class="chip active" data-view="overview" type="button"><i class="fa-solid fa-table-columns"></i> Overview</button>
+              <button class="chip" data-view="collections" type="button"><i class="fa-solid fa-sack-dollar"></i> Collections</button>
+              <button class="chip" data-view="expenses" type="button"><i class="fa-solid fa-money-check-dollar"></i> Expenses</button>
+            </div>
+
+            <a class="btn light" href="/admin/finance"><i class="fa-solid fa-rotate-left"></i> Reset</a>
+            <button class="btn primary" type="submit"><i class="fa-solid fa-magnifying-glass"></i> Filter</button>
+          </div>
+        </form>
+      </section>
+
+      <div class="grid-3" style="margin-top:12px;">
+        <div class="card">
+          <div class="section-title">Students & Programs</div>
+          <div class="mini-list">
+            <div class="mini-item">
+              <div class="left">
+                <div class="strong">Students</div>
+                <div class="muted">Loaded from Student model</div>
+              </div>
+              <div class="pill <%= models.Student ? 'ok' : 'warn' %>">
+                <i class="fa-solid fa-users"></i> <%= totals.students || 0 %>
+              </div>
+            </div>
+
+            <div class="mini-item">
+              <div class="left">
+                <div class="strong">Programs</div>
+                <div class="muted">Loaded from Program model</div>
+              </div>
+              <div class="pill <%= models.Program ? 'ok' : 'warn' %>">
+                <i class="fa-solid fa-graduation-cap"></i> <%= totals.programs || 0 %>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="section-title">Fee Setup</div>
+          <div class="mini-list">
+            <div class="mini-item">
+              <div class="left">
+                <div class="strong">Fee Structures</div>
+                <div class="muted">Configured billing templates</div>
+              </div>
+              <div class="pill <%= models.FeeStructure ? 'ok' : 'warn' %>">
+                <i class="fa-solid fa-layer-group"></i> <%= totals.feeStructures || 0 %>
+              </div>
+            </div>
+
+            <div class="mini-item">
+              <div class="left">
+                <div class="strong">Scholarships</div>
+                <div class="muted">Discounts, grants, bursaries</div>
+              </div>
+              <div class="pill <%= models.Scholarship ? 'ok' : 'warn' %>">
+                <i class="fa-solid fa-award"></i> <%= totals.scholarships || 0 %>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="section-title">Invoice Health</div>
+          <div class="mini-list">
+            <div class="mini-item">
+              <div class="left">
+                <div class="strong">Paid</div>
+                <div class="muted">Fully settled invoices</div>
+              </div>
+              <div class="pill ok"><i class="fa-solid fa-circle-check"></i> <%= totals.paidInvoices || 0 %></div>
+            </div>
+
+            <div class="mini-item">
+              <div class="left">
+                <div class="strong">Partially Paid</div>
+                <div class="muted">Still has balance</div>
+              </div>
+              <div class="pill warn"><i class="fa-solid fa-clock"></i> <%= totals.partialInvoices || 0 %></div>
+            </div>
+
+            <div class="mini-item">
+              <div class="left">
+                <div class="strong">Unpaid</div>
+                <div class="muted">No settlement yet</div>
+              </div>
+              <div class="pill bad"><i class="fa-solid fa-triangle-exclamation"></i> <%= totals.unpaidInvoices || 0 %></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-top:12px;">
+        <section class="card" style="min-width:0;">
+          <div class="section-head">
+            <div>
+              <div class="section-title" id="panelTitle">Finance Overview</div>
+              <div class="section-sub" id="panelSub">Recent finance activity from invoices, payments and expenses.</div>
+            </div>
+            <div class="muted" id="resultMeta">Live summary</div>
+          </div>
+
+          <div id="view-overview" style="margin-top:10px;">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Invoice No</th>
+                    <th>Student</th>
+                    <th>Program</th>
+                    <th>Amount</th>
+                    <th>Paid</th>
+                    <th>Balance</th>
+                    <th>Status</th>
+                    <th>Due Date</th>
+                  </tr>
+                </thead>
+                <tbody id="tbodyInvoices">
+                  <% if ((recent.invoices || []).length) { %>
+                    <% recent.invoices.forEach(function(inv){ %>
+                      <tr>
+                        <td><div class="strong"><%= inv.invoiceNo %></div></td>
+                        <td><%= inv.studentName %></td>
+                        <td><%= inv.programName %></td>
+                        <td><%= formatMoney(inv.amount) %></td>
+                        <td><%= formatMoney(inv.paid) %></td>
+                        <td><%= formatMoney(inv.balance) %></td>
+                        <td>
+                          <span class="pill <%= inv.status === 'Paid' ? 'ok' : inv.status === 'Partially Paid' ? 'warn' : 'bad' %>">
+                            <i class="fa-solid fa-circle"></i> <%= inv.status %>
+                          </span>
+                        </td>
+                        <td class="muted"><%= inv.dueDate %></td>
+                      </tr>
+                    <% }) %>
+                  <% } else { %>
+                    <tr>
+                      <td colspan="8" style="padding:18px;">
+                        <div class="muted">No invoice data found.</div>
+                      </td>
+                    </tr>
+                  <% } %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div id="view-collections" style="display:none;margin-top:10px;">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Receipt No</th>
+                    <th>Student</th>
+                    <th>Method</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody id="tbodyPayments">
+                  <% if ((recent.payments || []).length) { %>
+                    <% recent.payments.forEach(function(p){ %>
+                      <tr>
+                        <td><div class="strong"><%= p.receiptNo %></div></td>
+                        <td><%= p.studentName %></td>
+                        <td><span class="pill info"><i class="fa-solid fa-wallet"></i> <%= p.method %></span></td>
+                        <td><%= formatMoney(p.amount) %></td>
+                        <td><span class="pill ok"><i class="fa-solid fa-circle-check"></i> <%= p.status %></span></td>
+                        <td class="muted"><%= p.date %></td>
+                      </tr>
+                    <% }) %>
+                  <% } else { %>
+                    <tr>
+                      <td colspan="6" style="padding:18px;">
+                        <div class="muted">No payment data found.</div>
+                      </td>
+                    </tr>
+                  <% } %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div id="view-expenses" style="display:none;margin-top:10px;">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Reference</th>
+                    <th>Title</th>
+                    <th>Category</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody id="tbodyExpenses">
+                  <% if ((recent.expenses || []).length) { %>
+                    <% recent.expenses.forEach(function(exp){ %>
+                      <tr>
+                        <td><div class="strong"><%= exp.expenseNo %></div></td>
+                        <td><%= exp.title %></td>
+                        <td><span class="pill info"><i class="fa-solid fa-tag"></i> <%= exp.category %></span></td>
+                        <td><%= formatMoney(exp.amount) %></td>
+                        <td><span class="pill warn"><i class="fa-solid fa-file-circle-check"></i> <%= exp.status %></span></td>
+                        <td class="muted"><%= exp.date %></td>
+                      </tr>
+                    <% }) %>
+                  <% } else { %>
+                    <tr>
+                      <td colspan="6" style="padding:18px;">
+                        <div class="muted">No expense data found.</div>
+                      </td>
+                    </tr>
+                  <% } %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <aside class="card" style="min-width:0;">
+          <div class="section-title">Quick Actions</div>
+          <div class="section-sub">Open the main finance workflows quickly.</div>
+
+          <div class="mini-list">
+            <a class="mini-item" href="/admin/invoices" style="text-decoration:none;color:inherit;">
+              <div class="left">
+                <div class="strong">Invoices</div>
+                <div class="muted">Create and manage billing</div>
+              </div>
+              <span class="btn-xs"><i class="fa-solid fa-arrow-right"></i></span>
+            </a>
+
+            <a class="mini-item" href="/admin/payments" style="text-decoration:none;color:inherit;">
+              <div class="left">
+                <div class="strong">Payments</div>
+                <div class="muted">Receive and reconcile payments</div>
+              </div>
+              <span class="btn-xs"><i class="fa-solid fa-arrow-right"></i></span>
+            </a>
+
+            <a class="mini-item" href="/admin/student-statements" style="text-decoration:none;color:inherit;">
+              <div class="left">
+                <div class="strong">Student Statements</div>
+                <div class="muted">Student ledger and balances</div>
+              </div>
+              <span class="btn-xs"><i class="fa-solid fa-arrow-right"></i></span>
+            </a>
+
+            <a class="mini-item" href="/admin/fee-structures" style="text-decoration:none;color:inherit;">
+              <div class="left">
+                <div class="strong">Fee Structure</div>
+                <div class="muted">Billing templates by class/program</div>
+              </div>
+              <span class="btn-xs"><i class="fa-solid fa-arrow-right"></i></span>
+            </a>
+
+            <a class="mini-item" href="/admin/scholarships" style="text-decoration:none;color:inherit;">
+              <div class="left">
+                <div class="strong">Scholarships</div>
+                <div class="muted">Manage waivers and grants</div>
+              </div>
+              <span class="btn-xs"><i class="fa-solid fa-arrow-right"></i></span>
+            </a>
+
+            <a class="mini-item" href="/admin/finance-reports" style="text-decoration:none;color:inherit;">
+              <div class="left">
+                <div class="strong">Finance Reports</div>
+                <div class="muted">Collections, balances and summaries</div>
+              </div>
+              <span class="btn-xs"><i class="fa-solid fa-arrow-right"></i></span>
+            </a>
+
+            <a class="mini-item" href="/admin/expenses" style="text-decoration:none;color:inherit;">
+              <div class="left">
+                <div class="strong">Expenses</div>
+                <div class="muted">Track outgoing finance records</div>
+              </div>
+              <span class="btn-xs"><i class="fa-solid fa-arrow-right"></i></span>
+            </a>
+          </div>
+
+          <div class="section-title" style="margin-top:16px;">Payment Methods</div>
+          <% if ((charts.paymentMethods || []).length) { %>
+            <div class="legend-list" style="margin-top:10px;">
+              <% charts.paymentMethods.forEach(function(row){ %>
+                <div class="legend-row">
+                  <div>
+                    <div class="strong"><%= row.label %></div>
+                    <div class="muted">Collection channel</div>
+                  </div>
+                  <div class="pill ok"><i class="fa-solid fa-sack-dollar"></i> <%= formatMoney(row.amount) %></div>
+                </div>
+              <% }) %>
+            </div>
+          <% } else { %>
+            <div class="empty-note" style="margin-top:10px;">No payment method summary yet.</div>
+          <% } %>
+
+          <div class="section-title" style="margin-top:16px;">Expense Categories</div>
+          <% if ((charts.expenseCategories || []).length) { %>
+            <div class="legend-list" style="margin-top:10px;">
+              <% charts.expenseCategories.forEach(function(row){ %>
+                <div class="legend-row">
+                  <div>
+                    <div class="strong"><%= row.label %></div>
+                    <div class="muted">Expense bucket</div>
+                  </div>
+                  <div class="pill warn"><i class="fa-solid fa-money-check-dollar"></i> <%= formatMoney(row.amount) %></div>
+                </div>
+              <% }) %>
+            </div>
+          <% } else { %>
+            <div class="empty-note" style="margin-top:10px;">No expense category summary yet.</div>
+          <% } %>
+        </aside>
+      </div>
+    </main>
+  </div>
+
+  <textarea id="financeData" class="json-data" aria-hidden="true"><%- JSON.stringify(finance || {}) %></textarea>
+
+  <script src="/js/navbar.js"></script>
+  <script src="/js/finance.js"></script>
+</body>
+</html>

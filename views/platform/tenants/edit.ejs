@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Edit University — Classic Campus</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="/css/navbar.css" />
+  <style>
+    body{margin:0;background:#f5f8ff;font-family:Poppins,Segoe UI,Arial,sans-serif;color:#0f172a;overflow-x:hidden}
+    *{box-sizing:border-box;min-width:0}
+    .main{flex:1;padding:20px 26px;display:flex;flex-direction:column;gap:16px}
+    .title{font-size:20px;font-weight:700;color:#083454}
+    .subtitle{font-size:13px;color:#6b7280;line-height:1.5}
+    .card{background:#fff;border-radius:12px;padding:16px;border:1px solid #e4ecfb;box-shadow:0 6px 18px rgba(12,38,73,.04)}
+    .section-title{font-size:14px;font-weight:800;color:#0a3d62;margin-bottom:10px}
+    .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+    .form-group{display:flex;flex-direction:column;gap:7px}
+    .full{grid-column:1/-1}
+    label{font-size:13px;font-weight:700;color:#334155}
+    input,select{width:100%;border:1px solid #dbe3f6;border-radius:10px;padding:11px 12px;background:#fff;font:inherit}
+    .btn{padding:10px 14px;border-radius:10px;border:1px solid #dbe3f6;background:#eef4ff;color:#0a3d62;text-decoration:none;font-weight:700;display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+    .btn.primary{background:#0a3d62;color:#fff;border-color:#0a3d62}
+    .btn.danger{background:#fff1f2;color:#b91c1c;border-color:#fecdd3}
+    .alert{padding:12px 14px;border-radius:10px;background:#fff1f2;color:#991b1b;border:1px solid #fecdd3}
+    .actions{display:flex;gap:10px;flex-wrap:wrap}
+    form.inline{display:inline}
+    @media (max-width:900px){.form-grid{grid-template-columns:1fr}.main{padding:16px}}
+  </style>
+</head>
+<body>
+  <%- include("./navbar") %>
+
+  <main class="main">
+    <div>
+      <div class="title">Edit University</div>
+      <div class="subtitle">Update tenant university details, plan, status, profile controls, and resend access invite if needed.</div>
+    </div>
+
+    <div class="card">
+      <% if (error) { %>
+        <div class="alert" style="margin-bottom:14px;"><%= error %></div>
+      <% } %>
+
+      <form action="/super-admin/universities/<%= tenant?._id %>/edit" method="POST" class="form-grid">
+        <div class="full section-title">University Details</div>
+
+        <div class="form-group">
+          <label>University Name</label>
+          <input type="text" name="name" value="<%= tenant?.name || '' %>" required />
+        </div>
+
+        <div class="form-group">
+          <label>Code</label>
+          <input type="text" value="<%= tenant?.code || '' %>" disabled />
+        </div>
+
+        <div class="form-group">
+          <label>Owner Name</label>
+          <input type="text" name="ownerName" value="<%= tenant?.ownerName || '' %>" required />
+        </div>
+
+        <div class="form-group">
+          <label>Owner Email</label>
+          <input type="email" name="ownerEmail" value="<%= tenant?.ownerEmail || '' %>" required />
+        </div>
+
+        <div class="form-group">
+          <label>Owner Phone</label>
+          <input type="text" name="ownerPhone" value="<%= tenant?.ownerPhone || '' %>" />
+        </div>
+
+        <div class="form-group">
+          <label>Country</label>
+          <input type="text" name="country" value="<%= tenant?.country || '' %>" />
+        </div>
+
+        <div class="form-group">
+          <label>Timezone</label>
+          <input type="text" name="timezone" value="<%= tenant?.timezone || 'Africa/Kampala' %>" />
+        </div>
+
+        <div class="form-group">
+          <label>Currency</label>
+          <input type="text" name="currency" value="<%= tenant?.currency || 'USD' %>" />
+        </div>
+
+        <div class="full section-title" style="margin-top:8px;">Plan & Status</div>
+
+        <div class="form-group">
+          <label>Plan</label>
+          <select name="planId" required>
+            <% (plans || []).forEach(function(plan){ %>
+              <option value="<%= plan._id %>" <%= String(tenant?.planId || tenant?.planId?._id || '') === String(plan._id) ? 'selected' : '' %>><%= plan.name %></option>
+            <% }) %>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Status</label>
+          <select name="status">
+            <option value="trial" <%= tenant?.status === 'trial' ? 'selected' : '' %>>Trial</option>
+            <option value="active" <%= tenant?.status === 'active' ? 'selected' : '' %>>Active</option>
+            <option value="suspended" <%= tenant?.status === 'suspended' ? 'selected' : '' %>>Suspended</option>
+            <option value="cancelled" <%= tenant?.status === 'cancelled' ? 'selected' : '' %>>Cancelled</option>
+          </select>
+        </div>
+
+        <div class="form-group full">
+          <label>Custom Domain</label>
+          <input type="text" name="customDomain" value="<%= tenant?.customDomain || '' %>" />
+        </div>
+
+        <div class="full section-title" style="margin-top:8px;">Public Profile</div>
+
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:8px;">
+            <input type="checkbox" name="profileEnabled" <%= tenant?.settings?.profile?.enabled ? 'checked' : '' %> />
+            Public profile enabled
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:8px;">
+            <input type="checkbox" name="profileVerified" <%= tenant?.settings?.profile?.verified ? 'checked' : '' %> />
+            Public profile verified
+          </label>
+        </div>
+
+        <div class="form-group full">
+          <div class="actions">
+            <button type="submit" class="btn primary">
+              <i class="fa-solid fa-floppy-disk"></i>
+              Save Changes
+            </button>
+
+            <a href="/super-admin/universities/<%= tenant?._id %>" class="btn">
+              Cancel
+            </a>
+
+            <form action="/super-admin/universities/<%= tenant?._id %>/resend-invite" method="POST" class="inline">
+              <button type="submit" class="btn">
+                <i class="fa-solid fa-paper-plane"></i>
+                Resend Invite
+              </button>
+            </form>
+          </div>
+        </div>
+      </form>
+
+      <form action="/super-admin/universities/<%= tenant?._id %>/delete" method="POST" onsubmit="return confirm('Delete this university?');" style="margin-top:12px;">
+        <button type="submit" class="btn danger">
+          <i class="fa-solid fa-trash"></i>
+          Delete University
+        </button>
+      </form>
+    </div>
+  </main>
+
+  <script src="/js/navbar.js"></script>
+</body>
+</html>

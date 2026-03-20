@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Apply — <%= (tenant && tenant.name) ? tenant.name : "Classic Campus" %></title>
+  <script src="/js/public-scholarships.js" defer></script>
+  <style>
+    body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial;background:#f4f8ff;color:#0f172a}
+    .wrap{max-width:900px;margin:0 auto;padding:18px}
+    .card{background:#fff;border:1px solid rgba(13,64,96,.12);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.08);padding:16px}
+    .muted{color:#6b7280;font-size:12px}
+    .grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+    @media(max-width:900px){.grid2{grid-template-columns:1fr}}
+    input,select,textarea{width:100%;padding:10px;border-radius:12px;border:1px solid rgba(13,64,96,.14)}
+    textarea{min-height:120px}
+    .btn{background:#0a6fbf;color:#fff;border:none;padding:10px 14px;border-radius:12px;font-weight:1000;cursor:pointer}
+    .err{margin-top:6px;color:#b91c1c;font-size:12px;font-weight:800}
+    .ok{background:#ecfdf3;color:#15803d;border:1px solid rgba(21,128,61,.2);padding:10px 12px;border-radius:12px;font-weight:900}
+    .bad{background:#fee2e2;color:#991b1b;border:1px solid rgba(153,27,27,.2);padding:10px 12px;border-radius:12px;font-weight:900}
+  </style>
+</head>
+<body>
+<%
+  const safe=(v)=> (v===null||v===undefined) ? "" : String(v);
+  const s = (typeof scholarship!=="undefined" && scholarship) ? scholarship : null;
+  const _errors = (typeof errors!=="undefined" && errors) ? errors : null;
+  const fd = (typeof formData!=="undefined" && formData) ? formData : null;
+  const _programs = (typeof programs!=="undefined" && Array.isArray(programs)) ? programs : [];
+  const appId = (typeof applicationId!=="undefined" && applicationId) ? applicationId : null;
+
+  const val=(k,def="")=>{
+    if(fd && fd[k]!==undefined && fd[k]!==null) return safe(fd[k]);
+    return def;
+  };
+%>
+
+<div class="wrap">
+  <div class="card">
+    <a class="btn" style="text-decoration:none;display:inline-block" href="/scholarships/<%= s ? s._id : "" %>">← Back</a>
+    <h1 style="margin:10px 0 0">Apply</h1>
+    <div class="muted"><%= s ? safe(s.title) : "" %></div>
+
+    <% if(_errors && _errors.general){ %>
+      <div class="bad" style="margin-top:10px"><%= safe(_errors.general) %></div>
+    <% } %>
+
+    <% if(appId){ %>
+      <div class="ok" style="margin-top:10px">
+        Submitted successfully! Your Application ID: <b><%= safe(appId) %></b>
+        <div class="muted">Use it on the status page to track your application.</div>
+      </div>
+    <% } %>
+
+    <form method="POST" enctype="multipart/form-data" action="/scholarships/<%= s ? s._id : "" %>/apply" style="margin-top:12px">
+      <% if(csrfToken){ %><input type="hidden" name="_csrf" value="<%= csrfToken %>"/><% } %>
+
+      <div class="grid2">
+        <div>
+          <div class="muted">Full Name *</div>
+          <input name="fullName" value="<%= val("fullName") %>"/>
+          <% if(_errors && _errors.fullName){ %><div class="err"><%= safe(_errors.fullName) %></div><% } %>
+        </div>
+        <div>
+          <div class="muted">Reg No (optional)</div>
+          <input name="regNo" value="<%= val("regNo") %>"/>
+        </div>
+
+        <div>
+          <div class="muted">Phone *</div>
+          <input name="phone" value="<%= val("phone") %>"/>
+          <% if(_errors && _errors.phone){ %><div class="err"><%= safe(_errors.phone) %></div><% } %>
+        </div>
+        <div>
+          <div class="muted">Email *</div>
+          <input name="email" value="<%= val("email") %>"/>
+          <% if(_errors && _errors.email){ %><div class="err"><%= safe(_errors.email) %></div><% } %>
+        </div>
+
+        <div>
+          <div class="muted">Program (optional)</div>
+          <select name="program">
+            <option value="">Select</option>
+            <% _programs.forEach(p=>{ %>
+              <option value="<%= p._id %>" <%= val("program")===String(p._id) ? "selected":"" %>>
+                <%= (p.code ? p.code+" — ":"") + (p.name||p.title||"Program") %>
+              </option>
+            <% }) %>
+          </select>
+        </div>
+
+        <div>
+          <div class="muted">GPA (optional)</div>
+          <input type="number" min="0" max="5" step="0.01" name="gpa" value="<%= val("gpa") %>"/>
+        </div>
+
+        <div>
+          <div class="muted">Academic Year *</div>
+          <input name="academicYear" value="<%= val("academicYear") %>" placeholder="2026/2027"/>
+          <% if(_errors && _errors.academicYear){ %><div class="err"><%= safe(_errors.academicYear) %></div><% } %>
+        </div>
+
+        <div>
+          <div class="muted">Year Level *</div>
+          <input name="yearLevel" value="<%= val("yearLevel") %>" placeholder="Year 1"/>
+          <% if(_errors && _errors.yearLevel){ %><div class="err"><%= safe(_errors.yearLevel) %></div><% } %>
+        </div>
+      </div>
+
+      <div style="height:10px"></div>
+
+      <div class="muted">Motivation</div>
+      <textarea name="motivation"><%= val("motivation") %></textarea>
+
+      <div style="height:10px"></div>
+
+      <div class="muted">Financial Need</div>
+      <textarea name="financialNeed"><%= val("financialNeed") %></textarea>
+
+      <div style="height:12px"></div>
+
+      <h3 style="margin:0">Documents</h3>
+      <div class="muted">Allowed: PDF, JPG, PNG. Files go to Cloudinary.</div>
+
+      <div style="height:8px"></div>
+
+      <div class="grid2">
+        <div>
+          <div class="muted">Transcript *</div>
+          <input type="file" name="transcript" required/>
+          <% if(_errors && _errors.transcript){ %><div class="err"><%= safe(_errors.transcript) %></div><% } %>
+        </div>
+
+        <div>
+          <div class="muted">ID Document (optional)</div>
+          <input type="file" name="idDocument"/>
+        </div>
+
+        <div>
+          <div class="muted">Recommendation Letter (optional)</div>
+          <input type="file" name="recommendationLetter"/>
+        </div>
+
+        <div>
+          <div class="muted">Other Docs (optional)</div>
+          <input type="file" name="otherDocs" multiple/>
+        </div>
+      </div>
+
+      <div style="margin-top:12px;display:flex;justify-content:flex-end">
+        <button class="btn" type="submit">Submit Application</button>
+      </div>
+    </form>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Support Tickets — Classic Campus</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="/css/navbar.css" />
+  <style>
+    body{margin:0;background:#f5f8ff;font-family:Poppins,Segoe UI,Arial,sans-serif;color:#0f172a;overflow-x:hidden}
+    *{box-sizing:border-box;min-width:0}
+    .main{flex:1;padding:20px 26px;display:flex;flex-direction:column;gap:16px}
+    .topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+    .title{font-size:20px;font-weight:700;color:#083454}
+    .subtitle{font-size:13px;color:#6b7280;line-height:1.5}
+    .btn{padding:10px 14px;border-radius:10px;border:1px solid #dbe3f6;background:#eef4ff;color:#0a3d62;text-decoration:none;font-weight:700;display:inline-flex;align-items:center;gap:8px}
+    .btn.primary{background:#0a3d62;color:#fff;border-color:#0a3d62}
+    .card{background:#fff;border-radius:12px;padding:14px;border:1px solid #e4ecfb;box-shadow:0 6px 18px rgba(12,38,73,.04)}
+    .filters{display:grid;grid-template-columns:1fr 1fr auto;gap:12px}
+    select{width:100%;padding:10px 12px;border:1px solid #dbe3f6;border-radius:10px;background:#fff}
+    .table-wrap{overflow:auto}
+    table{width:100%;border-collapse:collapse;min-width:980px}
+    th,td{padding:12px 10px;border-bottom:1px solid #edf2ff;text-align:left;font-size:13px}
+    th{font-size:12px;text-transform:uppercase;color:#6b7280}
+    .badge{display:inline-flex;padding:5px 9px;border-radius:999px;font-size:11px;font-weight:800}
+    .green{background:#e6f9ee;color:#166534}
+    .amber{background:#fffbeb;color:#b45309}
+    .red{background:#fff1f2;color:#b91c1c}
+    .gray{background:#f1f5f9;color:#475569}
+    .alert{padding:12px 14px;border-radius:10px;background:#fff1f2;color:#991b1b;border:1px solid #fecdd3}
+    @media (max-width:900px){.main{padding:16px}.filters{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <%- include("./navbar") %>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="title">Support Tickets</div>
+        <div class="subtitle">Review, assign and respond to issues from tenant universities.</div>
+      </div>
+      <div>
+        <a href="/super-admin/support-tickets/create" class="btn primary"><i class="fa-solid fa-headset"></i> New Ticket</a>
+      </div>
+    </div>
+
+    <% if (error) { %>
+      <div class="alert"><%= error %></div>
+    <% } %>
+
+    <div class="card">
+      <form method="GET" action="/super-admin/support-tickets" class="filters">
+        <select name="status">
+          <option value="">All Statuses</option>
+          <option value="open" <%= filters?.status === 'open' ? 'selected' : '' %>>Open</option>
+          <option value="pending" <%= filters?.status === 'pending' ? 'selected' : '' %>>Pending</option>
+          <option value="resolved" <%= filters?.status === 'resolved' ? 'selected' : '' %>>Resolved</option>
+          <option value="closed" <%= filters?.status === 'closed' ? 'selected' : '' %>>Closed</option>
+        </select>
+
+        <select name="priority">
+          <option value="">All Priorities</option>
+          <option value="low" <%= filters?.priority === 'low' ? 'selected' : '' %>>Low</option>
+          <option value="medium" <%= filters?.priority === 'medium' ? 'selected' : '' %>>Medium</option>
+          <option value="high" <%= filters?.priority === 'high' ? 'selected' : '' %>>High</option>
+          <option value="urgent" <%= filters?.priority === 'urgent' ? 'selected' : '' %>>Urgent</option>
+        </select>
+
+        <button class="btn" type="submit">Filter</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Ticket</th>
+              <th>University</th>
+              <th>Subject</th>
+              <th>Priority</th>
+              <th>Status</th>
+              <th>Assigned To</th>
+              <th>Created</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% (tickets || []).forEach(function(ticket){ %>
+              <tr>
+                <td><%= ticket.ticketNo %></td>
+                <td><%= ticket.tenantId?.name || '—' %></td>
+                <td><%= ticket.subject %></td>
+                <td><span class="badge <%= ticket.priority === 'urgent' ? 'red' : ticket.priority === 'high' ? 'amber' : 'gray' %>"><%= ticket.priority %></span></td>
+                <td><span class="badge <%= ticket.status === 'resolved' || ticket.status === 'closed' ? 'green' : ticket.status === 'pending' ? 'amber' : 'gray' %>"><%= ticket.status %></span></td>
+                <td><%= ticket.assignedTo?.name || '—' %></td>
+                <td><%= ticket.createdAt ? new Date(ticket.createdAt).toLocaleString() : '—' %></td>
+                <td><a href="/super-admin/support-tickets/<%= ticket._id %>" class="btn">Open</a></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  </div>
+  <script src="/js/navbar.js"></script>
+</body>
+</html>

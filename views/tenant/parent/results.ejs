@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title><%= (tenant && tenant.name) ? tenant.name : "CampusSaaS" %> — Results</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous"
+        referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/navbar.css"/>
+  <link rel="stylesheet" href="/css/parent-portal.css" />
+
+  <style>
+    .toolbar{
+      margin-top:16px;
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+    }
+
+    .toolbar-left,
+    .toolbar-right{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    .search-box,
+    .filter-box{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:10px 12px;
+      box-shadow:var(--shadow);
+      min-height:46px;
+    }
+
+    .search-box{
+      min-width:260px;
+      flex:1;
+    }
+
+    .search-box i,
+    .filter-box i{
+      color:var(--primary);
+    }
+
+    .search-box input,
+    .filter-box select{
+      width:100%;
+      border:none;
+      outline:none;
+      background:transparent;
+      color:var(--text);
+      font:inherit;
+    }
+
+    .student-tabs{
+      margin-top:14px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .student-tab{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background:#fff;
+      box-shadow:var(--shadow);
+      cursor:pointer;
+      min-width:220px;
+      transition:.18s ease;
+      text-decoration:none;
+    }
+
+    .student-tab:hover{
+      transform:translateY(-1px);
+    }
+
+    .student-tab.active{
+      background:var(--primary-soft);
+      border-color:#bfd3ff;
+    }
+
+    .student-tab-avatar{
+      width:40px;
+      height:40px;
+      border-radius:999px;
+      background:linear-gradient(135deg,#dbeafe 0%, #bfdbfe 100%);
+      color:var(--primary-2);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:900;
+      flex-shrink:0;
+    }
+
+    .student-tab-name{
+      font-size:14px;
+      font-weight:900;
+      line-height:1.2;
+    }
+
+    .student-tab-sub{
+      font-size:12px;
+      color:var(--muted);
+      margin-top:3px;
+    }
+
+    .summary-grid{
+      margin-top:16px;
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:12px;
+    }
+
+    .summary-box{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+      background:#fbfdff;
+    }
+
+    .summary-label{
+      color:var(--muted);
+      font-size:12px;
+    }
+
+    .summary-value{
+      margin-top:6px;
+      font-size:24px;
+      font-weight:1000;
+      letter-spacing:-.02em;
+    }
+
+    .good{ color:var(--ok); }
+    .warn{ color:var(--warn); }
+    .danger{ color:var(--danger); }
+
+    .page-grid{
+      margin-top:16px;
+      display:grid;
+      grid-template-columns:1.35fr .9fr;
+      gap:14px;
+    }
+
+    .table-wrap{
+      margin-top:14px;
+      overflow:auto;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:#fff;
+    }
+
+    .data-table{
+      width:100%;
+      min-width:860px;
+      border-collapse:collapse;
+    }
+
+    .data-table th,
+    .data-table td{
+      padding:11px 12px;
+      border-bottom:1px solid #eef4fb;
+      text-align:left;
+      font-size:13px;
+      vertical-align:top;
+    }
+
+    .data-table th{
+      font-size:12px;
+      color:var(--muted);
+      font-weight:800;
+      background:#f8fbff;
+    }
+
+    .data-table tr:last-child td{
+      border-bottom:none;
+    }
+
+    .grade-pill{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:38px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background:#fff;
+      font-size:12px;
+      font-weight:900;
+    }
+
+    .score-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      background:#f8fbff;
+      border:1px solid var(--line);
+      font-size:12px;
+      font-weight:900;
+    }
+
+    .side-stack{
+      display:grid;
+      gap:14px;
+    }
+
+    .metric-list{
+      margin-top:12px;
+      display:grid;
+      gap:10px;
+    }
+
+    .metric-item{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      border-bottom:1px solid #eef4fb;
+      padding-bottom:8px;
+      font-size:13px;
+      color:var(--muted);
+    }
+
+    .metric-item:last-child{
+      border-bottom:none;
+      padding-bottom:0;
+    }
+
+    .metric-item strong{
+      color:var(--text);
+      text-align:right;
+    }
+
+    .list{
+      margin-top:12px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+
+    .list-item{
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:10px;
+      background:#fff;
+    }
+
+    .list-icon{
+      width:34px;
+      height:34px;
+      border-radius:12px;
+      background:#e8f0ff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:var(--primary);
+      flex-shrink:0;
+    }
+
+    .list-title{
+      font-weight:1000;
+    }
+
+    .list-meta{
+      color:var(--muted);
+      font-size:12px;
+      margin-top:2px;
+    }
+
+    .list-text{
+      color:var(--muted);
+      font-size:13px;
+      margin-top:6px;
+      line-height:1.5;
+    }
+
+    .empty-state{
+      margin-top:16px;
+    }
+
+    .action-row{
+      margin-top:12px;
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+
+    @media (max-width: 1180px){
+      .page-grid{
+        grid-template-columns:1fr;
+      }
+
+      .summary-grid{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+      }
+    }
+
+    @media (max-width: 720px){
+      .toolbar{
+        flex-direction:column;
+        align-items:stretch;
+      }
+
+      .toolbar-left,
+      .toolbar-right{
+        width:100%;
+      }
+
+      .search-box,
+      .filter-box{
+        width:100%;
+        min-width:0;
+      }
+
+      .summary-grid{
+        grid-template-columns:1fr;
+      }
+
+      .student-tab{
+        width:100%;
+        min-width:0;
+      }
+
+      .metric-item{
+        flex-direction:column;
+      }
+
+      .metric-item strong{
+        text-align:left;
+      }
+    }
+  </style>
+</head>
+<body>
+  <%
+    const t = tenant || {};
+    const u = user || {};
+    const p = parent || null;
+    const kids = Array.isArray(children) ? children : [];
+    const tenantName = t.name || "CampusSaaS";
+    const tenantCode = (t.code || "CC").toString();
+    const results = Array.isArray(resultRows) ? resultRows : [];
+    const recents = Array.isArray(recentPerformance) ? recentPerformance : [];
+    const summary = resultSummary || {};
+    const opts = options || { academicYears: [], semesters: [] };
+
+    function fullNameOfStudent(c) {
+      const name = (c && c.fullName) ? String(c.fullName).trim() : "";
+      if (name) return name;
+
+      const parts = [];
+      if (c && c.firstName) parts.push(String(c.firstName).trim());
+      if (c && c.middleName) parts.push(String(c.middleName).trim());
+      if (c && c.lastName) parts.push(String(c.lastName).trim());
+      return parts.filter(Boolean).join(" ").trim() || "Student";
+    }
+
+    function initials(name) {
+      const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+      const a = parts[0] && parts[0][0] ? parts[0][0] : "S";
+      const b = parts[1] && parts[1][0] ? parts[1][0] : "";
+      return (a + b).toUpperCase();
+    }
+
+    function scoreClass(score, passMark) {
+      const s = Number(score || 0);
+      const p = Number(passMark || 50);
+      if (s >= p) return "good";
+      if (s >= p - 10) return "warn";
+      return "danger";
+    }
+  %>
+
+    <%-include("./navbar") %>
+
+    <main class="main">
+      <div class="topbar">
+        <div>
+          <div class="title">Results</div>
+          <div class="subtitle">
+            Review subject performance, exam outcomes, pass status, average score and recent assessments for your linked children.
+          </div>
+        </div>
+
+        <div class="top-actions">
+          <div class="chip">
+            <i class="fa-solid fa-chart-column"></i>
+            <span>Average</span>
+            <b><%= Number(summary.averageScore || 0) %>%</b>
+          </div>
+
+          <button class="btn light" type="button" onclick="window.location.href='/parent/attendance<%= student ? ('?student=' + student._id) : '' %>'">
+            <i class="fa-solid fa-user-check"></i> Attendance
+          </button>
+
+          <button class="btn primary" type="button" onclick="window.location.href='/parent/children'">
+            <i class="fa-solid fa-children"></i> My Children
+          </button>
+        </div>
+      </div>
+
+      <% if (error) { %>
+        <section class="card empty-state">
+          <div class="empty">
+            <div class="empty-icon"><i class="fa-solid fa-file-lines"></i></div>
+            <div class="empty-title">Unable to load results</div>
+            <div class="empty-text"><%= error %></div>
+          </div>
+        </section>
+      <% } else { %>
+
+        <div class="student-tabs">
+          <% kids.forEach(function(c){ const active = student && String(student._id) === String(c._id); %>
+            <a href="/parent/results?student=<%= c._id %>" class="student-tab <%= active ? 'active' : '' %>">
+              <div class="student-tab-avatar"><%= initials(fullNameOfStudent(c)) %></div>
+              <div>
+                <div class="student-tab-name"><%= fullNameOfStudent(c) %></div>
+                <div class="student-tab-sub"><%= c.regNo || "—" %> • <%= (c.classGroup && (c.classGroup.title || c.classGroup.name)) || "—" %></div>
+              </div>
+            </a>
+          <% }); %>
+        </div>
+
+        <form method="GET" action="/parent/results" class="toolbar">
+          <input type="hidden" name="student" value="<%= student ? student._id : '' %>" />
+
+          <div class="toolbar-left">
+            <div class="search-box">
+              <i class="fa-solid fa-user-graduate"></i>
+              <input type="text" value="<%= student ? fullNameOfStudent(student) : '' %>" readonly />
+            </div>
+          </div>
+
+          <div class="toolbar-right">
+            <div class="filter-box">
+              <i class="fa-solid fa-calendar-days"></i>
+              <select name="academicYear" onchange="this.form.submit()">
+                <option value="">All academic years</option>
+                <% (opts.academicYears || []).forEach(function(y){ %>
+                  <option value="<%= y %>" <%= String(filters?.academicYear || '') === String(y) ? 'selected' : '' %>><%= y %></option>
+                <% }); %>
+              </select>
+            </div>
+
+            <div class="filter-box">
+              <i class="fa-solid fa-layer-group"></i>
+              <select name="semester" onchange="this.form.submit()">
+                <option value="">All semesters</option>
+                <% (opts.semesters || []).forEach(function(s){ %>
+                  <option value="<%= s %>" <%= String(filters?.semester || '') === String(s) ? 'selected' : '' %>><%= s %></option>
+                <% }); %>
+              </select>
+            </div>
+          </div>
+        </form>
+
+        <div class="summary-grid">
+          <div class="summary-box">
+            <div class="summary-label">Average Score</div>
+            <div class="summary-value <%= Number(summary.averageScore || 0) >= 50 ? 'good' : 'warn' %>"><%= Number(summary.averageScore || 0) %>%</div>
+          </div>
+          <div class="summary-box">
+            <div class="summary-label">Total Subjects</div>
+            <div class="summary-value"><%= Number(summary.totalSubjects || 0) %></div>
+          </div>
+          <div class="summary-box">
+            <div class="summary-label">Passed</div>
+            <div class="summary-value good"><%= Number(summary.passed || 0) %></div>
+          </div>
+          <div class="summary-box">
+            <div class="summary-label">Failed</div>
+            <div class="summary-value <%= Number(summary.failed || 0) > 0 ? 'danger' : 'good' %>"><%= Number(summary.failed || 0) %></div>
+          </div>
+        </div>
+
+        <div class="page-grid">
+          <section class="card">
+            <div class="section-title">Detailed Results</div>
+            <div class="section-sub">
+              Subject-by-subject academic performance for <%= student ? fullNameOfStudent(student) : "student" %>.
+            </div>
+
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Subject</th>
+                    <th>Exam / Assessment</th>
+                    <th>Academic Year</th>
+                    <th>Semester</th>
+                    <th>Score</th>
+                    <th>Grade</th>
+                    <th>Remarks</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% if (!results.length) { %>
+                    <tr>
+                      <td colspan="7">No result records found for the selected filters.</td>
+                    </tr>
+                  <% } else { %>
+                    <% results.forEach(function(r){ 
+                      const subject = r.subjectName || r.subject || r.courseName || r.course || "Subject";
+                      const examTitle = r.examTitle || r.assessment || r.exam?.title || r.exam?.name || r.exam || "Assessment";
+                      const score = Number(r.totalScore ?? r.score ?? r.mark ?? r.marks ?? 0);
+                      const passMark = Number(r.passMark ?? 50);
+                    %>
+                      <tr>
+                        <td><strong><%= subject %></strong></td>
+                        <td><%= examTitle %></td>
+                        <td><%= r.academicYear || "—" %></td>
+                        <td><%= r.semester || "—" %></td>
+                        <td>
+                          <span class="score-pill <%= scoreClass(score, passMark) %>">
+                            <i class="fa-solid fa-chart-column"></i>
+                            <%= score %>%
+                          </span>
+                        </td>
+                        <td>
+                          <span class="grade-pill"><%= r.grade || "—" %></span>
+                        </td>
+                        <td><%= r.remarks || r.comment || "—" %></td>
+                      </tr>
+                    <% }); %>
+                  <% } %>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="action-row">
+              <a class="btn-xs" href="/parent/attendance<%= student ? ('?student=' + student._id) : '' %>">
+                <i class="fa-solid fa-user-check"></i> Attendance
+              </a>
+              <a class="btn-xs" href="/parent/timetable<%= student ? ('?student=' + student._id) : '' %>">
+                <i class="fa-solid fa-calendar-week"></i> Timetable
+              </a>
+              <a class="btn-xs" href="/parent/support<%= student ? ('?student=' + student._id) : '' %>">
+                <i class="fa-solid fa-headset"></i> Support
+              </a>
+            </div>
+          </section>
+
+          <aside class="side-stack">
+            <section class="card">
+              <div class="section-title">Performance Summary</div>
+              <div class="section-sub">Quick academic interpretation for this selected child.</div>
+
+              <div class="metric-list">
+                <div class="metric-item">
+                  <span>Best Subject</span>
+                  <strong><%= summary.bestSubject ? (summary.bestSubject.subject || summary.bestSubject.subjectName || "—") : "—" %></strong>
+                </div>
+                <div class="metric-item">
+                  <span>Best Score</span>
+                  <strong><%= summary.bestSubject ? Number(summary.bestSubject.score || summary.bestSubject.totalScore || 0) + "%" : "—" %></strong>
+                </div>
+                <div class="metric-item">
+                  <span>Weakest Subject</span>
+                  <strong><%= summary.weakestSubject ? (summary.weakestSubject.subject || summary.weakestSubject.subjectName || "—") : "—" %></strong>
+                </div>
+                <div class="metric-item">
+                  <span>Weakest Score</span>
+                  <strong><%= summary.weakestSubject ? Number(summary.weakestSubject.score || summary.weakestSubject.totalScore || 0) + "%" : "—" %></strong>
+                </div>
+                <div class="metric-item">
+                  <span>Overall Standing</span>
+                  <strong class="<%= Number(summary.averageScore || 0) >= 50 ? 'good' : 'danger' %>">
+                    <%= Number(summary.averageScore || 0) >= 50 ? "Satisfactory" : "Needs Improvement" %>
+                  </strong>
+                </div>
+              </div>
+            </section>
+
+            <section class="card">
+              <div class="section-title">Recent Assessments</div>
+              <div class="section-sub">Latest result activity and published marks.</div>
+
+              <% if (!recents.length) { %>
+                <div class="empty small" style="margin-top:12px;">
+                  <div class="empty-title">No recent assessments</div>
+                  <div class="empty-text">Recent exam or assessment results will appear here.</div>
+                </div>
+              <% } else { %>
+                <div class="list">
+                  <% recents.forEach(function(item){ %>
+                    <div class="list-item">
+                      <div class="list-icon">
+                        <i class="fa-solid fa-file-lines"></i>
+                      </div>
+                      <div>
+                        <div class="list-title"><%= item.subject %> — <%= item.exam %></div>
+                        <div class="list-meta"><%= item.date %> • Grade: <%= item.grade %></div>
+                        <div class="list-text">
+                          Score: <strong><%= item.score %>%</strong>
+                          <span class="dot">•</span>
+                          <%= item.remarks || "No remarks" %>
+                        </div>
+                      </div>
+                    </div>
+                  <% }); %>
+                </div>
+              <% } %>
+            </section>
+          </aside>
+        </div>
+      <% } %>
+    </main>
+  </div>
+<script src="/js/navbar.js"></script>
+</body>
+</html>

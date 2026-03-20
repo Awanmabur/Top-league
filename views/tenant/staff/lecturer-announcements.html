@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Announcements — Lecturer Portal — CampusSaaS</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <!-- Shared portal CSS -->
+  <link rel="stylesheet" href="../css/student-portal.css" />
+
+  <style>
+    .status-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:5px;
+      padding:3px 8px;
+      border-radius:999px;
+      font-size:11px;
+    }
+    .status-draft{
+      background:#e5e7eb;
+      color:#374151;
+    }
+    .status-scheduled{
+      background:#dbeafe;
+      color:#1d4ed8;
+    }
+    .status-sent{
+      background:#ecfdf3;
+      color:#15803d;
+    }
+
+    .audience-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
+      padding:3px 8px;
+      border-radius:999px;
+      font-size:11px;
+      background:#eef4ff;
+      color:#0f172a;
+    }
+
+    .channel-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
+      padding:3px 8px;
+      border-radius:999px;
+      font-size:11px;
+      background:#f9fafb;
+      color:#4b5563;
+    }
+
+    .announce-actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:4px;
+    }
+
+    .recent-list{
+      margin-top:10px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      font-size:12px;
+    }
+    .recent-item{
+      padding:8px 9px;
+      border-radius:9px;
+      border:1px solid #e1e9fb;
+      background:#fdfdff;
+    }
+    .recent-title{
+      font-weight:600;
+      color:#0f172a;
+    }
+    .recent-meta{
+      font-size:11px;
+      color:#6b7280;
+      margin-top:2px;
+    }
+
+    .template-list{
+      margin-top:8px;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      font-size:12px;
+    }
+    .template-item{
+      padding:7px 8px;
+      border-radius:8px;
+      border:1px dashed #dbe3f6;
+      background:#f9fbff;
+      cursor:pointer;
+    }
+    .template-item:hover{
+      background:#eef4ff;
+    }
+
+    .chip-small{
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
+      padding:3px 7px;
+      border-radius:999px;
+      font-size:11px;
+      background:#eef4ff;
+      color:#0f172a;
+    }
+
+    /* Modal styles */
+    .modal-backdrop{
+      position:fixed;
+      inset:0;
+      background:rgba(15,23,42,0.45);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:40;
+    }
+    .modal{
+      background:#fff;
+      border-radius:14px;
+      padding:14px 16px;
+      width:100%;
+      max-width:720px;
+      box-shadow:0 20px 45px rgba(15,23,42,0.22);
+    }
+    .modal-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:10px;
+    }
+    .modal-title{
+      font-size:15px;
+      font-weight:700;
+      color:#0f172a;
+    }
+    .modal-body{
+      margin-top:10px;
+      font-size:13px;
+    }
+    .modal-footer{
+      margin-top:12px;
+      display:flex;
+      justify-content:flex-end;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .modal-close{
+      border:none;
+      background:transparent;
+      cursor:pointer;
+      color:#6b7280;
+    }
+    .modal textarea{
+      width:100%;
+      min-height:110px;
+      border-radius:10px;
+      border:1px solid #dbe3f6;
+      padding:8px 9px;
+      font-family:inherit;
+      font-size:13px;
+      resize:vertical;
+    }
+    .modal textarea:focus{
+      outline:none;
+      border-color:#0a6fbf;
+      box-shadow:0 0 0 1px rgba(10,111,191,0.12);
+    }
+    .modal input[type="text"]{
+      width:100%;
+      padding:6px 8px;
+      border-radius:10px;
+      border:1px solid #dbe3f6;
+      font-size:13px;
+    }
+    .modal input[type="text"]:focus{
+      outline:none;
+      border-color:#0a6fbf;
+      box-shadow:0 0 0 1px rgba(10,111,191,0.12);
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">CS</div>
+      <div>
+        <h1>CampusSaaS</h1>
+        <div class="sub">Lecturer Portal</div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-section-title">Main</div>
+      <a href="lecturer-dashboard.html" class="nav-item">
+        <i class="fa-solid fa-chart-line"></i>
+        <span>Dashboard</span>
+      </a>
+      <a href="lecturer-classes.html" class="nav-item">
+        <i class="fa-solid fa-people-group"></i>
+        <span>My Classes</span>
+      </a>
+      <a href="lecturer-attendance.html" class="nav-item">
+        <i class="fa-solid fa-user-check"></i>
+        <span>Attendance</span>
+      </a>
+      <a href="lecturer-assessments.html" class="nav-item">
+        <i class="fa-solid fa-clipboard-list"></i>
+        <span>Assessments & Grades</span>
+      </a>
+
+      <div class="nav-section-title">Teaching Tools</div>
+      <a href="lecturer-materials.html" class="nav-item">
+        <i class="fa-solid fa-file-arrow-up"></i>
+        <span>Materials</span>
+      </a>
+      <a href="lecturer-assignments.html" class="nav-item">
+        <i class="fa-solid fa-clock-rotate-left"></i>
+        <span>Assignments & Quizzes</span>
+      </a>
+      <a href="lecturer-announcements.html" class="nav-item active">
+        <i class="fa-solid fa-bullhorn"></i>
+        <span>Announcements</span>
+      </a>
+      <a href="lecturer-messages.html" class="nav-item">
+        <i class="fa-solid fa-envelope"></i>
+        <span>Messages</span>
+      </a>
+
+      <div class="nav-section-title">Performance</div>
+      <a href="lecturer-performance.html" class="nav-item">
+        <i class="fa-solid fa-user-tie"></i>
+        <span>Performance & Hours</span>
+      </a>
+      <a href="lecturer-settings.html" class="nav-item">
+        <i class="fa-solid fa-gear"></i>
+        <span>Settings</span>
+      </a>
+    </nav>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="title">Announcements</div>
+        <div class="subtitle">
+          Send class-wide or programme-wide announcements to students and track delivery.
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="btn light" onclick="window.location.href='lecturer-dashboard.html'">
+          <i class="fa-solid fa-arrow-left"></i> Back to Lecturer Dashboard
+        </button>
+        <button class="btn primary" type="button" id="btnNewAnnouncement">
+          <i class="fa-solid fa-plus"></i> New Announcement
+        </button>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <section class="card">
+      <div class="section-title">Filters</div>
+      <div class="section-sub">
+        Filter by semester, class, audience and status to find a specific announcement.
+      </div>
+
+      <div class="filters-row">
+        <div>
+          <label class="small-muted">Semester</label><br/>
+          <select id="filterSemester" class="select">
+            <option value="2025-sem1" selected>2025 - Semester 1</option>
+            <option value="2024-sem2">2024 - Semester 2</option>
+          </select>
+        </div>
+        <div>
+          <label class="small-muted">Class</label><br/>
+          <select id="filterClass" class="select">
+            <option value="all" selected>All classes</option>
+            <option value="CS201">CS201 - Object-Oriented Programming</option>
+            <option value="IS204">IS204 - Database Systems</option>
+            <option value="MA210">MA210 - Statistics for Computing</option>
+            <option value="CS220">CS220 - Data Structures and Algorithms</option>
+          </select>
+        </div>
+        <div>
+          <label class="small-muted">Audience</label><br/>
+          <select id="filterAudience" class="select">
+            <option value="all" selected>All audiences</option>
+            <option value="class">Class only</option>
+            <option value="programme">Programme / year cohort</option>
+            <option value="custom">Custom segment</option>
+          </select>
+        </div>
+        <div>
+          <label class="small-muted">Status</label><br/>
+          <select id="filterStatus" class="select">
+            <option value="all">All</option>
+            <option value="draft">Draft</option>
+            <option value="scheduled">Scheduled</option>
+            <option value="sent">Sent</option>
+          </select>
+        </div>
+        <div style="flex:1;min-width:220px;">
+          <label class="small-muted">Search</label><br/>
+          <input type="text" id="filterSearch" class="select"
+                 style="width:100%;padding:7px 10px;"
+                 placeholder="Search by subject, content or keyword..." />
+        </div>
+      </div>
+    </section>
+
+    <!-- KPI row -->
+    <div class="kpi-row">
+      <div class="card">
+        <div class="section-title">Sent this week</div>
+        <div class="section-sub">Announcements delivered in the last 7 days</div>
+        <div style="margin-top:8px;">
+          <div style="font-size:22px;font-weight:800;">6</div>
+          <div class="small-muted">Across 4 classes • 3 courses.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">Scheduled</div>
+        <div class="section-sub">Announcements set to send later</div>
+        <div style="margin-top:8px;">
+          <div style="font-size:22px;font-weight:800;">2</div>
+          <div class="small-muted">Lab reminder • quiz announcement.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">Drafts</div>
+        <div class="section-sub">Saved but not yet sent</div>
+        <div style="margin-top:8px;">
+          <div style="font-size:22px;font-weight:800;" id="kpiDrafts">3</div>
+          <div class="small-muted">Review and schedule when ready.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">Average reach</div>
+        <div class="section-sub">Delivery success (mock data)</div>
+        <div style="margin-top:8px;">
+          <div style="font-size:22px;font-weight:800;">97%</div>
+          <div class="small-muted">Email + in-portal + mobile push.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main grid -->
+    <div class="content">
+      <!-- LEFT: Announcements table -->
+      <section class="card">
+        <div class="section-title">Announcements list</div>
+        <div class="section-sub">
+          Manage announcements you’ve sent or scheduled. Students see these in the LMS and portal.
+        </div>
+
+        <div style="margin-top:10px;overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:13px;" id="announcementTable">
+            <thead>
+              <tr style="border-bottom:1px solid #e5edff;">
+                <th style="text-align:left;padding:6px 4px;">Subject</th>
+                <th style="text-align:left;padding:6px 4px;">Class</th>
+                <th style="text-align:left;padding:6px 4px;">Audience</th>
+                <th style="text-align:left;padding:6px 4px;">Channels</th>
+                <th style="text-align:left;padding:6px 4px;">Sent / Scheduled</th>
+                <th style="text-align:left;padding:6px 4px;">Status</th>
+                <th style="text-align:left;padding:6px 4px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr data-sem="2025-sem1"
+                  data-class="CS201"
+                  data-audience="class"
+                  data-status="sent"
+                  data-subject="Lab schedule update (Week 6)"
+                  data-body="Reminder about updated lab schedule for Week 6 including extra session."
+                  data-channels="portal,email"
+                  data-when="2025-11-17 09:15">
+                <td>Lab schedule update (Week 6)</td>
+                <td>CS201 - Object-Oriented Programming</td>
+                <td>
+                  <span class="audience-pill">
+                    <i class="fa-solid fa-users"></i> Class only
+                  </span>
+                </td>
+                <td>
+                  <span class="channel-pill"><i class="fa-solid fa-globe"></i> Portal</span>
+                  <span class="channel-pill"><i class="fa-solid fa-envelope"></i> Email</span>
+                </td>
+                <td>Sent • 17 Nov 2025, 09:15</td>
+                <td>
+                  <span class="status-pill status-sent">
+                    <i class="fa-solid fa-paper-plane"></i> Sent
+                  </span>
+                </td>
+                <td>
+                  <div class="announce-actions">
+                    <button class="btn-xs btn-view">
+                      <i class="fa-solid fa-arrow-up-right-from-square"></i> View
+                    </button>
+                    <button class="btn-xs btn-edit">
+                      <i class="fa-solid fa-pen-to-square"></i> Edit
+                    </button>
+                    <button class="btn-xs btn-delete">
+                      <i class="fa-solid fa-trash"></i> Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+
+              <tr data-sem="2025-sem1"
+                  data-class="IS204"
+                  data-audience="class"
+                  data-status="scheduled"
+                  data-subject="Quiz 1 reminder"
+                  data-body="Reminder: Quiz 1 on Normalization will be held on Wednesday at 2pm."
+                  data-channels="portal,push"
+                  data-when="2025-11-19 08:00">
+                <td>Quiz 1 reminder</td>
+                <td>IS204 - Database Systems</td>
+                <td>
+                  <span class="audience-pill">
+                    <i class="fa-solid fa-users"></i> Class only
+                  </span>
+                </td>
+                <td>
+                  <span class="channel-pill"><i class="fa-solid fa-globe"></i> Portal</span>
+                  <span class="channel-pill"><i class="fa-solid fa-bell"></i> Push</span>
+                </td>
+                <td>Scheduled • 19 Nov 2025, 08:00</td>
+                <td>
+                  <span class="status-pill status-scheduled">
+                    <i class="fa-solid fa-clock"></i> Scheduled
+                  </span>
+                </td>
+                <td>
+                  <div class="announce-actions">
+                    <button class="btn-xs btn-view">
+                      <i class="fa-solid fa-arrow-up-right-from-square"></i> Preview
+                    </button>
+                    <button class="btn-xs btn-edit">
+                      <i class="fa-solid fa-pen-to-square"></i> Edit
+                    </button>
+                    <button class="btn-xs btn-delete">
+                      <i class="fa-solid fa-trash"></i> Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+
+              <tr data-sem="2025-sem1"
+                  data-class="CS201"
+                  data-audience="programme"
+                  data-status="draft"
+                  data-subject="Mid-sem exam guidelines"
+                  data-body="Draft guidelines on how mid-sem exam will be structured and marked."
+                  data-channels="portal,email"
+                  data-when="">
+                <td>Mid-sem exam guidelines</td>
+                <td>CS201 - Object-Oriented Programming</td>
+                <td>
+                  <span class="audience-pill">
+                    <i class="fa-solid fa-layer-group"></i> Programme / year
+                  </span>
+                </td>
+                <td>
+                  <span class="channel-pill"><i class="fa-solid fa-globe"></i> Portal</span>
+                  <span class="channel-pill"><i class="fa-solid fa-envelope"></i> Email</span>
+                </td>
+                <td>Draft • Not scheduled</td>
+                <td>
+                  <span class="status-pill status-draft">
+                    <i class="fa-solid fa-circle-half-stroke"></i> Draft
+                  </span>
+                </td>
+                <td>
+                  <div class="announce-actions">
+                    <button class="btn-xs btn-edit">
+                      <i class="fa-solid fa-pen-to-square"></i> Edit
+                    </button>
+                    <button class="btn-xs btn-delete">
+                      <i class="fa-solid fa-trash"></i> Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+
+              <tr data-sem="2025-sem1"
+                  data-class="MA210"
+                  data-audience="class"
+                  data-status="sent"
+                  data-subject="Assignment 1 feedback released"
+                  data-body="Feedback for Assignment 1 is now available. Please review common mistakes."
+                  data-channels="portal,email"
+                  data-when="2025-11-14 14:30">
+                <td>Assignment 1 feedback released</td>
+                <td>MA210 - Statistics for Computing</td>
+                <td>
+                  <span class="audience-pill">
+                    <i class="fa-solid fa-users"></i> Class only
+                  </span>
+                </td>
+                <td>
+                  <span class="channel-pill"><i class="fa-solid fa-globe"></i> Portal</span>
+                  <span class="channel-pill"><i class="fa-solid fa-envelope"></i> Email</span>
+                </td>
+                <td>Sent • 14 Nov 2025, 14:30</td>
+                <td>
+                  <span class="status-pill status-sent">
+                    <i class="fa-solid fa-paper-plane"></i> Sent
+                  </span>
+                </td>
+                <td>
+                  <div class="announce-actions">
+                    <button class="btn-xs btn-view">
+                      <i class="fa-solid fa-arrow-up-right-from-square"></i> View
+                    </button>
+                    <button class="btn-xs btn-edit">
+                      <i class="fa-solid fa-pen-to-square"></i> Edit
+                    </button>
+                    <button class="btn-xs btn-delete">
+                      <i class="fa-solid fa-trash"></i> Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+
+              <tr data-sem="2025-sem1"
+                  data-class="CS220"
+                  data-audience="class"
+                  data-status="draft"
+                  data-subject="Group project groupings"
+                  data-body="Draft announcement about group assignments for the CS220 project."
+                  data-channels="portal"
+                  data-when="">
+                <td>Group project groupings</td>
+                <td>CS220 - Data Structures and Algorithms</td>
+                <td>
+                  <span class="audience-pill">
+                    <i class="fa-solid fa-users"></i> Class only
+                  </span>
+                </td>
+                <td>
+                  <span class="channel-pill"><i class="fa-solid fa-globe"></i> Portal</span>
+                </td>
+                <td>Draft • Not scheduled</td>
+                <td>
+                  <span class="status-pill status-draft">
+                    <i class="fa-solid fa-circle-half-stroke"></i> Draft
+                  </span>
+                </td>
+                <td>
+                  <div class="announce-actions">
+                    <button class="btn-xs btn-edit">
+                      <i class="fa-solid fa-pen-to-square"></i> Edit
+                    </button>
+                    <button class="btn-xs btn-delete">
+                      <i class="fa-solid fa-trash"></i> Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- RIGHT: Quick send & templates -->
+      <aside class="card">
+        <div class="section-title">Quick send</div>
+        <div class="section-sub">
+          Send a simple announcement to a selected class using default template.
+        </div>
+
+        <div style="margin-top:8px;display:flex;flex-direction:column;gap:6px;font-size:12px;">
+          <div>
+            <label class="small-muted">Class</label><br/>
+            <select id="quickClass" class="select" style="width:100%;">
+              <option value="CS201">CS201 - Object-Oriented Programming</option>
+              <option value="IS204">IS204 - Database Systems</option>
+              <option value="MA210">MA210 - Statistics for Computing</option>
+              <option value="CS220">CS220 - Data Structures and Algorithms</option>
+            </select>
+          </div>
+          <div>
+            <label class="small-muted">Subject</label><br/>
+            <input type="text" id="quickSubject" class="select"
+                   style="width:100%;padding:6px 8px;"
+                   placeholder="e.g. Class moved online tomorrow" />
+          </div>
+          <div>
+            <label class="small-muted">Message (short)</label><br/>
+            <textarea id="quickMessage"
+                      style="width:100%;min-height:70px;border-radius:10px;border:1px solid #dbe3f6;padding:6px 8px;font-size:12px;"
+                      placeholder="Keep it short and clear. For longer messages, use New Announcement."></textarea>
+          </div>
+
+          <div>
+            <label class="small-muted">Channels</label><br/>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;">
+              <span class="chip-small">
+                <i class="fa-solid fa-globe"></i> Portal
+              </span>
+              <span class="chip-small">
+                <i class="fa-solid fa-envelope"></i> Email
+              </span>
+              <span class="chip-small">
+                <i class="fa-solid fa-bell"></i> Push
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn primary" style="margin-top:10px;width:100%;"
+                type="button"
+                onclick="sendQuickAnnouncement()">
+          <i class="fa-solid fa-paper-plane"></i> Send quick announcement (mock)
+        </button>
+
+        <div style="margin-top:16px;">
+          <div class="section-title">Templates</div>
+          <div class="section-sub">Apply a message pattern and tweak as needed.</div>
+
+          <div class="template-list">
+            <div class="template-item" onclick="applyTemplate('deadline')">
+              <strong>Deadline reminder</strong><br/>
+              <span class="small-muted">Gentle reminder about upcoming due dates.</span>
+            </div>
+            <div class="template-item" onclick="applyTemplate('class_change')">
+              <strong>Class rescheduling</strong><br/>
+              <span class="small-muted">Notify students about venue or time changes.</span>
+            </div>
+            <div class="template-item" onclick="applyTemplate('feedback')">
+              <strong>Feedback released</strong><br/>
+              <span class="small-muted">Inform students that marks and comments are available.</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:16px;">
+          <div class="section-title">Recent activity</div>
+          <div class="section-sub">Last few announcements you sent.</div>
+
+          <div class="recent-list">
+            <div class="recent-item">
+              <div class="recent-title">Assignment 1 feedback released</div>
+              <div class="recent-meta">
+                MA210 • Sent 14 Nov 2025 • Channels: Portal, Email
+              </div>
+            </div>
+            <div class="recent-item">
+              <div class="recent-title">Lab schedule update (Week 6)</div>
+              <div class="recent-meta">
+                CS201 • Sent 17 Nov 2025 • Channels: Portal, Email
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Bottom notes -->
+    <section class="card" style="margin-top:16px;">
+      <div class="section-title">Notes</div>
+      <div class="section-sub">
+        Announcements appear to students in their dashboard, LMS course view, email and mobile app (if enabled).
+      </div>
+      <p class="small-muted" style="margin-top:8px;">
+        In the full CampusSaaS implementation, this module will integrate with the messaging service
+        (email/SMS/push provider) and maintain delivery logs per student. Admins can enforce policies
+        such as who can broadcast to entire cohorts, while lecturers typically send course-specific
+        updates only.
+      </p>
+    </section>
+  </main>
+</div>
+
+<!-- MODAL: Create / Edit Announcement (hidden by default) -->
+<div class="modal-backdrop" id="modalAnnouncement">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="modalAnnouncementTitle">New Announcement</div>
+        <div class="small-muted">
+          Choose audience, channels and schedule. Students will see this across the LMS and portal.
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modalAnnouncement')">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <form id="announcementForm" onsubmit="event.preventDefault(); saveAnnouncement();">
+        <input type="hidden" id="annMode" value="create" />
+        <input type="hidden" id="annRowIndex" value="" />
+
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <div style="flex:1;min-width:200px;">
+              <label class="small-muted">Class</label><br/>
+              <select id="annClass" class="select" style="width:100%;">
+                <option value="CS201">CS201 - Object-Oriented Programming</option>
+                <option value="IS204">IS204 - Database Systems</option>
+                <option value="MA210">MA210 - Statistics for Computing</option>
+                <option value="CS220">CS220 - Data Structures and Algorithms</option>
+              </select>
+            </div>
+            <div style="width:200px;">
+              <label class="small-muted">Audience</label><br/>
+              <select id="annAudience" class="select" style="width:100%;">
+                <option value="class">Class only</option>
+                <option value="programme">Programme / year cohort</option>
+                <option value="custom">Custom segment</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="small-muted">Subject</label><br/>
+            <input type="text" id="annSubject"
+                   placeholder="e.g. Class moved online for this week" required />
+          </div>
+
+          <div>
+            <label class="small-muted">Message</label><br/>
+            <textarea id="annBody"
+                      placeholder="Write the announcement as students will see it. You can include key dates, links and instructions."></textarea>
+          </div>
+
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <div style="flex:1;min-width:220px;">
+              <label class="small-muted">Send time</label><br/>
+              <select id="annSendType" class="select" style="width:100%;">
+                <option value="now">Send now</option>
+                <option value="schedule">Schedule for later</option>
+              </select>
+            </div>
+            <div style="flex:1;min-width:220px;" id="annScheduleRow" style="display:none;">
+              <label class="small-muted">Schedule date &amp; time</label><br/>
+              <input type="datetime-local" id="annScheduleAt" class="select"
+                     style="width:100%;padding:6px 8px;" />
+            </div>
+          </div>
+
+          <div>
+            <label class="small-muted">Channels</label><br/>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;">
+              <span class="chip-small" data-channel="portal">
+                <i class="fa-solid fa-globe"></i> Portal
+              </span>
+              <span class="chip-small" data-channel="email">
+                <i class="fa-solid fa-envelope"></i> Email
+              </span>
+              <span class="chip-small" data-channel="push">
+                <i class="fa-solid fa-bell"></i> Push
+              </span>
+            </div>
+          </div>
+
+          <div>
+            <label class="small-muted">Status</label><br/>
+            <select id="annStatus" class="select" style="width:200px;">
+              <option value="draft">Save as draft</option>
+              <option value="scheduled">Scheduled</option>
+              <option value="sent">Mark as sent (mock)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="small-muted">Options</label><br/>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;">
+              <span class="chip-small">
+                <i class="fa-solid fa-eye"></i> Show on student dashboard
+              </span>
+              <span class="chip-small">
+                <i class="fa-solid fa-envelope-open-text"></i> Email a copy to yourself
+              </span>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn light" type="button" onclick="closeModal('modalAnnouncement')">Cancel</button>
+      <button class="btn primary" type="submit" form="announcementForm">
+        <i class="fa-solid fa-floppy-disk"></i> Save / send (mock)
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Delete confirm -->
+<div class="modal-backdrop" id="modalDelete">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Delete Announcement</div>
+        <div class="small-muted" id="modalDeleteText">
+          Are you sure you want to delete this announcement? This action cannot be undone (mock).
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modalDelete')">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn light" type="button" onclick="closeModal('modalDelete')">Cancel</button>
+      <button class="btn primary" type="button" onclick="confirmDeleteAnnouncement()">
+        <i class="fa-solid fa-trash"></i> Delete (mock)
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Modal helpers
+  function openModal(id){
+    const el = document.getElementById(id);
+    if(el) el.style.display = "flex";
+  }
+  function closeModal(id){
+    const el = document.getElementById(id);
+    if(el) el.style.display = "none";
+  }
+  document.querySelectorAll(".modal-backdrop").forEach(backdrop => {
+    backdrop.addEventListener("click", function(e){
+      if(e.target === backdrop){
+        backdrop.style.display = "none";
+      }
+    });
+  });
+
+  const announcementTable = document.getElementById("announcementTable");
+  const announcementForm = document.getElementById("announcementForm");
+  const annMode = document.getElementById("annMode");
+  const annRowIndex = document.getElementById("annRowIndex");
+  const modalAnnouncementTitle = document.getElementById("modalAnnouncementTitle");
+  const kpiDrafts = document.getElementById("kpiDrafts");
+
+  const annClass = document.getElementById("annClass");
+  const annAudience = document.getElementById("annAudience");
+  const annSubject = document.getElementById("annSubject");
+  const annBody = document.getElementById("annBody");
+  const annSendType = document.getElementById("annSendType");
+  const annScheduleAt = document.getElementById("annScheduleAt");
+  const annStatus = document.getElementById("annStatus");
+
+  const annScheduleRow = document.getElementById("annScheduleRow");
+
+  // Show/hide schedule input based on send type
+  annSendType.addEventListener("change", () => {
+    if(annSendType.value === "schedule"){
+      annScheduleRow.style.display = "block";
+    }else{
+      annScheduleRow.style.display = "none";
+    }
+  });
+
+  // Chip toggles for channels (front-end only, not used deeply)
+  document.querySelectorAll('[data-channel]').forEach(chip => {
+    chip.addEventListener("click", () => {
+      chip.classList.toggle("chip-active");
+    });
+  });
+
+  function openAnnouncementModal(mode, row){
+    annMode.value = mode;
+    annRowIndex.value = "";
+    announcementForm.reset();
+    annStatus.value = "draft";
+    annSendType.value = "now";
+    annScheduleAt.value = "";
+    annScheduleRow.style.display = "none";
+
+    if(mode === "create"){
+      modalAnnouncementTitle.textContent = "New Announcement";
+    }else{
+      modalAnnouncementTitle.textContent = "Edit Announcement";
+    }
+
+    if(row){
+      const subject = row.getAttribute("data-subject") || "";
+      const cls = row.getAttribute("data-class") || "CS201";
+      const audience = row.getAttribute("data-audience") || "class";
+      const body = row.getAttribute("data-body") || "";
+      const status = row.getAttribute("data-status") || "draft";
+      const when = row.getAttribute("data-when") || "";
+      const rowIndex = row.rowIndex;
+
+      annSubject.value = subject;
+      annClass.value = cls;
+      annAudience.value = audience;
+      annBody.value = body;
+      annStatus.value = status;
+      annRowIndex.value = rowIndex;
+
+      if(status === "scheduled" && when){
+        annSendType.value = "schedule";
+        annScheduleRow.style.display = "block";
+        // For demo, no exact datetime parsing; could be improved when wired to backend.
+      }
+    }
+
+    openModal("modalAnnouncement");
+  }
+
+  function saveAnnouncement(){
+    const mode = annMode.value;
+    const subject = annSubject.value.trim();
+    const cls = annClass.value;
+    const status = annStatus.value;
+
+    if(!subject){
+      alert("Please provide a subject.");
+      return;
+    }
+
+    if(mode === "create"){
+      alert("Mock save: new announcement \"" + subject + "\" would be created for " + cls + ".");
+      if(status === "draft"){
+        let cur = parseInt(kpiDrafts.textContent || "0", 10);
+        if(!isNaN(cur)) kpiDrafts.textContent = String(cur + 1);
+      }
+    }else{
+      alert("Mock save: announcement \"" + subject + "\" would be updated.");
+    }
+
+    closeModal("modalAnnouncement");
+  }
+
+  // Delete flow
+  let announcementRowToDelete = null;
+  function openDeleteModal(row){
+    announcementRowToDelete = row;
+    const subject = (row && row.getAttribute("data-subject")) || "this announcement";
+    const status = (row && row.getAttribute("data-status")) || "";
+    const meta = document.getElementById("modalDeleteText");
+    if(meta){
+      meta.textContent = "Are you sure you want to delete \"" + subject +
+        "\"? This action cannot be undone (mock).";
+    }
+    // adjust kpiDrafts on delete (front-end only)
+    if(status === "draft"){
+      let cur = parseInt(kpiDrafts.textContent || "0", 10);
+      if(!isNaN(cur) && cur > 0) kpiDrafts.textContent = String(cur - 1);
+    }
+    openModal("modalDelete");
+  }
+
+  function confirmDeleteAnnouncement(){
+    if(!announcementRowToDelete){
+      closeModal("modalDelete");
+      return;
+    }
+    const subject = announcementRowToDelete.getAttribute("data-subject") || "this announcement";
+    announcementRowToDelete.remove();
+    alert("Mock delete: \"" + subject + "\" would now be removed from the backend.");
+    announcementRowToDelete = null;
+    closeModal("modalDelete");
+  }
+
+  // Table row actions
+  announcementTable.addEventListener("click", function(e){
+    const row = e.target.closest("tr");
+    if(!row) return;
+
+    const btnView = e.target.closest(".btn-view");
+    const btnEdit = e.target.closest(".btn-edit");
+    const btnDelete = e.target.closest(".btn-delete");
+
+    if(btnView){
+      const subject = row.getAttribute("data-subject") || "Announcement";
+      const body = row.getAttribute("data-body") || "";
+      alert("Mock preview for \"" + subject + "\":\n\n" + body);
+      return;
+    }
+    if(btnEdit){
+      openAnnouncementModal("edit", row);
+      return;
+    }
+    if(btnDelete){
+      openDeleteModal(row);
+      return;
+    }
+  });
+
+  // New announcement button
+  document.getElementById("btnNewAnnouncement").addEventListener("click", function(){
+    openAnnouncementModal("create");
+  });
+
+  // Filters
+  (function(){
+    const filterSemester = document.getElementById("filterSemester");
+    const filterClass = document.getElementById("filterClass");
+    const filterAudience = document.getElementById("filterAudience");
+    const filterStatus = document.getElementById("filterStatus");
+    const filterSearch = document.getElementById("filterSearch");
+    const rows = announcementTable.querySelectorAll("tbody tr");
+
+    function applyFilters(){
+      const sem = filterSemester.value;
+      const cls = filterClass.value;
+      const aud = filterAudience.value;
+      const status = filterStatus.value;
+      const q = (filterSearch.value || "").toLowerCase().trim();
+
+      rows.forEach(row => {
+        const rSem = row.getAttribute("data-sem");
+        const rCls = row.getAttribute("data-class");
+        const rAud = row.getAttribute("data-audience");
+        const rStatus = row.getAttribute("data-status");
+        const subject = (row.getAttribute("data-subject") || "").toLowerCase();
+        const body = (row.getAttribute("data-body") || "").toLowerCase();
+        const text = row.textContent.toLowerCase();
+
+        let visible = true;
+        if(rSem !== sem) visible = false;
+        if(cls !== "all" && rCls !== cls) visible = false;
+        if(aud !== "all" && rAud !== aud) visible = false;
+        if(status !== "all" && rStatus !== status) visible = false;
+        if(q && !subject.includes(q) && !body.includes(q) && !text.includes(q)) visible = false;
+
+        row.style.display = visible ? "" : "none";
+      });
+    }
+
+    [filterSemester, filterClass, filterAudience, filterStatus].forEach(el => {
+      el.addEventListener("change", applyFilters);
+    });
+    filterSearch.addEventListener("input", applyFilters);
+
+    applyFilters();
+  })();
+
+  // Quick send (front-end only)
+  function sendQuickAnnouncement(){
+    const cls = document.getElementById("quickClass").value;
+    const subject = (document.getElementById("quickSubject").value || "").trim();
+    const msg = (document.getElementById("quickMessage").value || "").trim();
+    if(!subject || !msg){
+      alert("Please provide a subject and message for the quick announcement.");
+      return;
+    }
+    alert("Mock send: quick announcement \"" + subject + "\" would be sent to " + cls + ".");
+    // keep fields as-is so lecturer can tweak or copy.
+  }
+
+  // Templates to prefill quick send
+  function applyTemplate(type){
+    const subjectInput = document.getElementById("quickSubject");
+    const messageInput = document.getElementById("quickMessage");
+    if(type === "deadline"){
+      subjectInput.value = "Reminder: Upcoming deadline";
+      messageInput.value =
+        "This is a reminder that an important deadline is approaching. Please ensure you submit on time.";
+    }else if(type === "class_change"){
+      subjectInput.value = "Class schedule / venue change";
+      messageInput.value =
+        "Please note that our next class has a schedule or venue change. Check the portal timetable for details.";
+    }else if(type === "feedback"){
+      subjectInput.value = "Marks & feedback released";
+      messageInput.value =
+        "Marks and feedback for the recent assessment have been released. Please review them and reach out if you have questions.";
+    }
+  }
+</script>
+
+</body>
+</html>

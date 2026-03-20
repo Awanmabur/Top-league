@@ -1,0 +1,262 @@
+<!-- ======================
+     MOBILE GLASS TOP NAV
+======================= -->
+<%
+  const currentPath =
+    (typeof originalUrl !== "undefined" && originalUrl) ||
+    (typeof url !== "undefined" && url) ||
+    "";
+
+  const tenantAccess = locals.tenantAccess || {};
+  const allowedModules = Array.isArray(tenantAccess.modules) ? tenantAccess.modules : [];
+  const featureFlags = tenantAccess.featureFlags || {};
+  const planName = tenantAccess.planName || "School Profile";
+  const tenantStatus = tenantAccess.status || "trial";
+
+  function isActive(path, exact = false) {
+    if (!currentPath) return false;
+    if (exact) return currentPath === path;
+    return currentPath === path || currentPath.startsWith(path + "/");
+  }
+
+  function navClass(path, options = {}) {
+    const exact = !!options.exact;
+    return isActive(path, exact) ? "navbutton active" : "navbutton";
+  }
+
+  function hasModule(name) {
+    return allowedModules.includes(name);
+  }
+
+  function hasFeature(name) {
+    return !!featureFlags[name];
+  }
+
+  function visibleItems(items) {
+    return items.filter(item => !item.hidden);
+  }
+
+  const coreItems = visibleItems([
+    { label: "Dashboard", icon: "fa-house", href: "/admin/dashboard", exact: false },
+    { label: "Analytics", icon: "fa-chart-line", href: "/admin/analytics", hidden: !hasFeature("advancedReports") },
+    { label: "Reports", icon: "fa-chart-pie", href: "/admin/reports", hidden: !hasModule("ReportExport") },
+    { label: "Notifications", icon: "fa-bell", href: "/admin/notifications", hidden: !hasModule("Notification") },
+  ]);
+
+  const admissionsItems = visibleItems([
+    { label: "Admissions", icon: "fa-file-signature", href: "/admin/admissions", hidden: !hasModule("Applicant") },
+    { label: "Applicants", icon: "fa-user-check", href: "/admin/admissions/applicants", hidden: !hasModule("Applicant") },
+    { label: "Intakes", icon: "fa-calendar-plus", href: "/admin/admissions/intakes", hidden: !hasModule("Applicant") && !hasModule("Intake") },
+    { label: "Requirements", icon: "fa-file-lines", href: "/admin/admissions/requirements", hidden: !hasModule("AdmissionRequirement") },
+    { label: "Offer Letters", icon: "fa-envelope-open-text", href: "/admin/admissions/offer-letters", hidden: !hasModule("OfferLetter") },
+  ]);
+
+  const studentItems = visibleItems([
+    { label: "Students", icon: "fa-user-graduate", href: "/admin/students", hidden: !hasModule("Student") },
+    { label: "Parents", icon: "fa-people-roof", href: "/admin/parents", hidden: !hasModule("Parent") },
+    { label: "Enrollments", icon: "fa-clipboard-check", href: "/admin/enrollments", hidden: !hasModule("Enrollment") },
+    { label: "Promotions", icon: "fa-arrow-up-right-dots", href: "/admin/promotions", hidden: !hasModule("PromotionLog") },
+    { label: "Student Docs", icon: "fa-folder-open", href: "/admin/student-docs", hidden: !hasModule("StudentDoc") },
+    { label: "Discipline", icon: "fa-gavel", href: "/admin/discipline", hidden: !hasModule("DisciplineCase") },
+  ]);
+
+  const academicItems = visibleItems([
+    { label: "Programs", icon: "fa-book", href: "/admin/programs", hidden: !hasModule("Program") },
+    { label: "Departments", icon: "fa-sitemap", href: "/admin/departments", hidden: !hasModule("Department") },
+    { label: "Faculties", icon: "fa-building-columns", href: "/admin/faculties", hidden: !hasModule("Faculty") },
+    { label: "Classes", icon: "fa-layer-group", href: "/admin/classes", hidden: !hasModule("Class") },
+    { label: "Courses", icon: "fa-book-open", href: "/admin/courses", hidden: !hasModule("Course") },
+    { label: "Timetable", icon: "fa-clock", href: "/admin/timetable", hidden: !hasModule("TimetableEntry") },
+    { label: "Attendance", icon: "fa-user-clock", href: "/admin/attendance", hidden: !hasModule("Attendance") },
+    { label: "Assignments", icon: "fa-file-pen", href: "/admin/assignments", hidden: !hasModule("Assignment") },
+    { label: "Exams", icon: "fa-clipboard-list", href: "/admin/exams", hidden: !hasModule("Exam") },
+    { label: "Results", icon: "fa-award", href: "/admin/results", hidden: !hasModule("Result") },
+    { label: "Transcripts", icon: "fa-scroll", href: "/admin/transcripts", hidden: !hasModule("Transcript") },
+    { label: "Academic Calendar", icon: "fa-calendar-days", href: "/admin/academic-calendar", hidden: !hasModule("AcademicEvent") },
+  ]);
+
+  const hrItems = visibleItems([
+    { label: "Staff", icon: "fa-users", href: "/admin/staff", hidden: !hasModule("Staff") },
+    { label: "Users", icon: "fa-user-shield", href: "/admin/users", hidden: !hasModule("User") },
+    { label: "Staff Roles", icon: "fa-key", href: "/admin/roles", hidden: !hasModule("StaffRole") },
+    { label: "Leave", icon: "fa-person-walking-arrow-right", href: "/admin/staff-leave", hidden: !hasModule("LeaveRequest") },
+    { label: "Payroll", icon: "fa-money-check-dollar", href: "/admin/payroll", hidden: !hasModule("PayrollRun") && !hasModule("PayrollItem") },
+  ]);
+
+  const facilityItems = visibleItems([
+    { label: "Library", icon: "fa-book-reader", href: "/admin/library", hidden: !hasModule("LibraryBook") },
+    { label: "Hostels", icon: "fa-building", href: "/admin/hostels", hidden: !hasModule("Hostel") },
+    { label: "Assets", icon: "fa-boxes-stacked", href: "/admin/assets", hidden: !hasModule("Asset") },
+    { label: "Events", icon: "fa-calendar", href: "/admin/events", hidden: !hasModule("Event") },
+  ]);
+
+  const financeItems = visibleItems([
+    { label: "Finance", icon: "fa-credit-card", href: "/admin/finance", hidden: !hasModule("Payment") },
+    { label: "Invoices", icon: "fa-file-invoice-dollar", href: "/admin/invoices", hidden: !hasModule("Invoice") },
+    { label: "Payments", icon: "fa-money-bill-wave", href: "/admin/payments", hidden: !hasModule("Payment") },
+    { label: "Student Statements", icon: "fa-receipt", href: "/admin/student-statements", hidden: !hasModule("Payment") },
+    { label: "Fee Structure", icon: "fa-list-check", href: "/admin/fees", hidden: !hasModule("FeeStructure") },
+    { label: "Scholarships", icon: "fa-hand-holding-heart", href: "/admin/scholarships", hidden: !hasModule("Scholarship") },
+    { label: "Finance Reports", icon: "fa-chart-column", href: "/admin/finance-reports", hidden: !hasModule("Payment") },
+    { label: "Expenses", icon: "fa-money-check-dollar", href: "/admin/expenses", hidden: !hasModule("Payment") },
+  ]);
+
+  const commItems = visibleItems([
+    { label: "Announcements", icon: "fa-bullhorn", href: "/admin/announcements", hidden: !hasModule("Announcement") },
+    { label: "Messaging", icon: "fa-comments", href: "/admin/messaging", hidden: !hasModule("Notification") },
+    { label: "Helpdesk", icon: "fa-headset", href: "/admin/tickets", hidden: !hasFeature("helpdesk") },
+    { label: "Inquiries", icon: "fa-circle-question", href: "/admin/inquiries", hidden: false },
+  ]);
+
+  const systemItems = visibleItems([
+    { label: "Settings", icon: "fa-gear", href: "/admin/settings", hidden: !hasModule("Setting") },
+    { label: "Profile", icon: "fa-user-circle", href: "/admin/profile", hidden: false },
+    { label: "Integrations", icon: "fa-plug", href: "/admin/integrations", hidden: !hasFeature("apiAccess") },
+    { label: "Audit Logs", icon: "fa-clipboard-list", href: "/admin/auditlogs", hidden: false },
+    { label: "Backups", icon: "fa-database", href: "/admin/backups", hidden: !hasFeature("backups") },
+    { label: "System Health", icon: "fa-server", href: "/admin/system", hidden: !hasFeature("systemHealth") },
+    { label: "Logout", icon: "fa-right-from-bracket", href: "/logout", exact: true, hidden: false },
+  ]);
+%>
+
+<header class="mglass-nav" id="mglassNav">
+  <div class="mglass-left">
+    <a class="mglass-home" href="/admin/dashboard" aria-label="Home">
+      <i class="fa fa-house"></i>
+    </a>
+    <div class="mglass-title"><%= tenant?.name || "Classic Campus" %></div>
+  </div>
+
+  <button class="mglass-menu" id="mobileMenuBtn" type="button" aria-label="Open menu">
+    <i class="fa fa-bars"></i>
+  </button>
+</header>
+
+<div class="app">
+  <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <button type="button" id="sbToggle" class="sbToggle" aria-label="Toggle sidebar">
+      <i class="fa fa-angle-left"></i>
+    </button>
+
+    <div class="brand">
+      <div class="brand-logo">CS</div>
+      <div class="brand-meta">
+        <h1 class="brand-title"><%= tenant?.name || "Classic Campus" %></h1>
+        <div class="brand-sub">Classic Campus SaaS</div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <% if (coreItems.length) { %>
+        <div class="navcat">CORE</div>
+        <div class="group">
+          <% coreItems.forEach(function(item){ %>
+            <a class="<%= navClass(item.href, { exact: item.exact }) %>" href="<%= item.href %>" data-label="<%= item.label %>">
+              <i class="fa <%= item.icon %>"></i>
+              <span><%= item.label %></span>
+            </a>
+          <% }) %>
+        </div>
+      <% } %>
+
+      <% if (admissionsItems.length) { %>
+        <div class="navcat">ADMISSIONS</div>
+        <div class="group">
+          <% admissionsItems.forEach(function(item){ %>
+            <a class="<%= navClass(item.href) %>" href="<%= item.href %>" data-label="<%= item.label %>">
+              <i class="fa <%= item.icon %>"></i>
+              <span><%= item.label %></span>
+            </a>
+          <% }) %>
+        </div>
+      <% } %>
+
+      <% if (studentItems.length) { %>
+        <div class="navcat">STUDENTS</div>
+        <div class="group">
+          <% studentItems.forEach(function(item){ %>
+            <a class="<%= navClass(item.href) %>" href="<%= item.href %>" data-label="<%= item.label %>">
+              <i class="fa <%= item.icon %>"></i>
+              <span><%= item.label %></span>
+            </a>
+          <% }) %>
+        </div>
+      <% } %>
+
+      <% if (academicItems.length) { %>
+        <div class="navcat">ACADEMICS</div>
+        <div class="group">
+          <% academicItems.forEach(function(item){ %>
+            <a class="<%= navClass(item.href) %>" href="<%= item.href %>" data-label="<%= item.label %>">
+              <i class="fa <%= item.icon %>"></i>
+              <span><%= item.label %></span>
+            </a>
+          <% }) %>
+        </div>
+      <% } %>
+
+      <% if (hrItems.length) { %>
+        <div class="navcat">STAFF & HR</div>
+        <div class="group">
+          <% hrItems.forEach(function(item){ %>
+            <a class="<%= navClass(item.href) %>" href="<%= item.href %>" data-label="<%= item.label %>">
+              <i class="fa <%= item.icon %>"></i>
+              <span><%= item.label %></span>
+            </a>
+          <% }) %>
+        </div>
+      <% } %>
+
+      <% if (facilityItems.length) { %>
+        <div class="navcat">FACILITIES</div>
+        <div class="group">
+          <% facilityItems.forEach(function(item){ %>
+            <a class="<%= navClass(item.href) %>" href="<%= item.href %>" data-label="<%= item.label %>">
+              <i class="fa <%= item.icon %>"></i>
+              <span><%= item.label %></span>
+            </a>
+          <% }) %>
+        </div>
+      <% } %>
+
+      <% if (financeItems.length) { %>
+        <div class="navcat">FINANCE</div>
+        <div class="group">
+          <% financeItems.forEach(function(item){ %>
+            <a class="<%= navClass(item.href) %>" href="<%= item.href %>" data-label="<%= item.label %>">
+              <i class="fa <%= item.icon %>"></i>
+              <span><%= item.label %></span>
+            </a>
+          <% }) %>
+        </div>
+      <% } %>
+
+      <% if (commItems.length) { %>
+        <div class="navcat">COMMUNICATIONS</div>
+        <div class="group">
+          <% commItems.forEach(function(item){ %>
+            <a class="<%= navClass(item.href) %>" href="<%= item.href %>" data-label="<%= item.label %>">
+              <i class="fa <%= item.icon %>"></i>
+              <span><%= item.label %></span>
+            </a>
+          <% }) %>
+        </div>
+      <% } %>
+
+      <% if (systemItems.length) { %>
+        <div class="navcat">SYSTEM</div>
+        <div class="group">
+          <% systemItems.forEach(function(item){ %>
+            <a class="<%= navClass(item.href, { exact: item.exact }) %>" href="<%= item.href %>" data-label="<%= item.label %>">
+              <i class="fa <%= item.icon %>"></i>
+              <span><%= item.label %></span>
+            </a>
+          <% }) %>
+        </div>
+      <% } %>
+
+      <div class="navfoot">Plan: <strong><%= planName %></strong> • Status: <strong><%= tenantStatus %></strong></div>
+    </nav>
+  </aside>

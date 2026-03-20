@@ -1,0 +1,53 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Verify Transcript</title>
+<style>
+  body{font-family:system-ui,Segoe UI,Arial;background:#f5f8ff;margin:0;padding:30px;color:#0b1020}
+  .card{max-width:820px;margin:0 auto;background:#fff;border:1px solid #e4ecfb;border-radius:14px;padding:16px;box-shadow:0 10px 24px rgba(12,38,73,.06)}
+  .ok{padding:8px 10px;border-radius:10px;background:#e6f9ee;color:#166534;font-weight:800;display:inline-block}
+  .bad{padding:8px 10px;border-radius:10px;background:#fff1f2;color:#9f1239;font-weight:800;display:inline-block}
+  .meta{color:#64748b;font-size:13px}
+  table{width:100%;border-collapse:collapse;margin-top:12px}
+  td{border-bottom:1px solid #eef2ff;padding:10px;font-size:14px}
+</style>
+</head>
+<body>
+  <div class="card">
+    <h2 style="margin:0 0 6px 0">Transcript Verification</h2>
+    <div class="meta">Classic Campus Verification Portal</div>
+
+    <div style="margin-top:12px">
+      <% if (ok) { %>
+        <span class="ok">VALID TRANSCRIPT</span>
+      <% } else { %>
+        <span class="bad">NOT VALID</span>
+      <% } %>
+
+      <% if (!ok && reason) { %>
+        <div class="meta" style="margin-top:8px"><b>Reason:</b> <%= reason %></div>
+      <% } %>
+    </div>
+
+    <% if (minimal) { %>
+      <table>
+        <tr><td><b>Issue Number</b></td><td><%= minimal.issueNumber %></td></tr>
+        <tr><td><b>Status</b></td><td><%= minimal.status %></td></tr>
+        <tr><td><b>Issued At</b></td><td><%= minimal.issuedAt ? new Date(minimal.issuedAt).toISOString().slice(0,10) : "—" %></td></tr>
+        <tr><td><b>Student</b></td><td><%= minimal.studentName %> ( <%= minimal.reg %> )</td></tr>
+        <tr><td><b>Program</b></td><td><%= minimal.program %></td></tr>
+        <tr><td><b>CGPA</b></td><td><%= Number(minimal.cgpa || 0).toFixed(2) %></td></tr>
+        <tr><td><b>Classification</b></td><td><%= minimal.classification %></td></tr>
+        <tr><td><b>Snapshot Hash</b></td><td><%= minimal.snapshotHash || "—" %></td></tr>
+
+        <% if (minimal.status === "revoked") { %>
+          <tr><td><b>Revoked At</b></td><td><%= minimal.revokedAt ? new Date(minimal.revokedAt).toISOString().slice(0,10) : "—" %></td></tr>
+          <tr><td><b>Revoke Reason</b></td><td><%= minimal.revokeReason || "—" %></td></tr>
+        <% } %>
+      </table>
+    <% } %>
+  </div>
+</body>
+</html>

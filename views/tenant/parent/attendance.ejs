@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title><%= (tenant && tenant.name) ? tenant.name : "CampusSaaS" %> — Attendance</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous"
+        referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/navbar.css" />
+
+  <link rel="stylesheet" href="/css/parent-portal.css" />
+
+  <style>
+    .toolbar{
+      margin-top:16px;
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+    }
+
+    .toolbar-left,
+    .toolbar-right{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    .search-box,
+    .filter-box{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:10px 12px;
+      box-shadow:var(--shadow);
+      min-height:46px;
+    }
+
+    .search-box{
+      min-width:260px;
+      flex:1;
+    }
+
+    .search-box i,
+    .filter-box i{
+      color:var(--primary);
+    }
+
+    .search-box input,
+    .filter-box select{
+      width:100%;
+      border:none;
+      outline:none;
+      background:transparent;
+      color:var(--text);
+      font:inherit;
+    }
+
+    .attendance-layout{
+      margin-top:16px;
+      display:grid;
+      grid-template-columns:1.35fr .9fr;
+      gap:14px;
+    }
+
+    .student-tabs{
+      margin-top:14px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .student-tab{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background:#fff;
+      box-shadow:var(--shadow);
+      cursor:pointer;
+      min-width:220px;
+      transition:.18s ease;
+    }
+
+    .student-tab:hover{
+      transform:translateY(-1px);
+    }
+
+    .student-tab.active{
+      background:var(--primary-soft);
+      border-color:#bfd3ff;
+    }
+
+    .student-tab-avatar{
+      width:40px;
+      height:40px;
+      border-radius:999px;
+      background:linear-gradient(135deg,#dbeafe 0%, #bfdbfe 100%);
+      color:var(--primary-2);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:900;
+      flex-shrink:0;
+    }
+
+    .student-tab-name{
+      font-size:14px;
+      font-weight:900;
+      line-height:1.2;
+    }
+
+    .student-tab-sub{
+      font-size:12px;
+      color:var(--muted);
+      margin-top:3px;
+    }
+
+    .student-panel{
+      display:none;
+    }
+
+    .student-panel.active{
+      display:block;
+    }
+
+    .summary-grid{
+      margin-top:14px;
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:12px;
+    }
+
+    .summary-box{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+      background:#fbfdff;
+    }
+
+    .summary-label{
+      color:var(--muted);
+      font-size:12px;
+    }
+
+    .summary-value{
+      margin-top:6px;
+      font-size:22px;
+      font-weight:900;
+      letter-spacing:-.02em;
+    }
+
+    .good{ color:var(--ok); }
+    .warn{ color:var(--warn); }
+    .danger{ color:var(--danger); }
+
+    .attendance-ring-wrap{
+      margin-top:14px;
+      display:flex;
+      gap:16px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    .attendance-ring{
+      width:112px;
+      height:112px;
+      border-radius:999px;
+      display:grid;
+      place-items:center;
+      background:
+        radial-gradient(closest-side, #fff 72%, transparent 73% 100%),
+        conic-gradient(var(--ok) var(--p, 0%), #e5edff 0);
+      border:1px solid var(--line);
+      box-shadow:var(--shadow);
+      flex-shrink:0;
+    }
+
+    .attendance-ring-value{
+      text-align:center;
+    }
+
+    .attendance-ring-value strong{
+      display:block;
+      font-size:22px;
+      font-weight:1000;
+    }
+
+    .attendance-ring-value span{
+      display:block;
+      font-size:12px;
+      color:var(--muted);
+      margin-top:2px;
+    }
+
+    .legend-list{
+      flex:1;
+      min-width:220px;
+      display:grid;
+      gap:10px;
+    }
+
+    .legend-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:10px 12px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:#fff;
+      font-size:13px;
+    }
+
+    .legend-left{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      color:var(--muted);
+    }
+
+    .legend-dot{
+      width:10px;
+      height:10px;
+      border-radius:999px;
+      display:inline-block;
+      flex-shrink:0;
+    }
+
+    .dot-green{ background:var(--ok); }
+    .dot-yellow{ background:var(--warn); }
+    .dot-red{ background:var(--danger); }
+    .dot-blue{ background:var(--primary); }
+
+    .table-wrap{
+      margin-top:14px;
+      overflow:auto;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:#fff;
+    }
+
+    .attendance-table{
+      width:100%;
+      min-width:760px;
+      border-collapse:collapse;
+    }
+
+    .attendance-table th,
+    .attendance-table td{
+      padding:11px 12px;
+      border-bottom:1px solid #eef4fb;
+      text-align:left;
+      font-size:13px;
+      vertical-align:top;
+    }
+
+    .attendance-table th{
+      font-size:12px;
+      color:var(--muted);
+      font-weight:800;
+      background:#f8fbff;
+    }
+
+    .attendance-table tr:last-child td{
+      border-bottom:none;
+    }
+
+    .status-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:900;
+      border:1px solid var(--line);
+      background:#fff;
+    }
+
+    .status-pill.present{
+      color:var(--ok);
+      background:#f6fff8;
+      border-color:#cdeed8;
+    }
+
+    .status-pill.absent{
+      color:var(--danger);
+      background:#fff7f7;
+      border-color:#f3d0d0;
+    }
+
+    .status-pill.late{
+      color:var(--warn);
+      background:#fffaf1;
+      border-color:#f5e2b8;
+    }
+
+    .status-pill.excused{
+      color:var(--primary);
+      background:#f5f9ff;
+      border-color:#d8e6ff;
+    }
+
+    .mini-note{
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.5;
+    }
+
+    .side-stack{
+      display:grid;
+      gap:14px;
+    }
+
+    .course-list{
+      margin-top:12px;
+      display:grid;
+      gap:10px;
+    }
+
+    .course-item{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+      background:#fff;
+    }
+
+    .course-head{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+    }
+
+    .course-title{
+      font-weight:900;
+      font-size:14px;
+    }
+
+    .course-sub{
+      color:var(--muted);
+      font-size:12px;
+      margin-top:3px;
+    }
+
+    .progress{
+      margin-top:10px;
+      height:10px;
+      border-radius:999px;
+      background:#eaf1fb;
+      overflow:hidden;
+    }
+
+    .progress > span{
+      display:block;
+      height:100%;
+      border-radius:999px;
+      background:linear-gradient(90deg,var(--primary),var(--primary-2));
+      width:0%;
+    }
+
+    .empty-state{
+      margin-top:14px;
+    }
+
+    .action-row{
+      margin-top:12px;
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+
+    .metric-list{
+      margin-top:12px;
+      display:grid;
+      gap:10px;
+    }
+
+    .metric-item{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      border-bottom:1px solid #eef4fb;
+      padding-bottom:8px;
+      font-size:13px;
+      color:var(--muted);
+    }
+
+    .metric-item:last-child{
+      border-bottom:none;
+      padding-bottom:0;
+    }
+
+    .metric-item strong{
+      color:var(--text);
+      text-align:right;
+    }
+
+    @media (max-width: 1180px){
+      .attendance-layout{
+        grid-template-columns:1fr;
+      }
+
+      .summary-grid{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+      }
+    }
+
+    @media (max-width: 720px){
+      .toolbar{
+        flex-direction:column;
+        align-items:stretch;
+      }
+
+      .toolbar-left,
+      .toolbar-right{
+        width:100%;
+      }
+
+      .search-box,
+      .filter-box{
+        width:100%;
+        min-width:0;
+      }
+
+      .summary-grid{
+        grid-template-columns:1fr;
+      }
+
+      .student-tab{
+        width:100%;
+        min-width:0;
+      }
+
+      .course-head,
+      .metric-item{
+        flex-direction:column;
+      }
+
+      .metric-item strong{
+        text-align:left;
+      }
+    }
+  </style>
+</head>
+<body>
+  <%
+    const t = tenant || {};
+    const u = user || {};
+    const p = parent || null;
+    const kids = Array.isArray(children) ? children : [];
+    const tenantName = t.name || "CampusSaaS";
+    const tenantCode = (t.code || "CC").toString();
+    const selectedStudent = (typeof student !== "undefined" && student) ? student : null;
+    const attendanceMap = attendanceByStudent || {};
+    const pageStats = stats || {};
+
+    function fullNameOfStudent(c) {
+      const name = (c && c.fullName) ? String(c.fullName).trim() : "";
+      if (name) return name;
+
+      const parts = [];
+      if (c && c.firstName) parts.push(String(c.firstName).trim());
+      if (c && c.middleName) parts.push(String(c.middleName).trim());
+      if (c && c.lastName) parts.push(String(c.lastName).trim());
+      return parts.filter(Boolean).join(" ").trim() || "Student";
+    }
+
+    function initials(name) {
+      const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+      const a = parts[0] && parts[0][0] ? parts[0][0] : "S";
+      const b = parts[1] && parts[1][0] ? parts[1][0] : "";
+      return (a + b).toUpperCase();
+    }
+
+    function pct(n) {
+      return Math.max(0, Math.min(100, Number(n || 0)));
+    }
+
+    function statusClass(st) {
+      const s = String(st || "").toLowerCase();
+      if (s === "present") return "present";
+      if (s === "absent") return "absent";
+      if (s === "late") return "late";
+      if (s === "excused") return "excused";
+      return "";
+    }
+
+    function statusIcon(st) {
+      const s = String(st || "").toLowerCase();
+      if (s === "present") return "fa-circle-check";
+      if (s === "absent") return "fa-circle-xmark";
+      if (s === "late") return "fa-clock";
+      if (s === "excused") return "fa-file-circle-check";
+      return "fa-circle";
+    }
+
+    function smartRateClass(n) {
+      const v = Number(n || 0);
+      if (v >= 75) return "good";
+      if (v >= 50) return "warn";
+      return "danger";
+    }
+  %>
+
+    <%-include("./navbar") %>
+
+    <main class="main">
+      <div class="topbar">
+        <div>
+          <div class="title">Attendance</div>
+          <div class="subtitle">
+            Monitor attendance trends, daily class presence, late arrivals, excused absences and attendance risk alerts for your linked children.
+          </div>
+        </div>
+
+        <div class="top-actions">
+          <div class="chip">
+            <i class="fa-solid fa-user-check"></i>
+            <span>Children</span>
+            <b><%= Number(pageStats.children || kids.length || 0) %></b>
+          </div>
+
+          <button class="btn light" type="button" onclick="window.location.href='/parent/children'">
+            <i class="fa-solid fa-children"></i> Children
+          </button>
+
+          <button class="btn primary" type="button" onclick="window.location.href='/parent/results'">
+            <i class="fa-solid fa-file-lines"></i> Results
+          </button>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="studentSearch" placeholder="Search child by name, reg number or class" />
+          </div>
+        </div>
+
+        <div class="toolbar-right">
+          <div class="filter-box">
+            <i class="fa-solid fa-calendar-days"></i>
+            <select id="rangeFilter">
+              <option value="term">This term</option>
+              <option value="month">This month</option>
+              <option value="week">This week</option>
+              <option value="all">All records</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <% if (!kids.length) { %>
+        <section class="card empty-state">
+          <div class="empty">
+            <div class="empty-icon"><i class="fa-solid fa-user-check"></i></div>
+            <div class="empty-title">No children linked yet</div>
+            <div class="empty-text">
+              Attendance records will appear here once a student is linked to your parent account.
+            </div>
+            <button class="btn light" type="button" onclick="window.location.href='/parent/support'">
+              <i class="fa-solid fa-headset"></i> Contact Support
+            </button>
+          </div>
+        </section>
+      <% } else { %>
+        <div class="student-tabs" id="studentTabs">
+          <% kids.forEach(function(c, idx){ 
+            const name = fullNameOfStudent(c);
+            const regNo = c && c.regNo ? c.regNo : "—";
+            const className = c && c.classGroup && (c.classGroup.title || c.classGroup.name) ? (c.classGroup.title || c.classGroup.name) : "—";
+            const isActive = selectedStudent ? String(selectedStudent._id) === String(c._id) : idx === 0;
+          %>
+            <button
+              type="button"
+              class="student-tab <%= isActive ? 'active' : '' %>"
+              data-student-tab="<%= String(c._id) %>"
+              data-search="<%= [name, regNo, className].join(' ').toLowerCase() %>">
+              <div class="student-tab-avatar"><%= initials(name) %></div>
+              <div>
+                <div class="student-tab-name"><%= name %></div>
+                <div class="student-tab-sub"><%= regNo %> • <%= className %></div>
+              </div>
+            </button>
+          <% }); %>
+        </div>
+
+        <% kids.forEach(function(c, idx){ 
+          const key = String(c._id);
+          const bundle = attendanceMap[key] || {};
+          const summary = bundle.summary || {};
+          const entries = Array.isArray(bundle.entries) ? bundle.entries : [];
+          const courses = Array.isArray(bundle.courses) ? bundle.courses : [];
+          const alerts = Array.isArray(bundle.alerts) ? bundle.alerts : [];
+
+          const studentName = fullNameOfStudent(c);
+          const regNo = c && c.regNo ? c.regNo : "—";
+          const className = c && c.classGroup && (c.classGroup.title || c.classGroup.name) ? (c.classGroup.title || c.classGroup.name) : "—";
+          const rate = pct(summary.rate || c.attendanceRate || 0);
+          const total = Number(summary.totalSessions || entries.length || 0);
+          const present = Number(summary.present || 0);
+          const absent = Number(summary.absent || 0);
+          const late = Number(summary.late || 0);
+          const excused = Number(summary.excused || 0);
+          const lastUpdated = summary.lastUpdated || "—";
+          const riskNote = summary.riskNote || (rate < 75 ? "Attendance is below the recommended threshold." : "Attendance is on track.");
+          const active = selectedStudent ? String(selectedStudent._id) === key : idx === 0;
+        %>
+          <section class="student-panel <%= active ? 'active' : '' %>" data-student-panel="<%= key %>">
+            <div class="attendance-layout">
+              <section class="card">
+                <div class="section-title"><%= studentName %> — Attendance Summary</div>
+                <div class="section-sub">
+                  Reg No: <%= regNo %> • Class: <%= className %> • Last updated: <%= lastUpdated %>
+                </div>
+
+                <div class="summary-grid">
+                  <div class="summary-box">
+                    <div class="summary-label">Attendance Rate</div>
+                    <div class="summary-value <%= smartRateClass(rate) %>"><%= rate %>%</div>
+                  </div>
+                  <div class="summary-box">
+                    <div class="summary-label">Total Sessions</div>
+                    <div class="summary-value"><%= total %></div>
+                  </div>
+                  <div class="summary-box">
+                    <div class="summary-label">Present</div>
+                    <div class="summary-value good"><%= present %></div>
+                  </div>
+                  <div class="summary-box">
+                    <div class="summary-label">Absences / Late</div>
+                    <div class="summary-value <%= absent > 0 ? 'warn' : 'good' %>"><%= absent %> / <%= late %></div>
+                  </div>
+                </div>
+
+                <div class="attendance-ring-wrap">
+                  <div class="attendance-ring" style="--p:<%= rate %>%;">
+                    <div class="attendance-ring-value">
+                      <strong><%= rate %>%</strong>
+                      <span>Overall</span>
+                    </div>
+                  </div>
+
+                  <div class="legend-list">
+                    <div class="legend-row">
+                      <div class="legend-left">
+                        <span class="legend-dot dot-green"></span>
+                        <span>Present sessions</span>
+                      </div>
+                      <strong><%= present %></strong>
+                    </div>
+
+                    <div class="legend-row">
+                      <div class="legend-left">
+                        <span class="legend-dot dot-red"></span>
+                        <span>Absent sessions</span>
+                      </div>
+                      <strong><%= absent %></strong>
+                    </div>
+
+                    <div class="legend-row">
+                      <div class="legend-left">
+                        <span class="legend-dot dot-yellow"></span>
+                        <span>Late arrivals</span>
+                      </div>
+                      <strong><%= late %></strong>
+                    </div>
+
+                    <div class="legend-row">
+                      <div class="legend-left">
+                        <span class="legend-dot dot-blue"></span>
+                        <span>Excused records</span>
+                      </div>
+                      <strong><%= excused %></strong>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="alert <%= rate < 75 ? 'warn' : '' %>" style="margin-top:14px;">
+                  <i class="fa-solid <%= rate < 75 ? 'fa-triangle-exclamation' : 'fa-circle-check' %>"></i>
+                  <div>
+                    <div class="alert-title"><%= rate < 75 ? 'Attendance attention needed' : 'Attendance is on track' %></div>
+                    <div class="alert-text"><%= riskNote %></div>
+                  </div>
+                </div>
+
+                <div class="table-wrap">
+                  <table class="attendance-table">
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Course / Subject</th>
+                        <th>Status</th>
+                        <th>Time</th>
+                        <th>Teacher</th>
+                        <th>Note</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <% if (!entries.length) { %>
+                        <tr>
+                          <td colspan="6">
+                            <div class="mini-note">No attendance entries available for this student yet.</div>
+                          </td>
+                        </tr>
+                      <% } else { %>
+                        <% entries.forEach(function(item){ %>
+                          <tr>
+                            <td><%= item.date || "—" %></td>
+                            <td><%= item.course || item.subject || "—" %></td>
+                            <td>
+                              <span class="status-pill <%= statusClass(item.status) %>">
+                                <i class="fa-solid <%= statusIcon(item.status) %>"></i>
+                                <%= item.status || "—" %>
+                              </span>
+                            </td>
+                            <td><%= item.time || "—" %></td>
+                            <td><%= item.teacher || "—" %></td>
+                            <td><%= item.note || "—" %></td>
+                          </tr>
+                        <% }); %>
+                      <% } %>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="action-row">
+                  <a class="btn-xs" href="/parent/timetable?student=<%= c._id %>">
+                    <i class="fa-solid fa-calendar-week"></i> View Timetable
+                  </a>
+                  <a class="btn-xs" href="/parent/results?student=<%= c._id %>">
+                    <i class="fa-solid fa-file-lines"></i> Academic Results
+                  </a>
+                  <a class="btn-xs" href="/parent/support?student=<%= c._id %>">
+                    <i class="fa-solid fa-headset"></i> Contact School
+                  </a>
+                </div>
+              </section>
+
+              <aside class="side-stack">
+                <section class="card">
+                  <div class="section-title">Course Attendance</div>
+                  <div class="section-sub">Breakdown by class or subject.</div>
+
+                  <div class="course-list">
+                    <% if (!courses.length) { %>
+                      <div class="mini-note">No course attendance summary available yet.</div>
+                    <% } else { %>
+                      <% courses.forEach(function(course){ 
+                        const cRate = pct(course.rate || 0);
+                      %>
+                        <div class="course-item">
+                          <div class="course-head">
+                            <div>
+                              <div class="course-title"><%= course.title || course.course || "Course" %></div>
+                              <div class="course-sub">
+                                <%= course.teacher || "—" %> • Sessions: <%= Number(course.sessions || 0) %>
+                              </div>
+                            </div>
+                            <strong class="<%= smartRateClass(cRate) %>"><%= cRate %>%</strong>
+                          </div>
+                          <div class="progress">
+                            <span style="width:<%= cRate %>%"></span>
+                          </div>
+                        </div>
+                      <% }); %>
+                    <% } %>
+                  </div>
+                </section>
+
+                <section class="card">
+                  <div class="section-title">Attendance Metrics</div>
+                  <div class="section-sub">Useful quick indicators for parent follow-up.</div>
+
+                  <div class="metric-list">
+                    <div class="metric-item">
+                      <span>Current attendance standing</span>
+                      <strong class="<%= smartRateClass(rate) %>">
+                        <%= rate >= 75 ? "Healthy" : (rate >= 50 ? "Watch closely" : "Critical") %>
+                      </strong>
+                    </div>
+                    <div class="metric-item">
+                      <span>Most recent update</span>
+                      <strong><%= lastUpdated %></strong>
+                    </div>
+                    <div class="metric-item">
+                      <span>Absence frequency</span>
+                      <strong><%= absent %> absence(s)</strong>
+                    </div>
+                    <div class="metric-item">
+                      <span>Late arrival count</span>
+                      <strong><%= late %> late mark(s)</strong>
+                    </div>
+                    <div class="metric-item">
+                      <span>Excused records</span>
+                      <strong><%= excused %> record(s)</strong>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="card">
+                  <div class="section-title">Alerts & Notes</div>
+                  <div class="section-sub">Recent warnings and attendance-related notes.</div>
+
+                  <% if (!alerts.length) { %>
+                    <div class="empty small" style="margin-top:12px;">
+                      <div class="empty-title">No attendance alerts</div>
+                      <div class="empty-text">This student currently has no recent attendance warnings.</div>
+                    </div>
+                  <% } else { %>
+                    <div class="list" style="margin-top:12px;">
+                      <% alerts.forEach(function(a){ %>
+                        <div class="list-item">
+                          <div class="list-icon">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                          </div>
+                          <div>
+                            <div class="list-title"><%= a.title || "Attendance Note" %></div>
+                            <div class="list-meta"><%= a.date || "—" %></div>
+                            <div class="list-text"><%= a.message || "—" %></div>
+                          </div>
+                        </div>
+                      <% }); %>
+                    </div>
+                  <% } %>
+                </section>
+              </aside>
+            </div>
+          </section>
+        <% }); %>
+      <% } %>
+    </main>
+  </div>
+
+  <script>
+    (function(){
+      const tabs = Array.from(document.querySelectorAll("[data-student-tab]"));
+      const panels = Array.from(document.querySelectorAll("[data-student-panel]"));
+      const searchInput = document.getElementById("studentSearch");
+
+      function activateStudent(id) {
+        tabs.forEach(tab => {
+          tab.classList.toggle("active", tab.getAttribute("data-student-tab") === id);
+        });
+
+        panels.forEach(panel => {
+          panel.classList.toggle("active", panel.getAttribute("data-student-panel") === id);
+        });
+      }
+
+      tabs.forEach(tab => {
+        tab.addEventListener("click", function(){
+          activateStudent(tab.getAttribute("data-student-tab"));
+        });
+      });
+
+      if (searchInput) {
+        searchInput.addEventListener("input", function(){
+          const q = (searchInput.value || "").trim().toLowerCase();
+
+          let firstVisibleId = null;
+
+          tabs.forEach(tab => {
+            const hay = tab.getAttribute("data-search") || "";
+            const show = !q || hay.includes(q);
+            tab.style.display = show ? "" : "none";
+            if (show && !firstVisibleId) {
+              firstVisibleId = tab.getAttribute("data-student-tab");
+            }
+          });
+
+          if (firstVisibleId) {
+            activateStudent(firstVisibleId);
+          } else {
+            panels.forEach(panel => panel.classList.remove("active"));
+          }
+        });
+      }
+    })();
+  </script>
+<script src="/js/navbar.js"></script>
+</body>
+</html>

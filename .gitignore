@@ -1,5 +1,34 @@
-/node_modules
-npm-debug.log
-service-account.json
+node_modules/
+.env
+.env.*
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 .DS_Store
-/*.env
+Thumbs.db
+
+# build/cache
+dist/
+build/
+.cache/
+.tmp/
+ 
+# IDE
+.vscode/
+.idea/
+
+# exact (repo-root) paths
+/config/service-account.json
+/scripts/seed_platform.js
+/seedTenantAdmin.js
+/scripts/reset-all-dbs.js
+/scripts/test-email.js
+
+# ignore anywhere in the repo
+**/service-account.json
+**/seed_platform.js
+**/seedTenantAdmin.js
+**/reset-all-dbs.js
+**/test-email.js

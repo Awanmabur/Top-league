@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Application — <%= (tenant && tenant.name) ? tenant.name : "Classic Campus" %></title>
+
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer"/>
+  <link rel="stylesheet" href="/css/admin-finance.css"/>
+</head>
+<body>
+<%
+  const safe=(v)=> (v===null||v===undefined) ? "" : String(v);
+  const app = (typeof application!=="undefined" && application) ? application : null;
+  const csrf = (typeof csrfToken!=="undefined" && csrfToken) ? csrfToken : "";
+%>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">CS</div>
+      <div>
+        <h1><%= (tenant && tenant.name) ? tenant.name : "CampusSaaS" %></h1>
+        <div class="sub">Admin Portal</div>
+      </div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section-title">Admissions</div>
+      <a class="nav-item active" href="/admin/scholarships"><i class="fa-solid fa-graduation-cap"></i><span>Scholarships</span></a>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h1 class="h1">Application</h1>
+        <div class="muted"><%= app && app.scholarship ? safe(app.scholarship.title) : "" %></div>
+      </div>
+      <div class="actions">
+        <% if(app && app.scholarship){ %>
+          <a class="btn light" href="/admin/scholarships/<%= app.scholarship._id %>/applications"><i class="fa-solid fa-arrow-left"></i> Back</a>
+        <% } %>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <% if(!app){ %>
+          <div class="muted">Not found</div>
+        <% } else { %>
+
+          <div class="card-title"><%= safe(app.fullName) %></div>
+          <div class="muted"><%= safe(app.applicationId) %> • <%= safe(app.email) %> • <%= safe(app.phone) %></div>
+
+          <div style="height:10px"></div>
+
+          <div class="grid2">
+            <div>
+              <div class="muted">RegNo</div>
+              <div style="font-weight:900"><%= safe(app.regNo) || "-" %></div>
+            </div>
+            <div>
+              <div class="muted">Program</div>
+              <div style="font-weight:900"><%= app.program ? ((app.program.code? app.program.code+" — ":"") + (app.program.name||app.program.title||"")) : "-" %></div>
+            </div>
+          </div>
+
+          <div style="height:10px"></div>
+
+          <div class="grid2">
+            <div>
+              <div class="muted">Academic Year</div>
+              <div style="font-weight:900"><%= safe(app.academicYear) || "-" %></div>
+            </div>
+            <div>
+              <div class="muted">Year Level</div>
+              <div style="font-weight:900"><%= safe(app.yearLevel) || "-" %></div>
+            </div>
+          </div>
+
+          <div style="height:12px"></div>
+
+          <div class="card-title">Motivation</div>
+          <div class="muted" style="white-space:pre-wrap"><%= safe(app.motivation) || "-" %></div>
+
+          <div style="height:12px"></div>
+
+          <div class="card-title">Financial Need</div>
+          <div class="muted" style="white-space:pre-wrap"><%= safe(app.financialNeed) || "-" %></div>
+
+          <div style="height:12px"></div>
+
+          <div class="card-title">Documents</div>
+          <div class="muted" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">
+            <% if(app.transcript && app.transcript.url){ %><a class="link" target="_blank" href="<%= app.transcript.url %>">Transcript</a><% } %>
+            <% if(app.idDocument && app.idDocument.url){ %><a class="link" target="_blank" href="<%= app.idDocument.url %>">ID Document</a><% } %>
+            <% if(app.recommendationLetter && app.recommendationLetter.url){ %><a class="link" target="_blank" href="<%= app.recommendationLetter.url %>">Recommendation</a><% } %>
+            <% if(app.otherDocs && app.otherDocs.length){ app.otherDocs.forEach((d,idx)=>{ %>
+              <a class="link" target="_blank" href="<%= d.url %>">Other <%= idx+1 %></a>
+            <% }) } %>
+          </div>
+
+          <div style="height:12px"></div>
+
+          <div class="card-title">Update Status</div>
+          <form method="POST" action="/admin/scholarships/applications/<%= app._id %>/status">
+            <% if(csrf){ %><input type="hidden" name="_csrf" value="<%= csrf %>"/><% } %>
+            <div class="grid2" style="margin-top:8px">
+              <div>
+                <div class="muted">Status</div>
+                <select name="status">
+                  <% ["submitted","under_review","shortlisted","awarded","rejected","withdrawn"].forEach(s=>{ %>
+                    <option value="<%= s %>" <%= safe(app.status)===s ? "selected":"" %>><%= s %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div>
+                <div class="muted">Admin Notes</div>
+                <input name="adminNotes" value="<%= safe(app.adminNotes) %>" placeholder="Internal notes"/>
+              </div>
+            </div>
+            <div style="margin-top:10px;display:flex;justify-content:flex-end">
+              <button class="btn primary" type="submit"><i class="fa-solid fa-save"></i> Save</button>
+            </div>
+          </form>
+
+        <% } %>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

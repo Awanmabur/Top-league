@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Performance & Hours — Lecturer Portal — CampusSaaS</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <!-- Shared portal CSS -->
+  <link rel="stylesheet" href="../css/student-portal.css" />
+
+  <style>
+    .badge-chip{
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
+      padding:3px 7px;
+      border-radius:999px;
+      font-size:11px;
+      background:#eef4ff;
+      color:#0f172a;
+    }
+    .badge-chip.good{
+      background:#ecfdf3;
+      color:#15803d;
+    }
+    .badge-chip.warn{
+      background:#fef9c3;
+      color:#92400e;
+    }
+    .badge-chip.risk{
+      background:#fee2e2;
+      color:#b91c1c;
+    }
+
+    .hours-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
+      padding:3px 8px;
+      border-radius:999px;
+      font-size:11px;
+      background:#f9fafb;
+      color:#0f172a;
+      border:1px solid #e5edff;
+    }
+
+    .performance-grid{
+      display:grid;
+      grid-template-columns:1.5fr 1.2fr;
+      gap:16px;
+      align-items:flex-start;
+    }
+    @media (max-width:1000px){
+      .performance-grid{grid-template-columns:1fr;}
+    }
+
+    .timeline-list{
+      margin-top:10px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      font-size:12px;
+    }
+    .timeline-item{
+      padding:8px 9px;
+      border-radius:9px;
+      border:1px solid #e1e9fb;
+      background:#fdfdff;
+    }
+    .timeline-title{
+      font-weight:600;
+      color:#0f172a;
+    }
+    .timeline-meta{
+      font-size:11px;
+      color:#6b7280;
+      margin-top:2px;
+    }
+
+    .summary-tag-list{
+      margin-top:8px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      font-size:11px;
+    }
+
+    /* Modal styles */
+    .modal-backdrop{
+      position:fixed;
+      inset:0;
+      background:rgba(15,23,42,0.45);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:40;
+    }
+    .modal{
+      background:#fff;
+      border-radius:14px;
+      padding:14px 16px;
+      width:100%;
+      max-width:720px;
+      box-shadow:0 20px 45px rgba(15,23,42,0.22);
+    }
+    .modal-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:10px;
+    }
+    .modal-title{
+      font-size:15px;
+      font-weight:700;
+      color:#0f172a;
+    }
+    .modal-body{
+      margin-top:10px;
+      font-size:13px;
+    }
+    .modal-footer{
+      margin-top:12px;
+      display:flex;
+      justify-content:flex-end;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .modal-close{
+      border:none;
+      background:transparent;
+      cursor:pointer;
+      color:#6b7280;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">CS</div>
+      <div>
+        <h1>CampusSaaS</h1>
+        <div class="sub">Lecturer Portal</div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-section-title">Main</div>
+      <a href="lecturer-dashboard.html" class="nav-item">
+        <i class="fa-solid fa-chart-line"></i>
+        <span>Dashboard</span>
+      </a>
+      <a href="lecturer-classes.html" class="nav-item">
+        <i class="fa-solid fa-people-group"></i>
+        <span>My Classes</span>
+      </a>
+      <a href="lecturer-attendance.html" class="nav-item">
+        <i class="fa-solid fa-user-check"></i>
+        <span>Attendance</span>
+      </a>
+      <a href="lecturer-assessments.html" class="nav-item">
+        <i class="fa-solid fa-clipboard-list"></i>
+        <span>Assessments & Grades</span>
+      </a>
+
+      <div class="nav-section-title">Teaching Tools</div>
+      <a href="lecturer-materials.html" class="nav-item">
+        <i class="fa-solid fa-file-arrow-up"></i>
+        <span>Materials</span>
+      </a>
+      <a href="lecturer-assignments.html" class="nav-item">
+        <i class="fa-solid fa-clock-rotate-left"></i>
+        <span>Assignments & Quizzes</span>
+      </a>
+      <a href="lecturer-announcements.html" class="nav-item">
+        <i class="fa-solid fa-bullhorn"></i>
+        <span>Announcements</span>
+      </a>
+      <a href="lecturer-messages.html" class="nav-item">
+        <i class="fa-solid fa-envelope"></i>
+        <span>Messages</span>
+      </a>
+
+      <div class="nav-section-title">Performance</div>
+      <a href="lecturer-performance.html" class="nav-item active">
+        <i class="fa-solid fa-user-tie"></i>
+        <span>Performance & Hours</span>
+      </a>
+      <a href="lecturer-settings.html" class="nav-item">
+        <i class="fa-solid fa-gear"></i>
+        <span>Settings</span>
+      </a>
+    </nav>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="title">Performance & Teaching Hours</div>
+        <div class="subtitle">
+          View your teaching load, hours by course, assessment activity and student feedback trends.
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="btn light" onclick="window.location.href='lecturer-dashboard.html'">
+          <i class="fa-solid fa-arrow-left"></i> Back to Lecturer Dashboard
+        </button>
+        <button class="btn primary" type="button" id="btnExportPerf">
+          <i class="fa-solid fa-file-arrow-down"></i> Export Performance Report
+        </button>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <section class="card">
+      <div class="section-title">Filters</div>
+      <div class="section-sub">
+        Choose semester, academic year, course and date range to refine your performance view.
+      </div>
+
+      <div class="filters-row">
+        <div>
+          <label class="small-muted">Academic year</label><br/>
+          <select id="filterYear" class="select">
+            <option value="2025-2026">2025 / 2026</option>
+            <option value="2024-2025" selected>2024 / 2025</option>
+            <option value="2023-2024">2023 / 2024</option>
+          </select>
+        </div>
+        <div>
+          <label class="small-muted">Semester</label><br/>
+          <select id="filterSemester" class="select">
+            <option value="2025-sem1" selected>2025 - Semester 1</option>
+            <option value="2024-sem2">2024 - Semester 2</option>
+            <option value="2024-sem1">2024 - Semester 1</option>
+          </select>
+        </div>
+        <div>
+          <label class="small-muted">Course</label><br/>
+          <select id="filterCourse" class="select">
+            <option value="all" selected>All courses</option>
+            <option value="CS201">CS201 - Object-Oriented Programming</option>
+            <option value="IS204">IS204 - Database Systems</option>
+            <option value="MA210">MA210 - Statistics for Computing</option>
+            <option value="CS220">CS220 - Data Structures and Algorithms</option>
+          </select>
+        </div>
+        <div>
+          <label class="small-muted">View</label><br/>
+          <select id="filterView" class="select">
+            <option value="summary" selected>Summary KPIs</option>
+            <option value="hours">Teaching hours breakdown</option>
+            <option value="feedback">Student feedback focus</option>
+          </select>
+        </div>
+        <div>
+          <label class="small-muted">Date range</label>
+          <div style="display:flex;gap:6px;margin-top:4px;">
+            <input type="date" id="filterStart" class="select" style="padding:6px 8px;"/>
+            <input type="date" id="filterEnd" class="select" style="padding:6px 8px;"/>
+          </div>
+        </div>
+        <div>
+          <label class="small-muted">Quick range</label>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;">
+            <button class="btn-xs" data-range="this-week">This week</button>
+            <button class="btn-xs" data-range="this-month">This month</button>
+            <button class="btn-xs" data-range="this-semester">This semester</button>
+            <button class="btn-xs" data-range="all">All semester</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- KPI row -->
+    <div class="kpi-row">
+      <div class="card">
+        <div class="section-title">Total teaching hours</div>
+        <div class="section-sub">Contact hours delivered this semester</div>
+        <div style="margin-top:8px;">
+          <div style="font-size:22px;font-weight:800;">146.5 hrs</div>
+          <div class="small-muted">
+            Load: 3 courses • 4 groups • <span style="color:#16a34a;">+8.0 hrs vs plan</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">Average weekly hours</div>
+        <div class="section-sub">Based on last 6 teaching weeks</div>
+        <div style="margin-top:8px;">
+          <div style="font-size:22px;font-weight:800;">12.2 hrs / week</div>
+          <div class="small-muted">
+            Target band: 10–14 hrs • <span class="badge-chip good">
+              <i class="fa-solid fa-circle-check"></i> Within range
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">Assessments graded</div>
+        <div class="section-sub">Assignments, quizzes and exams</div>
+        <div style="margin-top:8px;">
+          <div style="font-size:22px;font-weight:800;">328</div>
+          <div class="small-muted">
+            Pending: 24 in queue • Median grading time: 2.1 days (mock).
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">Student feedback</div>
+        <div class="section-sub">Mid-semester teaching evaluations</div>
+        <div style="margin-top:8px;">
+          <div style="font-size:22px;font-weight:800;">4.6 / 5.0</div>
+          <div class="small-muted">
+            <span class="badge-chip good">
+              <i class="fa-solid fa-face-smile"></i> 92% positive
+            </span> • 3 flagged comments.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main performance grid -->
+    <div class="performance-grid">
+      <!-- LEFT: Hours by course -->
+      <section class="card">
+        <div class="section-title">Teaching hours by course</div>
+        <div class="section-sub">
+          Planned vs delivered hours, plus average weekly load per course.
+        </div>
+
+        <div style="margin-top:10px;overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:13px;" id="hoursByCourseTable">
+            <thead>
+              <tr style="border-bottom:1px solid #e5edff;">
+                <th style="text-align:left;padding:6px 4px;">Course</th>
+                <th style="text-align:left;padding:6px 4px;">Planned hours</th>
+                <th style="text-align:left;padding:6px 4px;">Delivered so far</th>
+                <th style="text-align:left;padding:6px 4px;">Average per week</th>
+                <th style="text-align:left;padding:6px 4px;">Coverage</th>
+                <th style="text-align:left;padding:6px 4px;">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr data-course="CS201">
+                <td>
+                  <div><strong>CS201 - Object-Oriented Programming</strong></div>
+                  <div class="small-muted">Year 2 • 2 groups • 4 hrs/week</div>
+                </td>
+                <td>60 hrs</td>
+                <td>64 hrs</td>
+                <td>4.3 hrs</td>
+                <td>
+                  <span class="hours-pill">
+                    <i class="fa-solid fa-chart-line"></i> 107%
+                  </span>
+                </td>
+                <td>
+                  <span class="badge-chip good">
+                    <i class="fa-solid fa-circle-check"></i> On track
+                  </span>
+                </td>
+              </tr>
+              <tr data-course="IS204">
+                <td>
+                  <div><strong>IS204 - Database Systems</strong></div>
+                  <div class="small-muted">Year 2 • 1 group • 3 hrs/week</div>
+                </td>
+                <td>45 hrs</td>
+                <td>42 hrs</td>
+                <td>3.0 hrs</td>
+                <td>
+                  <span class="hours-pill">
+                    <i class="fa-solid fa-chart-line"></i> 93%
+                  </span>
+                </td>
+                <td>
+                  <span class="badge-chip warn">
+                    <i class="fa-solid fa-circle-half-stroke"></i> Slightly behind
+                  </span>
+                </td>
+              </tr>
+              <tr data-course="MA210">
+                <td>
+                  <div><strong>MA210 - Statistics for Computing</strong></div>
+                  <div class="small-muted">Year 1 • 1 group • 2 hrs/week</div>
+                </td>
+                <td>30 hrs</td>
+                <td>28.5 hrs</td>
+                <td>2.1 hrs</td>
+                <td>
+                  <span class="hours-pill">
+                    <i class="fa-solid fa-chart-line"></i> 95%
+                  </span>
+                </td>
+                <td>
+                  <span class="badge-chip good">
+                    <i class="fa-solid fa-circle-check"></i> On track
+                  </span>
+                </td>
+              </tr>
+              <tr data-course="CS220">
+                <td>
+                  <div><strong>CS220 - Data Structures and Algorithms</strong></div>
+                  <div class="small-muted">Year 3 • 1 group • 3 hrs/week</div>
+                </td>
+                <td>45 hrs</td>
+                <td>40 hrs</td>
+                <td>2.8 hrs</td>
+                <td>
+                  <span class="hours-pill">
+                    <i class="fa-solid fa-chart-line"></i> 89%
+                  </span>
+                </td>
+                <td>
+                  <span class="badge-chip warn">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Catch up planned
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="margin-top:12px;">
+          <div class="section-title">Summary notes</div>
+          <div class="section-sub">
+            Quick interpretation based on hours variance vs plan.
+          </div>
+          <div class="summary-tag-list">
+            <span class="badge-chip good"><i class="fa-solid fa-check"></i> All courses &gt;= 89% coverage</span>
+            <span class="badge-chip warn"><i class="fa-solid fa-clock"></i> IS204 &amp; CS220 need one extra revision / Q&amp;A session</span>
+            <span class="badge-chip"><i class="fa-solid fa-calendar-week"></i> Consider redistributing contact hours if new modules are assigned</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT: Feedback & evaluation -->
+      <aside class="card">
+        <div class="section-title">Student feedback overview</div>
+        <div class="section-sub">
+          Mid-semester and end-of-semester teaching evaluations (mock data).
+        </div>
+
+        <div class="mini-list" style="margin-top:8px;">
+          <div class="mini-item">
+            <span>CS201 - Object-Oriented Programming</span>
+            <span>4.7 / 5.0</span>
+          </div>
+          <div class="mini-item">
+            <span>IS204 - Database Systems</span>
+            <span>4.4 / 5.0</span>
+          </div>
+          <div class="mini-item">
+            <span>MA210 - Statistics for Computing</span>
+            <span>4.6 / 5.0</span>
+          </div>
+          <div class="mini-item">
+            <span>CS220 - Data Structures and Algorithms</span>
+            <span>4.5 / 5.0</span>
+          </div>
+        </div>
+
+        <div style="margin-top:12px;">
+          <div class="section-title">Strengths</div>
+          <ul class="mini-list" style="margin-top:4px;">
+            <li class="mini-item">
+              <span>Clarity of explanations</span>
+              <span>4.8 / 5.0</span>
+            </li>
+            <li class="mini-item">
+              <span>Availability for consultations</span>
+              <span>4.7 / 5.0</span>
+            </li>
+            <li class="mini-item">
+              <span>Use of real-world examples</span>
+              <span>4.6 / 5.0</span>
+            </li>
+          </ul>
+        </div>
+
+        <div style="margin-top:12px;">
+          <div class="section-title">Focus areas</div>
+          <ul class="mini-list" style="margin-top:4px;">
+            <li class="mini-item">
+              <span>Timely return of graded work</span>
+              <span>4.0 / 5.0</span>
+            </li>
+            <li class="mini-item">
+              <span>Balancing theory and practice</span>
+              <span>4.1 / 5.0</span>
+            </li>
+          </ul>
+        </div>
+
+        <button class="btn light" style="margin-top:10px;width:100%;" type="button" id="btnViewFeedback">
+          <i class="fa-solid fa-comments"></i> View anonymised comments (mock)
+        </button>
+      </aside>
+    </div>
+
+    <!-- Weekly overview + milestones -->
+    <div class="performance-grid" style="margin-top:16px;">
+      <section class="card">
+        <div class="section-title">Weekly teaching hours timeline</div>
+        <div class="section-sub">
+          Hours delivered per week for the selected semester (mock sample).
+        </div>
+
+        <div style="margin-top:10px;overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:13px;" id="weeklyHoursTable">
+            <thead>
+              <tr style="border-bottom:1px solid #e5edff;">
+                <th style="text-align:left;padding:6px 4px;">Week</th>
+                <th style="text-align:left;padding:6px 4px;">Date range</th>
+                <th style="text-align:left;padding:6px 4px;">Total hours</th>
+                <th style="text-align:left;padding:6px 4px;">CS201</th>
+                <th style="text-align:left;padding:6px 4px;">IS204</th>
+                <th style="text-align:left;padding:6px 4px;">MA210</th>
+                <th style="text-align:left;padding:6px 4px;">CS220</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Week 6</td>
+                <td>10–16 Nov 2025</td>
+                <td>12.5 hrs</td>
+                <td>4.0</td>
+                <td>3.0</td>
+                <td>2.0</td>
+                <td>3.5</td>
+              </tr>
+              <tr>
+                <td>Week 5</td>
+                <td>03–09 Nov 2025</td>
+                <td>11.8 hrs</td>
+                <td>4.0</td>
+                <td>2.5</td>
+                <td>2.3</td>
+                <td>3.0</td>
+              </tr>
+              <tr>
+                <td>Week 4</td>
+                <td>27 Oct–02 Nov 2025</td>
+                <td>12.0 hrs</td>
+                <td>4.3</td>
+                <td>3.0</td>
+                <td>2.0</td>
+                <td>2.7</td>
+              </tr>
+              <tr>
+                <td>Week 3</td>
+                <td>20–26 Oct 2025</td>
+                <td>11.5 hrs</td>
+                <td>4.0</td>
+                <td>2.8</td>
+                <td>2.0</td>
+                <td>2.7</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="section-title">Milestones & notes</div>
+        <div class="section-sub">
+          Internal view of progress vs expectations and policy reminders.
+        </div>
+
+        <div class="timeline-list">
+          <div class="timeline-item">
+            <div class="timeline-title">Mid-semester KPI review (auto)</div>
+            <div class="timeline-meta">
+              12 Nov 2025 • CampusSaaS generated a summary of your teaching load and feedback.
+            </div>
+            <div class="small-muted">
+              Overall load within expected range. Feedback scores are above school average.
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-title">Reminder: submit exam papers</div>
+            <div class="timeline-meta">
+              18 Nov 2025 • Exams Office
+            </div>
+            <div class="small-muted">
+              Draft exam papers for CS201 and IS204 should be submitted by 21 Nov 2025, 4:00 pm.
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-title">Workload planning for next semester</div>
+            <div class="timeline-meta">
+              01 Dec 2025 • Faculty of Computing
+            </div>
+            <div class="small-muted">
+              Proposed teaching load for 2025 Semester 2 will be generated using this semester’s data.
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:14px;">
+          <div class="section-title">Policy overview</div>
+          <ul class="mini-list" style="margin-top:4px;">
+            <li class="mini-item">
+              <span>Standard load</span>
+              <span>10–14 contact hours / week</span>
+            </li>
+            <li class="mini-item">
+              <span>Office hours</span>
+              <span>At least 2 hrs / week per full-time lecturer</span>
+            </li>
+            <li class="mini-item">
+              <span>Assessment turnaround</span>
+              <span>Within 14 days of submission</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+    </div>
+
+    <!-- Detailed activity log -->
+    <section class="card" style="margin-top:16px;">
+      <div class="section-title">Detailed teaching activity log</div>
+      <div class="section-sub">
+        Per-session breakdown (lecture, tutorial, lab) for audit and HR reporting (mock example).
+      </div>
+
+      <div style="margin-top:8px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+        <div class="small-muted">
+          Showing latest 12 sessions. Filters above still apply.
+        </div>
+        <button class="btn light btn-xs" type="button" id="btnViewLogModal">
+          <i class="fa-solid fa-up-right-from-square"></i> View full log (mock)
+        </button>
+      </div>
+
+      <div style="margin-top:8px;overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;" id="activityLogTable">
+          <thead>
+            <tr style="border-bottom:1px solid #e5edff;">
+              <th style="text-align:left;padding:6px 4px;">Date</th>
+              <th style="text-align:left;padding:6px 4px;">Course</th>
+              <th style="text-align:left;padding:6px 4px;">Session type</th>
+              <th style="text-align:left;padding:6px 4px;">Start</th>
+              <th style="text-align:left;padding:6px 4px;">End</th>
+              <th style="text-align:left;padding:6px 4px;">Duration</th>
+              <th style="text-align:left;padding:6px 4px;">Counted hours</th>
+              <th style="text-align:left;padding:6px 4px;">Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr data-course="CS201" data-sem="2025-sem1" data-date="2025-11-17">
+              <td>17 Nov 2025</td>
+              <td>CS201 - Object-Oriented Programming</td>
+              <td>Lecture</td>
+              <td>10:00</td>
+              <td>12:00</td>
+              <td>2.0 hrs</td>
+              <td>2.0 hrs</td>
+              <td>Week 6: Inheritance &amp; polymorphism</td>
+            </tr>
+            <tr data-course="IS204" data-sem="2025-sem1" data-date="2025-11-17">
+              <td>17 Nov 2025</td>
+              <td>IS204 - Database Systems</td>
+              <td>Lab / practical</td>
+              <td>14:00</td>
+              <td>16:00</td>
+              <td>2.0 hrs</td>
+              <td>2.0 hrs</td>
+              <td>Normalization exercise and SQL practice</td>
+            </tr>
+            <tr data-course="CS220" data-sem="2025-sem1" data-date="2025-11-15">
+              <td>15 Nov 2025</td>
+              <td>CS220 - Data Structures and Algorithms</td>
+              <td>Tutorial / Q&amp;A</td>
+              <td>09:00</td>
+              <td>11:00</td>
+              <td>2.0 hrs</td>
+              <td>2.0 hrs</td>
+              <td>Problem-solving on trees and graphs</td>
+            </tr>
+            <tr data-course="MA210" data-sem="2025-sem1" data-date="2025-11-14">
+              <td>14 Nov 2025</td>
+              <td>MA210 - Statistics for Computing</td>
+              <td>Lecture</td>
+              <td>08:00</td>
+              <td>10:00</td>
+              <td>2.0 hrs</td>
+              <td>2.0 hrs</td>
+              <td>Normal distributions and z-scores</td>
+            </tr>
+            <tr data-course="CS201" data-sem="2025-sem1" data-date="2025-11-12">
+              <td>12 Nov 2025</td>
+              <td>CS201 - Object-Oriented Programming</td>
+              <td>Lecture</td>
+              <td>10:00</td>
+              <td>12:00</td>
+              <td>2.0 hrs</td>
+              <td>2.0 hrs</td>
+              <td>Interfaces and abstract classes</td>
+            </tr>
+            <tr data-course="IS204" data-sem="2025-sem1" data-date="2025-11-12">
+              <td>12 Nov 2025</td>
+              <td>IS204 - Database Systems</td>
+              <td>Lecture</td>
+              <td>14:00</td>
+              <td>16:00</td>
+              <td>2.0 hrs</td>
+              <td>2.0 hrs</td>
+              <td>Transactions and concurrency control</td>
+            </tr>
+            <tr data-course="CS220" data-sem="2025-sem1" data-date="2025-11-10">
+              <td>10 Nov 2025</td>
+              <td>CS220 - Data Structures and Algorithms</td>
+              <td>Lecture</td>
+              <td>09:00</td>
+              <td>12:00</td>
+              <td>3.0 hrs</td>
+              <td>3.0 hrs</td>
+              <td>Sorting algorithms and complexity</td>
+            </tr>
+            <tr data-course="CS201" data-sem="2025-sem1" data-date="2025-11-08">
+              <td>08 Nov 2025</td>
+              <td>CS201 - Object-Oriented Programming</td>
+              <td>Office hours</td>
+              <td>13:00</td>
+              <td>15:00</td>
+              <td>2.0 hrs</td>
+              <td>1.0 hr</td>
+              <td>One-on-one consultations (capped)</td>
+            </tr>
+            <tr data-course="MA210" data-sem="2025-sem1" data-date="2025-11-07">
+              <td>07 Nov 2025</td>
+              <td>MA210 - Statistics for Computing</td>
+              <td>Tutorial</td>
+              <td>08:00</td>
+              <td>09:30</td>
+              <td>1.5 hrs</td>
+              <td>1.5 hrs</td>
+              <td>Practice questions on probability</td>
+            </tr>
+            <tr data-course="IS204" data-sem="2025-sem1" data-date="2025-11-05">
+              <td>05 Nov 2025</td>
+              <td>IS204 - Database Systems</td>
+              <td>Lecture</td>
+              <td>14:00</td>
+              <td>16:00</td>
+              <td>2.0 hrs</td>
+              <td>2.0 hrs</td>
+              <td>ER modelling recap and examples</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Notes -->
+    <section class="card" style="margin-top:16px;">
+      <div class="section-title">Notes</div>
+      <div class="section-sub">
+        This page provides a consolidated view for you and HR / QA teams to monitor teaching load and performance.
+      </div>
+      <p class="small-muted" style="margin-top:8px;">
+        In the full CampusSaaS implementation, teaching hours will be computed from the official timetable,
+        attendance records and LMS activities. Performance metrics such as grading turnaround time and
+        student feedback ratings will be pulled from Assessments &amp; Evaluations and survey tools.
+        Exported reports can be shared with department heads and HR for workload planning and appraisals.
+      </p>
+    </section>
+  </main>
+</div>
+
+<!-- MODAL: Full log (mock) -->
+<div class="modal-backdrop" id="modalFullLog">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Full Teaching Activity Log (mock)</div>
+        <div class="small-muted">
+          In production, this view would let you filter, search and export your complete activity history.
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modalFullLog')">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <p class="small-muted">
+        For now, this is a placeholder modal. When connected to the backend, the full log would include:
+      </p>
+      <ul class="mini-list" style="margin-top:6px;">
+        <li class="mini-item">
+          <span>All lecture/tutorial/lab sessions</span>
+          <span>With hours and room allocations</span>
+        </li>
+        <li class="mini-item">
+          <span>Office hours &amp; consultations</span>
+          <span>With counted vs non-counted time</span>
+        </li>
+        <li class="mini-item">
+          <span>Assessment-related activities</span>
+          <span>Invigilation, moderation, marking</span>
+        </li>
+      </ul>
+      <p class="small-muted" style="margin-top:8px;">
+        Export options: PDF summary, CSV detail, and HR-specific formats for workload analysis.
+      </p>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn light" type="button" onclick="closeModal('modalFullLog')">Close</button>
+      <button class="btn primary" type="button" onclick="alert('Mock: export full activity log.')">
+        <i class="fa-solid fa-file-export"></i> Export (mock)
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Modal helpers
+  function openModal(id){
+    const el = document.getElementById(id);
+    if(el) el.style.display = "flex";
+  }
+  function closeModal(id){
+    const el = document.getElementById(id);
+    if(el) el.style.display = "none";
+  }
+  document.querySelectorAll(".modal-backdrop").forEach(backdrop => {
+    backdrop.addEventListener("click", function(e){
+      if(e.target === backdrop){
+        backdrop.style.display = "none";
+      }
+    });
+  });
+
+  // Export performance (mock)
+  document.getElementById("btnExportPerf").addEventListener("click", () => {
+    alert("Mock: a performance report (PDF/CSV) would be generated and downloaded.");
+    window.print(); // simple placeholder behaviour
+  });
+
+  // View full log (modal)
+  document.getElementById("btnViewLogModal").addEventListener("click", () => {
+    openModal("modalFullLog");
+  });
+
+  // View feedback comments (mock)
+  document.getElementById("btnViewFeedback").addEventListener("click", () => {
+    alert("Mock: anonymised feedback comments would open in a detailed view.");
+  });
+
+  // Quick range for date filter (front-end only)
+  (function(){
+    const filterStart = document.getElementById("filterStart");
+    const filterEnd = document.getElementById("filterEnd");
+    const quickBtns = document.querySelectorAll("[data-range]");
+
+    function setRange(range){
+      const now = new Date();
+      let start = null;
+      let end = null;
+
+      if(range === "this-week"){
+        const day = now.getDay(); // 0-6
+        const diffToMonday = (day + 6) % 7;
+        start = new Date(now);
+        start.setDate(now.getDate() - diffToMonday);
+        end = new Date(start);
+        end.setDate(start.getDate() + 6);
+      }else if(range === "this-month"){
+        start = new Date(now.getFullYear(), now.getMonth(), 1);
+        end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      }else if(range === "this-semester"){
+        // Demo: assume semester started 01 Oct 2025 and ends 31 Jan 2026
+        start = new Date(2025, 9 - 1, 1); // Oct 1, 2025
+        end = new Date(2026, 1 - 1, 31);  // Jan 31, 2026
+      }else if(range === "all"){
+        start = null;
+        end = null;
+      }
+
+      if(start){
+        filterStart.valueAsDate = start;
+      }else{
+        filterStart.value = "";
+      }
+      if(end){
+        filterEnd.valueAsDate = end;
+      }else{
+        filterEnd.value = "";
+      }
+    }
+
+    quickBtns.forEach(btn => {
+      btn.addEventListener("click", () => {
+        quickBtns.forEach(b => b.classList.remove("chip-active"));
+        btn.classList.add("chip-active");
+        setRange(btn.getAttribute("data-range"));
+        // Real implementation: also call a function to re-query backend / refresh tables
+      });
+    });
+  })();
+</script>
+
+</body>
+</html>

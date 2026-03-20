@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Record Payment — Classic Campus</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="/css/navbar.css" />
+  <style>
+    body{margin:0;background:#f5f8ff;font-family:Poppins,Segoe UI,Arial,sans-serif;color:#0f172a;overflow-x:hidden}
+    *{box-sizing:border-box;min-width:0}
+    .main{flex:1;padding:20px 26px;display:flex;flex-direction:column;gap:16px}
+    .title{font-size:20px;font-weight:700;color:#083454}
+    .subtitle{font-size:13px;color:#6b7280;line-height:1.5}
+    .card{background:#fff;border-radius:12px;padding:16px;border:1px solid #e4ecfb;box-shadow:0 6px 18px rgba(12,38,73,.04)}
+    .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+    .form-group{display:flex;flex-direction:column;gap:7px}
+    .full{grid-column:1/-1}
+    label{font-size:13px;font-weight:700;color:#334155}
+    input,select,textarea{width:100%;border:1px solid #dbe3f6;border-radius:10px;padding:11px 12px;background:#fff;font:inherit}
+    textarea{min-height:100px}
+    .btn{padding:10px 14px;border-radius:10px;border:1px solid #dbe3f6;background:#eef4ff;color:#0a3d62;text-decoration:none;font-weight:700;display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+    .btn.primary{background:#0a3d62;color:#fff;border-color:#0a3d62}
+    .alert{padding:12px 14px;border-radius:10px;background:#fff1f2;color:#991b1b;border:1px solid #fecdd3}
+    @media (max-width:900px){.form-grid{grid-template-columns:1fr}.main{padding:16px}}
+  </style>
+</head>
+<body>
+  <%- include("./navbar") %>
+
+  <main class="main">
+    <div>
+      <div class="title">Record Platform Payment</div>
+      <div class="subtitle">Create a manual payment record for subscriptions, split revenue, credits or adjustments.</div>
+    </div>
+
+    <div class="card">
+      <% if (error) { %>
+        <div class="alert" style="margin-bottom:14px;"><%= error %></div>
+      <% } %>
+
+      <form action="/super-admin/billing/payments/create" method="POST" class="form-grid">
+        <div class="form-group">
+          <label>University</label>
+          <select name="tenantId" required>
+            <option value="">Select university</option>
+            <% (tenants || []).forEach(function(tenant){ %>
+              <option value="<%= tenant._id %>" <%= String(old?.tenantId || '') === String(tenant._id) ? 'selected' : '' %>><%= tenant.name %></option>
+            <% }) %>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Plan</label>
+          <select name="planId">
+            <option value="">Optional plan</option>
+            <% (plans || []).forEach(function(plan){ %>
+              <option value="<%= plan._id %>" <%= String(old?.planId || '') === String(plan._id) ? 'selected' : '' %>><%= plan.name %></option>
+            <% }) %>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Payment Type</label>
+          <select name="type" required>
+            <option value="school_subscription">School Subscription</option>
+            <option value="student_subscription">Student Subscription</option>
+            <option value="revenue_split">Revenue Split</option>
+            <option value="manual_adjust">Manual Adjust</option>
+            <option value="refund">Refund</option>
+            <option value="credit">Credit</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Amount</label>
+          <input type="number" step="0.01" name="amount" value="<%= old?.amount || '' %>" required />
+        </div>
+
+        <div class="form-group">
+          <label>Currency</label>
+          <input type="text" name="currency" value="<%= old?.currency || 'USD' %>" />
+        </div>
+
+        <div class="form-group">
+          <label>Provider</label>
+          <select name="provider">
+            <option value="manual">Manual</option>
+            <option value="bank">Bank</option>
+            <option value="mtn">MTN</option>
+            <option value="airtel">Airtel</option>
+            <option value="stripe">Stripe</option>
+            <option value="flutterwave">Flutterwave</option>
+            <option value="pesapal">Pesapal</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Status</label>
+          <select name="status">
+            <option value="completed">Completed</option>
+            <option value="pending">Pending</option>
+            <option value="failed">Failed</option>
+            <option value="cancelled">Cancelled</option>
+            <option value="refunded">Refunded</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Reference</label>
+          <input type="text" name="reference" value="<%= old?.reference || '' %>" />
+        </div>
+
+        <div class="form-group">
+          <label>Period Start</label>
+          <input type="date" name="periodStart" value="<%= old?.periodStart || '' %>" />
+        </div>
+
+        <div class="form-group">
+          <label>Period End</label>
+          <input type="date" name="periodEnd" value="<%= old?.periodEnd || '' %>" />
+        </div>
+
+        <div class="form-group full">
+          <label>Paid At</label>
+          <input type="datetime-local" name="paidAt" value="<%= old?.paidAt || '' %>" />
+        </div>
+
+        <div class="form-group full">
+          <label>Notes</label>
+          <textarea name="notes"><%= old?.notes || '' %></textarea>
+        </div>
+
+        <div class="form-group full">
+          <button type="submit" class="btn primary">Save Payment</button>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  </div>
+  <script src="/js/navbar.js"></script>
+</body>
+</html>

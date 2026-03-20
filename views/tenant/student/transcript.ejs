@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title><%= pageTitle %> — <%= tenant?.name || "CampusSaaS" %></title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/navbar.css"/>
+  <link rel="stylesheet" href="/css/student-portal.css" />
+</head>
+<body>
+<%- include("./navbar") %>
+
+<main class="main">
+  <div class="topbar">
+    <div>
+      <div class="title">Transcripts & Official Letters</div>
+      <div class="subtitle">
+        View your academic record, GPA/CGPA, and request official letters such as admission or bonafide letters.
+      </div>
+    </div>
+    <div class="top-actions">
+      <a class="btn light" href="/student/dashboard">
+        <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+      </a>
+      <button class="btn primary" onclick="window.print()">
+        <i class="fa-solid fa-file-arrow-down"></i> Download Unofficial Transcript
+      </button>
+    </div>
+  </div>
+
+  <%-include("./.././partials/flash") %>
+
+  <section class="card">
+    <div class="section-title">Transcript filters</div>
+    <div class="section-sub">Select programme, level and semester to refine your transcript view.</div>
+
+    <div class="filters-row" style="margin-top:10px;">
+      <div>
+        <label class="small-muted">Programme</label><br/>
+        <select class="select"><option selected><%= meta.program %></option></select>
+      </div>
+      <div>
+        <label class="small-muted">Level / Year</label><br/>
+        <select class="select"><option selected><%= meta.level %></option></select>
+      </div>
+      <div>
+        <label class="small-muted">Semester</label><br/>
+        <select class="select"><option selected><%= meta.semester %></option></select>
+      </div>
+      <div>
+        <label class="small-muted">Format</label><br/>
+        <select class="select"><option selected>Detailed view</option></select>
+      </div>
+    </div>
+  </section>
+
+  <div class="kpi-row">
+    <div class="card" style="flex:1;">
+      <div class="section-title">Cumulative GPA (CGPA)</div>
+      <div class="section-sub">Overall academic performance</div>
+      <div style="margin-top:8px;">
+        <div style="font-size:22px;font-weight:700;"><%= overview.cgpa %> / 4.00</div>
+        <div class="small-muted">Standing: <span style="color:#16a34a;font-weight:600;"><%= overview.classification %></span></div>
+      </div>
+    </div>
+
+    <div class="card" style="flex:1;">
+      <div class="section-title">Last semester GPA</div>
+      <div class="section-sub">Most recent term</div>
+      <div style="margin-top:8px;">
+        <div style="font-size:22px;font-weight:700;"><%= overview.lastSemesterGpa %></div>
+      </div>
+    </div>
+
+    <div class="card" style="flex:1;">
+      <div class="section-title">Total credits earned</div>
+      <div class="section-sub">Towards graduation</div>
+      <div style="margin-top:8px;">
+        <div style="font-size:22px;font-weight:700;"><%= overview.earnedCredits %></div>
+        <div class="mini-list" style="margin-top:6px;">
+          <div class="mini-item"><span>Total attempted</span><span><%= overview.totalCredits %></span></div>
+          <div class="mini-item"><span>Remaining</span><span><%= overview.remainingCredits %></span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="flex:1;">
+      <div class="section-title">Academic status</div>
+      <div class="section-sub">Current standing</div>
+      <div style="margin-top:8px;">
+        <div class="pill-status"><i class="fa-solid fa-circle-check"></i> <%= overview.academicStatus %></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+    <section class="card">
+      <div class="section-title">Academic transcript</div>
+      <div class="section-sub">Published transcript rows.</div>
+
+      <div style="margin-top:10px;overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead>
+            <tr style="border-bottom:1px solid #e5edff;">
+              <th style="text-align:left;padding:6px 4px;">Course code</th>
+              <th style="text-align:left;padding:6px 4px;">Course title</th>
+              <th style="text-align:center;padding:6px 4px;">Level</th>
+              <th style="text-align:center;padding:6px 4px;">Credits</th>
+              <th style="text-align:center;padding:6px 4px;">Grade</th>
+              <th style="text-align:center;padding:6px 4px;">Grade points</th>
+              <th style="text-align:left;padding:6px 4px;">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (transcriptRows?.length) { %>
+              <% transcriptRows.forEach(function(row){ %>
+                <tr>
+                  <td><%= row.courseCode %></td>
+                  <td><%= row.courseTitle %></td>
+                  <td style="text-align:center;"><%= row.level %></td>
+                  <td style="text-align:center;"><%= row.credits %></td>
+                  <td style="text-align:center;"><%= row.grade %></td>
+                  <td style="text-align:center;"><%= row.gradePoints %></td>
+                  <td><%= row.status %></td>
+                </tr>
+              <% }) %>
+            <% } else { %>
+              <tr><td colspan="7">No transcript rows found.</td></tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <aside>
+      <section class="card">
+        <div class="section-title">Academic summary</div>
+        <div class="section-sub">Key indicators from your academic record.</div>
+
+        <div class="mini-list" style="margin-top:8px;">
+          <div class="mini-item"><span>Programme</span><span><%= meta.program %></span></div>
+          <div class="mini-item"><span>Student ID</span><span><%= meta.studentNumber %></span></div>
+          <div class="mini-item"><span>Level</span><span><%= meta.level %></span></div>
+          <div class="mini-item"><span>Academic year</span><span><%= meta.academicYear %></span></div>
+        </div>
+      </section>
+
+      <section class="card" style="margin-top:16px;">
+        <div class="section-title">Transcript notes</div>
+        <div class="section-sub">Important information about official transcripts.</div>
+
+        <ul class="mini-list" style="margin-top:8px;">
+          <li class="mini-item"><span>Unofficial copy</span><span>For personal use only</span></li>
+          <li class="mini-item"><span>Official transcript</span><span>Issued by Registry Office</span></li>
+          <li class="mini-item"><span>Processing time</span><span>2–5 working days</span></li>
+          <li class="mini-item"><span>Outstanding fees</span><span>May delay release</span></li>
+        </ul>
+      </section>
+    </aside>
+  </div>
+
+  <div class="content" style="margin-top:16px;">
+    <section class="card">
+      <div class="section-title">Official letters</div>
+      <div class="section-sub">Request and track official letters.</div>
+
+      <div style="margin-top:10px;overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead>
+            <tr style="border-bottom:1px solid #e5edff;">
+              <th style="text-align:left;padding:6px 4px;">Letter</th>
+              <th style="text-align:left;padding:6px 4px;">Purpose</th>
+              <th style="text-align:left;padding:6px 4px;">Format</th>
+              <th style="text-align:left;padding:6px 4px;">Status</th>
+              <th style="text-align:left;padding:6px 4px;">Requested</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (lettersCatalogue?.length) { %>
+              <% lettersCatalogue.forEach(function(letter){ %>
+                <tr>
+                  <td><strong><%= letter.type %></strong></td>
+                  <td><%= letter.purpose %></td>
+                  <td><%= letter.format %></td>
+                  <td><%= letter.status %></td>
+                  <td><%= letter.requestedAt ? new Date(letter.requestedAt).toDateString() : "—" %></td>
+                </tr>
+              <% }) %>
+            <% } else { %>
+              <tr><td colspan="5">No letter options available.</td></tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-title">Letter history</div>
+      <div class="section-sub">Quick stats.</div>
+
+      <div class="mini-list" style="margin-top:8px;">
+        <div class="mini-item"><span>Letters requested this year</span><span><%= lettersStats.requestedThisYear %></span></div>
+        <div class="mini-item"><span>Pending letters</span><span><%= lettersStats.pending %></span></div>
+        <div class="mini-item"><span>Maximum online requests per semester</span><span><%= lettersStats.maxPerSemester %></span></div>
+      </div>
+    </section>
+  </div>
+</main>
+</div>
+
+<script src="/js/navbar.js"></script>
+</body>
+</html>

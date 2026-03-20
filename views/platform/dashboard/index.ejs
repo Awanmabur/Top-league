@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Super Admin Dashboard — CampusSaaS</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/navbar.css" />
+
+  <style>
+    @font-face {
+      font-family: PoppinsLocal;
+      src: local("Poppins"), local("Segoe UI");
+    }
+
+    :root {
+      --blue: #0a3d62;
+      --blue-2: #083454;
+      --accent: #0a6fbf;
+      --muted: #6b7280;
+      --bg: #f5f8ff;
+      --card: #ffffff;
+      --radius: 12px;
+      --danger: #dc2626;
+      --success: #16a34a;
+    }
+
+    * {
+      box-sizing: border-box;
+      min-width: 0;
+    }
+
+    html,
+    body {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+
+    body {
+      margin: 0;
+      font-family: PoppinsLocal, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+      background: var(--bg);
+      color: #020617;
+    }
+
+    .main {
+      flex: 1;
+      padding: 20px 26px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-width: 0;
+      width: 100%;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      flex-wrap: wrap;
+      width: 100%;
+    }
+
+    .topbar-left {
+      flex: 1 1 720px;
+      min-width: 0;
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      margin-left: auto;
+      flex: 0 0 auto;
+      max-width: 100%;
+    }
+
+    .title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--blue-2);
+      line-height: 1.3;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 4px;
+      line-height: 1.5;
+    }
+
+    .tenant-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+      width: 100%;
+    }
+
+    .tenant-row label {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .tenant-select {
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid #dbe3f6;
+      background: #fff;
+      font-size: 13px;
+      min-width: 200px;
+      max-width: 100%;
+      outline: none;
+    }
+
+    .btn {
+      padding: 9px 12px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 14px;
+      white-space: nowrap;
+      max-width: 100%;
+    }
+
+    .btn.light {
+      background: #eef4ff;
+      color: var(--blue);
+      border: 1px solid #dbe3f6;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      width: 100%;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 14px;
+      border: 1px solid #e4ecfb;
+      box-shadow: 0 6px 18px rgba(12, 38, 73, 0.04);
+      min-width: 0;
+      width: 100%;
+    }
+
+    .kpi-card {
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid #dfe7fb;
+      background: #fdfdff;
+      width: 100%;
+    }
+
+    .kpi-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .kpi-top i {
+      font-size: 18px;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .kpi-label {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .kpi-value {
+      margin-top: 4px;
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--blue-2);
+      line-height: 1.25;
+    }
+
+    .kpi-footer {
+      margin-top: 6px;
+      font-size: 11px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      padding: 3px 7px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .pill.green {
+      background: #e6f9ee;
+      color: var(--success);
+    }
+
+    .pill.blue {
+      background: #e0f2fe;
+      color: #0369a1;
+    }
+
+    .pill.amber {
+      background: #fffbeb;
+      color: #f59e0b;
+    }
+
+    .uni-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+      width: 100%;
+    }
+
+    .uni-pill {
+      border-radius: 10px;
+      border: 1px dashed #d4ddff;
+      background: #f5f7ff;
+      padding: 8px 9px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      line-height: 1.5;
+    }
+
+    .uni-pill i {
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .uni-pill strong {
+      font-weight: 700;
+      color: var(--blue-2);
+    }
+
+    .content {
+      display: grid;
+      grid-template-columns: minmax(0, 2.1fr) minmax(0, 1fr);
+      gap: 18px;
+      align-items: flex-start;
+      width: 100%;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--blue-2);
+      line-height: 1.4;
+    }
+
+    .section-sub {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .modules-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 12px;
+      margin-top: 10px;
+      width: 100%;
+    }
+
+    .module-card {
+      border-radius: 12px;
+      border: 1px solid #e2ebff;
+      background: #fdfdff;
+      padding: 10px 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      cursor: pointer;
+      text-decoration: none;
+      color: #0f172a;
+      transition: box-shadow .15s, transform .15s, border-color .15s;
+    }
+
+    .module-card:hover {
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+      transform: translateY(-1px);
+      border-color: #cbdafe;
+    }
+
+    .module-top {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+
+    .module-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #e0ecff;
+      color: var(--blue-2);
+      flex-shrink: 0;
+    }
+
+    .module-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #0f172a;
+      line-height: 1.4;
+    }
+
+    .module-desc {
+      font-size: 12px;
+      color: #6b7280;
+      line-height: 1.5;
+    }
+
+    .module-meta {
+      font-size: 11px;
+      color: #6b7280;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 4px;
+      flex-wrap: wrap;
+    }
+
+    .activity-list {
+      margin-top: 10px;
+      font-size: 12px;
+      width: 100%;
+    }
+
+    .activity-item {
+      padding: 7px 0;
+      border-bottom: 1px dashed #e5edff;
+      display: flex;
+      gap: 8px;
+    }
+
+    .activity-item:last-child {
+      border-bottom: none;
+    }
+
+    .activity-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      background: #eef2ff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #4f46e5;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    .activity-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .activity-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #0f172a;
+      line-height: 1.45;
+    }
+
+    .activity-meta {
+      font-size: 11px;
+      color: #6b7280;
+      line-height: 1.45;
+    }
+
+    .shortcut-list {
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .shortcut-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 9px;
+      font-size: 13px;
+      border-radius: 10px;
+      border: 1px solid #e2ebff;
+      background: #f9fbff;
+      text-decoration: none;
+      color: #0f172a;
+      width: 100%;
+    }
+
+    .shortcut-btn i {
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .small-muted {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    @media (max-width:1100px) {
+      .kpi-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .content {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width:900px) {
+      .uni-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width:700px) {
+      .main {
+        padding: 16px;
+      }
+
+      .topbar-left {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .top-actions {
+        display: none;
+      }
+
+      .tenant-row {
+        flex-direction: column;
+        align-items: stretch;
+        margin-top: 8px;
+      }
+
+      .tenant-select {
+        width: 100%;
+        min-width: 0;
+      }
+
+      .kpi-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .uni-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 0;
+      }
+
+      .modules-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width:480px) {
+      .main {
+        padding: 14px;
+        gap: 12px;
+      }
+
+      .top-actions {
+        display: none;
+      }
+
+      .tenant-row {
+        margin-top: 6px;
+      }
+
+      .kpi-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .uni-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 0;
+      }
+
+      .modules-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .content {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <%- include("./navbar") %>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="topbar-left">
+          <div class="title">Super Admin Dashboard</div>
+          <div class="subtitle">Monitor all subscribed universities and drill down into each campus.</div>
+
+          <div class="tenant-row">
+            <label for="tenantSelect"><i class="fa-solid fa-building-columns"></i> Active university view:</label>
+            <select id="tenantSelect" class="tenant-select">
+              <option value="juba">University of Juba</option>
+              <option value="nile">Nile International University</option>
+              <option value="kci">Kampala City Institute</option>
+              <option value="all">All Universities (aggregate)</option>
+            </select>
+          </div>
+
+          <div class="uni-strip">
+            <div class="uni-pill">
+              <i class="fa-solid fa-building-columns"></i>
+              <span><strong>
+                  <%= stats?.tenantCount || 0 %>
+                </strong> subscribed universities</span>
+            </div>
+            <div class="uni-pill">
+              <i class="fa-solid fa-circle-check"></i>
+              <span><strong>
+                  <%= stats?.activeTenants || 0 %>
+                </strong> active • <strong>
+                  <%= stats?.trialTenants || 0 %>
+                </strong> trial • <strong>
+                  <%= stats?.suspendedTenants || 0 %>
+                </strong> suspended</span>
+            </div>
+            <div class="uni-pill">
+              <i class="fa-solid fa-user-graduate"></i>
+              <span><strong>
+                  <%= stats?.studentCount || 34210 %>
+                </strong> students across tenants</span>
+            </div>
+            <div class="uni-pill">
+              <i class="fa-solid fa-sack-dollar"></i>
+              <span><strong>$<%= Number(stats?.totalRevenue || 0).toLocaleString() %></strong> total platform
+                revenue</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="top-actions">
+          <button class="btn light" type="button"><i class="fa-solid fa-bell"></i> Notifications</button>
+          <a href="/super-admin/universities/create" class="btn light"><i
+              class="fa-solid fa-building-circle-arrow-right"></i> Add University</a>
+        </div>
+      </div>
+
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <div>
+              <div class="kpi-label">Universities</div>
+              <div class="kpi-value">
+                <%= stats?.tenantCount || 0 %>
+              </div>
+            </div>
+            <i class="fa-solid fa-building-columns"></i>
+          </div>
+          <div class="kpi-footer">
+            <span class="small-muted">Across platform</span>
+            <span class="pill blue">Tenants</span>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <div>
+              <div class="kpi-label">Active Tenants</div>
+              <div class="kpi-value">
+                <%= stats?.activeTenants || 0 %>
+              </div>
+            </div>
+            <i class="fa-solid fa-circle-check"></i>
+          </div>
+          <div class="kpi-footer">
+            <span class="small-muted">Currently operational</span>
+            <span class="pill green">Healthy</span>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <div>
+              <div class="kpi-label">Open Tickets</div>
+              <div class="kpi-value">
+                <%= stats?.openTickets || 0 %>
+              </div>
+            </div>
+            <i class="fa-solid fa-headset"></i>
+          </div>
+          <div class="kpi-footer">
+            <span class="small-muted">Support queue</span>
+            <span class="pill amber">Support</span>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <div>
+              <div class="kpi-label">Published Announcements</div>
+              <div class="kpi-value">
+                <%= stats?.publishedAnnouncements || 0 %>
+              </div>
+            </div>
+            <i class="fa-solid fa-bullhorn"></i>
+          </div>
+          <div class="kpi-footer">
+            <span class="small-muted">Platform-wide notices</span>
+            <span class="pill blue">Comms</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="content">
+        <section class="card">
+          <div>
+            <div class="section-title">Modules</div>
+            <div class="section-sub">
+              Platform-wide control modules for plans, reporting, billing and tenant operations.
+            </div>
+          </div>
+
+          <div class="modules-grid">
+            <a href="/super-admin/universities" class="module-card">
+              <div class="module-top">
+                <div style="display:flex;gap:8px;min-width:0;">
+                  <div class="module-icon"><i class="fa-solid fa-building-columns"></i></div>
+                  <div>
+                    <div class="module-title">Universities</div>
+                    <div class="module-desc">Manage subscriptions, status, branding and provisioning per institution.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </a>
+
+            <a href="/super-admin/plans" class="module-card">
+              <div class="module-top">
+                <div style="display:flex;gap:8px;min-width:0;">
+                  <div class="module-icon"><i class="fa-solid fa-layer-group"></i></div>
+                  <div>
+                    <div class="module-title">Plans</div>
+                    <div class="module-desc">Create and manage billing models, module access and platform limits.</div>
+                  </div>
+                </div>
+              </div>
+            </a>
+
+            <a href="/super-admin/billing-subscriptions" class="module-card">
+              <div class="module-top">
+                <div style="display:flex;gap:8px;min-width:0;">
+                  <div class="module-icon"><i class="fa-solid fa-credit-card"></i></div>
+                  <div>
+                    <div class="module-title">Billing & Subscriptions</div>
+                    <div class="module-desc">Track renewals, platform payments, collections and revenue flow.</div>
+                  </div>
+                </div>
+              </div>
+            </a>
+
+            <a href="/super-admin/announcements" class="module-card">
+              <div class="module-top">
+                <div style="display:flex;gap:8px;min-width:0;">
+                  <div class="module-icon"><i class="fa-solid fa-bullhorn"></i></div>
+                  <div>
+                    <div class="module-title">Announcements</div>
+                    <div class="module-desc">Send platform-wide communication to selected or all institutions.</div>
+                  </div>
+                </div>
+              </div>
+            </a>
+
+            <a href="/super-admin/reports" class="module-card">
+              <div class="module-top">
+                <div style="display:flex;gap:8px;min-width:0;">
+                  <div class="module-icon"><i class="fa-solid fa-chart-line"></i></div>
+                  <div>
+                    <div class="module-title">Reports</div>
+                    <div class="module-desc">Cross-tenant insights for plans, payments, usage and growth.</div>
+                  </div>
+                </div>
+              </div>
+            </a>
+
+            <a href="/super-admin/audit-logs" class="module-card">
+              <div class="module-top">
+                <div style="display:flex;gap:8px;min-width:0;">
+                  <div class="module-icon"><i class="fa-solid fa-shield-halved"></i></div>
+                  <div>
+                    <div class="module-title">Audit Logs</div>
+                    <div class="module-desc">Track important actions, access history, and platform changes.</div>
+                  </div>
+                </div>
+              </div>
+            </a>
+          </div>
+        </section>
+
+        <aside class="card">
+          <div>
+            <div class="section-title">Recent Universities</div>
+            <div class="section-sub">Latest tenant additions to the platform.</div>
+          </div>
+
+          <% if (!recentTenants || recentTenants.length===0) { %>
+            <div class="small-muted" style="margin-top:12px;">No universities found yet.</div>
+            <% } else { %>
+              <div class="activity-list">
+                <% recentTenants.forEach(function(tenant) { %>
+                  <div class="activity-item">
+                    <div class="activity-icon"><i class="fa-solid fa-building-columns"></i></div>
+                    <div class="activity-body">
+                      <div class="activity-title">
+                        <%= tenant.name %>
+                      </div>
+                      <div class="activity-meta">
+                        <%= tenant.code %> • <%= tenant.planId?.name || "No plan" %> • <%= tenant.status %>
+                      </div>
+                    </div>
+                  </div>
+                  <% }) %>
+              </div>
+              <% } %>
+
+                <div style="margin-top:16px;">
+                  <div class="section-title">Quick Shortcuts</div>
+                  <div class="shortcut-list">
+                    <a href="/super-admin/universities/create" class="shortcut-btn">
+                      <i class="fa-solid fa-building-circle-plus"></i>
+                      <span>Onboard a new university</span>
+                    </a>
+                    <a href="/super-admin/billing/payments/create" class="shortcut-btn">
+                      <i class="fa-solid fa-receipt"></i>
+                      <span>Record platform payment</span>
+                    </a>
+                    <a href="/super-admin/announcements/create" class="shortcut-btn">
+                      <i class="fa-solid fa-bullhorn"></i>
+                      <span>Push global announcement</span>
+                    </a>
+                  </div>
+                </div>
+        </aside>
+      </div>
+    </main>
+
+    </div>
+    <script src="/js/navbar.js"></script>
+</body>
+
+</html>

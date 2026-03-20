@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Leave — <%= (tenant && tenant.name) ? tenant.name : "Classic Campus" %></title>
+<style>
+  :root{--accent:#0a6fbf;--bg:#f4f8ff;--line:rgba(13,64,96,.12);--muted:#6b7280}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial;background:var(--bg);color:#0f172a}
+  .wrap{max-width:1250px;margin:0 auto;padding:18px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.08);padding:16px}
+  .top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start}
+  .title{margin:0;font-size:18px;font-weight:1000}
+  .muted{color:var(--muted);font-size:12px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;align-items:center}
+  input,select,textarea{padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:#fff}
+  button{padding:10px 14px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-weight:1000;cursor:pointer}
+  .btn2{background:#fff;color:#0f172a;border:1px solid var(--line)}
+  table{width:100%;border-collapse:collapse;margin-top:12px}
+  th,td{padding:10px;border-top:1px solid var(--line);text-align:left;font-size:13px;vertical-align:top}
+  .pill{display:inline-flex;align-items:center;padding:4px 10px;border-radius:999px;font-weight:900;font-size:12px}
+  .p1{background:#eef2ff;color:#3730a3}
+  .p2{background:#ecfdf3;color:#15803d}
+  .p3{background:#fee2e2;color:#b91c1c}
+  .p4{background:#fff7ed;color:#92400e}
+  .flash{margin:12px 0;display:grid;gap:8px}
+  .ferr{padding:10px 12px;border-radius:12px;border:1px solid rgba(239,68,68,.25);background:#fee2e2;color:#991b1b;font-weight:900;font-size:13px}
+  .fok{padding:10px 12px;border-radius:12px;border:1px solid rgba(22,163,74,.25);background:#dcfce7;color:#166534;font-weight:900;font-size:13px}
+
+  .back{position:fixed;inset:0;background:rgba(2,6,23,.55);display:none;align-items:center;justify-content:center;padding:18px;z-index:50}
+  .modal{width:min(720px,100%);background:#fff;border-radius:18px;border:1px solid var(--line);box-shadow:0 30px 80px rgba(0,0,0,.35);overflow:hidden}
+  .mTop{display:flex;justify-content:space-between;align-items:center;padding:14px;border-bottom:1px solid var(--line)}
+  .mBody{padding:14px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media(max-width:820px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<%
+  const rows = Array.isArray(requests) ? requests : [];
+  const staffList = Array.isArray(staff) ? staff : [];
+  const q = (typeof query!=="undefined" && query) ? query : {};
+  const csrf = (typeof csrfToken!=="undefined" && csrfToken) ? csrfToken : "";
+  const msgs = (typeof messages!=="undefined" && messages) ? messages : {};
+  const errs = msgs.error ? ([]).concat(msgs.error) : [];
+  const oks = msgs.success ? ([]).concat(msgs.success) : [];
+%>
+<div class="wrap">
+  <div class="card">
+    <div class="top">
+      <div>
+        <h1 class="title">Leave</h1>
+        <div class="muted">HR → Leave Requests</div>
+      </div>
+      <button type="button" id="btnNew">+ New Request</button>
+    </div>
+
+    <% if (errs.length || oks.length) { %>
+      <div class="flash">
+        <% errs.forEach(m=>{ %><div class="ferr"><%= m %></div><% }) %>
+        <% oks.forEach(m=>{ %><div class="fok"><%= m %></div><% }) %>
+      </div>
+    <% } %>
+
+    <form class="row" method="GET" action="/admin/leave">
+      <input name="q" value="<%= q.q || '' %>" placeholder="Search staff: name, staffNo, email"/>
+      <select name="type">
+        <option value="">Any type</option>
+        <% ["annual","sick","maternity","paternity","unpaid","other"].forEach(t=>{ %>
+          <option value="<%= t %>" <%= (q.type===t)?'selected':'' %>><%= t %></option>
+        <% }) %>
+      </select>
+      <select name="status">
+        <option value="">Any status</option>
+        <% ["pending","approved","rejected","cancelled"].forEach(s=>{ %>
+          <option value="<%= s %>" <%= (q.status===s)?'selected':'' %>><%= s %></option>
+        <% }) %>
+      </select>
+      <button type="submit">Filter</button>
+      <a class="btn2" style="text-decoration:none;padding:10px 14px;border-radius:12px" href="/admin/leave">Reset</a>
+    </form>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width:22%">Staff</th>
+          <th style="width:10%">Type</th>
+          <th style="width:18%">Dates</th>
+          <th style="width:8%">Days</th>
+          <th style="width:12%">Status</th>
+          <th style="width:30%"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if(!rows.length){ %>
+          <tr><td colspan="6" class="muted">No leave requests found.</td></tr>
+        <% } %>
+
+        <% rows.forEach(r=>{ %>
+          <tr data-id="<%= r._id %>">
+            <td>
+              <div><b><%= (r.staff && (r.staff.fullName||((r.staff.firstName||'')+' '+(r.staff.lastName||'')).trim())) ? (r.staff.fullName||((r.staff.firstName||'')+' '+(r.staff.lastName||'')).trim()) : '-' %></b></div>
+              <div class="muted"><%= (r.staff && r.staff.staffNo) ? r.staff.staffNo : '' %> <%= (r.staff && r.staff.email) ? ('• '+r.staff.email) : '' %></div>
+            </td>
+            <td><b><%= r.leaveType || 'annual' %></b></td>
+            <td>
+              <div><%= r.startDate ? new Date(r.startDate).toLocaleDateString() : '-' %> → <%= r.endDate ? new Date(r.endDate).toLocaleDateString() : '-' %></div>
+              <div class="muted"><%= r.reason ? r.reason : '' %></div>
+            </td>
+            <td><b><%= r.days || 0 %></b></td>
+            <td>
+              <% if(r.status==='pending'){ %><span class="pill p1">pending</span><% } %>
+              <% if(r.status==='approved'){ %><span class="pill p2">approved</span><% } %>
+              <% if(r.status==='rejected'){ %><span class="pill p3">rejected</span><% } %>
+              <% if(r.status==='cancelled'){ %><span class="pill p4">cancelled</span><% } %>
+            </td>
+            <td>
+              <div class="row" style="margin:0">
+                <form method="POST" action="/admin/leave/<%= r._id %>/decide" style="display:inline">
+                  <% if(csrf){ %><input type="hidden" name="_csrf" value="<%= csrf %>"><% } %>
+                  <input type="hidden" name="action" value="approve">
+                  <input type="hidden" name="decisionNote" value="">
+                  <button class="btn2" type="submit" <%= (r.status!=='pending')?'disabled':'' %>>Approve</button>
+                </form>
+
+                <button class="btn2" type="button" data-reject <%= (r.status!=='pending')?'disabled':'' %>>Reject</button>
+
+                <form method="POST" action="/admin/leave/<%= r._id %>/decide" style="display:inline">
+                  <% if(csrf){ %><input type="hidden" name="_csrf" value="<%= csrf %>"><% } %>
+                  <input type="hidden" name="action" value="cancel">
+                  <input type="hidden" name="decisionNote" value="">
+                  <button class="btn2" type="submit" <%= (r.status==='cancelled')?'disabled':'' %>>Cancel</button>
+                </form>
+
+                <form method="POST" action="/admin/leave/<%= r._id %>/delete" style="display:inline" onsubmit="return confirm('Remove this request?')">
+                  <% if(csrf){ %><input type="hidden" name="_csrf" value="<%= csrf %>"><% } %>
+                  <button class="btn2" type="submit">Remove</button>
+                </form>
+              </div>
+              <% if(r.decisionNote){ %><div class="muted" style="margin-top:6px">Note: <%= r.decisionNote %></div><% } %>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="back" id="mBack">
+  <div class="modal">
+    <div class="mTop">
+      <div><b id="mTitle">New Leave Request</b></div>
+      <button type="button" class="btn2" id="mClose">Close</button>
+    </div>
+    <div class="mBody">
+      <form method="POST" action="/admin/leave" id="mForm">
+        <% if(csrf){ %><input type="hidden" name="_csrf" value="<%= csrf %>"><% } %>
+        <div class="grid">
+          <div>
+            <div class="muted">Staff *</div>
+            <select name="staff" id="fStaff" required>
+              <option value="">Select staff</option>
+              <% staffList.forEach(s=>{ %>
+                <option value="<%= s._id %>"><%= (s.fullName || ((s.firstName||'')+' '+(s.lastName||'')).trim()) %> <%= s.staffNo ? ('• '+s.staffNo) : '' %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div>
+            <div class="muted">Type</div>
+            <select name="leaveType" id="fType">
+              <% ["annual","sick","maternity","paternity","unpaid","other"].forEach(t=>{ %>
+                <option value="<%= t %>"><%= t %></option>
+              <% }) %>
+            </select>
+          </div>
+
+          <div>
+            <div class="muted">Start Date *</div>
+            <input type="date" name="startDate" id="fStart" required>
+          </div>
+          <div>
+            <div class="muted">End Date *</div>
+            <input type="date" name="endDate" id="fEnd" required>
+          </div>
+
+          <div style="grid-column:1/-1">
+            <div class="muted">Reason</div>
+            <textarea name="reason" id="fReason" rows="3" placeholder="Optional reason..."></textarea>
+          </div>
+        </div>
+
+        <div class="row" style="justify-content:flex-end">
+          <button type="submit">Submit</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script nonce="<%= cspNonce %>">
+(function(){
+  const $=(id)=>document.getElementById(id);
+  const mBack=$('mBack'), btnNew=$('btnNew'), mClose=$('mClose');
+
+  function openModal(){ if(mBack) mBack.style.display="flex"; }
+  function closeModal(){ if(mBack) mBack.style.display="none"; }
+
+  if(btnNew) btnNew.addEventListener('click', ()=>{
+    if($('fStaff')) $('fStaff').value="";
+    if($('fType')) $('fType').value="annual";
+    if($('fStart')) $('fStart').value="";
+    if($('fEnd')) $('fEnd').value="";
+    if($('fReason')) $('fReason').value="";
+    openModal();
+  });
+
+  if(mClose) mClose.addEventListener('click', closeModal);
+  if(mBack) mBack.addEventListener('click',(e)=>{ if(e.target===mBack) closeModal(); });
+
+  // Reject w/ note
+  document.addEventListener('click',(e)=>{
+    const btn = e.target.closest('[data-reject]');
+    if(!btn) return;
+    const tr = btn.closest('tr[data-id]');
+    if(!tr) return;
+
+    const note = (prompt("Rejection note (optional):", "")||"").trim();
+    const id = tr.dataset.id;
+
+    const form = document.createElement("form");
+    form.method="POST";
+    form.action="/admin/leave/"+encodeURIComponent(id)+"/decide";
+
+    const add=(n,v)=>{ const i=document.createElement("input"); i.type="hidden"; i.name=n; i.value=String(v); form.appendChild(i); };
+    add("action","reject");
+    add("decisionNote", note);
+
+    const csrf="<%= csrf || '' %>";
+    if(csrf) add("_csrf", csrf);
+
+    document.body.appendChild(form);
+    form.submit();
+  });
+})();
+</script>
+</body>
+</html>

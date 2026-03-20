@@ -1,0 +1,157 @@
+/* ============================
+   LAYOUT.CSS – Sidebar + Topbar
+   ============================ */
+
+/* ---------- App Layout ---------- */
+.app-layout {
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  min-height: 100vh;
+}
+
+.sidebar {
+  background: #ffffff;
+  border-right: 1px solid var(--border);
+  padding: 20px 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.sidebar-brand {
+  padding: 0 20px 30px;
+}
+
+.brand-link {
+  text-decoration: none;
+  color: var(--text-dark);
+  font-size: 20px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sidebar-nav ul {
+  list-style: none;
+}
+
+.nav-link {
+  display: block;
+  padding: 12px 20px;
+  text-decoration: none;
+  font-size: 15px;
+  color: var(--text-dark);
+  border-left: 3px solid transparent;
+}
+
+.nav-link:hover {
+  background: var(--primary-light);
+  border-left-color: var(--primary);
+}
+
+.nav-link.active {
+  background: var(--primary-light);
+  font-weight: 600;
+  border-left-color: var(--primary);
+}
+
+/* ---------- Topbar ---------- */
+.topbar {
+  background: #ffffff;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 25px;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.topbar-title h1 {
+  font-size: 18px;
+  margin-bottom: 2px;
+}
+
+.topbar-subtitle {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.topbar-search input {
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+/* ---------- Page content ---------- */
+.main-content {
+  background: var(--bg);
+  padding: 25px;
+}
+
+.page-header {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.page-title {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.page-subtitle {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* ---------- Sidebar Mobile Mode ---------- */
+#sidebarToggle {
+  display: none;
+}
+
+/* For screens < 900px */
+@media (max-width: 900px) {
+  .app-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: -260px;
+    width: 250px;
+    transition: 0.3s;
+    z-index: 999;
+  }
+
+  body.sidebar-open .sidebar {
+    left: 0;
+  }
+
+  #sidebarToggle {
+    display: block;
+    background: none;
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+  }
+}
+
+/* For screens < 600px */
+@media (max-width: 600px) {
+  .topbar { padding: 10px; }
+  .main-content { padding: 15px; }
+}
