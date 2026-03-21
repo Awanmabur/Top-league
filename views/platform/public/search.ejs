@@ -2,45 +2,41 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <title>Classic Academy — Search Schools</title>
+  <title>Classic Academy — Search Schools</title>
 
-    <!-- ✅ PRODUCTION SEO (classicacademy.app) -->
-    <meta name="description"
-        content="Search schools on Classic Academy. Filter by category, location, curriculum, fees range, and facilities. Find the right school faster." />
-    <meta name="keywords"
-        content="search schools Uganda, search schools South Sudan, school directory, school profiles, admissions, Classic Academy search" />
-    <meta name="robots" content="index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:1" />
-    <meta name="theme-color" content="#4a90e2" />
-    <meta name="application-name" content="Classic Academy" />
-    <meta name="format-detection" content="telephone=no" />
+  <meta name="description"
+    content="Search schools on Classic Academy. Filter by category, location, curriculum, fees range, and facilities. Find the right school faster." />
+  <meta name="keywords"
+    content="search schools Uganda, search schools South Sudan, school directory, school profiles, admissions, Classic Academy search" />
+  <meta name="robots" content="index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:1" />
+  <meta name="theme-color" content="#4a90e2" />
+  <meta name="application-name" content="Classic Academy" />
+  <meta name="format-detection" content="telephone=no" />
 
-    <link rel="canonical" href="https://www.classicacademy.app/search" />
-    <link rel="icon" href="https://www.classicacademy.app/img/academylogo.png" />
-    <link rel="apple-touch-icon" href="https://www.classicacademy.app/img/academylogo.png" />
+  <link rel="canonical" href="https://www.classicacademy.app/search" />
+  <link rel="icon" href="https://www.classicacademy.app/img/academylogo.png" />
+  <link rel="apple-touch-icon" href="https://www.classicacademy.app/img/academylogo.png" />
 
-    <!-- Open Graph -->
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Classic Academy" />
-    <meta property="og:locale" content="en_US" />
-    <meta property="og:title" content="Classic Academy — Search Schools" />
-    <meta property="og:description"
-        content="Search and filter schools: location, category, curriculum, fees, facilities." />
-    <meta property="og:url" content="https://www.classicacademy.app/search" />
-    <meta property="og:image" content="https://www.classicacademy.app/img/hero.png" />
-    <meta property="og:image:alt" content="Classic Academy School Search" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Classic Academy" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:title" content="Classic Academy — Search Schools" />
+  <meta property="og:description"
+    content="Search and filter schools: location, category, curriculum, fees, facilities." />
+  <meta property="og:url" content="https://www.classicacademy.app/search" />
+  <meta property="og:image" content="https://www.classicacademy.app/img/hero.png" />
+  <meta property="og:image:alt" content="Classic Academy School Search" />
 
-    <!-- Twitter -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Classic Academy — Search Schools" />
-    <meta name="twitter:description"
-        content="Search and filter schools: location, category, curriculum, fees, facilities." />
-    <meta name="twitter:image" content="https://www.classicacademy.app/img/hero.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Classic Academy — Search Schools" />
+  <meta name="twitter:description"
+    content="Search and filter schools: location, category, curriculum, fees, facilities." />
+  <meta name="twitter:image" content="https://www.classicacademy.app/img/hero.png" />
 
-    <!-- Structured data -->
-    <script type="application/ld+json">
+  <script type="application/ld+json">
   {
     "@context":"https://schema.org",
     "@type":"WebPage",
@@ -54,1807 +50,1479 @@
   }
   </script>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        @import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Outfit:wght@100..900&display=swap");
-
-        :root {
-            --primary: #4a90e2;
-            --accent: #d97800;
-            --highlight: #009f8b;
-
-            --ink: #0f172a;
-            --muted: #475569;
-
-            --page-pad: clamp(1rem, 4vw, 6rem);
-            --section-gap: clamp(1.2rem, 2.6vw, 2rem);
-
-            --shadow2: 0 18px 50px rgba(15, 23, 42, .12);
-            --shadow3: 0 10px 30px rgba(15, 23, 42, .10);
-
-            --radius: 22px;
-        }
-
-        html {
-            scroll-behavior: smooth;
-        }
-
-        a {
-            text-decoration: none;
-        }
-
-        section,
-        footer {
-            scroll-margin-top: 120px;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            background: #e0f7fa;
-            color: #333;
-            overflow-x: clip;
-            -webkit-overflow-scrolling: touch;
-            padding-top: 112px;
-        }
-
-        @media (max-width: 600px) {
-            body {
-                padding-top: 102px;
-            }
-        }
-
-        /* LOADER */
-        #loader {
-            position: fixed;
-            inset: 0;
-            background: #e0f7fa;
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            padding: 1.2rem;
-            text-align: center;
-        }
-
-        .academylogo {
-            width: min(220px, 70vw);
-        }
-
-        .academylogo img {
-            width: 100%;
-            height: auto;
-            display: block;
-        }
-
-        .loader {
-            position: relative;
-            width: 18px;
-            height: 28px;
-            perspective: 500px;
-            animation: flip 2s infinite;
-        }
-
-        .loader:nth-child(3) {
-            animation-delay: 0.2s;
-        }
-
-        .loader:nth-child(4) {
-            animation-delay: 0.4s;
-        }
-
-        .loader:nth-child(5) {
-            animation-delay: 0.6s;
-        }
-
-        .loader:nth-child(6) {
-            animation-delay: 0.8s;
-        }
-
-        .face {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            backface-visibility: hidden;
-            border-radius: 4px;
-        }
-
-        .front {
-            background: var(--primary);
-        }
-
-        .back {
-            background: #d35400;
-            transform: rotateY(180deg);
-        }
-
-        @keyframes flip {
-
-            0%,
-            100% {
-                transform: rotateY(0deg);
-            }
-
-            50% {
-                transform: rotateY(180deg);
-            }
-        }
-
-        /* NAVBAR (same as main) */
-        .header {
-            position: fixed;
-            top: 14px;
-            left: var(--page-pad);
-            right: var(--page-pad);
-            padding: .65rem .85rem;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, .70);
-            border: 1px solid rgba(255, 255, 255, .78);
-            backdrop-filter: blur(12px);
-            box-shadow: 0 16px 46px rgba(15, 23, 42, .10);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: .8rem;
-            z-index: 2000;
-        }
-
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: .75rem;
-            min-width: 0;
-            color: var(--ink);
-        }
-
-        .brand-mark {
-            width: 40px;
-            height: 40px;
-            border-radius: 14px;
-            object-fit: cover;
-            border: 1px solid rgba(15, 23, 42, .10);
-            background: rgba(255, 255, 255, .85);
-            flex: 0 0 auto;
-        }
-
-        .brand-txt {
-            display: grid;
-            line-height: 1.05;
-            min-width: 0;
-        }
-
-        .brand-name {
-            font-weight: 900;
-            letter-spacing: -.02em;
-            color: var(--ink);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .brand-sub {
-            font-size: .86rem;
-            color: var(--muted);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .navbar {
-            display: flex;
-            align-items: center;
-            gap: .35rem;
-        }
-
-        .navbar a {
-            padding: .55rem .75rem;
-            border-radius: 999px;
-            color: #1d4ed8;
-            font-weight: 600;
-            font-size: 1.02rem;
-            transition: background .2s ease, transform .2s ease, color .2s ease;
-            white-space: nowrap;
-        }
-
-        .navbar a:hover {
-            background: rgba(74, 144, 226, .10);
-            transform: translateY(-1px);
-            color: var(--ink);
-        }
-
-        .nav-pill {
-            border: 1px solid rgba(74, 144, 226, .35);
-            background: rgba(74, 144, 226, .10);
-            color: #0f172a !important;
-            font-weight: 800;
-        }
-
-        .nav-pill:hover {
-            background: rgba(74, 144, 226, .18);
-            border-color: rgba(74, 144, 226, .45);
-        }
-
-        .nav-actions {
-            display: flex;
-            align-items: center;
-            gap: .55rem;
-            flex: 0 0 auto;
-        }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: .45rem;
-            padding: 0.72rem 1rem;
-            background-color: var(--primary);
-            color: white;
-            border: 1px solid var(--primary);
-            border-radius: 999px;
-            font-weight: 800;
-            transition: background-color .25s ease, transform .2s ease, box-shadow .2s ease;
-            cursor: pointer;
-            user-select: none;
-            box-shadow: 0 10px 28px rgba(74, 144, 226, .18);
-            white-space: nowrap;
-        }
-
-        .btn:hover {
-            background-color: transparent;
-            color: var(--primary);
-            transform: translateY(-1px);
-            box-shadow: 0 14px 34px rgba(15, 23, 42, .12);
-        }
-
-        .btn.ghost {
-            background: rgba(255, 255, 255, .72);
-            border: 1px solid rgba(15, 23, 42, .12);
-            color: var(--ink);
-            box-shadow: 0 10px 26px rgba(15, 23, 42, .08);
-        }
-
-        .btn.ghost:hover {
-            background: rgba(255, 255, 255, .88);
-            color: var(--ink);
-        }
-
-        .btn-sm {
-            padding: .55rem .8rem !important;
-            font-size: .95rem !important;
-            box-shadow: none !important;
-        }
-
-        .menu-btn {
-            width: 44px;
-            height: 44px;
-            border-radius: 999px;
-            border: 1px solid rgba(15, 23, 42, .12);
-            background: rgba(255, 255, 255, .78);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 10px 26px rgba(15, 23, 42, .08);
-        }
-
-        .menu-btn i {
-            color: var(--ink);
-            font-size: 1.05rem;
-        }
-
-        @media (max-width: 1024px) {
-            .brand-sub {
-                display: none;
-            }
-
-            .menu-btn {
-                display: inline-flex;
-            }
-
-            .navbar {
-                position: absolute;
-                top: calc(100% + .65rem);
-                left: 0;
-                right: 0;
-                margin: 0 .25rem;
-                padding: .75rem;
-                background: rgba(74, 144, 226, .96);
-                border: 1px solid rgba(255, 255, 255, .35);
-                border-radius: 20px;
-                backdrop-filter: blur(12px);
-                display: grid;
-                gap: .4rem;
-                transform: translateY(-8px);
-                opacity: 0;
-                pointer-events: none;
-                transition: transform .2s ease, opacity .2s ease;
-            }
-
-            .navbar.active {
-                transform: translateY(0);
-                opacity: 1;
-                pointer-events: auto;
-            }
-
-            .navbar a {
-                color: #fff;
-                border-radius: 16px;
-                padding: .85rem .85rem;
-                background: rgba(255, 255, 255, .08);
-            }
-
-            .navbar a:hover {
-                background: rgba(255, 255, 255, .14);
-                transform: none;
-                color: #fff;
-            }
-
-            .nav-pill {
-                background: rgba(255, 255, 255, .18);
-                border-color: rgba(255, 255, 255, .35);
-                color: #fff !important;
-            }
-        }
-
-        /* REVEAL */
-        .reveal {
-            opacity: 0;
-            transform: translateY(14px);
-            transition: all .7s ease;
-        }
-
-        .reveal.in {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            .reveal {
-                opacity: 1;
-                transform: none;
-                transition: none;
-            }
-
-            * {
-                scroll-behavior: auto !important;
-            }
-        }
-
-        /* PAGE HERO */
-        .page-hero {
-            position: relative;
-            margin: 0 var(--page-pad);
-            margin-bottom: 1.2rem;
-            border-radius: calc(var(--radius) + 6px);
-            overflow: hidden;
-            background:
-                radial-gradient(900px 420px at 10% 15%, rgba(74, 144, 226, .20), transparent 60%),
-                radial-gradient(760px 420px at 90% 0%, rgba(217, 120, 0, .14), transparent 58%),
-                radial-gradient(760px 520px at 80% 110%, rgba(0, 159, 139, .12), transparent 56%),
-                rgba(255, 255, 255, .40);
-            border: 1px solid rgba(255, 255, 255, .70);
-            backdrop-filter: blur(14px);
-            box-shadow: 0 20px 70px rgba(15, 23, 42, .12);
-            padding: clamp(1.1rem, 2.5vw, 2rem);
-        }
-
-        .kicker {
-            display: inline-flex;
-            gap: .55rem;
-            align-items: center;
-            color: #1b2a4e;
-            font-weight: 900;
-            padding: .45rem .8rem;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, .82);
-            border: 1px solid rgba(255, 255, 255, .90);
-            box-shadow: 0 12px 30px rgba(15, 23, 42, .08);
-            width: fit-content;
-        }
-
-        .page-hero h1 {
-            margin-top: .85rem;
-            font-size: clamp(1.55rem, 2.55vw, 2.45rem);
-            line-height: 1.15;
-            letter-spacing: -.02em;
-            color: var(--ink);
-        }
-
-        .page-hero h1 span {
-            color: var(--primary);
-        }
-
-        .page-hero p {
-            margin-top: .75rem;
-            color: #24324f;
-            font-size: clamp(1rem, 1.2vw, 1.08rem);
-            max-width: 78ch;
-        }
-
-        .hero-actions {
-            margin-top: 1rem;
-            display: flex;
-            flex-wrap: wrap;
-            gap: .6rem;
-        }
-
-        @media (max-width: 520px) {
-            .hero-actions {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: .6rem;
-            }
-
-            .hero-actions .btn {
-                width: 100%;
-                padding: .62rem .7rem;
-                font-size: .95rem;
-                box-shadow: none;
-            }
-        }
-
-        /* SEARCH LAYOUT */
-        .search-wrap {
-            margin: 0 var(--page-pad);
-            background: rgba(255, 255, 255, .55);
-            border: 1px solid rgba(255, 255, 255, .75);
-            border-radius: 26px;
-            box-shadow: var(--shadow2);
-            backdrop-filter: blur(14px);
-            overflow: hidden;
-        }
-
-        .search-head {
-            padding: 1.2rem 1.2rem 1rem 1.2rem;
-            border-bottom: 1px solid rgba(15, 23, 42, .08);
-            background:
-                radial-gradient(720px 320px at 10% 0%, rgba(74, 144, 226, .10), transparent 62%),
-                radial-gradient(720px 320px at 90% 0%, rgba(0, 159, 139, .08), transparent 62%),
-                rgba(255, 255, 255, .18);
-        }
-
-        .search-head-top {
-            display: flex;
-            align-items: flex-end;
-            justify-content: space-between;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .search-head h2 {
-            margin: 0;
-            color: var(--ink);
-            letter-spacing: -.01em;
-        }
-
-        .search-head p {
-            margin: .35rem 0 0 0;
-            color: var(--muted);
-            max-width: 90ch;
-        }
-
-        .tools {
-            margin-top: 1rem;
-            display: grid;
-            grid-template-columns: 1.25fr .75fr .75fr;
-            gap: .75rem;
-            align-items: center;
-        }
-
-        .q {
-            position: relative;
-        }
-
-        .q i {
-            position: absolute;
-            left: 1rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #1f2a44;
-            opacity: .8;
-        }
-
-        .q input {
-            width: 100%;
-            padding: .88rem 1rem .88rem 2.65rem;
-            border-radius: 999px;
-            border: 1px solid rgba(74, 144, 226, .35);
-            background: rgba(255, 255, 255, .85);
-            outline: none;
-        }
-
-        .sel select {
-            width: 100%;
-            padding: .88rem 1rem;
-            border-radius: 999px;
-            border: 1px solid rgba(74, 144, 226, .35);
-            background: rgba(255, 255, 255, .85);
-            outline: none;
-            font-weight: 700;
-            color: #0f172a;
-        }
-
-        .chipbar {
-            margin-top: .75rem;
-            display: flex;
-            gap: .5rem;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-
-        .chip {
-            display: inline-flex;
-            gap: .4rem;
-            align-items: center;
-            padding: .5rem .75rem;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, .75);
-            border: 1px solid rgba(15, 23, 42, .10);
-            font-weight: 900;
-            color: #0f172a;
-            cursor: pointer;
-            user-select: none;
-            transition: transform .2s ease, background .2s ease, border-color .2s ease;
-            font-size: .9rem;
-            white-space: nowrap;
-        }
-
-        .chip:hover {
-            transform: translateY(-1px);
-            background: rgba(255, 255, 255, .9);
-        }
-
-        .chip.active {
-            background: rgba(74, 144, 226, .12);
-            border-color: rgba(74, 144, 226, .28);
-        }
-
-        .search-body {
-            padding: 1rem 1.1rem 1.2rem 1.1rem;
-            display: grid;
-            grid-template-columns: 360px 1fr;
-            gap: 1rem;
-            align-items: start;
-        }
-
-        .panel {
-            background: rgba(255, 255, 255, .75);
-            border: 1px solid rgba(255, 255, 255, .88);
-            border-radius: 22px;
-            box-shadow: 0 12px 30px rgba(15, 23, 42, .10);
-            padding: 1rem;
-            overflow: hidden;
-        }
-
-        .panel h3 {
-            margin: 0 0 .7rem 0;
-            color: var(--ink);
-        }
-
-        .panel .row {
-            display: grid;
-            gap: .75rem;
-        }
-
-        .panel label {
-            display: grid;
-            gap: .35rem;
-        }
-
-        .panel label span {
-            font-weight: 800;
-            color: #0f172a;
-        }
-
-        .panel input,
-        .panel select {
-            width: 100%;
-            padding: .8rem .9rem;
-            border-radius: 16px;
-            border: 1px solid rgba(74, 144, 226, .25);
-            background: rgba(255, 255, 255, .90);
-            outline: none;
-        }
-
-        .panel input:focus,
-        .panel select:focus {
-            border-color: rgba(74, 144, 226, .65);
-            box-shadow: 0 0 0 4px rgba(74, 144, 226, .12);
-        }
-
-        .range {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: .6rem;
-        }
-
-        .checks {
-            display: grid;
-            gap: .45rem;
-            margin-top: .25rem;
-        }
-
-        .chk {
-            display: flex;
-            gap: .55rem;
-            align-items: center;
-            background: rgba(255, 255, 255, .8);
-            border: 1px solid rgba(15, 23, 42, .08);
-            border-radius: 14px;
-            padding: .55rem .6rem;
-        }
-
-        .chk input {
-            width: 18px;
-            height: 18px;
-        }
-
-        .chk span {
-            color: #0f172a;
-            font-weight: 800;
-        }
-
-        .panel-actions {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: .6rem;
-            margin-top: .8rem;
-        }
-
-        /* RESULTS */
-        .results-top {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1rem;
-            flex-wrap: wrap;
-            margin-bottom: .8rem;
-        }
-
-        .count {
-            display: inline-flex;
-            align-items: center;
-            gap: .5rem;
-            padding: .45rem .7rem;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, .75);
-            border: 1px solid rgba(15, 23, 42, .10);
-            font-weight: 1000;
-            color: #0f172a;
-        }
-
-        .sort {
-            display: flex;
-            gap: .6rem;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        .sort select {
-            padding: .7rem .9rem;
-            border-radius: 999px;
-            border: 1px solid rgba(74, 144, 226, .35);
-            background: rgba(255, 255, 255, .85);
-            outline: none;
-            font-weight: 800;
-            color: #0f172a;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 1rem;
-        }
-
-        .card {
-            background: rgba(255, 255, 255, .88);
-            border: 1px solid rgba(15, 23, 42, .10);
-            border-radius: 24px;
-            box-shadow: 0 18px 55px rgba(15, 23, 42, .10);
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            min-height: 100%;
-            transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
-        }
-
-        .card:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 26px 72px rgba(15, 23, 42, .14);
-            border-color: rgba(74, 144, 226, .22);
-        }
-
-        .thumb {
-            height: 170px;
-            background: rgba(74, 144, 226, .12);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .thumb img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-
-        .badge {
-            position: absolute;
-            top: 12px;
-            left: 12px;
-            display: inline-flex;
-            gap: .35rem;
-            align-items: center;
-            padding: .35rem .6rem;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, .88);
-            border: 1px solid rgba(255, 255, 255, .92);
-            font-weight: 1000;
-            color: #0f172a;
-            box-shadow: 0 10px 26px rgba(15, 23, 42, .12);
-            font-size: .85rem;
-        }
-
-        .badge.hot {
-            color: #9a3412;
-            background: rgba(217, 120, 0, .14);
-            border-color: rgba(217, 120, 0, .24);
-        }
-
-        .body {
-            padding: 1rem;
-            display: flex;
-            flex-direction: column;
-            gap: .55rem;
-            height: 100%;
-        }
-
-        .name {
-            color: var(--ink);
-            font-weight: 1000;
-            letter-spacing: -.01em;
-            line-height: 1.2;
-            font-size: 1.12rem;
-        }
-
-        .meta {
-            display: flex;
-            gap: .5rem;
-            flex-wrap: wrap;
-            color: #475569;
-            font-weight: 800;
-            font-size: .9rem;
-        }
-
-        .meta span {
-            display: inline-flex;
-            gap: .35rem;
-            align-items: center;
-        }
-
-        .meta i {
-            color: #16a34a;
-        }
-
-        .desc {
-            color: #475569;
-            margin-top: .2rem;
-        }
-
-        .tags {
-            margin-top: .2rem;
-            display: flex;
-            flex-wrap: wrap;
-            gap: .45rem;
-        }
-
-        .tag {
-            display: inline-flex;
-            gap: .35rem;
-            align-items: center;
-            padding: .32rem .55rem;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, .85);
-            border: 1px solid rgba(15, 23, 42, .10);
-            font-weight: 900;
-            font-size: .86rem;
-            color: #0f172a;
-        }
-
-        .actions {
-            margin-top: auto;
-            padding-top: .7rem;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: .6rem;
-        }
-
-        .empty {
-            background: rgba(255, 255, 255, .75);
-            border: 1px dashed rgba(15, 23, 42, .18);
-            border-radius: 22px;
-            padding: 1.2rem;
-            color: #475569;
-            text-align: center;
-        }
-
-        /* Pagination */
-        .pager {
-            margin-top: 1rem;
-            display: flex;
-            justify-content: center;
-            gap: .5rem;
-            flex-wrap: wrap;
-        }
-
-        .pbtn {
-            border: 1px solid rgba(15, 23, 42, .12);
-            background: rgba(255, 255, 255, .78);
-            color: var(--ink);
-            padding: .55rem .8rem;
-            border-radius: 999px;
-            font-weight: 900;
-            cursor: pointer;
-            user-select: none;
-            transition: transform .2s ease, background .2s ease, border-color .2s ease;
-        }
-
-        .pbtn:hover {
-            transform: translateY(-1px);
-        }
-
-        .pbtn.active {
-            background: rgba(74, 144, 226, .12);
-            border-color: rgba(74, 144, 226, .24);
-        }
-
-        @media (max-width: 1100px) {
-            .search-body {
-                grid-template-columns: 1fr;
-            }
-
-            .grid {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
-
-            .tools {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        @media (max-width: 680px) {
-            .grid {
-                grid-template-columns: 1fr;
-            }
-
-            .panel-actions {
-                grid-template-columns: 1fr 1fr;
-            }
-        }
-
-        @media (max-width: 520px) {
-            .panel-actions {
-                grid-template-columns: 1fr 1fr;
-            }
-
-            .actions {
-                grid-template-columns: 1fr 1fr;
-            }
-        }
-
-        /* FOOTER (same as main) */
-        .footer {
-            background-color: #f9f9f9;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            font-size: 0.95rem;
-            background: rgba(255, 255, 255, 0.3);
-            backdrop-filter: blur(10px);
-            border-radius: 25px;
-            margin: 2rem var(--page-pad);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            gap: 0;
-        }
-
-        .footer div {
-            margin: 1rem;
-            flex: 1 1 220px;
-            min-width: 220px;
-        }
-
-        .footer h4 {
-            font-size: 1rem;
-            margin-bottom: 1rem;
-        }
-
-        .footer ul {
-            list-style: none;
-            padding: 0;
-        }
-
-        .footer ul li {
-            margin-bottom: 0.5rem;
-        }
-
-        .footer ul li a {
-            color: #333;
-        }
-
-        .footer ul li a:hover {
-            text-decoration: underline;
-        }
-
-        #toTopBtn {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            width: 42px;
-            height: 42px;
-            border-radius: 50%;
-            cursor: pointer;
-            font-size: 1.5rem;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-            display: none;
-            z-index: 1000;
-            transition: transform 0.2s ease;
-        }
-
-        #toTopBtn:hover {
-            transform: scale(1.08);
-        }
-
-        .fab-container {
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            align-items: center;
-            position: fixed;
-            bottom: 170px;
-            right: 20px;
-            z-index: 999;
-        }
-
-        .whatsapp-icon {
-            transition: fill 0.3s ease;
-            cursor: pointer;
-        }
-
-        .whatsapp-icon:hover {
-            fill: white;
-        }
-
-        .fab-container:hover {
-            height: 100%;
-        }
-
-        .fab-container:hover .sub-button:nth-child(2) {
-            transform: translateY(-80px);
-        }
-
-        .fab-container:hover .sub-button:nth-child(3) {
-            transform: translateY(-140px);
-        }
-
-        .fab-container:hover .sub-button:nth-child(4) {
-            transform: translateY(-200px);
-        }
-
-        .fab-container .sub-button {
-            position: absolute;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            bottom: 10px;
-            right: 10px;
-            height: 50px;
-            width: 50px;
-            background-color: #4ba2ff;
-            border-radius: 50%;
-            transition: all 0.3s ease;
-        }
-
-        .fab-container .sub-button:hover {
-            cursor: pointer;
-        }
-
-        .fab-container .sub-button .material-icons {
-            color: #2e2e2e;
-            padding-top: 6px;
-        }
-
-        .fab-container .sub-button .material-icons:hover {
-            color: #FEFEFE;
-        }
-
-        .fab-container .fab {
-            position: relative;
-            height: 70px;
-            width: 70px;
-            background-color: #4ba2ff;
-            border-radius: 50%;
-            z-index: 2;
-        }
-
-        .fab-container .fab:before {
-            content: " ";
-            position: absolute;
-            bottom: 0;
-            right: 0;
-            height: 35px;
-            width: 35px;
-            background-color: inherit;
-            border-radius: 0 0 10px 0;
-            z-index: -1;
-        }
-
-        .fab-container .fab .fab-content {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            width: 100%;
-            border-radius: 50%;
-            cursor: pointer;
-            user-select: none;
-        }
-
-        .fab-container .fab .fab-content .material-icons {
-            color: #2e2e2e;
-            font-size: 48px;
-        }
-
-        /* Mobile perf */
-        @media (max-width: 600px) {
-
-            .header,
-            .page-hero,
-            .search-wrap,
-            .panel,
-            .footer,
-            .navbar {
-                backdrop-filter: none !important;
-            }
-
-            .header {
-                box-shadow: 0 10px 26px rgba(15, 23, 42, .10);
-            }
-
-            .page-hero {
-                box-shadow: 0 16px 50px rgba(15, 23, 42, .10);
-            }
-        }
-
-        @media (max-width: 480px) {
-            .fab-container {
-                bottom: 180px;
-            }
-
-            .footer h4 {
-                font-size: 1.15rem;
-            }
-        }
-    </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    @import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Outfit:wght@100..900&display=swap");
+
+    :root {
+      --primary: #4a90e2;
+      --accent: #d97800;
+      --highlight: #009f8b;
+      --ink: #0f172a;
+      --muted: #475569;
+      --page-pad: clamp(1rem, 4vw, 6rem);
+      --section-gap: clamp(1.2rem, 2.6vw, 2rem);
+      --shadow2: 0 18px 50px rgba(15, 23, 42, .12);
+      --shadow3: 0 10px 30px rgba(15, 23, 42, .10);
+      --radius: 22px;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    a {
+      text-decoration: none;
+    }
+
+    section,
+    footer {
+      scroll-margin-top: 120px;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6;
+      background: #e0f7fa;
+      color: #333;
+      overflow-x: clip;
+      -webkit-overflow-scrolling: touch;
+      padding-top: 112px;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding-top: 102px;
+      }
+    }
+
+    #loader {
+      position: fixed;
+      inset: 0;
+      background: #e0f7fa;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding: 1.2rem;
+      text-align: center;
+    }
+
+    .academylogo {
+      width: min(220px, 70vw);
+    }
+
+    .academylogo img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .loader {
+      position: relative;
+      width: 18px;
+      height: 28px;
+      perspective: 500px;
+      animation: flip 2s infinite;
+    }
+
+    .loader:nth-child(3) {
+      animation-delay: 0.2s;
+    }
+
+    .loader:nth-child(4) {
+      animation-delay: 0.4s;
+    }
+
+    .loader:nth-child(5) {
+      animation-delay: 0.6s;
+    }
+
+    .loader:nth-child(6) {
+      animation-delay: 0.8s;
+    }
+
+    .face {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border-radius: 4px;
+    }
+
+    .front {
+      background: var(--primary);
+    }
+
+    .back {
+      background: #d35400;
+      transform: rotateY(180deg);
+    }
+
+    @keyframes flip {
+
+      0%,
+      100% {
+        transform: rotateY(0deg);
+      }
+
+      50% {
+        transform: rotateY(180deg);
+      }
+    }
+
+    .header {
+      position: fixed;
+      top: 14px;
+      left: var(--page-pad);
+      right: var(--page-pad);
+      padding: .65rem .85rem;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .70);
+      border: 1px solid rgba(255, 255, 255, .78);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 16px 46px rgba(15, 23, 42, .10);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .8rem;
+      z-index: 2000;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      min-width: 0;
+      color: var(--ink);
+    }
+
+    .brand-mark {
+      width: 40px;
+      height: 40px;
+      border-radius: 14px;
+      object-fit: cover;
+      border: 1px solid rgba(15, 23, 42, .10);
+      background: rgba(255, 255, 255, .85);
+      flex: 0 0 auto;
+    }
+
+    .brand-txt {
+      display: grid;
+      line-height: 1.05;
+      min-width: 0;
+    }
+
+    .brand-name {
+      font-weight: 900;
+      letter-spacing: -.02em;
+      color: var(--ink);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .brand-sub {
+      font-size: .86rem;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .navbar {
+      display: flex;
+      align-items: center;
+      gap: .35rem;
+    }
+
+    .navbar a {
+      padding: .55rem .75rem;
+      border-radius: 999px;
+      color: #1d4ed8;
+      font-weight: 600;
+      font-size: 1.02rem;
+      transition: background .2s ease, transform .2s ease, color .2s ease;
+      white-space: nowrap;
+    }
+
+    .navbar a:hover {
+      background: rgba(74, 144, 226, .10);
+      transform: translateY(-1px);
+      color: var(--ink);
+    }
+
+    .nav-pill {
+      border: 1px solid rgba(74, 144, 226, .35);
+      background: rgba(74, 144, 226, .10);
+      color: #0f172a !important;
+      font-weight: 800;
+    }
+
+    .nav-pill:hover {
+      background: rgba(74, 144, 226, .18);
+      border-color: rgba(74, 144, 226, .45);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: .55rem;
+      flex: 0 0 auto;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: .45rem;
+      padding: 0.72rem 1rem;
+      background-color: var(--primary);
+      color: white;
+      border: 1px solid var(--primary);
+      border-radius: 999px;
+      font-weight: 800;
+      transition: background-color .25s ease, transform .2s ease, box-shadow .2s ease;
+      cursor: pointer;
+      user-select: none;
+      box-shadow: 0 10px 28px rgba(74, 144, 226, .18);
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      background-color: transparent;
+      color: var(--primary);
+      transform: translateY(-1px);
+      box-shadow: 0 14px 34px rgba(15, 23, 42, .12);
+    }
+
+    .btn.ghost {
+      background: rgba(255, 255, 255, .72);
+      border: 1px solid rgba(15, 23, 42, .12);
+      color: var(--ink);
+      box-shadow: 0 10px 26px rgba(15, 23, 42, .08);
+    }
+
+    .btn.ghost:hover {
+      background: rgba(255, 255, 255, .88);
+      color: var(--ink);
+    }
+
+    .btn-sm {
+      padding: .55rem .8rem !important;
+      font-size: .95rem !important;
+      box-shadow: none !important;
+    }
+
+    .menu-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 999px;
+      border: 1px solid rgba(15, 23, 42, .12);
+      background: rgba(255, 255, 255, .78);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 10px 26px rgba(15, 23, 42, .08);
+    }
+
+    .menu-btn i {
+      color: var(--ink);
+      font-size: 1.05rem;
+    }
+
+    @media (max-width: 1024px) {
+      .brand-sub {
+        display: none;
+      }
+
+      .menu-btn {
+        display: inline-flex;
+      }
+
+      .navbar {
+        position: absolute;
+        top: calc(100% + .65rem);
+        left: 0;
+        right: 0;
+        margin: 0 .25rem;
+        padding: .75rem;
+        background: rgba(74, 144, 226, .96);
+        border: 1px solid rgba(255, 255, 255, .35);
+        border-radius: 20px;
+        backdrop-filter: blur(12px);
+        display: grid;
+        gap: .4rem;
+        transform: translateY(-8px);
+        opacity: 0;
+        pointer-events: none;
+        transition: transform .2s ease, opacity .2s ease;
+      }
+
+      .navbar.active {
+        transform: translateY(0);
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .navbar a {
+        color: #fff;
+        border-radius: 16px;
+        padding: .85rem .85rem;
+        background: rgba(255, 255, 255, .08);
+      }
+
+      .navbar a:hover {
+        background: rgba(255, 255, 255, .14);
+        transform: none;
+        color: #fff;
+      }
+
+      .nav-pill {
+        background: rgba(255, 255, 255, .18);
+        border-color: rgba(255, 255, 255, .35);
+        color: #fff !important;
+      }
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(14px);
+      transition: all .7s ease;
+    }
+
+    .reveal.in {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .reveal {
+        opacity: 1;
+        transform: none;
+        transition: none;
+      }
+
+      * {
+        scroll-behavior: auto !important;
+      }
+    }
+
+    .page-hero {
+      position: relative;
+      margin: 0 var(--page-pad);
+      margin-bottom: 1.2rem;
+      border-radius: calc(var(--radius) + 6px);
+      overflow: hidden;
+      background:
+        radial-gradient(900px 420px at 10% 15%, rgba(74, 144, 226, .20), transparent 60%),
+        radial-gradient(760px 420px at 90% 0%, rgba(217, 120, 0, .14), transparent 58%),
+        radial-gradient(760px 520px at 80% 110%, rgba(0, 159, 139, .12), transparent 56%),
+        rgba(255, 255, 255, .40);
+      border: 1px solid rgba(255, 255, 255, .70);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 20px 70px rgba(15, 23, 42, .12);
+      padding: clamp(1.1rem, 2.5vw, 2rem);
+    }
+
+    .kicker {
+      display: inline-flex;
+      gap: .55rem;
+      align-items: center;
+      color: #1b2a4e;
+      font-weight: 900;
+      padding: .45rem .8rem;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .82);
+      border: 1px solid rgba(255, 255, 255, .90);
+      box-shadow: 0 12px 30px rgba(15, 23, 42, .08);
+      width: fit-content;
+    }
+
+    .page-hero h1 {
+      margin-top: .85rem;
+      font-size: clamp(1.55rem, 2.55vw, 2.45rem);
+      line-height: 1.15;
+      letter-spacing: -.02em;
+      color: var(--ink);
+    }
+
+    .page-hero h1 span {
+      color: var(--primary);
+    }
+
+    .page-hero p {
+      margin-top: .75rem;
+      color: #24324f;
+      font-size: clamp(1rem, 1.2vw, 1.08rem);
+      max-width: 78ch;
+    }
+
+    .hero-actions {
+      margin-top: 1rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: .6rem;
+    }
+
+    @media (max-width: 520px) {
+      .hero-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: .6rem;
+      }
+
+      .hero-actions .btn {
+        width: 100%;
+        padding: .62rem .7rem;
+        font-size: .95rem;
+        box-shadow: none;
+      }
+    }
+
+    .search-wrap {
+      margin: 0 var(--page-pad);
+      background: rgba(255, 255, 255, .55);
+      border: 1px solid rgba(255, 255, 255, .75);
+      border-radius: 26px;
+      box-shadow: var(--shadow2);
+      backdrop-filter: blur(14px);
+      overflow: hidden;
+    }
+
+    .search-head {
+      padding: 1.2rem 1.2rem 1rem 1.2rem;
+      border-bottom: 1px solid rgba(15, 23, 42, .08);
+      background:
+        radial-gradient(720px 320px at 10% 0%, rgba(74, 144, 226, .10), transparent 62%),
+        radial-gradient(720px 320px at 90% 0%, rgba(0, 159, 139, .08), transparent 62%),
+        rgba(255, 255, 255, .18);
+    }
+
+    .search-head-top {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .search-head h2 {
+      margin: 0;
+      color: var(--ink);
+      letter-spacing: -.01em;
+    }
+
+    .search-head p {
+      margin: .35rem 0 0 0;
+      color: var(--muted);
+      max-width: 90ch;
+    }
+
+    .tools {
+      margin-top: 1rem;
+      display: grid;
+      grid-template-columns: 1.25fr .75fr .75fr;
+      gap: .75rem;
+      align-items: center;
+    }
+
+    .q {
+      position: relative;
+    }
+
+    .q i {
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #1f2a44;
+      opacity: .8;
+    }
+
+    .q input {
+      width: 100%;
+      padding: .88rem 1rem .88rem 2.65rem;
+      border-radius: 999px;
+      border: 1px solid rgba(74, 144, 226, .35);
+      background: rgba(255, 255, 255, .85);
+      outline: none;
+    }
+
+    .sel select {
+      width: 100%;
+      padding: .88rem 1rem;
+      border-radius: 999px;
+      border: 1px solid rgba(74, 144, 226, .35);
+      background: rgba(255, 255, 255, .85);
+      outline: none;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .chipbar {
+      margin-top: .75rem;
+      display: flex;
+      gap: .5rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .chip {
+      display: inline-flex;
+      gap: .4rem;
+      align-items: center;
+      padding: .5rem .75rem;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .75);
+      border: 1px solid rgba(15, 23, 42, .10);
+      font-weight: 900;
+      color: #0f172a;
+      cursor: pointer;
+      user-select: none;
+      transition: transform .2s ease, background .2s ease, border-color .2s ease;
+      font-size: .9rem;
+      white-space: nowrap;
+    }
+
+    .chip:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 255, 255, .9);
+    }
+
+    .chip.active {
+      background: rgba(74, 144, 226, .12);
+      border-color: rgba(74, 144, 226, .28);
+    }
+
+    .search-body {
+      padding: 1rem 1.1rem 1.2rem 1.1rem;
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 1rem;
+      align-items: start;
+    }
+
+    .panel {
+      background: rgba(255, 255, 255, .75);
+      border: 1px solid rgba(255, 255, 255, .88);
+      border-radius: 22px;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, .10);
+      padding: 1rem;
+      overflow: hidden;
+    }
+
+    .panel h3 {
+      margin: 0 0 .7rem 0;
+      color: var(--ink);
+    }
+
+    .panel .row {
+      display: grid;
+      gap: .75rem;
+    }
+
+    .panel label {
+      display: grid;
+      gap: .35rem;
+    }
+
+    .panel label span {
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .panel input,
+    .panel select {
+      width: 100%;
+      padding: .8rem .9rem;
+      border-radius: 16px;
+      border: 1px solid rgba(74, 144, 226, .25);
+      background: rgba(255, 255, 255, .90);
+      outline: none;
+    }
+
+    .panel input:focus,
+    .panel select:focus {
+      border-color: rgba(74, 144, 226, .65);
+      box-shadow: 0 0 0 4px rgba(74, 144, 226, .12);
+    }
+
+    .range {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .6rem;
+    }
+
+    .checks {
+      display: grid;
+      gap: .45rem;
+      margin-top: .25rem;
+    }
+
+    .chk {
+      display: flex;
+      gap: .55rem;
+      align-items: center;
+      background: rgba(255, 255, 255, .8);
+      border: 1px solid rgba(15, 23, 42, .08);
+      border-radius: 14px;
+      padding: .55rem .6rem;
+    }
+
+    .chk input {
+      width: 18px;
+      height: 18px;
+    }
+
+    .chk span {
+      color: #0f172a;
+      font-weight: 800;
+    }
+
+    .panel-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .6rem;
+      margin-top: .8rem;
+    }
+
+    .results-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: .8rem;
+    }
+
+    .count {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      padding: .45rem .7rem;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .75);
+      border: 1px solid rgba(15, 23, 42, .10);
+      font-weight: 1000;
+      color: #0f172a;
+    }
+
+    .sort {
+      display: flex;
+      gap: .6rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .sort select {
+      padding: .7rem .9rem;
+      border-radius: 999px;
+      border: 1px solid rgba(74, 144, 226, .35);
+      background: rgba(255, 255, 255, .85);
+      outline: none;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, .88);
+      border: 1px solid rgba(15, 23, 42, .10);
+      border-radius: 24px;
+      box-shadow: 0 18px 55px rgba(15, 23, 42, .10);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 100%;
+      transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 26px 72px rgba(15, 23, 42, .14);
+      border-color: rgba(74, 144, 226, .22);
+    }
+
+    .thumb {
+      height: 170px;
+      background: rgba(74, 144, 226, .12);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .badge {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      display: inline-flex;
+      gap: .35rem;
+      align-items: center;
+      padding: .35rem .6rem;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .88);
+      border: 1px solid rgba(255, 255, 255, .92);
+      font-weight: 1000;
+      color: #0f172a;
+      box-shadow: 0 10px 26px rgba(15, 23, 42, .12);
+      font-size: .85rem;
+    }
+
+    .badge.hot {
+      color: #9a3412;
+      background: rgba(217, 120, 0, .14);
+      border-color: rgba(217, 120, 0, .24);
+    }
+
+    .body {
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: .55rem;
+      height: 100%;
+    }
+
+    .name {
+      color: var(--ink);
+      font-weight: 1000;
+      letter-spacing: -.01em;
+      line-height: 1.2;
+      font-size: 1.12rem;
+    }
+
+    .meta {
+      display: flex;
+      gap: .5rem;
+      flex-wrap: wrap;
+      color: #475569;
+      font-weight: 800;
+      font-size: .9rem;
+    }
+
+    .meta span {
+      display: inline-flex;
+      gap: .35rem;
+      align-items: center;
+    }
+
+    .meta i {
+      color: #16a34a;
+    }
+
+    .desc {
+      color: #475569;
+      margin-top: .2rem;
+    }
+
+    .tags {
+      margin-top: .2rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: .45rem;
+    }
+
+    .tag {
+      display: inline-flex;
+      gap: .35rem;
+      align-items: center;
+      padding: .32rem .55rem;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .85);
+      border: 1px solid rgba(15, 23, 42, .10);
+      font-weight: 900;
+      font-size: .86rem;
+      color: #0f172a;
+    }
+
+    .actions {
+      margin-top: auto;
+      padding-top: .7rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .6rem;
+    }
+
+    .empty {
+      background: rgba(255, 255, 255, .75);
+      border: 1px dashed rgba(15, 23, 42, .18);
+      border-radius: 22px;
+      padding: 1.2rem;
+      color: #475569;
+      text-align: center;
+    }
+
+    .pager {
+      margin-top: 1rem;
+      display: flex;
+      justify-content: center;
+      gap: .5rem;
+      flex-wrap: wrap;
+    }
+
+    .pbtn {
+      border: 1px solid rgba(15, 23, 42, .12);
+      background: rgba(255, 255, 255, .78);
+      color: var(--ink);
+      padding: .55rem .8rem;
+      border-radius: 999px;
+      font-weight: 900;
+      cursor: pointer;
+      user-select: none;
+      transition: transform .2s ease, background .2s ease, border-color .2s ease;
+    }
+
+    .pbtn:hover {
+      transform: translateY(-1px);
+    }
+
+    .pbtn.active {
+      background: rgba(74, 144, 226, .12);
+      border-color: rgba(74, 144, 226, .24);
+    }
+
+    @media (max-width: 1100px) {
+      .search-body {
+        grid-template-columns: 1fr;
+      }
+
+      .grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .tools {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 680px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .panel-actions {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .panel-actions {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .actions {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .footer {
+      background-color: #f9f9f9;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      font-size: 0.95rem;
+      background: rgba(255, 255, 255, 0.3);
+      backdrop-filter: blur(10px);
+      border-radius: 25px;
+      margin: 2rem var(--page-pad);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      gap: 0;
+    }
+
+    .footer div {
+      margin: 1rem;
+      flex: 1 1 220px;
+      min-width: 220px;
+    }
+
+    .footer h4 {
+      font-size: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .footer ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .footer ul li {
+      margin-bottom: 0.5rem;
+    }
+
+    .footer ul li a {
+      color: #333;
+    }
+
+    .footer ul li a:hover {
+      text-decoration: underline;
+    }
+
+    #toTopBtn {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 1.5rem;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      display: none;
+      z-index: 1000;
+      transition: transform 0.2s ease;
+    }
+
+    #toTopBtn:hover {
+      transform: scale(1.08);
+    }
+
+    .fab-container {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: center;
+      position: fixed;
+      bottom: 170px;
+      right: 20px;
+      z-index: 999;
+    }
+
+    .whatsapp-icon {
+      transition: fill 0.3s ease;
+      cursor: pointer;
+    }
+
+    .whatsapp-icon:hover {
+      fill: white;
+    }
+
+    .fab-container:hover {
+      height: 100%;
+    }
+
+    .fab-container:hover .sub-button:nth-child(2) {
+      transform: translateY(-80px);
+    }
+
+    .fab-container:hover .sub-button:nth-child(3) {
+      transform: translateY(-140px);
+    }
+
+    .fab-container:hover .sub-button:nth-child(4) {
+      transform: translateY(-200px);
+    }
+
+    .fab-container .sub-button {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      bottom: 10px;
+      right: 10px;
+      height: 50px;
+      width: 50px;
+      background-color: #4ba2ff;
+      border-radius: 50%;
+      transition: all 0.3s ease;
+    }
+
+    .fab-container .sub-button:hover {
+      cursor: pointer;
+    }
+
+    .fab-container .sub-button .material-icons {
+      color: #2e2e2e;
+      padding-top: 6px;
+    }
+
+    .fab-container .sub-button .material-icons:hover {
+      color: #FEFEFE;
+    }
+
+    .fab-container .fab {
+      position: relative;
+      height: 70px;
+      width: 70px;
+      background-color: #4ba2ff;
+      border-radius: 50%;
+      z-index: 2;
+    }
+
+    .fab-container .fab:before {
+      content: " ";
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      height: 35px;
+      width: 35px;
+      background-color: inherit;
+      border-radius: 0 0 10px 0;
+      z-index: -1;
+    }
+
+    .fab-container .fab .fab-content {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      width: 100%;
+      border-radius: 50%;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .fab-container .fab .fab-content .material-icons {
+      color: #2e2e2e;
+      font-size: 48px;
+    }
+
+    @media (max-width: 600px) {
+
+      .header,
+      .page-hero,
+      .search-wrap,
+      .panel,
+      .footer,
+      .navbar {
+        backdrop-filter: none !important;
+      }
+
+      .header {
+        box-shadow: 0 10px 26px rgba(15, 23, 42, .10);
+      }
+
+      .page-hero {
+        box-shadow: 0 16px 50px rgba(15, 23, 42, .10);
+      }
+    }
+
+    @media (max-width: 480px) {
+      .fab-container {
+        bottom: 180px;
+      }
+
+      .footer h4 {
+        font-size: 1.15rem;
+      }
+    }
+  </style>
 </head>
 
 <body>
-    <!-- Loader -->
-    <div id="loader">
-        <div class="academylogo">
-            <img src="./img/academylogo.png" alt="Classic Academy logo">
+  <div id="loader">
+    <div class="academylogo">
+      <img src="/img/academylogo.png" alt="Classic Academy logo">
+    </div>
+    <div style="display:flex; gap:10px;">
+      <div class="loader"><div class="face front"></div><div class="face back"></div></div>
+      <div class="loader"><div class="face front"></div><div class="face back"></div></div>
+      <div class="loader"><div class="face front"></div><div class="face back"></div></div>
+      <div class="loader"><div class="face front"></div><div class="face back"></div></div>
+      <div class="loader"><div class="face front"></div><div class="face back"></div></div>
+    </div>
+  </div>
+
+  <header class="header" id="siteHeader">
+    <a href="/" class="brand" aria-label="Classic Academy Home">
+      <img class="brand-mark" src="/img/academylogo.png" alt="Classic Academy logo">
+      <div class="brand-txt">
+        <span class="brand-name">Classic Academy</span>
+        <span class="brand-sub">School management + admissions</span>
+      </div>
+    </a>
+
+    <nav class="navbar" aria-label="Primary">
+      <a href="/">Home</a>
+      <a href="/about">About</a>
+      <a href="/features">Features</a>
+      <a href="/#testimonials">Benefits</a>
+      <a href="/contact">Contact</a>
+      <a class="nav-pill" href="/#pricing">Join Today</a>
+      <a class="nav-pill" href="/schedule">Sign In</a>
+    </nav>
+
+    <div class="nav-actions">
+      <a href="/schedule" class="btn btn-sm"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
+      <button id="menu-btn" class="menu-btn" aria-label="Open menu" aria-expanded="false" type="button">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+    </div>
+  </header>
+
+  <section class="page-hero reveal" aria-label="Search hero">
+    <span class="kicker"><i class="fa-solid fa-magnifying-glass"></i> Search</span>
+    <h1>Find the right <span>school</span> faster.</h1>
+    <p>
+      Search by name, location, category, curriculum, fees range, and facilities. Then open a school profile and
+      learn more.
+    </p>
+    <div class="hero-actions">
+      <a class="btn" href="#search"><i class="fa-solid fa-filter"></i> Start filtering</a>
+      <a class="btn ghost" href="/schedule"><i class="fa-solid fa-calendar-check"></i> Book demo</a>
+    </div>
+  </section>
+
+  <section class="search-wrap" id="search">
+    <div class="search-head reveal">
+      <div class="search-head-top">
+        <div>
+          <h2>Search Schools</h2>
+          <p>Search and filter live school profiles by location, category, curriculum, fees, and facilities.</p>
         </div>
-        <div style="display:flex; gap:10px;">
-            <div class="loader">
-                <div class="face front"></div>
-                <div class="face back"></div>
-            </div>
-            <div class="loader">
-                <div class="face front"></div>
-                <div class="face back"></div>
-            </div>
-            <div class="loader">
-                <div class="face front"></div>
-                <div class="face back"></div>
-            </div>
-            <div class="loader">
-                <div class="face front"></div>
-                <div class="face back"></div>
-            </div>
-            <div class="loader">
-                <div class="face front"></div>
-                <div class="face back"></div>
-            </div>
+        <div style="display:flex; gap:.6rem; flex-wrap:wrap;">
+          <a class="btn btn-sm" href="/schools"><i class="fa-solid fa-school"></i> All schools</a>
+          <a class="btn ghost btn-sm" href="/admissions"><i class="fa-solid fa-user-plus"></i> Admissions</a>
         </div>
+      </div>
+
+      <form id="quickSearchForm" method="GET" action="/search">
+        <input type="hidden" name="location" value="<%= filters.location || '' %>">
+        <input type="hidden" name="curriculum" value="<%= filters.curriculum || 'all' %>">
+        <input type="hidden" name="minFee" value="<%= filters.minFee %>">
+        <input type="hidden" name="maxFee" value="<%= filters.maxFee %>">
+        <input type="hidden" name="sortBy" value="<%= filters.sortBy || 'relevance' %>">
+        <% (filters.facilities || []).forEach(function(fac) { %>
+          <input type="hidden" name="facilities" value="<%= fac %>">
+        <% }) %>
+
+        <div class="tools">
+          <div class="q">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input id="q" name="q" type="search"
+              placeholder="Search by name, location, curriculum (e.g., Kampala, CBC, Cambridge)..."
+              value="<%= filters.q || '' %>" />
+          </div>
+
+          <div class="sel">
+            <select id="quickCategory" name="category">
+              <option value="all" <%= filters.category === 'all' ? 'selected' : '' %>>All categories</option>
+              <option value="nursery" <%= filters.category === 'nursery' ? 'selected' : '' %>>Nursery</option>
+              <option value="primary" <%= filters.category === 'primary' ? 'selected' : '' %>>Primary</option>
+              <option value="secondary" <%= filters.category === 'secondary' ? 'selected' : '' %>>Secondary</option>
+              <option value="international" <%= filters.category === 'international' ? 'selected' : '' %>>International</option>
+              <option value="vocational" <%= filters.category === 'vocational' ? 'selected' : '' %>>Vocational</option>
+            </select>
+          </div>
+
+          <div class="sel">
+            <select id="quickCountry" name="country">
+              <option value="all" <%= filters.country === 'ALL' || filters.country === 'all' ? 'selected' : '' %>>All countries</option>
+              <option value="UG" <%= filters.country === 'UG' ? 'selected' : '' %>>Uganda</option>
+              <option value="SS" <%= filters.country === 'SS' ? 'selected' : '' %>>South Sudan</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="chipbar" aria-label="Quick facility filters">
+          <button class="chip <%= (!filters.quickFacility || filters.quickFacility === 'all') ? 'active' : '' %>" data-fac="all" type="button">
+            <i class="fa-solid fa-sliders"></i> Any facility
+          </button>
+          <button class="chip <%= filters.quickFacility === 'boarding' ? 'active' : '' %>" data-fac="boarding" type="button">
+            <i class="fa-solid fa-bed"></i> Boarding
+          </button>
+          <button class="chip <%= filters.quickFacility === 'transport' ? 'active' : '' %>" data-fac="transport" type="button">
+            <i class="fa-solid fa-bus"></i> Transport
+          </button>
+          <button class="chip <%= filters.quickFacility === 'lunch' ? 'active' : '' %>" data-fac="lunch" type="button">
+            <i class="fa-solid fa-utensils"></i> Lunch
+          </button>
+          <button class="chip <%= filters.quickFacility === 'library' ? 'active' : '' %>" data-fac="library" type="button">
+            <i class="fa-solid fa-book"></i> Library
+          </button>
+          <button class="chip <%= filters.quickFacility === 'computerlab' ? 'active' : '' %>" data-fac="computerlab" type="button">
+            <i class="fa-solid fa-laptop"></i> Computer Lab
+          </button>
+        </div>
+
+        <input type="hidden" id="quickFacilityInput" name="quickFacility" value="<%= filters.quickFacility || 'all' %>">
+      </form>
     </div>
 
-    <!-- Nav (same as main) -->
-    <header class="header" id="siteHeader">
-        <a href="/" class="brand" aria-label="Classic Academy Home">
-            <img class="brand-mark" src="./img/academylogo.png" alt="Classic Academy logo">
-            <div class="brand-txt">
-                <span class="brand-name">Classic Academy</span>
-                <span class="brand-sub">School management + admissions</span>
-            </div>
-        </a>
+    <div class="search-body">
+      <aside class="panel reveal" aria-label="Filters panel">
+        <h3><i class="fa-solid fa-filter"></i> Filters</h3>
 
-        <nav class="navbar" aria-label="Primary">
-            <a href="/">Home</a>
-            <a href="/about">About</a>
-            <a href="/features">Features</a>
-            <a href="/#testimonials">Benefits</a>
-            <a href="/contact">Contact</a>
-            <a class="nav-pill" href="/#pricing">Join Today</a>
-            <a class="nav-pill" href="/schedule">Sign In</a>
-        </nav>
+        <form id="filtersForm" method="GET" action="/search">
+          <input type="hidden" name="q" value="<%= filters.q || '' %>">
+          <input type="hidden" name="category" value="<%= filters.category || 'all' %>">
+          <input type="hidden" name="country" value="<%= filters.country || 'all' %>">
+          <input type="hidden" name="quickFacility" value="<%= filters.quickFacility || 'all' %>">
+          <input type="hidden" name="sortBy" value="<%= filters.sortBy || 'relevance' %>">
 
-        <div class="nav-actions">
-            <a href="/schedule" class="btn btn-sm"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
-            <button id="menu-btn" class="menu-btn" aria-label="Open menu" aria-expanded="false">
-                <i class="fa-solid fa-bars"></i>
+          <div class="row">
+            <label>
+              <span>Location</span>
+              <input id="loc" name="location" type="text" placeholder="e.g., Kampala, Juba, Wakiso"
+                value="<%= filters.location || '' %>" />
+            </label>
+
+            <label>
+              <span>Curriculum</span>
+              <select id="curr" name="curriculum">
+                <option value="all" <%= filters.curriculum === 'all' ? 'selected' : '' %>>Any curriculum</option>
+                <option value="UNEB" <%= filters.curriculum === 'UNEB' ? 'selected' : '' %>>UNEB</option>
+                <option value="Cambridge" <%= filters.curriculum === 'Cambridge' ? 'selected' : '' %>>Cambridge</option>
+                <option value="CBC" <%= filters.curriculum === 'CBC' ? 'selected' : '' %>>CBC</option>
+                <option value="Montessori" <%= filters.curriculum === 'Montessori' ? 'selected' : '' %>>Montessori</option>
+              </select>
+            </label>
+
+            <label>
+              <span>Fees range (per term, USD)</span>
+              <div class="range">
+                <input id="minFee" name="minFee" type="number" min="0" placeholder="Min" value="<%= filters.minFee %>" />
+                <input id="maxFee" name="maxFee" type="number" min="0" placeholder="Max" value="<%= filters.maxFee %>" />
+              </div>
+            </label>
+
+            <label>
+              <span>Facilities</span>
+              <div class="checks">
+                <% const activeFacilities = Array.isArray(filters.facilities) ? filters.facilities : []; %>
+                <% ['boarding','transport','lunch','library','computerlab','sports'].forEach(function(fac) { %>
+                  <label class="chk">
+                    <input
+                      type="checkbox"
+                      value="<%= fac %>"
+                      class="fac"
+                      name="facilities"
+                      <%= activeFacilities.includes(fac) ? 'checked' : '' %>
+                    />
+                    <span><%= fac === 'computerlab' ? 'Computer Lab' : fac.charAt(0).toUpperCase() + fac.slice(1) %></span>
+                  </label>
+                <% }) %>
+              </div>
+            </label>
+          </div>
+
+          <div class="panel-actions">
+            <button class="btn btn-sm" id="applyFilters" type="submit">
+              <i class="fa-solid fa-check"></i> Apply
             </button>
-        </div>
-    </header>
+            <button class="btn ghost btn-sm" id="resetFilters" type="button">
+              <i class="fa-solid fa-rotate-left"></i> Reset
+            </button>
+          </div>
+        </form>
 
-    <!-- Page hero -->
-    <section class="page-hero reveal" aria-label="Search hero">
-        <span class="kicker"><i class="fa-solid fa-magnifying-glass"></i> Search</span>
-        <h1>Find the right <span>school</span> faster.</h1>
-        <p>
-            Search by name, location, category, curriculum, fees range, and facilities. Then open a school profile and
-            learn
-            more.
+        <p style="margin-top:.85rem; color:#64748b; font-size:.9rem;">
+          Tip: Use quick filters at the top for faster narrowing.
         </p>
-        <div class="hero-actions">
-            <a class="btn" href="#search"><i class="fa-solid fa-filter"></i> Start filtering</a>
-            <a class="btn ghost" href="/schedule"><i class="fa-solid fa-calendar-check"></i> Book demo</a>
-        </div>
-    </section>
+      </aside>
 
-    <!-- Search -->
-    <section class="search-wrap" id="search">
-        <div class="search-head reveal">
-            <div class="search-head-top">
-                <div>
-                    <h2>Search Schools</h2>
-                    <p>These are demo results (client-side). Replace the dataset with your backend endpoint when ready.
-                    </p>
-                </div>
-                <div style="display:flex; gap:.6rem; flex-wrap:wrap;">
-                    <a class="btn btn-sm" href="/schools"><i class="fa-solid fa-school"></i> All schools</a>
-                    <a class="btn ghost btn-sm" href="/admissions"><i class="fa-solid fa-user-plus"></i> Admissions</a>
-                </div>
-            </div>
+      <main aria-label="Results">
+        <div class="results-top reveal">
+          <div class="count" id="countPill">
+            <i class="fa-solid fa-school"></i>
+            <span id="countTxt"><%= total %></span> results
+          </div>
 
-            <div class="tools">
-                <div class="q">
-                    <i class="fa-solid fa-magnifying-glass"></i>
-                    <input id="q" type="search"
-                        placeholder="Search by name, location, curriculum (e.g., Kampala, CBC, Cambridge)..." />
-                </div>
+          <div class="sort">
+            <span style="color:#475569; font-weight:900;">Sort:</span>
+            <form id="sortForm" method="GET" action="/search">
+              <input type="hidden" name="q" value="<%= filters.q || '' %>">
+              <input type="hidden" name="category" value="<%= filters.category || 'all' %>">
+              <input type="hidden" name="country" value="<%= filters.country || 'all' %>">
+              <input type="hidden" name="location" value="<%= filters.location || '' %>">
+              <input type="hidden" name="curriculum" value="<%= filters.curriculum || 'all' %>">
+              <input type="hidden" name="minFee" value="<%= filters.minFee %>">
+              <input type="hidden" name="maxFee" value="<%= filters.maxFee %>">
+              <input type="hidden" name="quickFacility" value="<%= filters.quickFacility || 'all' %>">
+              <% (filters.facilities || []).forEach(function(fac) { %>
+                <input type="hidden" name="facilities" value="<%= fac %>">
+              <% }) %>
 
-                <div class="sel">
-                    <select id="quickCategory">
-                        <option value="all">All categories</option>
-                        <option value="nursery">Nursery</option>
-                        <option value="primary">Primary</option>
-                        <option value="secondary">Secondary</option>
-                        <option value="international">International</option>
-                        <option value="vocational">Vocational</option>
-                    </select>
-                </div>
-
-                <div class="sel">
-                    <select id="quickCountry">
-                        <option value="all">All countries</option>
-                        <option value="UG">Uganda</option>
-                        <option value="SS">South Sudan</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="chipbar" aria-label="Quick facility filters">
-                <button class="chip active" data-fac="all" type="button"><i class="fa-solid fa-sliders"></i> Any
-                    facility</button>
-                <button class="chip" data-fac="boarding" type="button"><i class="fa-solid fa-bed"></i> Boarding</button>
-                <button class="chip" data-fac="transport" type="button"><i class="fa-solid fa-bus"></i>
-                    Transport</button>
-                <button class="chip" data-fac="lunch" type="button"><i class="fa-solid fa-utensils"></i> Lunch</button>
-                <button class="chip" data-fac="library" type="button"><i class="fa-solid fa-book"></i> Library</button>
-                <button class="chip" data-fac="computerlab" type="button"><i class="fa-solid fa-laptop"></i> Computer
-                    Lab</button>
-            </div>
+              <select id="sortBy" name="sortBy">
+                <option value="relevance" <%= filters.sortBy === 'relevance' ? 'selected' : '' %>>Relevance</option>
+                <option value="feesLow" <%= filters.sortBy === 'feesLow' ? 'selected' : '' %>>Fees (Low → High)</option>
+                <option value="feesHigh" <%= filters.sortBy === 'feesHigh' ? 'selected' : '' %>>Fees (High → Low)</option>
+                <option value="ratingHigh" <%= filters.sortBy === 'ratingHigh' ? 'selected' : '' %>>Rating (High → Low)</option>
+                <option value="nameAZ" <%= filters.sortBy === 'nameAZ' ? 'selected' : '' %>>Name (A → Z)</option>
+              </select>
+            </form>
+          </div>
         </div>
 
-        <div class="search-body">
-            <!-- Filters -->
-            <aside class="panel reveal" aria-label="Filters panel">
-                <h3><i class="fa-solid fa-filter"></i> Filters</h3>
-
-                <div class="row">
-                    <label>
-                        <span>Location</span>
-                        <input id="loc" type="text" placeholder="e.g., Kampala, Juba, Wakiso" />
-                    </label>
-
-                    <label>
-                        <span>Curriculum</span>
-                        <select id="curr">
-                            <option value="all">Any curriculum</option>
-                            <option value="UNEB">UNEB</option>
-                            <option value="Cambridge">Cambridge</option>
-                            <option value="CBC">CBC</option>
-                            <option value="Montessori">Montessori</option>
-                        </select>
-                    </label>
-
-                    <label>
-                        <span>Fees range (per term, USD)</span>
-                        <div class="range">
-                            <input id="minFee" type="number" min="0" placeholder="Min" />
-                            <input id="maxFee" type="number" min="0" placeholder="Max" />
-                        </div>
-                    </label>
-
-                    <label>
-                        <span>Facilities</span>
-                        <div class="checks">
-                            <label class="chk"><input type="checkbox" value="boarding" class="fac" />
-                                <span>Boarding</span></label>
-                            <label class="chk"><input type="checkbox" value="transport" class="fac" />
-                                <span>Transport</span></label>
-                            <label class="chk"><input type="checkbox" value="lunch" class="fac" />
-                                <span>Lunch</span></label>
-                            <label class="chk"><input type="checkbox" value="library" class="fac" />
-                                <span>Library</span></label>
-                            <label class="chk"><input type="checkbox" value="computerlab" class="fac" /> <span>Computer
-                                    Lab</span></label>
-                            <label class="chk"><input type="checkbox" value="sports" class="fac" />
-                                <span>Sports</span></label>
-                        </div>
-                    </label>
+        <% if (!results || !results.length) { %>
+          <div id="empty" class="empty" style="display:block; margin-top:1rem;">
+            No schools matched your filters. Try removing a facility or widening the fees range.
+          </div>
+        <% } else { %>
+          <div class="grid" id="grid">
+            <% results.forEach(function(s) { %>
+              <article class="card">
+                <div class="thumb">
+                  <img src="<%= s.img %>" alt="<%= s.name %>">
+                  <% if (s.badge) { %>
+                    <span class="badge <%= ['Featured','Top Rated','Popular'].includes(s.badge) ? 'hot' : '' %>">
+                      <i class="fa-solid fa-star"></i> <%= s.badge %>
+                    </span>
+                  <% } %>
                 </div>
 
-                <div class="panel-actions">
-                    <button class="btn btn-sm" id="applyFilters" type="button"><i class="fa-solid fa-check"></i>
-                        Apply</button>
-                    <button class="btn ghost btn-sm" id="resetFilters" type="button"><i
-                            class="fa-solid fa-rotate-left"></i> Reset</button>
+                <div class="body">
+                  <div class="name"><%= s.name %></div>
+
+                  <div class="meta">
+                    <span><i class="fa-solid fa-location-dot"></i> <%= s.location %></span>
+                    <span><i class="fa-solid fa-flag"></i> <%= s.country %></span>
+                    <span><i class="fa-solid fa-star"></i> <%= Number(s.rating || 0).toFixed(1) %></span>
+                  </div>
+
+                  <div class="desc"><%= s.blurb %></div>
+
+                  <div class="tags">
+                    <span class="tag"><i class="fa-solid fa-check"></i> <%= s.category %></span>
+                    <span class="tag"><i class="fa-solid fa-check"></i> <%= s.curriculum %></span>
+                    <% if (s.feeText) { %>
+                      <span class="tag"><i class="fa-solid fa-check"></i> <%= s.feeText %></span>
+                    <% } %>
+                  </div>
+
+                  <div class="actions">
+                    <a class="btn btn-sm" href="<%= s.profileUrl %>">
+                      <i class="fa-solid fa-building"></i> Profile
+                    </a>
+                    <a class="btn ghost btn-sm" href="<%= s.applyUrl %>">
+                      <i class="fa-solid fa-user-plus"></i> Admissions
+                    </a>
+                  </div>
                 </div>
+              </article>
+            <% }) %>
+          </div>
+        <% } %>
 
-                <p style="margin-top:.85rem; color:#64748b; font-size:.9rem;">
-                    Tip: Use quick filters at the top for faster narrowing.
-                </p>
-            </aside>
+        <% if (pages > 1) { %>
+          <div class="pager reveal" id="pager">
+            <% for (let i = 1; i <= pages; i++) { %>
+              <a
+                class="pbtn <%= i === page ? 'active' : '' %>"
+                href="/search?<%= new URLSearchParams({
+                  q: filters.q || '',
+                  category: filters.category || 'all',
+                  country: filters.country || 'all',
+                  location: filters.location || '',
+                  curriculum: filters.curriculum || 'all',
+                  minFee: String(filters.minFee || ''),
+                  maxFee: String(filters.maxFee || ''),
+                  quickFacility: filters.quickFacility || 'all',
+                  sortBy: filters.sortBy || 'relevance',
+                  ...Object.fromEntries((Array.isArray(filters.facilities) ? filters.facilities : []).map((f, idx) => [`facilities[${idx}]`, f])),
+                  page: String(i)
+                }).toString() %>">
+                <%= i %>
+              </a>
+            <% } %>
+          </div>
+        <% } %>
+      </main>
+    </div>
+  </section>
 
-            <!-- Results -->
-            <main aria-label="Results">
-                <div class="results-top reveal">
-                    <div class="count" id="countPill"><i class="fa-solid fa-school"></i> <span id="countTxt">0</span>
-                        results</div>
-
-                    <div class="sort">
-                        <span style="color:#475569; font-weight:900;">Sort:</span>
-                        <select id="sortBy">
-                            <option value="relevance">Relevance</option>
-                            <option value="feesLow">Fees (Low → High)</option>
-                            <option value="feesHigh">Fees (High → Low)</option>
-                            <option value="ratingHigh">Rating (High → Low)</option>
-                            <option value="nameAZ">Name (A → Z)</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="grid" id="grid"></div>
-                <div id="empty" class="empty" style="display:none; margin-top:1rem;">
-                    No schools matched your filters. Try removing a facility or widening the fees range.
-                </div>
-
-                <div class="pager reveal" id="pager"></div>
-            </main>
-        </div>
-    </section>
-
-    <!-- Footer (same as main) -->
-    <footer class="footer">
-        <div>
-            <h4>About Us</h4>
-            <p>We are excited to introduce our upcoming Classic Academy Plans, where schools will be categorized</p>
-            <a href="https://play.google.com/store" target="_blank" rel="noopener">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg"
-                    style="height: 50px; width: 150px" alt="Google Play">
-            </a>
-            <a href="https://apps.apple.com/" target="_blank" rel="noopener">
-                <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg"
-                    alt="Download on the App Store" style="height: 50px;">
-            </a>
-        </div>
-
-        <div>
-            <h4>Learn about our mission</h4>
-            <ul>
-                <li><a href="/about">Our Story</a></li>
-                <li><a href="/features">What We Offer</a></li>
-                <li><a href="/plan?plan=standard">Plans & Pricing</a></li>
-                <li><a href="/blog?slug=increase-admissions">Press resources</a></li>
-                <li><a href="/careers">Careers</a></li>
-            </ul>
-        </div>
-
-        <div>
-            <h4>Get help with your account</h4>
-            <ul>
-                <li><a href="/contact">Customer Support</a></li>
-                <li><a href="/schedule">Book a Demo</a></li>
-                <li><a href="/faq">FAQ</a></li>
-                <li><a href="/privacy">Privacy Policy</a></li>
-                <li><a href="/terms">Terms</a></li>
-            </ul>
-        </div>
-
-        <div>
-            <h4>Join our school community</h4>
-            <ul>
-                <li><a href="/schools">Find Schools</a></li>
-                <li><a href="/admissions">Admissions</a></li>
-                <li><a href="/search">Search</a></li>
-                <li><a href="/blog?slug=increase-admissions">Blog</a></li>
-                <li><a href="https://chat.whatsapp.com/HRGoS3fMZoZGgXbz1HDw6a?mode=gi_t" target="_blank" rel="noopener">Join whatsapp group</a></li>
-            </ul>
-        </div>
-    </footer>
-
-    <button id="toTopBtn" aria-label="Scroll to top">↑</button>
-
-    <!-- Floating support button (same as main) -->
-    <div class="fab-container" aria-hidden="true">
-        <div class="fab shadow">
-            <div class="fab-content">
-                <span class="material-icons">support_agent</span>
-            </div>
-        </div>
-        <div class="sub-button shadow">
-            <a href="tel:+256781977217"><span class="material-icons">phone</span></a>
-        </div>
-        <div class="sub-button shadow">
-            <a href="https://api.whatsapp.com/send?phone=256781977217" target="_blank" rel="noopener">
-                <span class="material-icons">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="whatsapp-icon" viewBox="0 0 448 512" width="35"
-                        height="35" fill="#2e2e2e" aria-label="WhatsApp Icon">
-                        <path
-                            d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zM223.9 438.7c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zM325.1 300.5c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z" />
-                    </svg>
-                </span>
-            </a>
-        </div>
-        <div class="sub-button shadow">
-            <a href="/share" target="_blank" rel="noopener"><span class="material-icons">share</span></a>
-        </div>
+  <footer class="footer">
+    <div>
+      <h4>About Us</h4>
+      <p>We are excited to introduce our upcoming Classic Academy Plans, where schools will be categorized</p>
+      <a href="https://play.google.com/store" target="_blank" rel="noopener">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg"
+          style="height: 50px; width: 150px" alt="Google Play">
+      </a>
+      <a href="https://apps.apple.com/" target="_blank" rel="noopener">
+        <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg"
+          alt="Download on the App Store" style="height: 50px;">
+      </a>
     </div>
 
-    <script>
-        // Loader
-        setTimeout(() => {
-            const loader = document.getElementById("loader");
-            if (loader) loader.style.display = "none";
-        }, 1200);
+    <div>
+      <h4>Learn about our mission</h4>
+      <ul>
+        <li><a href="/about">Our Story</a></li>
+        <li><a href="/features">What We Offer</a></li>
+        <li><a href="/plan?plan=standard">Plans & Pricing</a></li>
+        <li><a href="/blog?slug=increase-admissions">Press resources</a></li>
+        <li><a href="/careers">Careers</a></li>
+      </ul>
+    </div>
 
-        const navbar = document.querySelector('.header .navbar');
-        const menuBtn = document.getElementById('menu-btn');
-        const toTopBtn = document.getElementById("toTopBtn");
+    <div>
+      <h4>Get help with your account</h4>
+      <ul>
+        <li><a href="/contact">Customer Support</a></li>
+        <li><a href="/schedule">Book a Demo</a></li>
+        <li><a href="/faq">FAQ</a></li>
+        <li><a href="/privacy">Privacy Policy</a></li>
+        <li><a href="/terms">Terms</a></li>
+      </ul>
+    </div>
 
-        // Toggle navbar (mobile)
-        menuBtn?.addEventListener("click", () => {
-            const isOpen = navbar?.classList.toggle('active');
-            menuBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-        });
+    <div>
+      <h4>Join our school community</h4>
+      <ul>
+        <li><a href="/schools">Find Schools</a></li>
+        <li><a href="/admissions">Admissions</a></li>
+        <li><a href="/search">Search</a></li>
+        <li><a href="/blog?slug=increase-admissions">Blog</a></li>
+        <li><a href="https://chat.whatsapp.com/HRGoS3fMZoZGgXbz1HDw6a?mode=gi_t" target="_blank" rel="noopener">Join whatsapp group</a></li>
+      </ul>
+    </div>
+  </footer>
 
-        // Close navbar when clicking a link (mobile)
-        document.querySelectorAll(".header .navbar a").forEach(a => {
-            a.addEventListener("click", () => {
-                navbar?.classList.remove("active");
-                menuBtn?.setAttribute('aria-expanded', 'false');
-            });
-        });
+  <button id="toTopBtn" aria-label="Scroll to top" type="button">↑</button>
 
-        // Close menu if tapping outside
-        document.addEventListener("click", (e) => {
-            const header = document.getElementById("siteHeader");
-            if (!header) return;
-            if (!header.contains(e.target)) {
-                navbar?.classList.remove("active");
-                menuBtn?.setAttribute('aria-expanded', 'false');
-            }
-        }, { passive: true });
+  <div class="fab-container" aria-hidden="true">
+    <div class="fab shadow">
+      <div class="fab-content">
+        <span class="material-icons">support_agent</span>
+      </div>
+    </div>
+    <div class="sub-button shadow">
+      <a href="tel:+256781977217"><span class="material-icons">phone</span></a>
+    </div>
+    <div class="sub-button shadow">
+      <a href="https://api.whatsapp.com/send?phone=256781977217" target="_blank" rel="noopener">
+        <span class="material-icons">
+          <svg xmlns="http://www.w3.org/2000/svg" class="whatsapp-icon" viewBox="0 0 448 512" width="35"
+            height="35" fill="#2e2e2e" aria-label="WhatsApp Icon">
+            <path
+              d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zM223.9 438.7c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zM325.1 300.5c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z" />
+          </svg>
+        </span>
+      </a>
+    </div>
+    <div class="sub-button shadow">
+      <a href="/share" target="_blank" rel="noopener"><span class="material-icons">share</span></a>
+    </div>
+  </div>
 
-        // Scroll to top button
-        window.addEventListener('scroll', () => {
-            if (toTopBtn) toTopBtn.style.display = (window.scrollY > 300) ? "block" : "none";
-        }, { passive: true });
-
-        toTopBtn?.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
-
-        // Reveal animations
-        const io = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (!entry.isIntersecting) return;
-                entry.target.classList.add("in");
-            });
-        }, { threshold: 0.12 });
-        document.querySelectorAll(".reveal").forEach(el => io.observe(el));
-
-        // Demo dataset (replace with API)
-        const SCHOOLS = [
-            {
-                id: "harvard-excellence",
-                name: "Harvard School of Excellence",
-                country: "UG",
-                location: "Kampala",
-                category: "secondary",
-                curriculum: "UNEB",
-                fee: 180,
-                rating: 4.7,
-                facilities: ["library", "sports", "computerlab", "transport"],
-                badge: "Top Rated",
-                img: "https://picsum.photos/seed/ca1/1200/700",
-                blurb: "Strong academics with modern facilities and structured learning."
-            },
-            {
-                id: "stanford-academy",
-                name: "Stanford Academy",
-                country: "UG",
-                location: "Wakiso",
-                category: "international",
-                curriculum: "Cambridge",
-                fee: 520,
-                rating: 4.8,
-                facilities: ["library", "sports", "computerlab", "transport", "lunch"],
-                badge: "Featured",
-                img: "https://picsum.photos/seed/ca2/1200/700",
-                blurb: "International curriculum with strong innovation and student support."
-            },
-            {
-                id: "cambridge-learning",
-                name: "Cambridge Learning Center",
-                country: "UG",
-                location: "Entebbe",
-                category: "primary",
-                curriculum: "CBC",
-                fee: 140,
-                rating: 4.5,
-                facilities: ["library", "lunch", "transport"],
-                badge: "Popular",
-                img: "https://picsum.photos/seed/ca3/1200/700",
-                blurb: "Balanced academics and co-curricular programs for learners."
-            },
-            {
-                id: "bright-future",
-                name: "Bright Future High School",
-                country: "SS",
-                location: "Juba",
-                category: "secondary",
-                curriculum: "UNEB",
-                fee: 160,
-                rating: 4.4,
-                facilities: ["boarding", "library", "sports"],
-                badge: "Boarding",
-                img: "https://picsum.photos/seed/ca4/1200/700",
-                blurb: "Boarding options with structured discipline and academic focus."
-            },
-            {
-                id: "future-stars",
-                name: "Future Stars International",
-                country: "UG",
-                location: "Mukono",
-                category: "international",
-                curriculum: "Cambridge",
-                fee: 450,
-                rating: 4.6,
-                facilities: ["boarding", "transport", "lunch", "computerlab"],
-                badge: "Featured",
-                img: "https://picsum.photos/seed/ca5/1200/700",
-                blurb: "A modern international environment and strong student care."
-            },
-            {
-                id: "little-sprouts",
-                name: "Little Sprouts Nursery",
-                country: "UG",
-                location: "Kampala",
-                category: "nursery",
-                curriculum: "Montessori",
-                fee: 90,
-                rating: 4.3,
-                facilities: ["lunch", "transport", "sports"],
-                badge: "Montessori",
-                img: "https://picsum.photos/seed/ca6/1200/700",
-                blurb: "Play-based learning with a caring environment for early years."
-            },
-            {
-                id: "juba-tech-voc",
-                name: "Juba Technical & Vocational Institute",
-                country: "SS",
-                location: "Juba",
-                category: "vocational",
-                curriculum: "CBC",
-                fee: 130,
-                rating: 4.2,
-                facilities: ["computerlab", "library"],
-                badge: "Skills",
-                img: "https://picsum.photos/seed/ca7/1200/700",
-                blurb: "Practical skills training with hands-on programs."
-            }
-        ];
-
-        // State
-        const state = {
-            q: "",
-            category: "all",
-            country: "all",
-            location: "",
-            curriculum: "all",
-            minFee: null,
-            maxFee: null,
-            quickFacility: "all",
-            facilities: new Set(),
-            sort: "relevance",
-            page: 1,
-            perPage: 6
-        };
-
-        // Elements
-        const elQ = document.getElementById("q");
-        const elQuickCategory = document.getElementById("quickCategory");
-        const elQuickCountry = document.getElementById("quickCountry");
-        const elLoc = document.getElementById("loc");
-        const elCurr = document.getElementById("curr");
-        const elMinFee = document.getElementById("minFee");
-        const elMaxFee = document.getElementById("maxFee");
-        const elGrid = document.getElementById("grid");
-        const elEmpty = document.getElementById("empty");
-        const elCountTxt = document.getElementById("countTxt");
-        const elSort = document.getElementById("sortBy");
-        const elPager = document.getElementById("pager");
-
-        function normalize(s) { return (s || "").toString().trim().toLowerCase(); }
-
-        function scoreRelevance(school) {
-            const q = normalize(state.q);
-            if (!q) return 0;
-            const hay = normalize([school.name, school.location, school.curriculum, school.category, school.country].join(" "));
-            // simple scoring: +3 name match, +2 location match, +1 other match
-            let score = 0;
-            if (normalize(school.name).includes(q)) score += 3;
-            if (normalize(school.location).includes(q)) score += 2;
-            if (hay.includes(q)) score += 1;
-            return score;
-        }
-
-        function passesFilters(s) {
-            // query
-            const q = normalize(state.q);
-            if (q) {
-                const hay = normalize([s.name, s.location, s.curriculum, s.category, s.country, s.blurb].join(" "));
-                if (!hay.includes(q)) return false;
-            }
-
-            // quick category/country
-            if (state.category !== "all" && s.category !== state.category) return false;
-            if (state.country !== "all" && s.country !== state.country) return false;
-
-            // location text
-            const loc = normalize(state.location);
-            if (loc && !normalize(s.location).includes(loc)) return false;
-
-            // curriculum
-            if (state.curriculum !== "all" && s.curriculum !== state.curriculum) return false;
-
-            // fees
-            const minF = (state.minFee == null || state.minFee === "") ? null : Number(state.minFee);
-            const maxF = (state.maxFee == null || state.maxFee === "") ? null : Number(state.maxFee);
-            if (minF != null && !Number.isNaN(minF) && s.fee < minF) return false;
-            if (maxF != null && !Number.isNaN(maxF) && s.fee > maxF) return false;
-
-            // quick facility chip
-            if (state.quickFacility !== "all" && !s.facilities.includes(state.quickFacility)) return false;
-
-            // checkbox facilities (must include all selected)
-            for (const f of state.facilities) {
-                if (!s.facilities.includes(f)) return false;
-            }
-            return true;
-        }
-
-        function sortSchools(list) {
-            const arr = [...list];
-            switch (state.sort) {
-                case "feesLow": arr.sort((a, b) => a.fee - b.fee); break;
-                case "feesHigh": arr.sort((a, b) => b.fee - a.fee); break;
-                case "ratingHigh": arr.sort((a, b) => b.rating - a.rating); break;
-                case "nameAZ": arr.sort((a, b) => a.name.localeCompare(b.name)); break;
-                default:
-                    // relevance: score desc then rating desc then name
-                    arr.sort((a, b) => {
-                        const sa = scoreRelevance(a);
-                        const sb = scoreRelevance(b);
-                        if (sb !== sa) return sb - sa;
-                        if (b.rating !== a.rating) return b.rating - a.rating;
-                        return a.name.localeCompare(b.name);
-                    });
-            }
-            return arr;
-        }
-
-        function paginate(list) {
-            const total = list.length;
-            const pages = Math.max(1, Math.ceil(total / state.perPage));
-            state.page = Math.min(state.page, pages);
-
-            const start = (state.page - 1) * state.perPage;
-            const slice = list.slice(start, start + state.perPage);
-            return { slice, total, pages };
-        }
-
-        function pillBadge(s) {
-            const label = s.badge || "";
-            const isHot = ["Featured", "Top Rated", "Popular"].includes(label);
-            return `<span class="badge ${isHot ? "hot" : ""}"><i class="fa-solid fa-star"></i> ${label}</span>`;
-        }
-
-        function renderCard(s) {
-            const tags = [
-                `${s.category.charAt(0).toUpperCase() + s.category.slice(1)}`,
-                `${s.curriculum}`,
-                `$${s.fee}/term`
-            ];
-            return `
-        <article class="card">
-          <div class="thumb">
-            <img src="${s.img}" alt="${s.name}">
-            ${s.badge ? pillBadge(s) : ""}
-          </div>
-          <div class="body">
-            <div class="name">${s.name}</div>
-            <div class="meta">
-              <span><i class="fa-solid fa-location-dot"></i> ${s.location}</span>
-              <span><i class="fa-solid fa-flag"></i> ${s.country}</span>
-              <span><i class="fa-solid fa-star"></i> ${s.rating.toFixed(1)}</span>
-            </div>
-            <div class="desc">${s.blurb}</div>
-            <div class="tags">
-              ${tags.map(t => `<span class="tag"><i class="fa-solid fa-check"></i> ${t}</span>`).join("")}
-            </div>
-            <div class="actions">
-              <a class="btn btn-sm" href="/school/${encodeURIComponent(s.id)}"><i class="fa-solid fa-building"></i> Profile</a>
-              <a class="btn ghost btn-sm" href="/admissions?school=${encodeURIComponent(s.id)}"><i class="fa-solid fa-user-plus"></i> Admissions</a>
-            </div>
-          </div>
-        </article>
-      `;
-        }
-
-        function renderPager(pages) {
-            const buttons = [];
-            for (let i = 1; i <= pages; i++) {
-                buttons.push(`<button class="pbtn ${i === state.page ? "active" : ""}" data-page="${i}" type="button">${i}</button>`);
-            }
-            elPager.innerHTML = pages > 1 ? buttons.join("") : "";
-            elPager.querySelectorAll("[data-page]").forEach(btn => {
-                btn.addEventListener("click", () => {
-                    state.page = Number(btn.getAttribute("data-page")) || 1;
-                    refresh();
-                    window.scrollTo({ top: document.getElementById("search").offsetTop - 120, behavior: "smooth" });
-                });
-            });
-        }
-
-        function refresh() {
-            const filtered = SCHOOLS.filter(passesFilters);
-            const sorted = sortSchools(filtered);
-            const { slice, total, pages } = paginate(sorted);
-
-            elCountTxt.textContent = String(total);
-
-            if (total === 0) {
-                elGrid.innerHTML = "";
-                elEmpty.style.display = "block";
-                elPager.innerHTML = "";
-                return;
-            }
-            elEmpty.style.display = "none";
-            elGrid.innerHTML = slice.map(renderCard).join("");
-            renderPager(pages);
-        }
-
-        // Bind inputs
-        function bind() {
-            elQ.addEventListener("input", (e) => { state.q = e.target.value || ""; state.page = 1; refresh(); });
-            elQuickCategory.addEventListener("change", (e) => { state.category = e.target.value; state.page = 1; refresh(); });
-            elQuickCountry.addEventListener("change", (e) => { state.country = e.target.value; state.page = 1; refresh(); });
-
-            document.querySelectorAll(".chip[data-fac]").forEach(btn => {
-                btn.addEventListener("click", () => {
-                    document.querySelectorAll(".chip[data-fac]").forEach(b => b.classList.remove("active"));
-                    btn.classList.add("active");
-                    state.quickFacility = btn.getAttribute("data-fac") || "all";
-                    state.page = 1;
-                    refresh();
-                });
-            });
-
-            document.getElementById("applyFilters").addEventListener("click", () => {
-                state.location = elLoc.value || "";
-                state.curriculum = elCurr.value || "all";
-                state.minFee = elMinFee.value;
-                state.maxFee = elMaxFee.value;
-
-                state.facilities = new Set(
-                    Array.from(document.querySelectorAll(".fac:checked")).map(x => x.value)
-                );
-
-                state.page = 1;
-                refresh();
-            });
-
-            document.getElementById("resetFilters").addEventListener("click", () => {
-                state.q = "";
-                state.category = "all";
-                state.country = "all";
-                state.location = "";
-                state.curriculum = "all";
-                state.minFee = null;
-                state.maxFee = null;
-                state.quickFacility = "all";
-                state.facilities = new Set();
-                state.sort = "relevance";
-                state.page = 1;
-
-                elQ.value = "";
-                elQuickCategory.value = "all";
-                elQuickCountry.value = "all";
-                elLoc.value = "";
-                elCurr.value = "all";
-                elMinFee.value = "";
-                elMaxFee.value = "";
-                document.querySelectorAll(".fac").forEach(x => x.checked = false);
-                document.querySelectorAll(".chip[data-fac]").forEach(b => b.classList.remove("active"));
-                document.querySelector('.chip[data-fac="all"]')?.classList.add("active");
-                elSort.value = "relevance";
-
-                refresh();
-            });
-
-            elSort.addEventListener("change", (e) => {
-                state.sort = e.target.value || "relevance";
-                state.page = 1;
-                refresh();
-            });
-
-            // Prefill from URL (?q=)
-            const params = new URLSearchParams(location.search);
-            const urlQ = params.get("q");
-            if (urlQ) {
-                state.q = urlQ;
-                elQ.value = urlQ;
-            }
-        }
-
-        bind();
-        refresh();
-    </script>
+  <script src="/pages/search.js"></script>
 </body>
 
 </html>

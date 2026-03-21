@@ -1,11 +1,25 @@
-"use strict";
-
 const crypto = require("crypto");
 const { platformConnection } = require("../../config/db");
 const Tenant = require("../../models/platform/Tenant")(platformConnection);
 
-function escapeRegex(s) {
-  return String(s || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+function safeInt(n, def = 0) {
+  const x = Number(n);
+  return Number.isFinite(x) ? x : def;
+}
+
+function clean(s, max) {
+  return String(s || "").trim().slice(0, max);
+}
+
+function parseWebsiteUrl(url) {
+  const v = String(url || "").trim();
+  if (!v) return "";
+  if (!/^https?:\/\//i.test(v)) return "";
+  return v;
+}
+
+function sha256(s) {
+  return crypto.createHash("sha256").update(String(s || "")).digest("hex");
 }
 
 function ipHash(ip) {
@@ -13,145 +27,535 @@ function ipHash(ip) {
   return crypto.createHash("sha256").update(String(ip)).digest("hex");
 }
 
-function recomputeRatingSummary(tenant) {
-  const reviews = tenant.settings?.profile?.reviews || [];
-  const approved = reviews.filter((r) => r.status === "approved");
-  const count = approved.length;
-  const avg = count ? approved.reduce((sum, r) => sum + (r.rating || 0), 0) / count : 0;
-  tenant.settings.profile.ratingSummary = { avg: Math.round(avg * 10) / 10, count };
+function escapeRegex(s) {
+  return String(s || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+async function computeCounts(req) {
+  const { Student, Staff, Program } = req.models || {};
+
+  const [students, staff, programs] = await Promise.all([
+    Student?.countDocuments?.({ isDeleted: { $ne: true } }) ?? 0,
+    Staff?.countDocuments?.({ isDeleted: { $ne: true } }) ?? 0,
+    Program?.countDocuments?.({ isDeleted: { $ne: true } }) ?? 0,
+  ]);
+
+  return { students, staff, programs };
+}
+
+async function loadPrograms(req, profile) {
+  const { Program } = req.models || {};
+
+  if (!Program) {
+    const items = Array.isArray(profile.programs) ? profile.programs : [];
+    return items.map((p) => ({
+      title: p.title || p.name || "Program",
+      desc: p.desc || p.description || "",
+      level: p.level || p.category || "—",
+      duration: p.duration || (p.years ? `${p.years} Years` : "—"),
+      hay: [
+        p.title,
+        p.name,
+        p.desc,
+        p.description,
+        p.level,
+        p.category,
+        p.duration,
+        p.stream,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase(),
+    }));
+  }
+
+  const rows = await Program.find({ isDeleted: { $ne: true } })
+    .sort({ createdAt: -1 })
+    .limit(80)
+    .select("name title description level duration years category stream")
+    .lean();
+
+  return rows.map((p) => ({
+    title: p.name || p.title || "Program",
+    desc: p.description || "",
+    level: p.level || p.category || "—",
+    duration: p.duration || (p.years ? `${p.years} Years` : "—"),
+    hay: [p.name, p.title, p.description, p.level, p.category, p.stream]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase(),
+  }));
+}
+
+function loadFaqFromProfile(profile) {
+  const faqs = Array.isArray(profile.faqs) ? profile.faqs : [];
+  return faqs.slice().sort((a, b) => (a.sort || 0) - (b.sort || 0));
+}
+
+function loadNewsFromProfile(profile) {
+  const anns = Array.isArray(profile.announcements)
+    ? profile.announcements
+    : [];
+
+  return anns
+    .slice()
+    .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+}
+
+function loadApprovedReviewsFromProfile(profile) {
+  const all = Array.isArray(profile.reviews) ? profile.reviews : [];
+
+  const approvedAll = all
+    .filter(
+      (r) =>
+        String(r.status || "")
+          .trim()
+          .toLowerCase() === "approved",
+    )
+    .sort(
+      (a, b) =>
+        (b.featured ? 1 : 0) - (a.featured ? 1 : 0) ||
+        new Date(b.createdAt || 0) - new Date(a.createdAt || 0),
+    );
+
+  const count = approvedAll.length;
+  const avg = count
+    ? approvedAll.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) / count
+    : 0;
+
+  const items = approvedAll.slice(0, 12);
+
+  return { items, avg: Math.round(avg * 10) / 10, count };
+}
+
+function normalizeAdmissions(profile) {
+  const a = profile.admissions || {};
+
+  return {
+    steps: Array.isArray(a.steps) ? a.steps.filter(Boolean) : [],
+    requiredDocs: Array.isArray(a.requiredDocs)
+      ? a.requiredDocs.filter(Boolean)
+      : [],
+    feesRange: clean(a.feesRange || profile.feesRange || "", 120),
+    paymentOptions: clean(a.paymentOptions || profile.paymentOptions || "", 200),
+    applyUrl: parseWebsiteUrl(a.applyUrl || profile.applyUrl || ""),
+    requirements: clean(a.requirements || profile.requirements || "", 2000),
+    officeHours: clean(a.officeHours || profile.officeHours || "", 200),
+    intakeLabel: clean(a.intakeLabel || profile.intakeLabel || "", 120),
+    applicationFeeText: clean(
+      a.applicationFeeText || profile.applicationFeeText || "",
+      120,
+    ),
+    admissionPhone: clean(a.admissionPhone || profile.admissionPhone || "", 60),
+    isOpen:
+      typeof a.isOpen === "boolean"
+        ? a.isOpen
+        : typeof profile.admissionsOpen === "boolean"
+          ? profile.admissionsOpen
+          : true,
+  };
+}
+
+function buildSchoolListBaseFilter() {
+  return {
+    isDeleted: { $ne: true },
+    "settings.profile.enabled": { $ne: false },
+  };
+}
+
+function buildChipFilter(chip) {
+  const normalized = clean(chip, 40).toLowerCase();
+
+  if (!normalized || normalized === "all") return null;
+
+  if (normalized === "verified") {
+    return { "settings.profile.verified": true };
+  }
+
+  if (normalized === "boarding") {
+    return { "settings.profile.system": { $regex: /boarding/i } };
+  }
+
+  if (normalized === "day") {
+    return { "settings.profile.system": { $regex: /day/i } };
+  }
+
+  if (normalized === "science") {
+    return {
+      $or: [
+        { "settings.profile.programs": { $regex: /science/i } },
+        { "settings.profile.tagline": { $regex: /science/i } },
+        { "settings.profile.highlights": { $regex: /science/i } },
+        { "settings.profile.facilities": { $regex: /science/i } },
+      ],
+    };
+  }
+
+  if (normalized === "ict") {
+    return {
+      $or: [
+        { "settings.profile.programs": { $regex: /(ict|computer|technology)/i } },
+        { "settings.profile.tagline": { $regex: /(ict|computer|technology)/i } },
+        { "settings.profile.highlights": { $regex: /(ict|computer|technology)/i } },
+        { "settings.profile.facilities": { $regex: /(ict|computer|technology)/i } },
+      ],
+    };
+  }
+
+  return null;
 }
 
 module.exports = {
-  async list(req, res, next) {
+  // GET /schools
+  async list(req, res) {
     try {
-      const q = (req.query.q || "").trim();
-      const city = (req.query.city || "").trim();
-      const type = (req.query.type || "").trim();
-      const verified = req.query.verified === "1";
-      const sort = req.query.sort || "rank";
+      const q = clean(req.query.q, 120);
+      const city = clean(req.query.city, 100);
+      const type = clean(req.query.type, 100);
+      const chip = clean(req.query.chip || "all", 40).toLowerCase() || "all";
+      const verified = String(req.query.verified || "") === "1";
+      const sort = clean(req.query.sort || "rank", 40) || "rank";
 
-      const page = Math.max(parseInt(req.query.page || "1", 10), 1);
-      const limit = Math.min(Math.max(parseInt(req.query.limit || "12", 10), 6), 30);
+      const page = Math.max(parseInt(req.query.page || "1", 10) || 1, 1);
+      const limit = Math.min(
+        Math.max(parseInt(req.query.limit || "12", 10) || 12, 1),
+        48,
+      );
       const skip = (page - 1) * limit;
 
-      const filter = { "settings.profile.enabled": true, isDeleted: { $ne: true } };
-      if (city) filter["settings.profile.city"] = city;
-      if (type) filter["settings.profile.type"] = type;
-      if (verified) filter["settings.profile.verified"] = true;
+      const filter = buildSchoolListBaseFilter();
+
+      if (city) {
+        filter["settings.profile.location.city"] = city;
+      }
+
+      if (type) {
+        filter["settings.profile.type"] = type;
+      }
+
+      if (verified) {
+        filter["settings.profile.verified"] = true;
+      }
 
       if (q) {
         const rx = new RegExp(escapeRegex(q), "i");
         filter.$or = [
           { name: rx },
           { code: rx },
-          { "settings.profile.city": rx },
+          { "settings.profile.shortName": rx },
           { "settings.profile.type": rx },
           { "settings.profile.tagline": rx },
+          { "settings.profile.system": rx },
+          { "settings.profile.location.city": rx },
+          { "settings.profile.location.country": rx },
+          { "settings.profile.highlights": rx },
+          { "settings.profile.facilities": rx },
+          { "settings.profile.clubs": rx },
+          { "settings.profile.programs": rx },
         ];
       }
 
+      const chipFilter = buildChipFilter(chip);
+      if (chipFilter) {
+        filter.$and = filter.$and || [];
+        filter.$and.push(chipFilter);
+      }
+
       let sortObj = { createdAt: -1 };
-      if (sort === "name") sortObj = { name: 1 };
-      if (sort === "students") sortObj = { "settings.profile.stats.students": -1 };
-      if (sort === "rank") sortObj = { "settings.profile.verified": -1, "settings.profile.ratingSummary.avg": -1, createdAt: -1 };
+
+      if (sort === "name") {
+        sortObj = { name: 1 };
+      } else if (sort === "students") {
+        sortObj = {
+          "settings.profile.stats.students": -1,
+          name: 1,
+        };
+      } else if (sort === "programs") {
+        sortObj = {
+          "settings.profile.stats.programs": -1,
+          name: 1,
+        };
+      } else {
+        sortObj = {
+          "settings.profile.verified": -1,
+          "settings.profile.ratingSummary.avg": -1,
+          "settings.profile.stats.students": -1,
+          createdAt: -1,
+        };
+      }
 
       const projection = {
         name: 1,
         code: 1,
         "settings.branding.logoUrl": 1,
         "settings.branding.coverUrl": 1,
+        "settings.profile.shortName": 1,
         "settings.profile.type": 1,
         "settings.profile.tagline": 1,
-        "settings.profile.city": 1,
         "settings.profile.system": 1,
         "settings.profile.verified": 1,
+        "settings.profile.location.city": 1,
+        "settings.profile.location.country": 1,
+        "settings.profile.contact.phone": 1,
+        "settings.profile.contact.website": 1,
+        "settings.profile.admissions.applyUrl": 1,
         "settings.profile.stats": 1,
         "settings.profile.ratingSummary": 1,
+        "settings.profile.awards": 1,
+        "settings.profile.highlights": 1,
+        "settings.profile.programs": 1,
       };
 
-      const [items, total] = await Promise.all([
-        Tenant.find(filter).select(projection).sort(sortObj).skip(skip).limit(limit).lean(),
+      const baseFilter = buildSchoolListBaseFilter();
+
+      const [items, total, totalAll, cities, types] = await Promise.all([
+        Tenant.find(filter)
+          .select(projection)
+          .sort(sortObj)
+          .skip(skip)
+          .limit(limit)
+          .lean(),
+
         Tenant.countDocuments(filter),
+
+        Tenant.countDocuments(baseFilter),
+
+        Tenant.distinct("settings.profile.location.city", baseFilter),
+
+        Tenant.distinct("settings.profile.type", baseFilter),
       ]);
 
-      return res.render("tenant/public/schools/index", {
+      return res.render("platform/public/schools", {
         items,
-        q, city, type, verified, sort,
+        q,
+        city,
+        type,
+        chip,
+        verified,
+        sort,
         page,
-        pages: Math.ceil(total / limit),
+        pages: Math.max(1, Math.ceil(total / limit)),
+        baseDomain: process.env.BASE_DOMAIN || "classicacademy.app",
         total,
+        totalAll,
+        limit,
+        cities: cities.filter(Boolean).sort(),
+        types: types.filter(Boolean).sort(),
       });
     } catch (e) {
-      next(e);
+      console.error("public school list:", e);
+      return res.status(500).render("errors/500");
     }
   },
 
-  async view(req, res, next) {
+  // GET /schools/:code
+  async page(req, res) {
     try {
-      const code = String(req.params.code || "").toLowerCase().trim();
+      const code = String(req.params.code || "")
+        .trim()
+        .toLowerCase();
 
-      const tenant = await Tenant.findOne({ code, "settings.profile.enabled": true, isDeleted: { $ne: true } }).lean();
-      if (!tenant) return res.status(404).render("errors/404", { message: "School not found" });
+      const tenantDoc = await Tenant.findOne({
+        code,
+        isDeleted: { $ne: true },
+      }).lean();
 
-      const p = tenant.settings?.profile || {};
-      const reviews = (p.reviews || []).filter((r) => r.status === "approved").slice(0, 20);
+      if (!tenantDoc) {
+        return res.status(404).render("errors/404");
+      }
 
-      return res.render("tenant/public/schools/view", { tenant, reviews });
+      const profile = tenantDoc.settings?.profile || {};
+      const branding = tenantDoc.settings?.branding || {};
+
+      if (profile.enabled === false) {
+        return res.status(404).render("errors/404");
+      }
+
+      const counts = await computeCounts(req);
+      const programs = await loadPrograms(req, profile);
+      const faqs = loadFaqFromProfile(profile);
+      const announcements = loadNewsFromProfile(profile);
+      const reviews = loadApprovedReviewsFromProfile(profile);
+      const admissions = normalizeAdmissions(profile);
+
+      const stats = {
+        students: safeInt(profile.stats?.students, counts.students),
+        programs: safeInt(profile.stats?.programs, counts.programs),
+        staff: safeInt(profile.stats?.staff, counts.staff),
+        campuses: safeInt(profile.stats?.campuses, 0),
+      };
+
+      const whyChooseUsArr =
+        Array.isArray(profile.highlights) && profile.highlights.length
+          ? profile.highlights
+          : Array.isArray(profile.whyChooseUs)
+            ? profile.whyChooseUs
+            : [];
+
+      const normalizedLocation = profile.location || {};
+      const normalizedContact = profile.contact || {};
+      const normalizedSocials = profile.socials || {};
+      const normalizedCity = clean(
+        profile.city || normalizedLocation.city || "",
+        100,
+      );
+
+      return res.render("platform/public/school-profile", {
+        tenant: {
+          ...tenantDoc,
+          settings: {
+            ...tenantDoc.settings,
+            branding: {
+              ...branding,
+              primaryColor: branding.primaryColor || "#0a3d62",
+              accentColor: branding.accentColor || "#0a6fbf",
+            },
+            profile: {
+              ...profile,
+              enabled: profile.enabled !== false,
+              verified: !!profile.verified,
+              city: normalizedCity,
+              location: normalizedLocation,
+              contact: normalizedContact,
+              socials: normalizedSocials,
+              stats,
+              admissions,
+              facilities: Array.isArray(profile.facilities)
+                ? profile.facilities
+                : [],
+              values: Array.isArray(profile.values) ? profile.values : [],
+              whyChooseUs: whyChooseUsArr,
+              gallery: Array.isArray(profile.gallery) ? profile.gallery : [],
+              awards: Array.isArray(profile.awards) ? profile.awards : [],
+              announcements,
+              faqs,
+              reviews: reviews.items,
+              ratingAvg: reviews.avg,
+              ratingCount: reviews.count,
+              programs,
+              websiteSafe: parseWebsiteUrl(normalizedContact.website || ""),
+              addressSafe: clean(
+                profile.address ||
+                  normalizedContact.addressFull ||
+                  normalizedLocation.addressLine1 ||
+                  "",
+                200,
+              ),
+            },
+          },
+        },
+      });
     } catch (e) {
-      next(e);
+      console.error("public school profile:", e);
+      return res.status(500).render("errors/500");
     }
   },
 
-  async submitReview(req, res, next) {
+  // POST /schools/:code/inquiry
+  async inquiry(req, res) {
     try {
-      const code = String(req.params.code || "").toLowerCase().trim();
+      const { SchoolInquiry } = req.models || {};
+      const code = String(req.params.code || "").trim().toLowerCase();
 
-      const tenant = await Tenant.findOne({ code, "settings.profile.enabled": true, isDeleted: { $ne: true } });
-      if (!tenant) return res.status(404).json({ ok: false, message: "School not found" });
+      const name = clean(req.body.name, 100);
+      const contact = clean(req.body.contact, 120);
+      const message = clean(req.body.message, 2000);
+
+      if (!name) {
+        return res.status(400).json({ ok: false, message: "Full name is required." });
+      }
+
+      if (!contact) {
+        return res.status(400).json({ ok: false, message: "Phone/Email is required." });
+      }
+
+      if (!message) {
+        return res.status(400).json({ ok: false, message: "Message is required." });
+      }
+
+      if (!SchoolInquiry) {
+        return res.json({
+          ok: true,
+          message: "Message submitted ✅",
+        });
+      }
+
+      const saved = await SchoolInquiry.create({
+        schoolCode: code,
+        name,
+        contact,
+        message,
+        status: "new",
+        ipHash: sha256(req.ip),
+        userAgent: clean(req.get("user-agent") || "", 200),
+      });
+
+      return res.json({
+        ok: true,
+        message: "Message submitted ✅",
+        inquiryId: saved?._id || null,
+      });
+    } catch (e) {
+      console.error("inquiry:", e);
+      return res.status(500).json({ ok: false, message: "Server error" });
+    }
+  },
+
+  // POST /schools/:code/reviews
+  async review(req, res) {
+    try {
+      const code = String(req.params.code || "").trim().toLowerCase();
+
+      const tenant = await Tenant.findOne({
+        code,
+        isDeleted: { $ne: true },
+      });
+
+      if (!tenant) {
+        return res.status(404).json({ ok: false, message: "School not found." });
+      }
+
+      const name = clean(req.body.name, 80);
+      const email = clean(req.body.email, 120).toLowerCase();
+      const rating = Number(req.body.rating);
+      const title = clean(req.body.title, 80);
+      const message = clean(req.body.message, 1200);
+
+      if (!name) {
+        return res.status(400).json({ ok: false, message: "Name is required." });
+      }
+
+      if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
+        return res.status(400).json({ ok: false, message: "Rating must be 1–5." });
+      }
 
       tenant.settings = tenant.settings || {};
       tenant.settings.profile = tenant.settings.profile || {};
       tenant.settings.profile.reviews = tenant.settings.profile.reviews || [];
-      tenant.settings.profile.ratingSummary = tenant.settings.profile.ratingSummary || { avg: 0, count: 0 };
-
-      // basic anti-abuse
-      const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket.remoteAddress;
-      const iph = ipHash(ip);
-      const ua = String(req.headers["user-agent"] || "").slice(0, 200);
-
-      const since = Date.now() - 24 * 60 * 60 * 1000;
-      const recent = tenant.settings.profile.reviews.filter((r) => r.ipHash === iph && r.createdAt && r.createdAt.getTime() > since);
-      if (recent.length >= 2) return res.status(429).json({ ok: false, message: "Too many reviews today. Try again tomorrow." });
-
-      const name = String(req.body.name || "").trim().slice(0, 60);
-      const email = String(req.body.email || "").trim().toLowerCase().slice(0, 120);
-      const rating = Number(req.body.rating || 0);
-      const title = String(req.body.title || "").trim().slice(0, 80);
-      const message = String(req.body.message || "").trim().slice(0, 1200);
-
-      if (!name || !(rating >= 1 && rating <= 5)) {
-        return res.status(422).json({ ok: false, message: "Name and rating are required." });
-      }
 
       tenant.settings.profile.reviews.push({
         name,
-        email: email || undefined,
+        email,
         rating,
         title,
         message,
         status: "pending",
         featured: false,
-        ipHash: iph,
-        userAgent: ua,
+        ipHash: ipHash(req.ip),
+        userAgent: String(req.get("user-agent") || "").slice(0, 200),
         createdAt: new Date(),
       });
 
-      recomputeRatingSummary(tenant); // counts approved only
+      tenant.markModified("settings.profile.reviews");
       await tenant.save();
 
-      return res.json({ ok: true, message: "Thanks! Your review is submitted and awaiting approval." });
+      return res.json({
+        ok: true,
+        message: "Review submitted ✅ (pending approval)",
+      });
     } catch (e) {
-      next(e);
+      console.error("review:", e);
+      return res.status(500).json({ ok: false, message: "Server error" });
     }
   },
 };

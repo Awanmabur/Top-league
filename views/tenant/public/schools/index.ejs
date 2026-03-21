@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Schools — Classic Campus</title>
+  <meta name="description" content="Search schools, compare profiles, and apply online with Classic Campus." />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    :root{
+      --primary:#4a90e2;
+      --highlight:#009f8b;
+      --ink:#0f172a;
+      --muted:#64748b;
+      --page-pad:clamp(1rem,4vw,6rem);
+      --radius:22px;
+      --shadow:0 18px 50px rgba(15,23,42,.12);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
+      background:#e0f7fa;
+      color:#333;
+      line-height:1.5;
+    }
+    a{text-decoration:none}
+    .page{
+      margin:2rem var(--page-pad);
+      border-radius:calc(var(--radius) + 6px);
+      overflow:hidden;
+      background:
+        radial-gradient(900px 420px at 10% 15%, rgba(74,144,226,.18), transparent 60%),
+        radial-gradient(760px 420px at 90% 0%, rgba(217,120,0,.12), transparent 55%),
+        linear-gradient(180deg, rgba(255,255,255,.75), rgba(255,255,255,.55));
+      border:1px solid rgba(255,255,255,.65);
+      box-shadow:var(--shadow);
+    }
+    .shell{padding:clamp(1rem,2.2vw,1.35rem)}
+    .hero{
+      border-radius:var(--radius);
+      padding:clamp(1rem,2.3vw,1.4rem);
+      background:
+        radial-gradient(920px 320px at 10% 10%, rgba(74,144,226,.24), transparent 62%),
+        radial-gradient(800px 300px at 90% 0%, rgba(0,159,139,.18), transparent 55%),
+        linear-gradient(180deg, rgba(255,255,255,.82), rgba(255,255,255,.58));
+      border:1px solid rgba(255,255,255,.78);
+      box-shadow:0 12px 28px rgba(15,23,42,.10);
+    }
+    .kicker{
+      display:inline-flex;
+      align-items:center;
+      gap:.55rem;
+      padding:.45rem .75rem;
+      border-radius:999px;
+      background:rgba(255,255,255,.70);
+      border:1px solid rgba(255,255,255,.82);
+      color:#1b2a4e;
+      font-weight:800;
+    }
+    .hero h1{
+      margin:.85rem 0 .5rem;
+      font-size:clamp(1.55rem,2.55vw,2.35rem);
+      line-height:1.15;
+      color:var(--ink);
+    }
+    .hero h1 span{color:var(--primary)}
+    .sub{color:var(--muted);font-weight:650;max-width:58rem}
+    .stats{
+      display:flex;
+      flex-wrap:wrap;
+      gap:.6rem;
+      margin-top:1rem;
+    }
+    .stat{
+      display:flex;
+      align-items:center;
+      gap:.6rem;
+      padding:.55rem .75rem;
+      border-radius:999px;
+      background:rgba(255,255,255,.62);
+      border:1px solid rgba(255,255,255,.80);
+      box-shadow:0 10px 22px rgba(15,23,42,.06);
+      color:#1b2a4e;
+      font-weight:800;
+    }
+    .stat span{color:var(--muted);font-weight:700}
+    .toolbar{
+      display:grid;
+      grid-template-columns:1.2fr .8fr .8fr .8fr auto;
+      gap:.75rem;
+      margin-top:1rem;
+    }
+    .control{
+      display:flex;
+      align-items:center;
+      gap:.65rem;
+      padding:.75rem .85rem;
+      border-radius:999px;
+      background:rgba(255,255,255,.72);
+      border:1px solid rgba(255,255,255,.86);
+      box-shadow:0 10px 24px rgba(15,23,42,.06);
+    }
+    .control input,.control select{
+      width:100%;
+      border:none;
+      outline:none;
+      background:transparent;
+      font:inherit;
+      color:var(--ink);
+      font-weight:700;
+    }
+    .check{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:.55rem;
+      padding:.75rem .95rem;
+      border-radius:999px;
+      background:rgba(255,255,255,.72);
+      border:1px solid rgba(255,255,255,.86);
+      box-shadow:0 10px 24px rgba(15,23,42,.06);
+      font-weight:800;
+      color:var(--ink);
+      white-space:nowrap;
+    }
+    .check input{width:auto}
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:.9rem;
+      margin-top:1rem;
+    }
+    .card{
+      background:rgba(255,255,255,.82);
+      border:1px solid rgba(255,255,255,.88);
+      border-radius:20px;
+      overflow:hidden;
+      box-shadow:0 14px 30px rgba(15,23,42,.08);
+    }
+    .cover{
+      height:120px;
+      position:relative;
+      background:linear-gradient(135deg,#4a90e2,#009f8b);
+    }
+    .cover img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+    }
+    .avatar{
+      position:absolute;
+      left:14px;
+      bottom:-22px;
+      width:52px;
+      height:52px;
+      border-radius:16px;
+      background:rgba(255,255,255,.92);
+      border:1px solid rgba(255,255,255,.92);
+      display:grid;
+      place-items:center;
+      font-weight:900;
+      color:#1b2a4e;
+      box-shadow:0 14px 28px rgba(15,23,42,.12);
+      z-index:2;
+      overflow:hidden;
+    }
+    .avatar img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+    }
+    .badge{
+      position:absolute;
+      top:12px;
+      right:12px;
+      display:inline-flex;
+      align-items:center;
+      gap:.45rem;
+      padding:.4rem .6rem;
+      border-radius:999px;
+      font-size:.82rem;
+      font-weight:800;
+      background:rgba(255,255,255,.30);
+      border:1px solid rgba(255,255,255,.45);
+      color:#fff;
+    }
+    .badge.ok{
+      background:rgba(236,253,243,.92);
+      border-color:rgba(187,247,208,.95);
+      color:#15803d;
+    }
+    .body{padding:2.1rem .95rem .95rem}
+    .top{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:.7rem;
+    }
+    .name{
+      margin:0;
+      font-size:1rem;
+      line-height:1.2;
+      color:var(--ink);
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:.45rem;
+      padding:.38rem .6rem;
+      border-radius:999px;
+      background:rgba(255,255,255,.70);
+      border:1px solid rgba(15,23,42,.10);
+      color:var(--ink);
+      font-weight:800;
+      font-size:.82rem;
+      white-space:nowrap;
+    }
+    .tagline{
+      margin-top:.55rem;
+      color:var(--muted);
+      font-weight:650;
+      font-size:.92rem;
+      min-height:2.2rem;
+    }
+    .meta{
+      display:flex;
+      flex-wrap:wrap;
+      gap:.65rem;
+      margin-top:.6rem;
+      color:rgba(15,23,42,.85);
+      font-weight:750;
+      font-size:.86rem;
+    }
+    .kpis{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:.55rem;
+      margin-top:.75rem;
+    }
+    .kpi{
+      border-radius:16px;
+      border:1px solid rgba(15,23,42,.08);
+      background:rgba(15,23,42,.03);
+      padding:.55rem .6rem;
+    }
+    .kpi .v{font-weight:900;color:#1b2a4e;font-size:.92rem}
+    .kpi .l{margin-top:.15rem;color:var(--muted);font-weight:800;font-size:.75rem}
+    .actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:.55rem;
+      margin-top:.75rem;
+    }
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:.45rem;
+      padding:.65rem .9rem;
+      border-radius:999px;
+      border:1px solid var(--primary);
+      background:var(--primary);
+      color:#fff;
+      font-weight:800;
+    }
+    .btn.ghost{
+      background:#fff;
+      color:var(--primary);
+    }
+    .empty{
+      margin-top:1rem;
+      padding:1rem;
+      border-radius:20px;
+      background:rgba(255,255,255,.72);
+      border:1px solid rgba(255,255,255,.86);
+      text-align:center;
+    }
+    .pagination{
+      display:flex;
+      flex-wrap:wrap;
+      gap:.6rem;
+      justify-content:center;
+      margin-top:1rem;
+    }
+    .page-link{
+      padding:.65rem .9rem;
+      border-radius:999px;
+      background:rgba(255,255,255,.82);
+      border:1px solid rgba(15,23,42,.08);
+      color:var(--ink);
+      font-weight:800;
+    }
+    .page-link.active{
+      background:linear-gradient(135deg,var(--primary),var(--highlight));
+      color:#fff;
+      border-color:transparent;
+    }
+    @media (max-width: 980px){
+      .toolbar{grid-template-columns:1fr 1fr}
+      .grid{grid-template-columns:repeat(2,1fr)}
+    }
+    @media (max-width: 760px){
+      .toolbar{grid-template-columns:1fr}
+      .grid{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <section class="page">
+    <div class="shell">
+      <div class="hero">
+        <div class="kicker">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          Search • Compare • Apply Online
+        </div>
+
+        <h1>Find a School <span>Powered by Classic Campus</span></h1>
+        <p class="sub">
+          Search schools, compare programs and performance, view awards and public profiles, then apply directly online.
+        </p>
+
+        <div class="stats">
+          <div class="stat"><i class="fa-solid fa-school"></i> <%= total %> <span>listed schools</span></div>
+          <div class="stat"><i class="fa-solid fa-circle-check"></i> Verified <span>trusted profiles</span></div>
+          <div class="stat"><i class="fa-solid fa-file-circle-plus"></i> Online applications <span>fast & simple</span></div>
+        </div>
+      </div>
+
+      <form class="toolbar" method="GET" action="/schools" role="search">
+        <label class="control">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input
+            type="search"
+            name="q"
+            value="<%= q || '' %>"
+            placeholder="Search school name, city, program..."
+            autocomplete="off"
+          />
+        </label>
+
+        <label class="control">
+          <i class="fa-solid fa-location-dot"></i>
+          <select name="city">
+            <option value="">All cities</option>
+            <% (cities || []).forEach(function(c) { %>
+              <option value="<%= c %>" <%= city === c ? 'selected' : '' %>><%= c %></option>
+            <% }) %>
+          </select>
+        </label>
+
+        <label class="control">
+          <i class="fa-solid fa-building-columns"></i>
+          <select name="type">
+            <option value="">All types</option>
+            <% (types || []).forEach(function(t) { %>
+              <option value="<%= t %>" <%= type === t ? 'selected' : '' %>><%= t %></option>
+            <% }) %>
+          </select>
+        </label>
+
+        <label class="control">
+          <i class="fa-solid fa-arrow-up-wide-short"></i>
+          <select name="sort">
+            <option value="rank" <%= sort === 'rank' ? 'selected' : '' %>>Recommended</option>
+            <option value="students" <%= sort === 'students' ? 'selected' : '' %>>Students high to low</option>
+            <option value="programs" <%= sort === 'programs' ? 'selected' : '' %>>Programs high to low</option>
+            <option value="name" <%= sort === 'name' ? 'selected' : '' %>>Name A to Z</option>
+          </select>
+        </label>
+
+        <label class="check">
+          <input type="checkbox" name="verified" value="1" <%= verified ? 'checked' : '' %> />
+          Verified only
+        </label>
+
+        <button class="btn" type="submit">
+          <i class="fa-solid fa-filter"></i> Apply
+        </button>
+      </form>
+
+      <% if (!items || !items.length) { %>
+        <div class="empty">
+          <h3>No schools match your search</h3>
+          <p>Try changing filters or search with different keywords.</p>
+        </div>
+      <% } else { %>
+        <div class="grid">
+          <% items.forEach(function(item, idx) { 
+              const branding = item.settings?.branding || {};
+              const profile = item.settings?.profile || {};
+              const stats = profile.stats || {};
+              const location = profile.location || {};
+              const contact = profile.contact || {};
+              const awards = profile.awards || [];
+              const rating = profile.ratingSummary || {};
+              const initials = (profile.shortName || item.name || 'S').slice(0, 2).toUpperCase();
+              const applyUrl = profile.admissions?.applyUrl || `/admissions/apply?school=${encodeURIComponent(item.code)}`;
+          %>
+            <article class="card">
+              <div class="cover">
+                <% if (branding.coverUrl) { %>
+                  <img src="<%= branding.coverUrl %>" alt="<%= item.name %> cover" />
+                <% } %>
+
+                <div class="avatar">
+                  <% if (branding.logoUrl) { %>
+                    <img src="<%= branding.logoUrl %>" alt="<%= item.name %> logo" />
+                  <% } else { %>
+                    <%= initials %>
+                  <% } %>
+                </div>
+
+                <div class="badge <%= profile.verified ? 'ok' : '' %>">
+                  <% if (profile.verified) { %>
+                    <i class="fa-solid fa-circle-check"></i> Verified
+                  <% } else { %>
+                    <i class="fa-solid fa-circle-info"></i> Listed
+                  <% } %>
+                </div>
+              </div>
+
+              <div class="body">
+                <div class="top">
+                  <h3 class="name"><%= item.name %></h3>
+                  <span class="pill">
+                    <i class="fa-solid fa-building-columns"></i>
+                    <%= profile.type || 'School' %>
+                  </span>
+                </div>
+
+                <div class="tagline">
+                  <%= profile.tagline || 'Explore this school profile on Classic Campus.' %>
+                </div>
+
+                <div class="meta">
+                  <span><i class="fa-solid fa-location-dot"></i> <%= location.city || 'N/A' %><%= location.country ? ', ' + location.country : '' %></span>
+                  <% if (profile.system) { %>
+                    <span><i class="fa-solid fa-layer-group"></i> <%= profile.system %></span>
+                  <% } %>
+                  <% if (contact.phone) { %>
+                    <span><i class="fa-solid fa-phone"></i> <%= contact.phone %></span>
+                  <% } %>
+                  <% if (rating.count) { %>
+                    <span><i class="fa-solid fa-star"></i> <%= rating.avg || 0 %> / 5</span>
+                  <% } %>
+                </div>
+
+                <div class="kpis">
+                  <div class="kpi">
+                    <div class="v"><%= Number(stats.students || 0).toLocaleString() %></div>
+                    <div class="l">Students</div>
+                  </div>
+                  <div class="kpi">
+                    <div class="v"><%= Number(stats.programs || 0).toLocaleString() %></div>
+                    <div class="l">Programs</div>
+                  </div>
+                  <div class="kpi">
+                    <div class="v"><%= Number(awards.length || 0).toLocaleString() %></div>
+                    <div class="l">Awards</div>
+                  </div>
+                </div>
+
+                <div class="actions">
+                  <a class="btn" href="/schools/<%= item.code %>">
+                    <i class="fa-solid fa-id-card"></i> View Profile
+                  </a>
+                  <a class="btn ghost" href="<%= applyUrl %>">
+                    <i class="fa-solid fa-file-circle-plus"></i> Apply
+                  </a>
+                </div>
+              </div>
+            </article>
+          <% }) %>
+        </div>
+
+        <% if (pages > 1) { %>
+          <div class="pagination">
+            <% for (let i = 1; i <= pages; i++) { %>
+              <a
+                class="page-link <%= i === page ? 'active' : '' %>"
+                href="/schools?<%= new URLSearchParams({
+                  q: q || '',
+                  city: city || '',
+                  type: type || '',
+                  sort: sort || 'rank',
+                  verified: verified ? '1' : '',
+                  page: String(i)
+                }).toString() %>"
+              >
+                <%= i %>
+              </a>
+            <% } %>
+          </div>
+        <% } %>
+      <% } %>
+    </div>
+  </section>
+</body>
+</html>
