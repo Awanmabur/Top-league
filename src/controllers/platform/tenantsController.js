@@ -1,8 +1,7 @@
-const crypto = require("crypto");
-
 const { platformConnection, getTenantConnection } = require("../../config/db");
 const { sendMail } = require("../../utils/mailer");
 const { getTenantModulesFromPlan } = require("../../utils/tenantPlanAccess");
+const { createSetPasswordInvite } = require("../../utils/inviteService");
 
 const Tenant = require("../../models/platform/Tenant")(platformConnection);
 const Plan = require("../../models/platform/Plan")(platformConnection);
@@ -129,9 +128,9 @@ function buildLoginUrl(tenant) {
   return `https://${host}/login`;
 }
 
-function buildSetPasswordUrl(tenant, rawToken) {
+function buildTenantBaseUrl(tenant) {
   const host = tenant.customDomain || tenant.subdomain;
-  return `https://${host}/set-password?token=${encodeURIComponent(rawToken)}`;
+  return `https://${host}`;
 }
 
 async function writeAudit(req, payload) {
@@ -152,35 +151,6 @@ async function writeAudit(req, payload) {
   } catch (err) {
     console.error("❌ tenant audit log failed:", err);
   }
-}
-
-async function createSetPasswordInvite({ InviteToken, userId, email, createdBy }) {
-  const rawToken = crypto.randomBytes(32).toString("hex");
-  const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
-  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-
-  await InviteToken.updateMany(
-    {
-      userId,
-      purpose: "set_password",
-      usedAt: null,
-      revokedAt: null,
-    },
-    {
-      $set: { revokedAt: new Date() },
-    }
-  );
-
-  await InviteToken.create({
-    userId,
-    email,
-    purpose: "set_password",
-    tokenHash,
-    expiresAt,
-    createdBy: createdBy || null,
-  });
-
-  return { rawToken, expiresAt };
 }
 
 async function findTenantAdminUser(User, tenant) {
@@ -207,18 +177,19 @@ async function resendTenantAdminInvite({ tenant, req }) {
     throw new Error("Tenant admin user not found.");
   }
 
-  const { rawToken } = await createSetPasswordInvite({
+  const invite = await createSetPasswordInvite({
+    req,
     InviteToken,
     userId: adminUser._id,
-    email: tenant.ownerEmail,
     createdBy: req.user?._id || null,
+    baseUrl: buildTenantBaseUrl(tenant),
   });
 
   const plan = tenant.planId?.name
     ? tenant.planId
     : await Plan.findById(tenant.planId).lean();
 
-  const inviteUrl = buildSetPasswordUrl(tenant, rawToken);
+  const inviteUrl = invite.inviteLink;
   const loginUrl = buildLoginUrl(tenant);
 
   await emailService.sendTenantAdminInvite({
@@ -432,6 +403,10 @@ module.exports = {
       const User = models.User;
       const InviteToken = models.InviteToken;
 
+      if (!User || !InviteToken) {
+        throw new Error("Tenant user/invite models are not available.");
+      }
+
       const { firstName, lastName } = splitName(cleanOwnerName);
 
       const adminUser = await User.create({
@@ -444,14 +419,15 @@ module.exports = {
         tokenVersion: 0,
       });
 
-      const { rawToken } = await createSetPasswordInvite({
+      const invite = await createSetPasswordInvite({
+        req,
         InviteToken,
         userId: adminUser._id,
-        email: cleanOwnerEmail,
         createdBy: req.user?._id || null,
+        baseUrl: buildTenantBaseUrl(createdTenant),
       });
 
-      const inviteUrl = buildSetPasswordUrl(createdTenant, rawToken);
+      const inviteUrl = invite.inviteLink;
       const loginUrl = buildLoginUrl(createdTenant);
 
       await emailService.sendTenantAdminInvite({

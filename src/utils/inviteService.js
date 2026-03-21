@@ -1,4 +1,3 @@
-// src/utils/inviteService.js
 const crypto = require("crypto");
 
 /**
@@ -8,13 +7,14 @@ const crypto = require("crypto");
 
 function inviteSecret() {
   const secret = process.env.INVITE_TOKEN_SECRET || process.env.JWT_SECRET;
-  if (!secret)
+  if (!secret) {
     throw new Error("Missing INVITE_TOKEN_SECRET (or JWT_SECRET fallback)");
+  }
   return secret;
 }
 
 function makeInviteToken() {
-  return crypto.randomBytes(32).toString("base64url"); // URL safe
+  return crypto.randomBytes(32).toString("base64url");
 }
 
 function hmacToken(rawToken) {
@@ -34,19 +34,22 @@ function getProto(req) {
     .trim();
 }
 
-function buildInviteLink(req, rawToken) {
-  const proto = getProto(req);
-  const host = req.get("x-forwarded-host") || req.get("host");
-  return `${proto}://${host}/set-password?token=${encodeURIComponent(rawToken)}`;
+function buildInviteLink({ req, rawToken, baseUrl = null }) {
+  const finalBaseUrl = baseUrl
+    ? String(baseUrl).replace(/\/+$/, "")
+    : `${getProto(req)}://${req.get("x-forwarded-host") || req.get("host")}`;
+
+  return `${finalBaseUrl}/set-password?token=${encodeURIComponent(rawToken)}`;
 }
 
 /**
  * Create set-password invite token for a user (revokes old unused tokens).
  * @param {Object} params
- * @param {Object} params.req - express req (needed for host/proto + ip/ua)
+ * @param {Object} params.req - express req
  * @param {Model}  params.InviteToken - tenant InviteToken model
  * @param {String|ObjectId} params.userId
  * @param {String|ObjectId|null} params.createdBy
+ * @param {String|null} params.baseUrl - optional override, e.g. https://tenant.example.com
  * @returns {Promise<{inviteLink: string, rawToken: string, expiresAt: Date}>}
  */
 async function createSetPasswordInvite({
@@ -54,14 +57,14 @@ async function createSetPasswordInvite({
   InviteToken,
   userId,
   createdBy = null,
+  baseUrl = null,
 }) {
   if (!InviteToken) throw new Error("InviteToken model missing");
   if (!userId) throw new Error("userId is required");
 
-  // revoke old unused
   await InviteToken.updateMany(
     { userId, purpose: "set_password", usedAt: null, revokedAt: null },
-    { $set: { revokedAt: new Date() } },
+    { $set: { revokedAt: new Date() } }
   );
 
   const rawToken = makeInviteToken();
@@ -82,7 +85,7 @@ async function createSetPasswordInvite({
 
   return {
     rawToken,
-    inviteLink: buildInviteLink(req, rawToken),
+    inviteLink: buildInviteLink({ req, rawToken, baseUrl }),
     expiresAt,
   };
 }
