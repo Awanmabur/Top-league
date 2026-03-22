@@ -4,7 +4,6 @@ const FREE_PROFILE_MODULES = [
   "SchoolFAQ",
   "SchoolInquiry",
   "SchoolReview",
-  "Program",
 ];
 
 function uniqueModules(...groups) {
@@ -25,6 +24,9 @@ function getPlanFeatureFlags(plan) {
     prioritySupport: !!plan?.featureFlags?.prioritySupport,
     whiteLabel: !!plan?.featureFlags?.whiteLabel,
     advancedReports: !!plan?.featureFlags?.advancedReports,
+    helpdesk: !!plan?.featureFlags?.helpdesk,
+    backups: !!plan?.featureFlags?.backups,
+    systemHealth: !!plan?.featureFlags?.systemHealth,
   };
 }
 
@@ -40,6 +42,12 @@ function normalizeTenantStatus(status) {
   const clean = String(status || "").trim().toLowerCase();
   if (["trial", "active", "suspended", "cancelled"].includes(clean)) return clean;
   return "trial";
+}
+
+function normalizeSchoolLevel(level) {
+  const clean = String(level || "").trim().toLowerCase();
+  if (["nursery", "primary", "high"].includes(clean)) return clean;
+  return "high";
 }
 
 function hasModule(access, moduleName) {
@@ -64,6 +72,9 @@ function buildTenantAccess({ tenant, plan }) {
     planCode: String(plan?.code || "").trim().toLowerCase(),
     planName: plan?.name || "",
     status: normalizeTenantStatus(tenant?.status),
+    schoolLevel: normalizeSchoolLevel(
+      tenant?.settings?.schoolLevel || tenant?.schoolLevel
+    ),
     modules: resolvedModules,
     featureFlags: getPlanFeatureFlags(plan),
     limits: getPlanLimits(plan),
@@ -82,6 +93,7 @@ module.exports = {
   getPlanFeatureFlags,
   getPlanLimits,
   normalizeTenantStatus,
+  normalizeSchoolLevel,
   hasModule,
   hasFeature,
   isTenantOperational,

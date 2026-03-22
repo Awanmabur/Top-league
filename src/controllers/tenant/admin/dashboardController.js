@@ -1,11 +1,17 @@
 // src/controllers/tenant/admin/dashboard.controller.js
 
+const { getSchoolUi } = require("../../../utils/school-ui");
+
 module.exports = {
   dashboard: async (req, res) => {
     try {
       const tenant = req.tenant;
       const user = req.user;
       const models = req.models || {};
+
+      const tenantAccess = res.locals.tenantAccess || {};
+      const schoolLevel = tenantAccess.schoolLevel || "high";
+      const ui = getSchoolUi(schoolLevel);
 
       const {
         Student,
@@ -33,11 +39,13 @@ module.exports = {
       const safeFind = async (Model, filter = {}, projection = null, options = {}) => {
         if (!Model) return [];
         let query = Model.find(filter, projection);
+
         if (options.sort) query = query.sort(options.sort);
         if (options.limit) query = query.limit(options.limit);
         if (options.populate) {
           for (const pop of options.populate) query = query.populate(pop);
         }
+
         return query.lean();
       };
 
@@ -46,9 +54,7 @@ module.exports = {
         return Model.aggregate(pipeline);
       };
 
-      // ----------------------------
       // KPIs
-      // ----------------------------
       const totalStudents = await safeCount(Student);
 
       const newStudentsThisMonth = await safeCount(Student, {
@@ -97,13 +103,10 @@ module.exports = {
         isActive: true,
       });
 
-      // Static/system-like values that can later come from logs/monitoring
       const portalUptime = 98;
       const avgReviewTime = "48 hrs";
 
-      // ----------------------------
       // Admissions snapshot
-      // ----------------------------
       const admissionsTotal =
         submittedApps > 0 ? submittedApps : Math.max(pendingApps + verifiedApps + acceptedApps, 1);
 
@@ -111,7 +114,6 @@ module.exports = {
       const verifiedPct = admissionsTotal ? Math.round((verifiedApps / admissionsTotal) * 100) : 0;
       const acceptedPct = admissionsTotal ? Math.round((acceptedApps / admissionsTotal) * 100) : 0;
 
-      // Top countries from applicants
       const countriesAgg = await safeAggregate(Applicant, [
         {
           $match: {
@@ -138,8 +140,9 @@ module.exports = {
         color: countryColors[index] || "#94a3b8",
       }));
 
-      // Students by department
+      // Distribution data
       let departments = [];
+
       if (Department && Student) {
         const deptAgg = await safeAggregate(Student, [
           {
@@ -173,9 +176,8 @@ module.exports = {
         }));
       }
 
-      // Fallback if no department relation exists
       if (!departments.length && Program && Student) {
-        const deptAgg = await safeAggregate(Student, [
+        const progAgg = await safeAggregate(Student, [
           {
             $match: {
               program: { $exists: true, $ne: null },
@@ -191,7 +193,7 @@ module.exports = {
           { $limit: 6 },
         ]);
 
-        const progIds = deptAgg.map((d) => d._id).filter(Boolean);
+        const progIds = progAgg.map((d) => d._id).filter(Boolean);
         const progDocs = progIds.length
           ? await Program.find({ _id: { $in: progIds } }).select("name title").lean()
           : [];
@@ -201,15 +203,13 @@ module.exports = {
           progMap[String(p._id)] = p.name || p.title || "Program";
         });
 
-        departments = deptAgg.map((d) => ({
+        departments = progAgg.map((d) => ({
           name: progMap[String(d._id)] || "Unknown",
           val: d.val,
         }));
       }
 
-      // ----------------------------
       // Recent activity
-      // ----------------------------
       let recentActivity = [];
 
       if (AuditLog) {
@@ -238,10 +238,9 @@ module.exports = {
         ];
       }
 
-      // ----------------------------
       // Announcements
-      // ----------------------------
       let announcements = [];
+
       if (Announcement) {
         const rows = await safeFind(
           Announcement,
@@ -259,10 +258,9 @@ module.exports = {
         }));
       }
 
-      // ----------------------------
       // Recent students
-      // ----------------------------
       let recentStudents = [];
+
       if (Student) {
         const rows = await Student.find({})
           .sort({ createdAt: -1 })
@@ -271,17 +269,20 @@ module.exports = {
           .lean();
 
         recentStudents = rows.map((s) => ({
-          name: s.fullName || s.name || `${s.firstName || ""} ${s.lastName || ""}`.trim() || "Student",
+          name:
+            s.fullName ||
+            s.name ||
+            `${s.firstName || ""} ${s.lastName || ""}`.trim() ||
+            "Student",
           program: s.program?.name || s.program?.title || s.programName || "—",
           status: s.status || "Active",
           balance: formatMoney(s.balance || 0, tenant?.currency || "USD"),
         }));
       }
 
-      // ----------------------------
       // Pending applications table
-      // ----------------------------
       let pendingApplicationsTable = [];
+
       if (Applicant) {
         const rows = await Applicant.find({
           status: { $in: ["pending", "submitted", "under_review"] },
@@ -293,15 +294,17 @@ module.exports = {
 
         pendingApplicationsTable = rows.map((a) => ({
           id: a._id,
-          name: a.fullName || a.name || `${a.firstName || ""} ${a.lastName || ""}`.trim() || "Applicant",
+          name:
+            a.fullName ||
+            a.name ||
+            `${a.firstName || ""} ${a.lastName || ""}`.trim() ||
+            "Applicant",
           program: a.program?.name || a.program?.title || a.programName || "—",
           country: a.country || "—",
         }));
       }
 
-      // ----------------------------
       // Finance snapshot
-      // ----------------------------
       const collectedAgg = await safeAggregate(Payment, [
         {
           $match: {
@@ -355,9 +358,7 @@ module.exports = {
         offlinePayments: offlineAgg[0]?.total || 0,
       };
 
-      // ----------------------------
-      // Trends for charts
-      // ----------------------------
+      // Revenue trend
       const monthlyRevenueAgg = await safeAggregate(Payment, [
         {
           $match: {
@@ -369,7 +370,10 @@ module.exports = {
         },
         {
           $group: {
-            _id: { month: { $month: "$createdAt" }, year: { $year: "$createdAt" } },
+            _id: {
+              month: { $month: "$createdAt" },
+              year: { $year: "$createdAt" },
+            },
             total: { $sum: "$amount" },
           },
         },
@@ -423,12 +427,19 @@ module.exports = {
         user,
         stats,
         dashboardData,
+        ui,
       });
     } catch (error) {
       console.error("Dashboard controller error:", error);
+
+      const tenantAccess = res.locals.tenantAccess || {};
+      const schoolLevel = tenantAccess.schoolLevel || "high";
+      const ui = getSchoolUi(schoolLevel);
+
       res.status(500).render("tenant/admin/dashboard/index", {
         tenant: req.tenant,
         user: req.user,
+        ui,
         stats: {
           totalStudents: 0,
           newStudentsThisMonth: 0,
@@ -496,6 +507,7 @@ function formatMoney(amount = 0, currency = "USD") {
 
 function formatTimeAgo(date) {
   if (!date) return "Recently";
+
   const diffMs = Date.now() - new Date(date).getTime();
   const diffMin = Math.floor(diffMs / 60000);
   const diffHr = Math.floor(diffMin / 60);
@@ -504,6 +516,7 @@ function formatTimeAgo(date) {
   if (diffMin < 60) return `${diffMin} min ago`;
   if (diffHr < 24) return `${diffHr} hrs ago`;
   if (diffDay < 7) return `${diffDay} days ago`;
+
   return new Date(date).toLocaleDateString();
 }
 
@@ -518,6 +531,7 @@ function buildSoftTrend(primaryValue = 0, secondaryValue = 0, length = 15) {
 
 function buildMonthlySeries(agg = [], now = new Date()) {
   const map = {};
+
   agg.forEach((item) => {
     const key = `${item._id.year}-${item._id.month}`;
     map[key] = item.total || 0;

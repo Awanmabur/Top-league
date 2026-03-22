@@ -1,19 +1,26 @@
 <%- include("../.././partials/header") %>
 <%- include("../.././partials/navbar") %>
 
+<%
+  const tenantAccess = locals.tenantAccess || {};
+  const schoolLevel = tenantAccess.schoolLevel || "high";
+  const isHigh = schoolLevel === "high";
+  const ui = locals.ui || {};
+%>
+
 <main class="main">
   <section class="tab active" id="dashboard">
     <div class="topbar">
       <div class="topbar-left">
         <div class="page-title">
           <h2>Dashboard Overview</h2>
-          <p>Welcome back, <%= user?.name || user?.fullName || "Admin" %> — here's what's happening across your campus</p>
+          <p>Welcome back, <%= user?.name || user?.fullName || "Admin" %> — here's what's happening across your <%= ui.schoolWord %></p>
         </div>
 
         <div class="topbar-right">
           <form class="search" role="search" method="GET" action="/admin/search">
             <i class="fa fa-magnifying-glass"></i>
-            <input id="searchInput" name="q" placeholder="Search students, staff, programs..." />
+            <input id="searchInput" name="q" placeholder="<%= ui.searchPlaceholder %>" />
           </form>
 
           <a class="notif-pill" href="/admin/notifications">
@@ -34,12 +41,11 @@
       </div>
     </div>
 
-    <!-- KPIs -->
     <section class="grid grid-4">
       <article class="card stat">
         <div class="stat-head">
           <div>
-            <div class="label">Total Students</div>
+            <div class="label"><%= ui.totalLearnersLabel %></div>
             <div class="value" id="totalStudents"><%= (stats?.totalStudents || 0).toLocaleString() %></div>
           </div>
           <div class="stat-meta">
@@ -77,7 +83,7 @@
             </div>
           </div>
           <div class="stat-meta">
-            <span>Students owing</span>
+            <span><%= ui.owingLearnersLabel %></span>
             <strong class="danger"><%= (stats?.studentsOwing || 0).toLocaleString() %></strong>
           </div>
         </div>
@@ -99,7 +105,6 @@
       </article>
     </section>
 
-    <!-- Snapshot -->
     <section class="card">
       <div class="card-head">
         <div>
@@ -126,7 +131,7 @@
 
         <div class="softbox">
           <div class="softhead">
-            <h4>Top Countries</h4>
+            <h4>Top Areas</h4>
             <span>last 30 days</span>
           </div>
 
@@ -138,22 +143,21 @@
 
         <div class="softbox">
           <div class="softhead">
-            <h4>Students by Department</h4>
+            <h4><%= ui.distributionTitle %></h4>
             <span>updated live</span>
           </div>
 
           <svg class="dept" id="deptChart"></svg>
 
           <div class="soft-actions">
-            <a class="btn secondary" href="/admin/students">Students</a>
-            <a class="btn secondary" href="/admin/programs">Programs</a>
-            <a class="btn" href="/admin/departments">Departments</a>
+            <a class="btn secondary" href="/admin/students"><%= ui.learners %></a>
+            <a class="btn secondary" href="<%= isHigh ? '/admin/streams' : '/admin/classes' %>"><%= ui.groupLabelPlural %></a>
+            <a class="btn" href="/admin/courses"><%= ui.subjects %></a>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- 3 columns -->
     <section class="grid grid-3">
       <section class="card">
         <div class="card-head">
@@ -243,13 +247,12 @@
       </section>
     </section>
 
-    <!-- Tables row -->
     <section class="grid grid-3">
       <section class="card">
         <div class="card-head">
           <div>
-            <h3>Recent Students</h3>
-            <p>Enrolled this month</p>
+            <h3><%= ui.recentLearnersTitle %></h3>
+            <p><%= ui.recentLearnersSub %></p>
           </div>
           <div class="card-actions">
             <a class="btn" href="/admin/students">View All</a>
@@ -261,8 +264,8 @@
           <table class="table">
             <thead>
               <tr>
-                <th>Student</th>
-                <th>Program</th>
+                <th><%= ui.learner %></th>
+                <th><%= ui.groupLabel %></th>
                 <th>Status</th>
                 <th class="right">Balance</th>
               </tr>
@@ -289,8 +292,8 @@
             <thead>
               <tr>
                 <th>Applicant</th>
-                <th>Program</th>
-                <th>Country</th>
+                <th><%= ui.groupLabel %></th>
+                <th>Location</th>
                 <th class="right">Action</th>
               </tr>
             </thead>
@@ -363,7 +366,6 @@
       </section>
     </section>
 
-    <!-- Shortcuts -->
     <section class="card">
       <div class="card-head">
         <div>
@@ -373,10 +375,10 @@
       </div>
 
       <div class="shortcuts">
-        <a class="btn" href="/admin/students/new">➕ Add Student</a>
+        <a class="btn" href="/admin/students/new"><%= ui.addLearner %></a>
         <a class="btn" href="/admin/staff/new">➕ Add Staff</a>
-        <a class="btn" href="/admin/programs/new">➕ Add Program</a>
-        <a class="btn" href="/admin/courses/new">➕ Add Course</a>
+        <a class="btn" href="<%= isHigh ? '/admin/streams/new' : '/admin/classes/new' %>"><%= ui.addGroup %></a>
+        <a class="btn" href="/admin/courses/new"><%= ui.addSubject %></a>
         <a class="btn secondary" href="/admin/settings">⚙️ Settings</a>
         <a class="btn secondary" href="/admin/billing">🧾 Billing</a>
         <a class="btn secondary" href="/admin/storage">📁 Storage</a>
@@ -387,6 +389,5 @@
 </main>
 
 <script id="dashboard-json" type="application/json"><%- JSON.stringify(dashboardData || {}) %></script>
-  
 
 <%- include("../.././partials/footer") %>

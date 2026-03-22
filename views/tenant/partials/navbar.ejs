@@ -12,6 +12,8 @@
   const featureFlags = tenantAccess.featureFlags || {};
   const planName = tenantAccess.planName || "School Profile";
   const tenantStatus = tenantAccess.status || "trial";
+  const schoolLevel = tenantAccess.schoolLevel || "high";
+  const ui = locals.ui || {};
 
   function isActive(path, exact = false) {
     if (!currentPath) return false;
@@ -20,8 +22,7 @@
   }
 
   function navClass(path, options = {}) {
-    const exact = !!options.exact;
-    return isActive(path, exact) ? "navbutton active" : "navbutton";
+    return isActive(path, !!options.exact) ? "navbutton active" : "navbutton";
   }
 
   function hasModule(name) {
@@ -35,6 +36,9 @@
   function visibleItems(items) {
     return items.filter(item => !item.hidden);
   }
+
+  const isNursery = schoolLevel === "nursery";
+  const isHigh = schoolLevel === "high";
 
   const coreItems = visibleItems([
     { label: "Dashboard", icon: "fa-house", href: "/admin/dashboard", exact: false },
@@ -52,26 +56,24 @@
   ]);
 
   const studentItems = visibleItems([
-    { label: "Students", icon: "fa-user-graduate", href: "/admin/students", hidden: !hasModule("Student") },
-    { label: "Parents", icon: "fa-people-roof", href: "/admin/parents", hidden: !hasModule("Parent") },
+    { label: ui.learners, icon: "fa-user-graduate", href: "/admin/students", hidden: !hasModule("Student") },
+    { label: ui.guardians, icon: "fa-people-roof", href: "/admin/parents", hidden: !hasModule("Parent") },
     { label: "Enrollments", icon: "fa-clipboard-check", href: "/admin/enrollments", hidden: !hasModule("Enrollment") },
-    { label: "Promotions", icon: "fa-arrow-up-right-dots", href: "/admin/promotions", hidden: !hasModule("PromotionLog") },
-    { label: "Student Docs", icon: "fa-folder-open", href: "/admin/student-docs", hidden: !hasModule("StudentDoc") },
-    { label: "Discipline", icon: "fa-gavel", href: "/admin/discipline", hidden: !hasModule("DisciplineCase") },
+    { label: "Promotions", icon: "fa-arrow-up-right-dots", href: "/admin/promotions", hidden: !hasModule("PromotionLog") || isNursery },
+    { label: ui.records, icon: "fa-folder-open", href: "/admin/student-docs", hidden: !hasModule("StudentDoc") },
+    { label: "Discipline", icon: "fa-gavel", href: "/admin/discipline", hidden: !hasModule("DisciplineCase") || isNursery },
   ]);
 
   const academicItems = visibleItems([
-    { label: "Programs", icon: "fa-book", href: "/admin/programs", hidden: !hasModule("Program") },
-    { label: "Departments", icon: "fa-sitemap", href: "/admin/departments", hidden: !hasModule("Department") },
-    { label: "Faculties", icon: "fa-building-columns", href: "/admin/faculties", hidden: !hasModule("Faculty") },
     { label: "Classes", icon: "fa-layer-group", href: "/admin/classes", hidden: !hasModule("Class") },
-    { label: "Courses", icon: "fa-book-open", href: "/admin/courses", hidden: !hasModule("Course") },
+    { label: "Streams", icon: "fa-code-branch", href: "/admin/streams", hidden: !hasModule("Stream") || !isHigh },
+    { label: ui.subjects, icon: "fa-book-open", href: "/admin/courses", hidden: !hasModule("Course") && !hasModule("Subject") },
     { label: "Timetable", icon: "fa-clock", href: "/admin/timetable", hidden: !hasModule("TimetableEntry") },
     { label: "Attendance", icon: "fa-user-clock", href: "/admin/attendance", hidden: !hasModule("Attendance") },
-    { label: "Assignments", icon: "fa-file-pen", href: "/admin/assignments", hidden: !hasModule("Assignment") },
-    { label: "Exams", icon: "fa-clipboard-list", href: "/admin/exams", hidden: !hasModule("Exam") },
-    { label: "Results", icon: "fa-award", href: "/admin/results", hidden: !hasModule("Result") },
-    { label: "Transcripts", icon: "fa-scroll", href: "/admin/transcripts", hidden: !hasModule("Transcript") },
+    { label: ui.assignments, icon: "fa-file-pen", href: "/admin/assignments", hidden: !hasModule("Assignment") && !isNursery },
+    { label: ui.exams, icon: "fa-clipboard-list", href: "/admin/exams", hidden: !hasModule("Exam") && !isNursery },
+    { label: ui.results, icon: "fa-award", href: "/admin/results", hidden: !hasModule("Result") && !isNursery },
+    { label: ui.reports, icon: "fa-scroll", href: "/admin/transcripts", hidden: !hasModule("Transcript") && !hasModule("ReportCard") },
     { label: "Academic Calendar", icon: "fa-calendar-days", href: "/admin/academic-calendar", hidden: !hasModule("AcademicEvent") },
   ]);
 
@@ -84,8 +86,9 @@
   ]);
 
   const facilityItems = visibleItems([
-    { label: "Library", icon: "fa-book-reader", href: "/admin/library", hidden: !hasModule("LibraryBook") },
-    { label: "Hostels", icon: "fa-building", href: "/admin/hostels", hidden: !hasModule("Hostel") },
+    { label: "Library", icon: "fa-book-reader", href: "/admin/library", hidden: !hasModule("LibraryBook") || isNursery },
+    { label: "Hostels", icon: "fa-building", href: "/admin/hostels", hidden: !hasModule("Hostel") || !isHigh },
+    { label: "Transport", icon: "fa-bus", href: "/admin/transport", hidden: !hasModule("Transport") },
     { label: "Assets", icon: "fa-boxes-stacked", href: "/admin/assets", hidden: !hasModule("Asset") },
     { label: "Events", icon: "fa-calendar", href: "/admin/events", hidden: !hasModule("Event") },
   ]);
@@ -94,11 +97,11 @@
     { label: "Finance", icon: "fa-credit-card", href: "/admin/finance", hidden: !hasModule("Payment") },
     { label: "Invoices", icon: "fa-file-invoice-dollar", href: "/admin/invoices", hidden: !hasModule("Invoice") },
     { label: "Payments", icon: "fa-money-bill-wave", href: "/admin/payments", hidden: !hasModule("Payment") },
-    { label: "Student Statements", icon: "fa-receipt", href: "/admin/student-statements", hidden: !hasModule("Payment") },
+    { label: ui.statements, icon: "fa-receipt", href: "/admin/student-statements", hidden: !hasModule("Payment") },
     { label: "Fee Structure", icon: "fa-list-check", href: "/admin/fees", hidden: !hasModule("FeeStructure") },
-    { label: "Scholarships", icon: "fa-hand-holding-heart", href: "/admin/scholarships", hidden: !hasModule("Scholarship") },
+    { label: ui.bursaries, icon: "fa-hand-holding-heart", href: "/admin/scholarships", hidden: !hasModule("Scholarship") },
     { label: "Finance Reports", icon: "fa-chart-column", href: "/admin/finance-reports", hidden: !hasModule("Payment") },
-    { label: "Expenses", icon: "fa-money-check-dollar", href: "/admin/expenses", hidden: !hasModule("Payment") },
+    { label: "Expenses", icon: "fa-money-check-dollar", href: "/admin/expenses", hidden: !hasModule("Expense") && !hasModule("Payment") },
   ]);
 
   const commItems = visibleItems([
@@ -144,7 +147,7 @@
       <div class="brand-logo">CS</div>
       <div class="brand-meta">
         <h1 class="brand-title"><%= tenant?.name || "Classic Campus" %></h1>
-        <div class="brand-sub">Classic Campus SaaS</div>
+        <div class="brand-sub"><%= ui.subtitle %></div>
       </div>
     </div>
 
@@ -174,7 +177,7 @@
       <% } %>
 
       <% if (studentItems.length) { %>
-        <div class="navcat">STUDENTS</div>
+        <div class="navcat"><%= ui.studentNavCat %></div>
         <div class="group">
           <% studentItems.forEach(function(item){ %>
             <a class="<%= navClass(item.href) %>" href="<%= item.href %>" data-label="<%= item.label %>">
