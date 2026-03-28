@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <title>Application Status — CampusSaaS</title>
+  <title>Application Status — <%= (tenant && tenant.name) ? tenant.name : "Classic Academy" %></title>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <link rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
@@ -106,7 +106,6 @@
     .event .title{font-weight:1000}
     .event .meta{font-size:12px;color:var(--muted);margin-top:4px}
 
-    /* Modals */
     .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:18px;z-index:9999}
     .modal-backdrop.show{display:flex}
     .modal{width:min(860px,100%);background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden}
@@ -129,8 +128,7 @@
 
 <body>
 <%
-  // SAFE VARS
-  const tenantName = (typeof tenant !== "undefined" && tenant && tenant.name) ? String(tenant.name) : "Classic Campus";
+  const tenantName = (typeof tenant !== "undefined" && tenant && tenant.name) ? String(tenant.name) : "Classic Academy";
   const csrf = (typeof csrfToken !== "undefined" && csrfToken) ? csrfToken : null;
 
   const q = (typeof query !== "undefined" && query) ? String(query) : "";
@@ -149,11 +147,12 @@
     status === "accepted" ? "Accepted" :
     status === "rejected" ? "Rejected" :
     status === "under_review" ? "Under Review" :
-    status === "interview" ? "Interview" :
+    status === "converted" ? "Converted" :
     "Submitted";
 
   const stageClass =
     status === "accepted" ? "p-ok" :
+    status === "converted" ? "p-ok" :
     status === "rejected" ? "p-bad" :
     status === "under_review" ? "p-warn" :
     "p-info";
@@ -162,42 +161,52 @@
   const payLabel = payStatus === "paid" ? "Paid" : (payStatus === "partial" ? "Partial" : "Not Paid");
   const payClass = payStatus === "paid" ? "p-ok" : (payStatus === "partial" ? "p-warn" : "p-bad");
 
-  // required docs
   const REQUIRED = [
     { key:"idDocument", label:"National ID / Passport", required:true },
     { key:"passportPhoto", label:"Passport Photo", required:true },
     { key:"transcript", label:"Transcript / Results Slip", required:true },
-    { key:"certificates", label:"Certificates", required:false }
+    { key:"other", label:"Additional Documents", required:false }
   ];
 
   const hasDoc = (key) => docs.some(d => s(d.key) === key || s(d.type) === key);
+
+  const schoolLevelLabel = (v) => {
+    const map = { nursery: "Nursery", primary: "Primary", secondary: "Secondary" };
+    return map[String(v || "").toLowerCase()] || "—";
+  };
+
+  const subjectLabels = app && Array.isArray(app.subjectChoices)
+    ? app.subjectChoices.map(function (x) {
+        const subj = x && x.subject ? x.subject : null;
+        if (!subj) return "";
+        return ((subj.code ? subj.code + " — " : "") + (subj.title || subj.shortTitle || "Subject")).trim();
+      }).filter(Boolean)
+    : [];
 %>
 
 <div class="wrap">
 
-  <!-- TOP -->
   <div class="topbar">
     <a class="brand" href="/">
-      <div class="logo">CS</div>
+      <div class="logo">CA</div>
       <div>
         <h1><%= tenantName %></h1>
-        <div class="sub">Application Status & Review (Student)</div>
+        <div class="sub">Application Status & Review</div>
       </div>
     </a>
 
     <div class="row">
-      <a class="btn ghost small" href="/apply"><i class="fa-solid fa-file-circle-plus"></i> New Application</a>
+      <a class="btn ghost small" href="/admissions/apply"><i class="fa-solid fa-file-circle-plus"></i> New Application</a>
       <button class="btn ghost small" type="button" id="btnPrint"><i class="fa-solid fa-print"></i> Print</button>
       <button class="btn ghost small" type="button" id="btnHelp"><i class="fa-solid fa-headset"></i> Help</button>
     </div>
   </div>
 
-  <!-- SEARCH -->
   <div class="card search">
     <div class="card-head">
       <div>
         <div class="card-title">Check Application Status</div>
-        <div class="card-sub">Search using Application ID (APP-YYYY-xxxxxx) or your Email/Phone.</div>
+        <div class="card-sub">Search using Application ID or your Email/Phone.</div>
       </div>
       <% if (app) { %>
         <div class="row">
@@ -219,14 +228,13 @@
       </form>
 
       <div class="muted" style="margin-top:10px">
-        Tip: After you apply, redirect applicant here with their Application ID so they see everything immediately.
+        Tip: keep your Application ID safe for later tracking.
       </div>
     </div>
   </div>
 
   <% if (app) { %>
 
-    <!-- KPIs -->
     <div class="grid-kpi">
       <div class="card kpi">
         <div class="label">Stage</div>
@@ -239,14 +247,13 @@
         <div class="hint">Use this to check status any time</div>
       </div>
       <div class="card kpi">
-        <div class="label">Payment</div>
-        <div class="value"><%= payLabel %></div>
-        <div class="hint">Application fee status</div>
+        <div class="label">Placement</div>
+        <div class="value" style="font-size:18px"><%= schoolLevelLabel(app.schoolLevel) %> • <%= s(app.classLevel,"—") %></div>
+        <div class="hint"><%= app.term ? ("Term " + app.term) : "—" %></div>
       </div>
     </div>
 
     <div class="grid-main">
-      <!-- LEFT MAIN -->
       <section class="card">
         <div class="card-head">
           <div>
@@ -254,78 +261,107 @@
             <div class="card-sub">
               Submitted:
               <%= app.createdAt ? new Date(app.createdAt).toLocaleString() : "—" %>
-              • Program:
-              <b>
-                <%= (app.program1 && app.program1.code) ? s(app.program1.code)+" — " : "" %>
-                <%= (app.program1 && (app.program1.name || app.program1.title)) ? s(app.program1.name || app.program1.title) : s(app.programName,"") %>
-              </b>
+              • Academic Year:
+              <b><%= s(app.academicYear, "—") %></b>
             </div>
           </div>
 
           <div class="row">
-            <span class="pill <%= payClass %>"><i class="fa-solid fa-coins"></i> <%= payLabel %></span>
-            <button class="btn light small" type="button" id="btnEditBasic"><i class="fa-solid fa-pen"></i> Edit Info</button>
+            <span class="pill <%= stageClass %>"><i class="fa-solid fa-circle-info"></i> <%= stageLabel %></span>
           </div>
         </div>
 
         <div class="card-body">
-          <!-- Tabs -->
           <div class="tabs" id="tabs">
             <button class="tab active" data-pane="pane-basic"><i class="fa-solid fa-user"></i> Basic Info</button>
+            <button class="tab" data-pane="pane-academic"><i class="fa-solid fa-graduation-cap"></i> Academic</button>
             <button class="tab" data-pane="pane-docs"><i class="fa-solid fa-folder-open"></i> Documents</button>
-            <button class="tab" data-pane="pane-pay"><i class="fa-solid fa-coins"></i> Payment</button>
-            <button class="tab" data-pane="pane-interview"><i class="fa-solid fa-video"></i> Interview</button>
             <button class="tab" data-pane="pane-decision"><i class="fa-solid fa-gavel"></i> Decision</button>
             <button class="tab" data-pane="pane-audit"><i class="fa-solid fa-clock-rotate-left"></i> Timeline</button>
           </div>
 
-          <!-- BASIC INFO -->
           <div class="pane active" id="pane-basic">
-            <div class="muted">You can update basic details. Admissions will still verify everything.</div>
-            <div class="divider"></div>
-
-            <form method="POST" action="/admissions/status/update" id="basicForm">
-              <% if (csrf) { %><input type="hidden" name="_csrf" value="<%= csrf %>"><% } %>
-              <input type="hidden" name="applicationId" value="<%= s(app.applicationId) %>">
-
-              <div class="row" style="gap:12px">
-                <div class="field" style="flex:1;min-width:240px">
-                  <label>Full Name</label>
-                  <input class="input basic" name="fullName" value="<%= s(app.fullName, (s(app.firstName)+" "+s(app.lastName)).trim()) %>" disabled>
-                </div>
-                <div class="field" style="flex:1;min-width:240px">
-                  <label>Phone</label>
-                  <input class="input basic" name="phone" value="<%= s(app.phone) %>" disabled>
-                </div>
+            <div class="row" style="gap:12px">
+              <div class="field" style="flex:1;min-width:240px">
+                <label>Full Name</label>
+                <input class="input" value="<%= s(app.fullName, (s(app.firstName)+' '+s(app.lastName)).trim()) %>" disabled>
               </div>
-
-              <div class="row" style="gap:12px;margin-top:12px">
-                <div class="field" style="flex:1;min-width:240px">
-                  <label>Email</label>
-                  <input class="input basic" type="email" name="email" value="<%= s(app.email) %>" disabled>
-                </div>
-                <div class="field" style="flex:1;min-width:240px">
-                  <label>Nationality</label>
-                  <input class="input basic" name="nationality" value="<%= s(app.nationality) %>" disabled>
-                </div>
+              <div class="field" style="flex:1;min-width:240px">
+                <label>Phone</label>
+                <input class="input" value="<%= s(app.phone) %>" disabled>
               </div>
+            </div>
 
-              <div class="field" style="margin-top:12px">
-                <label>Address</label>
-                <input class="input basic" name="address" value="<%= s(app.address) %>" disabled>
+            <div class="row" style="gap:12px;margin-top:12px">
+              <div class="field" style="flex:1;min-width:240px">
+                <label>Email</label>
+                <input class="input" value="<%= s(app.email) %>" disabled>
               </div>
+              <div class="field" style="flex:1;min-width:240px">
+                <label>Nationality</label>
+                <input class="input" value="<%= s(app.nationality) %>" disabled>
+              </div>
+            </div>
 
-              <div class="divider"></div>
-              <div class="row" style="justify-content:flex-end">
-                <button class="btn light" type="button" id="btnCancelEdit" style="display:none"><i class="fa-solid fa-xmark"></i> Cancel</button>
-                <button class="btn primary" type="submit" id="btnSaveBasic" style="display:none"><i class="fa-solid fa-check"></i> Save</button>
+            <div class="field" style="margin-top:12px">
+              <label>Address</label>
+              <input class="input" value="<%= s(app.address) %>" disabled>
+            </div>
+
+            <div class="row" style="gap:12px;margin-top:12px">
+              <div class="field" style="flex:1;min-width:240px">
+                <label>Guardian</label>
+                <input class="input" value="<%= s(app.guardianName) %>" disabled>
               </div>
-            </form>
+              <div class="field" style="flex:1;min-width:240px">
+                <label>Guardian Phone</label>
+                <input class="input" value="<%= s(app.guardianPhone) %>" disabled>
+              </div>
+            </div>
           </div>
 
-          <!-- DOCUMENTS -->
+          <div class="pane" id="pane-academic">
+            <div class="row" style="gap:12px">
+              <div class="field" style="flex:1;min-width:240px">
+                <label>Academic Year</label>
+                <input class="input" value="<%= s(app.academicYear) %>" disabled>
+              </div>
+              <div class="field" style="flex:1;min-width:240px">
+                <label>School Level</label>
+                <input class="input" value="<%= schoolLevelLabel(app.schoolLevel) %>" disabled>
+              </div>
+            </div>
+
+            <div class="row" style="gap:12px;margin-top:12px">
+              <div class="field" style="flex:1;min-width:240px">
+                <label>Class Level</label>
+                <input class="input" value="<%= s(app.classLevel) %>" disabled>
+              </div>
+              <div class="field" style="flex:1;min-width:240px">
+                <label>Term</label>
+                <input class="input" value="<%= app.term ? ('Term ' + app.term) : '—' %>" disabled>
+              </div>
+            </div>
+
+            <div class="field" style="margin-top:12px">
+              <label>Subject Choices</label>
+              <textarea class="textarea" disabled><%= subjectLabels.length ? subjectLabels.join(", ") : "—" %></textarea>
+            </div>
+
+            <div class="row" style="gap:12px;margin-top:12px">
+              <div class="field" style="flex:1;min-width:240px">
+                <label>Qualification</label>
+                <input class="input" value="<%= s(app.qualification) %>" disabled>
+              </div>
+              <div class="field" style="flex:1;min-width:240px">
+                <label>Institution</label>
+                <input class="input" value="<%= s(app.school) %>" disabled>
+              </div>
+            </div>
+          </div>
+
           <div class="pane" id="pane-docs">
-            <div class="muted">Upload missing documents or replace unclear scans.</div>
+            <div class="muted">Uploaded application documents.</div>
             <div class="divider"></div>
 
             <div class="file-grid">
@@ -339,37 +375,12 @@
                   <div class="row" style="justify-content:flex-end">
                     <% if (ok) { %>
                       <span class="tag ok">Uploaded</span>
-                      <button
-                        class="btn light small js-upload"
-                        type="button"
-                        data-doc-key="<%= r.key %>"
-                        data-doc-label="<%= r.label %>"
-                        data-mode="replace"
-                      >
-                        <i class="fa-solid fa-arrows-rotate"></i> Replace
-                      </button>
                     <% } else { %>
                       <span class="tag <%= r.required ? "miss" : "req" %>"><%= r.required ? "Missing" : "Not provided" %></span>
-                      <button
-                        class="btn primary small js-upload"
-                        type="button"
-                        data-doc-key="<%= r.key %>"
-                        data-doc-label="<%= r.label %>"
-                        data-mode="upload"
-                      >
-                        <i class="fa-solid fa-upload"></i> Upload
-                      </button>
                     <% } %>
                   </div>
                 </div>
               <% }) %>
-            </div>
-
-            <div class="divider"></div>
-            <div class="row">
-              <button class="btn light small" type="button" data-open-modal="mUploadAny">
-                <i class="fa-solid fa-paperclip"></i> Upload Additional
-              </button>
             </div>
 
             <div class="divider"></div>
@@ -381,36 +392,24 @@
                   <tr>
                     <th>Type</th>
                     <th>File</th>
-                    <th>Verification</th>
                     <th>Uploaded</th>
                     <th style="text-align:right;">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   <% if (!docs.length) { %>
-                    <tr><td colspan="5" class="muted">No files recorded yet.</td></tr>
+                    <tr><td colspan="4" class="muted">No files recorded yet.</td></tr>
                   <% } else { %>
-                    <% docs.forEach(d => { const v=s(d.verification,"pending"); %>
+                    <% docs.forEach(d => { %>
                       <tr>
-                        <td class="strong"><%= s(d.label, s(d.type, s(d.key,"Document"))) %></td>
-                        <td class="muted"><%= s(d.originalName, s(d.filename,"—")) %></td>
-                        <td>
-                          <% if (v === "verified") { %><span class="pill p-ok"><i class="fa-solid fa-check"></i> Verified</span><% } %>
-                          <% if (v === "pending") { %><span class="pill p-warn"><i class="fa-solid fa-hourglass-half"></i> Pending</span><% } %>
-                          <% if (v === "rejected") { %><span class="pill p-bad"><i class="fa-solid fa-xmark"></i> Rejected</span><% } %>
-                        </td>
+                        <td class="strong"><%= s(d.label, s(d.key,"Document")) %></td>
+                        <td class="muted"><%= s(d.originalName,"—") %></td>
                         <td class="muted"><%= d.createdAt ? new Date(d.createdAt).toLocaleString() : "—" %></td>
                         <td style="text-align:right;">
                           <% if (d.url) { %>
                             <a class="btn light small" href="<%= d.url %>" target="_blank" rel="noreferrer"><i class="fa-solid fa-eye"></i> View</a>
                           <% } else { %>
-                            <button
-                              class="btn light small js-preview"
-                              type="button"
-                              data-doc-key="<%= s(d.key, s(d.type,'')) %>"
-                            >
-                              <i class="fa-solid fa-eye"></i> Preview
-                            </button>
+                            <button class="btn light small" type="button" disabled><i class="fa-solid fa-eye"></i> View</button>
                           <% } %>
                         </td>
                       </tr>
@@ -421,106 +420,6 @@
             </div>
           </div>
 
-          <!-- PAYMENT -->
-          <div class="pane" id="pane-pay">
-            <div class="row" style="justify-content:space-between;">
-              <div>
-                <div class="strong">Application Fee</div>
-                <div class="muted">Pay and keep receipt for records.</div>
-              </div>
-              <span class="pill <%= payClass %>"><i class="fa-solid fa-coins"></i> <%= payLabel %></span>
-            </div>
-
-            <div class="divider"></div>
-
-            <div class="row">
-              <button class="btn primary small" type="button" data-open-modal="mPay">
-                <i class="fa-solid fa-credit-card"></i> Pay Now
-              </button>
-              <button class="btn light small" type="button" data-open-modal="mHelp">
-                <i class="fa-solid fa-envelope"></i> Ask about payment
-              </button>
-            </div>
-
-            <div class="divider"></div>
-
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Txn</th>
-                    <th>Method</th>
-                    <th>Amount</th>
-                    <th>Status</th>
-                    <th>Date</th>
-                    <th style="text-align:right;">Receipt</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <% if (!payments.length) { %>
-                    <tr><td colspan="6" class="muted">No payment history yet.</td></tr>
-                  <% } else { %>
-                    <% payments.forEach(p => { const st=s(p.status,"pending"); %>
-                      <tr>
-                        <td class="strong"><%= s(p.reference, s(p.txnId,"—")) %></td>
-                        <td class="muted"><%= s(p.method,"—") %></td>
-                        <td class="muted"><%= s(p.currency,"UGX") %> <%= s(p.amount,"0") %></td>
-                        <td>
-                          <% if (st === "success") { %><span class="pill p-ok"><i class="fa-solid fa-check"></i> Success</span><% } %>
-                          <% if (st === "pending") { %><span class="pill p-warn"><i class="fa-solid fa-hourglass-half"></i> Pending</span><% } %>
-                          <% if (st === "failed") { %><span class="pill p-bad"><i class="fa-solid fa-xmark"></i> Failed</span><% } %>
-                        </td>
-                        <td class="muted"><%= p.createdAt ? new Date(p.createdAt).toLocaleString() : "—" %></td>
-                        <td style="text-align:right;">
-                          <% if (p.receiptUrl) { %>
-                            <a class="btn light small" href="<%= p.receiptUrl %>" target="_blank" rel="noreferrer"><i class="fa-solid fa-receipt"></i> Receipt</a>
-                          <% } else { %>
-                            <button class="btn light small" type="button" disabled><i class="fa-solid fa-receipt"></i> Receipt</button>
-                          <% } %>
-                        </td>
-                      </tr>
-                    <% }) %>
-                  <% } %>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- INTERVIEW -->
-          <div class="pane" id="pane-interview">
-            <div class="row" style="justify-content:space-between;">
-              <div>
-                <div class="strong">Interview & Screening</div>
-                <div class="muted">Admissions will schedule if required.</div>
-              </div>
-              <% const iStatus = app ? s(app.interviewStatus,"pending") : "pending"; %>
-              <% if (iStatus === "scheduled") { %>
-                <span class="pill p-ok"><i class="fa-solid fa-video"></i> Scheduled</span>
-              <% } else { %>
-                <span class="pill p-warn"><i class="fa-solid fa-hourglass-half"></i> Pending</span>
-              <% } %>
-            </div>
-
-            <div class="divider"></div>
-
-            <div class="row" style="gap:12px">
-              <div class="card kpi" style="box-shadow:none;flex:1">
-                <div class="label">Date & Time</div>
-                <div class="value" style="font-size:16px"><%= app && app.interviewAt ? new Date(app.interviewAt).toLocaleString() : "Not scheduled" %></div>
-                <div class="hint">Check often</div>
-              </div>
-              <div class="card kpi" style="box-shadow:none;flex:1">
-                <div class="label">Location / Link</div>
-                <div class="value" style="font-size:16px"><%= s(app.interviewLocation,"—") %></div>
-                <div class="hint">Meet/Zoom/Office</div>
-              </div>
-            </div>
-
-            <div class="divider"></div>
-            <button class="btn light small" type="button" data-open-modal="mHelp"><i class="fa-solid fa-envelope"></i> Ask about interview</button>
-          </div>
-
-          <!-- DECISION -->
           <div class="pane" id="pane-decision">
             <div class="row" style="justify-content:space-between;">
               <div>
@@ -528,8 +427,8 @@
                 <div class="muted">Decision appears here once finalized.</div>
               </div>
 
-              <% if (status === "accepted") { %>
-                <span class="pill p-ok"><i class="fa-solid fa-check"></i> Accepted</span>
+              <% if (status === "accepted" || status === "converted") { %>
+                <span class="pill p-ok"><i class="fa-solid fa-check"></i> <%= stageLabel %></span>
               <% } else if (status === "rejected") { %>
                 <span class="pill p-bad"><i class="fa-solid fa-xmark"></i> Rejected</span>
               <% } else { %>
@@ -541,26 +440,18 @@
 
             <div class="field">
               <label>Decision Notes</label>
-              <textarea class="textarea" disabled><%= s(app.decisionNotes,"") %></textarea>
+              <textarea class="textarea" disabled><%= s(app.decisionNote || app.adminNotes, "") %></textarea>
             </div>
 
-            <div class="divider"></div>
-            <div class="row">
-              <% if (app.offerLetterUrl) { %>
-                <a class="btn light small" href="<%= s(app.offerLetterUrl) %>" target="_blank" rel="noreferrer"><i class="fa-solid fa-envelope"></i> Offer Letter</a>
-              <% } else { %>
-                <button class="btn light small" type="button" disabled><i class="fa-solid fa-envelope"></i> Offer Letter</button>
-              <% } %>
-
-              <% if (app.admissionLetterUrl) { %>
-                <a class="btn primary small" href="<%= s(app.admissionLetterUrl) %>" target="_blank" rel="noreferrer"><i class="fa-solid fa-file-signature"></i> Admission Letter</a>
-              <% } else { %>
-                <button class="btn light small" type="button" disabled><i class="fa-solid fa-file-signature"></i> Admission Letter</button>
-              <% } %>
-            </div>
+            <% if (status === "converted" && app.regNo) { %>
+              <div class="divider"></div>
+              <div class="field">
+                <label>Student Registration Number</label>
+                <input class="input" value="<%= s(app.regNo) %>" disabled>
+              </div>
+            <% } %>
           </div>
 
-          <!-- TIMELINE -->
           <div class="pane" id="pane-audit">
             <div class="muted">History of updates from admissions and system events.</div>
             <div class="divider"></div>
@@ -581,8 +472,8 @@
                   <div class="event">
                     <div class="top">
                       <div>
-                        <div class="title"><%= s(t.title, s(t.action,"Update")) %></div>
-                        <div class="meta"><%= t.createdAt ? new Date(t.createdAt).toLocaleString() : s(t.meta,"") %></div>
+                        <div class="title"><%= s(t.title, "Update") %></div>
+                        <div class="meta"><%= t.createdAt ? new Date(t.createdAt).toLocaleString() : "—" %></div>
                       </div>
                       <span class="pill p-info"><i class="fa-solid fa-user"></i> <%= s(t.by, "Admissions") %></span>
                     </div>
@@ -595,183 +486,40 @@
         </div>
       </section>
 
-      <!-- RIGHT SIDE HELP -->
       <aside class="card">
         <div class="card-head">
           <div>
-            <div class="card-title">Quick Actions</div>
-            <div class="card-sub">Fix missing items quickly</div>
+            <div class="card-title">Quick Summary</div>
+            <div class="card-sub">Your current application snapshot</div>
           </div>
         </div>
 
         <div class="card-body">
           <div class="row">
             <span class="pill <%= stageClass %>"><i class="fa-solid fa-circle-info"></i> <%= stageLabel %></span>
-            <span class="pill <%= payClass %>"><i class="fa-solid fa-coins"></i> <%= payLabel %></span>
           </div>
 
           <div class="divider"></div>
-          <div class="muted">
-            Upload missing documents and keep your contact details correct. If you paid and it’s not updated, message admissions with your transaction reference.
-          </div>
+          <div class="muted">School Level</div>
+          <div class="strong"><%= schoolLevelLabel(app.schoolLevel) %></div>
 
           <div class="divider"></div>
-          <div class="row">
-            <button class="btn primary small" type="button" data-open-modal="mUploadAny"><i class="fa-solid fa-upload"></i> Upload Docs</button>
-            <button class="btn light small" type="button" data-open-modal="mPay"><i class="fa-solid fa-credit-card"></i> Pay</button>
-            <button class="btn light small" type="button" data-open-modal="mHelp"><i class="fa-solid fa-envelope"></i> Message</button>
-          </div>
+          <div class="muted">Class Level</div>
+          <div class="strong"><%= s(app.classLevel, "—") %></div>
+
+          <div class="divider"></div>
+          <div class="muted">Term</div>
+          <div class="strong"><%= app.term ? ("Term " + app.term) : "—" %></div>
+
+          <div class="divider"></div>
+          <div class="muted">Subject Choices</div>
+          <div class="strong"><%= subjectLabels.length ? subjectLabels.join(", ") : "—" %></div>
         </div>
       </aside>
     </div>
 
   <% } %>
 
-</div>
-
-<!-- Upload (specific) -->
-<div class="modal-backdrop" id="mUpload">
-  <div class="modal" style="width:min(680px,100%)">
-    <div class="modal-header">
-      <div class="modal-title">Upload / Replace Document</div>
-      <button class="btn light small" type="button" data-close-modal="mUpload"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <form class="modal-body" method="POST" action="/admissions/status/documents" enctype="multipart/form-data">
-      <% if (csrf) { %><input type="hidden" name="_csrf" value="<%= csrf %>"><% } %>
-      <input type="hidden" name="applicationId" value="<%= app ? s(app.applicationId) : '' %>">
-      <input type="hidden" name="docKey" id="uKey" value="">
-
-      <div class="field">
-        <label>Document</label>
-        <input class="input" id="uLabel" value="" disabled>
-      </div>
-
-      <div class="divider"></div>
-
-      <div class="field">
-        <label>Select File</label>
-        <input class="input" type="file" name="file" required accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/*">
-      </div>
-
-      <div class="divider"></div>
-
-      <div class="field">
-        <label>Note to Admissions (optional)</label>
-        <textarea class="textarea" name="note" placeholder="e.g. clearer scan / corrected document"></textarea>
-      </div>
-
-      <div class="modal-footer">
-        <button class="btn light" type="button" data-close-modal="mUpload">Cancel</button>
-        <button class="btn primary" type="submit"><i class="fa-solid fa-upload"></i> Upload</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- Upload any -->
-<div class="modal-backdrop" id="mUploadAny">
-  <div class="modal" style="width:min(680px,100%)">
-    <div class="modal-header">
-      <div class="modal-title">Upload Additional Document</div>
-      <button class="btn light small" type="button" data-close-modal="mUploadAny"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <form class="modal-body" method="POST" action="/admissions/status/documents" enctype="multipart/form-data">
-      <% if (csrf) { %><input type="hidden" name="_csrf" value="<%= csrf %>"><% } %>
-      <input type="hidden" name="applicationId" value="<%= app ? s(app.applicationId) : '' %>">
-
-      <div class="field">
-        <label>Document Type</label>
-        <select class="select" name="docKey" required>
-          <option value="">Select</option>
-          <option value="idDocument">National ID / Passport</option>
-          <option value="passportPhoto">Passport Photo</option>
-          <option value="transcript">Transcript / Results Slip</option>
-          <option value="certificates">Certificates</option>
-          <option value="recommendation">Recommendation Letter</option>
-          <option value="medical">Medical Form</option>
-          <option value="other">Other</option>
-        </select>
-      </div>
-
-      <div class="divider"></div>
-
-      <div class="field">
-        <label>Select File</label>
-        <input class="input" type="file" name="file" required accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/*">
-      </div>
-
-      <div class="divider"></div>
-
-      <div class="field">
-        <label>Note (optional)</label>
-        <textarea class="textarea" name="note" placeholder="Describe what this is."></textarea>
-      </div>
-
-      <div class="modal-footer">
-        <button class="btn light" type="button" data-close-modal="mUploadAny">Cancel</button>
-        <button class="btn primary" type="submit"><i class="fa-solid fa-upload"></i> Upload</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- Pay -->
-<div class="modal-backdrop" id="mPay">
-  <div class="modal" style="width:min(720px,100%)">
-    <div class="modal-header">
-      <div class="modal-title">Pay Application Fee</div>
-      <button class="btn light small" type="button" data-close-modal="mPay"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <form class="modal-body" method="POST" action="/admissions/pay">
-      <% if (csrf) { %><input type="hidden" name="_csrf" value="<%= csrf %>"><% } %>
-      <input type="hidden" name="applicationId" value="<%= app ? s(app.applicationId) : '' %>">
-
-      <div class="field">
-        <label>Method</label>
-        <select class="select" name="method" required>
-          <option value="momo">Mobile Money</option>
-          <option value="bank">Bank</option>
-          <option value="card">Card</option>
-        </select>
-      </div>
-
-      <div class="divider"></div>
-
-      <div class="field">
-        <label>Phone (for Mobile Money)</label>
-        <input class="input" name="phone" placeholder="+256..." value="<%= app ? s(app.phone) : '' %>">
-      </div>
-
-      <div class="modal-footer">
-        <button class="btn light" type="button" data-close-modal="mPay">Cancel</button>
-        <button class="btn primary" type="submit"><i class="fa-solid fa-lock"></i> Proceed</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- Help -->
-<div class="modal-backdrop" id="mHelp">
-  <div class="modal" style="width:min(720px,100%)">
-    <div class="modal-header">
-      <div class="modal-title">Message Admissions</div>
-      <button class="btn light small" type="button" data-close-modal="mHelp"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <form class="modal-body" method="POST" action="/admissions/status/message">
-      <% if (csrf) { %><input type="hidden" name="_csrf" value="<%= csrf %>"><% } %>
-      <input type="hidden" name="applicationId" value="<%= app ? s(app.applicationId) : '' %>">
-
-      <div class="field">
-        <label>Message</label>
-        <textarea class="textarea" name="message" required placeholder="Write your question..."></textarea>
-      </div>
-
-      <div class="modal-footer">
-        <button class="btn light" type="button" data-close-modal="mHelp">Cancel</button>
-        <button class="btn primary" type="submit"><i class="fa-solid fa-paper-plane"></i> Send</button>
-      </div>
-    </form>
-  </div>
 </div>
 
 <script src="/js/status.js" defer></script>

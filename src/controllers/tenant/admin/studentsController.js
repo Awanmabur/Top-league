@@ -4,6 +4,11 @@ const { sendMail } = require("../../../utils/mailer");
 const { createSetPasswordInvite } = require("../../../utils/inviteService");
 const { setupPasswordEmail } = require("../../../utils/emailTemplates");
 
+let importedNextRegNo = null;
+try {
+  ({ nextRegNo: importedNextRegNo } = require("../../../utils/regNo"));
+} catch (_) {}
+
 const cleanStr = (v, max = 2000) => String(v || "").trim().slice(0, max);
 const isObjId = (v) => mongoose.Types.ObjectId.isValid(String(v || ""));
 const cleanEmail = (v) => String(v || "").trim().toLowerCase();
@@ -16,6 +21,32 @@ const parseIntSafe = (v, def = 1) => {
   return Number.isFinite(n) ? n : def;
 };
 const escapeRegExp = (value) => String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const SCHOOL_LEVELS = ["nursery", "primary", "secondary"];
+const CLASS_LEVELS = [
+  "BABY",
+  "MIDDLE",
+  "TOP",
+  "P1",
+  "P2",
+  "P3",
+  "P4",
+  "P5",
+  "P6",
+  "P7",
+  "P8",
+  "S1",
+  "S2",
+  "S3",
+  "S4",
+  "S5",
+  "S6",
+];
+const LEVEL_CLASS_MAP = {
+  nursery: ["BABY", "MIDDLE", "TOP"],
+  primary: ["P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"],
+  secondary: ["S1", "S2", "S3", "S4", "S5", "S6"],
+};
 
 const normalizeStatus = (v) => {
   const s = String(v || "").trim().toLowerCase();
@@ -50,7 +81,78 @@ async function safeStudentSet(StudentModel, studentId, patch) {
   await StudentModel.updateOne({ _id: studentId }, { $set }).catch(() => {});
 }
 
-function buildStudentFilter({ q, program, classGroup, yearLevel, status }) {
+function normalizeClassLevel(v) {
+  const value = String(v || "").trim().toUpperCase();
+  return CLASS_LEVELS.includes(value) ? value : "";
+}
+
+function normalizeSchoolLevel(v) {
+  const value = String(v || "").trim().toLowerCase();
+  return SCHOOL_LEVELS.includes(value) ? value : "";
+}
+
+function normalizeSubjectIds(v) {
+  const arr = Array.isArray(v) ? v : v ? [v] : [];
+  return arr
+    .map((x) => String(x || "").trim())
+    .filter((x) => isObjId(x))
+    .map((x) => new mongoose.Types.ObjectId(x));
+}
+
+function getSchoolUnits(req) {
+  return req.tenantDoc?.settings?.academics?.schoolUnits
+    || req.tenant?.settings?.academics?.schoolUnits
+    || [];
+}
+
+function buildStructure(req) {
+  return (getSchoolUnits(req) || []).map((schoolUnit) => ({
+    id: String(schoolUnit.id || schoolUnit._id || ""),
+    name: schoolUnit.name || "",
+    code: schoolUnit.code || "",
+    campuses: (schoolUnit.campuses || []).map((campus) => ({
+      id: String(campus.id || campus._id || ""),
+      name: campus.name || "",
+      code: campus.code || "",
+      levels: (campus.levels || []).map((level) => ({
+        id: String(level.id || level._id || ""),
+        name: level.name || "",
+        type: String(level.type || "").toLowerCase(),
+        code: level.code || "",
+        sections: (level.sections || []).map((section) => ({
+          id: String(section.id || section._id || ""),
+          name: section.name || section.title || section.code || "",
+          code: section.code || "",
+        })),
+      })),
+    })),
+  }));
+}
+
+function getPlacement(req, schoolUnitId, campusId, schoolLevel) {
+  for (const schoolUnit of getSchoolUnits(req)) {
+    const suId = String(schoolUnit.id || schoolUnit._id || "");
+    if (schoolUnitId && suId !== String(schoolUnitId)) continue;
+
+    for (const campus of schoolUnit.campuses || []) {
+      const cpId = String(campus.id || campus._id || "");
+      if (campusId && cpId !== String(campusId)) continue;
+
+      const level = (campus.levels || []).find(
+        (l) => String(l.type || "").toLowerCase() === String(schoolLevel || "").toLowerCase()
+      );
+
+      return {
+        schoolUnit,
+        campus,
+        level: level || null,
+      };
+    }
+  }
+  return null;
+}
+
+function buildStudentFilter({ q, schoolLevel, classLevel, term, status, schoolUnitId, campusId, classId, section }) {
   const filter = { isDeleted: { $ne: true } };
 
   if (q) {
@@ -60,13 +162,21 @@ function buildStudentFilter({ q, program, classGroup, yearLevel, status }) {
       { regNo: { $regex: safe, $options: "i" } },
       { email: { $regex: safe, $options: "i" } },
       { phone: { $regex: safe, $options: "i" } },
+      { className: { $regex: safe, $options: "i" } },
+      { campusName: { $regex: safe, $options: "i" } },
+      { schoolUnitName: { $regex: safe, $options: "i" } },
+      { section: { $regex: safe, $options: "i" } },
     ];
   }
 
-  if (program && isObjId(program)) filter.program = program;
-  if (classGroup && isObjId(classGroup)) filter.classGroup = classGroup;
-  if (yearLevel) filter.yearLevel = yearLevel;
+  if (schoolLevel && SCHOOL_LEVELS.includes(schoolLevel)) filter.schoolLevel = schoolLevel;
+  if (classLevel && CLASS_LEVELS.includes(classLevel)) filter.classLevel = classLevel;
+  if ([1, 2, 3].includes(Number(term))) filter.term = Number(term);
   if (status && normalizeStatus(status)) filter.status = status;
+  if (schoolUnitId) filter.schoolUnitId = schoolUnitId;
+  if (campusId) filter.campusId = campusId;
+  if (classId) filter.classId = classId;
+  if (section) filter.section = section;
 
   return filter;
 }
@@ -90,6 +200,36 @@ async function kpiAgg(Student, match) {
   };
 }
 
+function fallbackRegNo(existingValues = [], year = new Date().getFullYear()) {
+  let max = 0;
+  for (const raw of existingValues) {
+    const value = String(raw || "");
+    const m = value.match(/(\d+)(?!.*\d)/);
+    if (!m) continue;
+    max = Math.max(max, Number(m[1] || 0));
+  }
+  return `REG/${year}/${String(max + 1).padStart(4, "0")}`;
+}
+
+async function generateRegNo({ req, Student, schoolLevel, classLevel }) {
+  if (typeof importedNextRegNo === "function") {
+    try {
+      const generated = await importedNextRegNo({
+        req,
+        Student,
+        schoolLevel,
+        classLevel,
+      });
+      if (generated) return String(generated).trim();
+    } catch (err) {
+      console.error("nextRegNo fallback to local generator:", err.message);
+    }
+  }
+
+  const existing = await Student.find({ isDeleted: { $ne: true } }).select("regNo createdAt").sort({ createdAt: -1 }).lean();
+  return fallbackRegNo(existing.map((x) => x.regNo));
+}
+
 async function findOrCreateStudentUser({ req, StudentDoc, User }) {
   const email = cleanEmail(StudentDoc?.email);
   const fullName = cleanStr(StudentDoc?.fullName, 120);
@@ -97,15 +237,12 @@ async function findOrCreateStudentUser({ req, StudentDoc, User }) {
   const lastName = cleanStr(StudentDoc?.lastName, 60) || fullName.split(" ").slice(1).join(" ") || "Account";
 
   if (StudentDoc?.userId && isObjId(StudentDoc.userId)) {
-    const u = await User.findOne({ _id: StudentDoc.userId, deletedAt: null }).select("+passwordHash roles status tokenVersion email firstName lastName");
+    const u = await User.findOne({ _id: StudentDoc.userId, deletedAt: null }).select("+passwordHash roles status tokenVersion email firstName lastName studentId");
     if (u) return u;
   }
 
-  let u = await User.findOne({ studentId: StudentDoc._id, deletedAt: null }).select("+passwordHash roles status tokenVersion email firstName lastName");
-  if (u) return u;
-
   if (email) {
-    u = await User.findOne({ email, deletedAt: null }).select("+passwordHash roles status tokenVersion email firstName lastName");
+    const u = await User.findOne({ email, deletedAt: null }).select("+passwordHash roles status tokenVersion email firstName lastName studentId");
     if (u) return u;
   }
 
@@ -166,7 +303,7 @@ async function findOrCreateParentUser({ req, StudentDoc, User }) {
 }
 
 async function ensureParentRecord({ req, parentUser, studentId, StudentDoc }) {
-  const { Parent } = req.models;
+  const { Parent } = req.models || {};
   if (!Parent || !parentUser?._id) return;
 
   const email = cleanEmail(parentUser.email);
@@ -207,90 +344,174 @@ async function ensureParentRecord({ req, parentUser, studentId, StudentDoc }) {
         phone: p.phone || parentUser.phone || StudentDoc?.guardianPhone || "",
         childrenStudentIds: Array.from(kids),
       },
-    },
+    }
   ).catch(() => {});
 }
 
-async function sendSetupInvitesToStudentAndParent({ req, studentUser, parentUser }) {
+async function sendInviteIfPossible({ req, user, roleLabel }) {
   const { InviteToken } = req.models || {};
-  if (!InviteToken) throw new Error("InviteToken model missing");
+  if (!InviteToken || !user?.email || user.passwordHash) return false;
 
-  const appName = process.env.APP_NAME || "Classic Campus";
+  const appName = process.env.APP_NAME || "Classic Academy";
   const createdBy = req.user?.userId || req.user?._id || req.session?.tenantUser?.id || null;
 
-  const stInvite = await createSetPasswordInvite({ req, InviteToken, userId: studentUser._id, createdBy });
+  const invite = await createSetPasswordInvite({ req, InviteToken, userId: user._id, createdBy });
   await sendMail({
-    to: studentUser.email,
+    to: user.email,
     subject: `${appName}: Set your password`,
-    html: setupPasswordEmail({ appName, firstName: studentUser.firstName, inviteLink: stInvite.inviteLink }),
+    html: setupPasswordEmail({ appName, firstName: user.firstName || roleLabel, inviteLink: invite.inviteLink }),
   });
 
-  const paInvite = await createSetPasswordInvite({ req, InviteToken, userId: parentUser._id, createdBy });
-  await sendMail({
-    to: parentUser.email,
-    subject: `${appName}: Set your password (Parent account)`,
-    html: setupPasswordEmail({ appName, firstName: parentUser.firstName, inviteLink: paInvite.inviteLink }),
-  });
+  return true;
 }
 
-function parseCsv(text) {
-  const rows = [];
-  let row = [];
-  let cur = "";
-  let inQuotes = false;
+async function enrichFromSelectedClass({ req, payload }) {
+  const { Class } = req.models || {};
+  const classId = cleanStr(payload.classId, 80);
+  if (!Class || !classId || !isObjId(classId)) return payload;
 
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    const next = text[i + 1];
+  const classDoc = await Class.findOne({ _id: classId }).lean().catch(() => null);
+  if (!classDoc) return payload;
 
-    if (ch === '"' && inQuotes && next === '"') {
-      cur += '"';
-      i++;
-      continue;
-    }
-    if (ch === '"') {
-      inQuotes = !inQuotes;
-      continue;
-    }
-    if (!inQuotes && ch === ',') {
-      row.push(cur);
-      cur = "";
-      continue;
-    }
-    if (!inQuotes && ch === '\n') {
-      row.push(cur);
-      rows.push(row);
-      row = [];
-      cur = "";
-      continue;
-    }
-    if (ch !== '\r') cur += ch;
+  return {
+    ...payload,
+    classId: String(classDoc._id),
+    className: classDoc.name || payload.className,
+    classCode: classDoc.code || payload.classCode,
+    section: cleanStr(classDoc.stream || classDoc.section || payload.section, 40) || undefined,
+    stream: cleanStr(classDoc.stream || classDoc.section || payload.stream, 40) || undefined,
+    schoolUnitId: cleanStr(classDoc.schoolUnitId || payload.schoolUnitId, 80) || undefined,
+    schoolUnitName: cleanStr(classDoc.schoolUnitName || payload.schoolUnitName, 180) || undefined,
+    schoolUnitCode: cleanStr(classDoc.schoolUnitCode || payload.schoolUnitCode, 40) || undefined,
+    campusId: cleanStr(classDoc.campusId || payload.campusId, 80) || undefined,
+    campusName: cleanStr(classDoc.campusName || payload.campusName, 180) || undefined,
+    campusCode: cleanStr(classDoc.campusCode || payload.campusCode, 40) || undefined,
+    schoolLevel: normalizeSchoolLevel(classDoc.levelType || payload.schoolLevel) || payload.schoolLevel,
+    classLevel: normalizeClassLevel(classDoc.classLevel || payload.classLevel) || payload.classLevel,
+    academicYear: cleanStr(classDoc.academicYear || payload.academicYear, 20) || payload.academicYear,
+    term: [1, 2, 3].includes(Number(classDoc.term)) ? Number(classDoc.term) : payload.term,
+  };
+}
+
+function applyPlacementNames({ req, payload }) {
+  const placement = getPlacement(req, payload.schoolUnitId, payload.campusId, payload.schoolLevel);
+  if (!placement) return payload;
+
+  return {
+    ...payload,
+    schoolUnitName: payload.schoolUnitName || cleanStr(placement.schoolUnit?.name, 180) || undefined,
+    schoolUnitCode: payload.schoolUnitCode || cleanStr(placement.schoolUnit?.code, 40) || undefined,
+    campusName: payload.campusName || cleanStr(placement.campus?.name, 180) || undefined,
+    campusCode: payload.campusCode || cleanStr(placement.campus?.code, 40) || undefined,
+  };
+}
+
+async function buildStudentPayload({ req, body, existing = null, Student = null }) {
+  let payload = {
+    regNo: cleanStr(body.regNo, 60).replace(/\s+/g, " "),
+    fullName: cleanStr(body.fullName, 120),
+    firstName: cleanStr(body.firstName, 60),
+    middleName: cleanStr(body.middleName, 60),
+    lastName: cleanStr(body.lastName, 60),
+    email: normalizeEmailOptional(body.email),
+    phone: cleanStr(body.phone, 40) || undefined,
+    schoolUnitId: cleanStr(body.schoolUnitId, 80) || undefined,
+    schoolUnitName: cleanStr(body.schoolUnitName, 180) || undefined,
+    schoolUnitCode: cleanStr(body.schoolUnitCode, 40) || undefined,
+    campusId: cleanStr(body.campusId, 80) || undefined,
+    campusName: cleanStr(body.campusName, 180) || undefined,
+    campusCode: cleanStr(body.campusCode, 40) || undefined,
+    classId: cleanStr(body.classId, 80) || undefined,
+    className: cleanStr(body.className, 180) || undefined,
+    classCode: cleanStr(body.classCode, 40) || undefined,
+    section: cleanStr(body.section, 40) || undefined,
+    stream: cleanStr(body.section || body.stream, 40) || undefined,
+    schoolLevel: normalizeSchoolLevel(body.schoolLevel) || "primary",
+    classLevel: normalizeClassLevel(body.classLevel),
+    subjects: normalizeSubjectIds(body.subjects),
+    academicYear: cleanStr(body.academicYear, 20) || undefined,
+    term: [1, 2, 3].includes(Number(body.term)) ? Number(body.term) : 1,
+    status: normalizeStatus(body.status) || "active",
+    holdType: cleanStr(body.holdType, 60) || undefined,
+    holdReason: cleanStr(body.holdReason, 200) || undefined,
+    gender: cleanStr(body.gender, 30) || undefined,
+    nationality: cleanStr(body.nationality, 60) || undefined,
+    address: cleanStr(body.address, 200) || undefined,
+    guardianName: cleanStr(body.guardianName, 120) || undefined,
+    guardianPhone: cleanStr(body.guardianPhone, 40) || undefined,
+    guardianEmail: normalizeEmailOptional(body.guardianEmail),
+  };
+
+  payload = await enrichFromSelectedClass({ req, payload });
+  payload = applyPlacementNames({ req, payload });
+
+  if (!payload.regNo) {
+    if (!Student) throw new Error("Student model is required for auto-generated regNo.");
+    payload.regNo = await generateRegNo({
+      req,
+      Student,
+      schoolLevel: payload.schoolLevel,
+      classLevel: payload.classLevel,
+    });
   }
 
-  row.push(cur);
-  rows.push(row);
-  return rows.filter((r) => r.some((x) => String(x || "").trim() !== ""));
+  if (!payload.fullName) {
+    payload.fullName = [payload.firstName, payload.middleName, payload.lastName].filter(Boolean).join(" ").trim();
+  }
+
+  if (!payload.classLevel) {
+    throw new Error("Class level is required.");
+  }
+
+  if (!payload.schoolLevel) {
+    throw new Error("School level is required.");
+  }
+
+  if (!payload.schoolUnitId && existing?.schoolUnitId) payload.schoolUnitId = existing.schoolUnitId;
+  if (!payload.campusId && existing?.campusId) payload.campusId = existing.campusId;
+
+  return payload;
 }
 
-const csvEsc = (s) => {
-  const v = String(s ?? "");
-  return /[,"\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
-};
-
 const studentRules = [
-  body("regNo").trim().isLength({ min: 2, max: 60 }).withMessage("RegNo is required (2-60 chars)."),
+  body("regNo").optional({ checkFalsy: true }).trim().isLength({ min: 2, max: 60 }).withMessage("RegNo must be 2-60 chars when provided."),
   body("fullName").optional({ checkFalsy: true }).trim().isLength({ max: 120 }),
   body("firstName").optional({ checkFalsy: true }).trim().isLength({ max: 60 }),
   body("middleName").optional({ checkFalsy: true }).trim().isLength({ max: 60 }),
   body("lastName").optional({ checkFalsy: true }).trim().isLength({ max: 60 }),
   body("email").optional({ checkFalsy: true }).isEmail().withMessage("Invalid email.").normalizeEmail(),
   body("phone").optional({ checkFalsy: true }).trim().isLength({ max: 40 }),
-  body("program").notEmpty().withMessage("Program is required.").bail().custom((v) => isObjId(v)).withMessage("Invalid program."),
-  body("classGroup").notEmpty().withMessage("Class is required.").bail().custom((v) => isObjId(v)).withMessage("Invalid class."),
-  body("yearLevel").optional({ checkFalsy: true }).trim().isLength({ max: 30 }),
+  body("schoolUnitId").optional({ checkFalsy: true }).trim().isLength({ max: 80 }),
+  body("campusId").optional({ checkFalsy: true }).trim().isLength({ max: 80 }),
+  body("classId").optional({ checkFalsy: true }).trim().isLength({ max: 80 }),
+  body("section").optional({ checkFalsy: true }).trim().isLength({ max: 40 }),
+
+  body("schoolLevel")
+    .trim()
+    .isIn(SCHOOL_LEVELS)
+    .withMessage("Invalid school level."),
+
+  body("classLevel")
+    .trim()
+    .custom((v) => CLASS_LEVELS.includes(String(v || "").trim().toUpperCase()))
+    .withMessage("Invalid class level."),
+
+  body("term")
+    .optional({ checkFalsy: true })
+    .isInt({ min: 1, max: 3 })
+    .toInt()
+    .withMessage("Term must be 1-3."),
+
   body("academicYear").optional({ checkFalsy: true }).trim().isLength({ max: 20 }),
-  body("semester").optional({ checkFalsy: true }).isInt({ min: 0, max: 6 }).toInt(),
   body("status").optional({ checkFalsy: true }).custom((v) => !!normalizeStatus(v)).withMessage("Invalid status."),
+  body("subjects")
+    .optional()
+    .custom((v) => {
+      const arr = Array.isArray(v) ? v : v ? [v] : [];
+      return arr.every((id) => isObjId(id));
+    })
+    .withMessage("Invalid subject selection."),
+
   body("holdType").optional({ checkFalsy: true }).trim().isLength({ max: 60 }),
   body("holdReason").optional({ checkFalsy: true }).trim().isLength({ max: 200 }),
   body("gender").optional({ checkFalsy: true }).trim().isLength({ max: 30 }),
@@ -303,6 +524,7 @@ const studentRules = [
 
 module.exports = {
   studentRules,
+  LEVEL_CLASS_MAP,
 
   resendSetupLink: async (req, res) => {
     try {
@@ -321,33 +543,18 @@ module.exports = {
         return res.redirect("back");
       }
 
-      const user = await findOrCreateStudentUser({ req, StudentDoc: student, User });
-      if (!user) {
-        req.flash?.("error", "Student user not found and cannot be created (missing email).");
-        return res.redirect("back");
+      const studentUser = await findOrCreateStudentUser({ req, StudentDoc: student, User });
+      const parentUser = await findOrCreateParentUser({ req, StudentDoc: student, User });
+
+      let sent = 0;
+      if (studentUser) sent += (await sendInviteIfPossible({ req, user: studentUser, roleLabel: "Student" })) ? 1 : 0;
+      if (parentUser) sent += (await sendInviteIfPossible({ req, user: parentUser, roleLabel: "Parent" })) ? 1 : 0;
+
+      if (!sent) {
+        req.flash?.("error", "No pending setup email could be sent. Check emails or existing passwords.");
+      } else {
+        req.flash?.("success", `Setup link sent to ${sent} account(s).`);
       }
-
-      const force = String(req.query.force || req.body.force || "") === "1";
-      const hasPassword = !!user.passwordHash;
-      if (!force && user.status === "active" && hasPassword) {
-        req.flash?.("error", "Student already set a password. Use Forgot Password or resend with force.");
-        return res.redirect("back");
-      }
-
-      await User.updateOne(
-        { _id: user._id, deletedAt: null },
-        { $set: { roles: uniqRolesAdd(user.roles, "student"), status: hasPassword ? user.status : "invited" } },
-      );
-
-      const invite = await createSetPasswordInvite({ req, InviteToken, userId: user._id, createdBy: req.user?.userId || req.user?._id || null });
-      const appName = process.env.APP_NAME || "Classic Campus";
-      await sendMail({
-        to: user.email,
-        subject: `${appName}: Set your password`,
-        html: setupPasswordEmail({ appName, firstName: user.firstName, inviteLink: invite.inviteLink }),
-      });
-
-      req.flash?.("success", `Setup link sent to student: ${user.email}`);
       return res.redirect("back");
     } catch (err) {
       console.error("RESEND STUDENT SETUP ERROR:", err);
@@ -360,67 +567,125 @@ module.exports = {
     try {
       if (!req.models?.Student) return res.status(500).send("Tenant models missing");
 
-      const { Student, Program, Class: ClassModel } = req.models;
+      const { Student, Subject, Class } = req.models;
       const q = cleanStr(req.query.q, 120);
-      const program = cleanStr(req.query.program, 80);
-      const classGroup = cleanStr(req.query.classGroup, 80);
-      const yearLevel = cleanStr(req.query.yearLevel, 30);
+      const schoolLevel = cleanStr(req.query.schoolLevel, 30).toLowerCase();
+      const classLevel = normalizeClassLevel(req.query.classLevel);
+      const term = cleanStr(req.query.term, 10);
       const status = cleanStr(req.query.status, 20);
+      const schoolUnitId = cleanStr(req.query.schoolUnitId, 80);
+      const campusId = cleanStr(req.query.campusId, 80);
+      const classId = cleanStr(req.query.classId, 80);
+      const section = cleanStr(req.query.section, 40);
 
       const page = Math.max(parseIntSafe(req.query.page, 1), 1);
       const perPage = 10;
-      const filter = buildStudentFilter({ q, program, classGroup, yearLevel, status });
+      const filter = buildStudentFilter({ q, schoolLevel, classLevel, term, status, schoolUnitId, campusId, classId, section });
 
       const total = await Student.countDocuments(filter);
       const totalPages = Math.max(Math.ceil(total / perPage), 1);
       const safePage = Math.min(page, totalPages);
       const skip = (safePage - 1) * perPage;
 
-      const [rawStudents, programs, classes, years, kpis] = await Promise.all([
+      const [students, subjects, classes, kpis] = await Promise.all([
         Student.find(filter)
           .select([
-            "_id", "regNo", "fullName", "firstName", "middleName", "lastName", "email", "phone",
-            "program", "classGroup", "yearLevel", "academicYear", "semester", "status",
-            "holdType", "holdReason", "gender", "nationality", "address",
-            "guardianName", "guardianPhone", "guardianEmail", "createdAt",
+            "_id",
+            "regNo",
+            "fullName",
+            "firstName",
+            "middleName",
+            "lastName",
+            "email",
+            "phone",
+            "schoolUnitId",
+            "schoolUnitName",
+            "campusId",
+            "campusName",
+            "classId",
+            "className",
+            "classCode",
+            "section",
+            "stream",
+            "schoolLevel",
+            "classLevel",
+            "subjects",
+            "academicYear",
+            "term",
+            "status",
+            "holdType",
+            "holdReason",
+            "gender",
+            "nationality",
+            "address",
+            "guardianName",
+            "guardianPhone",
+            "guardianEmail",
+            "createdAt",
           ].join(" "))
+          .populate("subjects", "title code shortTitle schoolLevel classLevels term status")
           .sort({ createdAt: -1, _id: -1 })
           .skip(skip)
           .limit(perPage)
           .lean(),
-        Program ? Program.find({ status: { $ne: "archived" } }).select("_id name title code faculty level").sort({ name: 1, code: 1 }).lean() : Promise.resolve([]),
-        ClassModel ? ClassModel.find({}).select("_id name title code").sort({ name: 1, code: 1 }).lean() : Promise.resolve([]),
-        Student.distinct("yearLevel", { isDeleted: { $ne: true } }).then((arr) => arr.filter(Boolean).sort()).catch(() => []),
+        Subject
+          ? Subject.find({ status: { $ne: "archived" } })
+              .select("_id title code shortTitle schoolLevel classLevels term status")
+              .sort({ title: 1, code: 1 })
+              .lean()
+          : [],
+        Class
+          ? Class.find({})
+              .select("_id name code schoolUnitId schoolUnitName schoolUnitCode campusId campusName campusCode levelType classLevel stream academicYear term status")
+              .sort({ name: 1, code: 1 })
+              .lean()
+          : [],
         kpiAgg(Student, filter),
       ]);
 
-      const programMap = new Map((programs || []).map((p) => [String(p._id), p]));
-      const classMap = new Map((classes || []).map((c) => [String(c._id), c]));
-
-      const students = (rawStudents || []).map((s) => ({
-        ...s,
-        program: s.program ? programMap.get(String(s.program)) || null : null,
-        classGroup: s.classGroup ? classMap.get(String(s.classGroup)) || null : null,
-      }));
-
       const exportQuery = new URLSearchParams({
         ...(q ? { q } : {}),
-        ...(program ? { program } : {}),
-        ...(classGroup ? { classGroup } : {}),
-        ...(yearLevel ? { yearLevel } : {}),
+        ...(schoolLevel ? { schoolLevel } : {}),
+        ...(classLevel ? { classLevel } : {}),
+        ...(term ? { term } : {}),
         ...(status ? { status } : {}),
+        ...(schoolUnitId ? { schoolUnitId } : {}),
+        ...(campusId ? { campusId } : {}),
+        ...(classId ? { classId } : {}),
+        ...(section ? { section } : {}),
       }).toString();
 
-      return res.render("tenant/admin/students/index", {
+      return res.render("tenant/students/index", {
         tenant: req.tenant || null,
-        students,
-        programs,
-        classes,
-        years: years.length ? years : ["Year 1", "Year 2", "Year 3", "Year 4"],
+        students: students.map((s) => ({
+          ...s,
+          id: String(s._id),
+        })),
+        subjects,
+        classes: classes.map((c) => ({
+          id: String(c._id),
+          name: c.name || "",
+          code: c.code || "",
+          schoolUnitId: c.schoolUnitId || "",
+          schoolUnitName: c.schoolUnitName || "",
+          schoolUnitCode: c.schoolUnitCode || "",
+          campusId: c.campusId || "",
+          campusName: c.campusName || "",
+          campusCode: c.campusCode || "",
+          schoolLevel: String(c.levelType || "").toLowerCase(),
+          classLevel: c.classLevel || "",
+          section: c.stream || c.section || "",
+          academicYear: c.academicYear || "",
+          term: Number(c.term || 1),
+          status: c.status || "active",
+        })),
+        structure: buildStructure(req),
+        classLevels: CLASS_LEVELS,
+        classLevelMap: LEVEL_CLASS_MAP,
         kpis,
         csrfToken: res.locals.csrfToken || null,
         exportQuery,
-        query: { q, program, classGroup, yearLevel, status, page: safePage, perPage, total, totalPages },
+        query: { q, schoolLevel, classLevel, term, status, schoolUnitId, campusId, classId, section, page: safePage, perPage, total, totalPages },
         messages: {
           success: req.flash ? req.flash("success") : [],
           error: req.flash ? req.flash("error") : [],
@@ -439,46 +704,23 @@ module.exports = {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       req.flash?.("error", errors.array().map((e) => e.msg).join(" "));
-      return res.redirect("/admin/students");
+      return res.redirect("/tenant/students");
     }
 
     try {
-      const regNo = cleanStr(req.body.regNo, 60).replace(/\s+/g, " ");
-      const exists = await Student.findOne({ regNo, isDeleted: { $ne: true } }).lean();
+      const payload = await buildStudentPayload({ req, body: req.body, Student });
+
+      const exists = await Student.findOne({ regNo: payload.regNo, isDeleted: { $ne: true } }).lean();
       if (exists) {
         req.flash?.("error", "RegNo already exists.");
-        return res.redirect("/admin/students");
+        return res.redirect("/tenant/students");
       }
 
-      const status = normalizeStatus(req.body.status) || "active";
       const actorId = actorObjectId(req);
-
-      const doc = {
-        regNo,
-        fullName: cleanStr(req.body.fullName, 120),
-        firstName: cleanStr(req.body.firstName, 60),
-        middleName: cleanStr(req.body.middleName, 60),
-        lastName: cleanStr(req.body.lastName, 60),
-        email: normalizeEmailOptional(req.body.email),
-        phone: cleanStr(req.body.phone, 40) || undefined,
-        program: req.body.program,
-        classGroup: req.body.classGroup,
-        yearLevel: cleanStr(req.body.yearLevel, 30) || undefined,
-        academicYear: cleanStr(req.body.academicYear, 20) || undefined,
-        semester: Math.max(0, Math.min(Number(req.body.semester || 1), 6)),
-        status,
-        holdType: cleanStr(req.body.holdType, 60) || undefined,
-        holdReason: cleanStr(req.body.holdReason, 200) || undefined,
-        gender: cleanStr(req.body.gender, 30) || undefined,
-        nationality: cleanStr(req.body.nationality, 60) || undefined,
-        address: cleanStr(req.body.address, 200) || undefined,
-        guardianName: cleanStr(req.body.guardianName, 120) || undefined,
-        guardianPhone: cleanStr(req.body.guardianPhone, 40) || undefined,
-        guardianEmail: normalizeEmailOptional(req.body.guardianEmail),
+      const createdStudent = await Student.create({
+        ...payload,
         createdBy: actorId || undefined,
-      };
-
-      const createdStudent = await Student.create(doc);
+      });
 
       try {
         const { User } = req.models || {};
@@ -487,43 +729,54 @@ module.exports = {
         const studentUser = await findOrCreateStudentUser({ req, StudentDoc: createdStudent, User });
         const parentUser = await findOrCreateParentUser({ req, StudentDoc: createdStudent, User });
 
-        if (!studentUser) throw new Error("Student user cannot be created (missing student email).");
-        if (!parentUser) throw new Error("Parent user cannot be created (missing guardian email).");
+        if (studentUser) {
+          await User.updateOne(
+            { _id: studentUser._id, deletedAt: null },
+            {
+              $set: {
+                roles: uniqRolesAdd(studentUser.roles, "student"),
+                status: studentUser.passwordHash ? studentUser.status : "invited",
+                studentId: studentUser.studentId || createdStudent._id,
+              },
+            }
+          );
+        }
 
-        await User.updateOne({ _id: studentUser._id, deletedAt: null }, {
-          $set: {
-            roles: uniqRolesAdd(studentUser.roles, "student"),
-            status: studentUser.passwordHash ? studentUser.status : "invited",
-            studentId: studentUser.studentId || createdStudent._id,
-          },
-        });
+        if (parentUser) {
+          const kids = new Set((parentUser.childrenStudentIds || []).map(String));
+          kids.add(String(createdStudent._id));
 
-        const kids = new Set((parentUser.childrenStudentIds || []).map(String));
-        kids.add(String(createdStudent._id));
+          await User.updateOne(
+            { _id: parentUser._id, deletedAt: null },
+            {
+              $set: {
+                roles: uniqRolesAdd(parentUser.roles, "parent"),
+                status: parentUser.passwordHash ? parentUser.status : "invited",
+                childrenStudentIds: Array.from(kids),
+              },
+            }
+          );
+          await ensureParentRecord({ req, parentUser, studentId: createdStudent._id, StudentDoc: createdStudent });
+        }
 
-        await User.updateOne({ _id: parentUser._id, deletedAt: null }, {
-          $set: {
-            roles: uniqRolesAdd(parentUser.roles, "parent"),
-            status: parentUser.passwordHash ? parentUser.status : "invited",
-            childrenStudentIds: Array.from(kids),
-          },
-        });
+        const sent = [
+          studentUser ? await sendInviteIfPossible({ req, user: studentUser, roleLabel: "Student" }) : false,
+          parentUser ? await sendInviteIfPossible({ req, user: parentUser, roleLabel: "Parent" }) : false,
+        ].filter(Boolean).length;
 
-        await ensureParentRecord({ req, parentUser, studentId: createdStudent._id, StudentDoc: createdStudent });
-        await sendSetupInvitesToStudentAndParent({ req, studentUser, parentUser });
-
-        req.flash?.("success", "Student created. Setup links emailed to student + parent.");
+        if (sent) req.flash?.("success", `Student created. Setup link sent to ${sent} account(s).`);
+        else req.flash?.("success", "Student created.");
       } catch (e) {
-        console.error("AUTO PARENT+INVITE ERROR:", e);
+        console.error("AUTO ACCOUNT/INVITE ERROR:", e);
         req.flash?.("success", "Student created.");
-        req.flash?.("error", `But setup emails failed: ${e.message}`);
+        req.flash?.("error", `But account setup/email failed: ${e.message}`);
       }
 
-      return res.redirect("/admin/students");
+      return res.redirect("/tenant/students");
     } catch (err) {
       console.error("STUDENT CREATE ERROR:", err);
-      req.flash?.("error", String(err?.code) === "11000" ? "RegNo already exists." : "Failed to create student.");
-      return res.redirect("/admin/students");
+      req.flash?.("error", String(err?.code) === "11000" ? "RegNo already exists." : (err.message || "Failed to create student."));
+      return res.redirect("/tenant/students");
     }
   },
 
@@ -534,61 +787,49 @@ module.exports = {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       req.flash?.("error", errors.array().map((e) => e.msg).join(" "));
-      return res.redirect("/admin/students");
+      return res.redirect("/tenant/students");
     }
 
     try {
       const id = cleanStr(req.params.id, 80);
       if (!isObjId(id)) {
         req.flash?.("error", "Invalid student id.");
-        return res.redirect("/admin/students");
+        return res.redirect("/tenant/students");
       }
 
-      const regNo = cleanStr(req.body.regNo, 60).replace(/\s+/g, " ");
-      const collision = await Student.findOne({ regNo, _id: { $ne: id }, isDeleted: { $ne: true } }).lean();
+      const existing = await Student.findOne({ _id: id, isDeleted: { $ne: true } }).lean();
+      if (!existing) {
+        req.flash?.("error", "Student not found.");
+        return res.redirect("/tenant/students");
+      }
+
+      const payload = await buildStudentPayload({ req, body: req.body, existing, Student });
+
+      const collision = await Student.findOne({ regNo: payload.regNo, _id: { $ne: id }, isDeleted: { $ne: true } }).lean();
       if (collision) {
         req.flash?.("error", "RegNo already exists.");
-        return res.redirect("/admin/students");
+        return res.redirect("/tenant/students");
       }
 
       const actorId = actorObjectId(req);
+
       await Student.updateOne(
         { _id: id },
         {
           $set: {
-            regNo,
-            fullName: cleanStr(req.body.fullName, 120),
-            firstName: cleanStr(req.body.firstName, 60),
-            middleName: cleanStr(req.body.middleName, 60),
-            lastName: cleanStr(req.body.lastName, 60),
-            email: normalizeEmailOptional(req.body.email),
-            phone: cleanStr(req.body.phone, 40) || undefined,
-            program: req.body.program,
-            classGroup: req.body.classGroup,
-            yearLevel: cleanStr(req.body.yearLevel, 30) || undefined,
-            academicYear: cleanStr(req.body.academicYear, 20) || undefined,
-            semester: Math.max(0, Math.min(Number(req.body.semester || 1), 6)),
-            status: normalizeStatus(req.body.status) || "active",
-            holdType: cleanStr(req.body.holdType, 60) || undefined,
-            holdReason: cleanStr(req.body.holdReason, 200) || undefined,
-            gender: cleanStr(req.body.gender, 30) || undefined,
-            nationality: cleanStr(req.body.nationality, 60) || undefined,
-            address: cleanStr(req.body.address, 200) || undefined,
-            guardianName: cleanStr(req.body.guardianName, 120) || undefined,
-            guardianPhone: cleanStr(req.body.guardianPhone, 40) || undefined,
-            guardianEmail: normalizeEmailOptional(req.body.guardianEmail),
+            ...payload,
             updatedBy: actorId || undefined,
           },
         },
-        { runValidators: true },
+        { runValidators: true }
       );
 
       req.flash?.("success", "Student updated.");
-      return res.redirect("/admin/students");
+      return res.redirect("/tenant/students");
     } catch (err) {
       console.error("STUDENT UPDATE ERROR:", err);
-      req.flash?.("error", String(err?.code) === "11000" ? "RegNo already exists." : "Failed to update student.");
-      return res.redirect("/admin/students");
+      req.flash?.("error", String(err?.code) === "11000" ? "RegNo already exists." : (err.message || "Failed to update student."));
+      return res.redirect("/tenant/students");
     }
   },
 
@@ -598,16 +839,16 @@ module.exports = {
       const id = cleanStr(req.params.id, 80);
       if (!isObjId(id)) {
         req.flash?.("error", "Invalid student id.");
-        return res.redirect("/admin/students");
+        return res.redirect("/tenant/students");
       }
 
       await Student.updateOne({ _id: id }, { $set: { status: "archived" } });
       req.flash?.("success", "Student archived.");
-      return res.redirect("/admin/students");
+      return res.redirect("/tenant/students");
     } catch (err) {
       console.error("STUDENT ARCHIVE ERROR:", err);
       req.flash?.("error", "Failed to archive student.");
-      return res.redirect("/admin/students");
+      return res.redirect("/tenant/students");
     }
   },
 
@@ -617,16 +858,20 @@ module.exports = {
       const id = cleanStr(req.params.id, 80);
       if (!isObjId(id)) {
         req.flash?.("error", "Invalid student id.");
-        return res.redirect("/admin/students");
+        return res.redirect("/tenant/students");
       }
 
-      await Student.updateOne({ _id: id }, { $set: { isDeleted: true, deletedAt: new Date(), status: "archived" } });
+      await Student.updateOne(
+        { _id: id },
+        { $set: { isDeleted: true, deletedAt: new Date(), status: "archived" } }
+      );
+
       req.flash?.("success", "Student deleted (soft).");
-      return res.redirect("/admin/students");
+      return res.redirect("/tenant/students");
     } catch (err) {
       console.error("STUDENT DELETE ERROR:", err);
       req.flash?.("error", "Failed to delete student.");
-      return res.redirect("/admin/students");
+      return res.redirect("/tenant/students");
     }
   },
 
@@ -634,22 +879,25 @@ module.exports = {
     try {
       const { Student } = req.models;
       const action = cleanStr(req.body.action, 40).toLowerCase();
-      const ids = String(req.body.ids || "").split(",").map((x) => x.trim()).filter((x) => isObjId(x));
+      const ids = String(req.body.ids || "")
+        .split(",")
+        .map((x) => x.trim())
+        .filter((x) => isObjId(x));
 
       if (!ids.length) {
         req.flash?.("error", "No students selected.");
-        return res.redirect("/admin/students");
+        return res.redirect("/tenant/students");
       }
 
       if (action === "set_status") {
         const status = normalizeStatus(req.body.status);
         if (!status) {
           req.flash?.("error", "Choose a valid status.");
-          return res.redirect("/admin/students");
+          return res.redirect("/tenant/students");
         }
         await Student.updateMany({ _id: { $in: ids } }, { $set: { status } });
         req.flash?.("success", `Updated status for ${ids.length} student(s).`);
-        return res.redirect("/admin/students");
+        return res.redirect("/tenant/students");
       }
 
       if (action === "set_hold") {
@@ -657,227 +905,55 @@ module.exports = {
         const holdReason = cleanStr(req.body.holdReason, 200);
         if (!holdType) {
           req.flash?.("error", "Hold type is required.");
-          return res.redirect("/admin/students");
+          return res.redirect("/tenant/students");
         }
-        await Student.updateMany({ _id: { $in: ids } }, { $set: { status: "on_hold", holdType, holdReason } });
+        await Student.updateMany(
+          { _id: { $in: ids } },
+          { $set: { status: "on_hold", holdType, holdReason } }
+        );
         req.flash?.("success", `Hold applied to ${ids.length} student(s).`);
-        return res.redirect("/admin/students");
+        return res.redirect("/tenant/students");
       }
 
       if (action === "clear_hold") {
-        await Student.updateMany({ _id: { $in: ids } }, { $set: { holdType: "", holdReason: "", holdUntil: null } });
-        await Student.updateMany({ _id: { $in: ids }, status: "on_hold" }, { $set: { status: "active" } });
+        await Student.updateMany(
+          { _id: { $in: ids } },
+          { $set: { holdType: "", holdReason: "", holdUntil: null } }
+        );
+        await Student.updateMany(
+          { _id: { $in: ids }, status: "on_hold" },
+          { $set: { status: "active" } }
+        );
         req.flash?.("success", `Hold cleared for ${ids.length} student(s).`);
-        return res.redirect("/admin/students");
+        return res.redirect("/tenant/students");
       }
 
       if (action === "archive") {
         await Student.updateMany({ _id: { $in: ids } }, { $set: { status: "archived" } });
         req.flash?.("success", `Archived ${ids.length} student(s).`);
-        return res.redirect("/admin/students");
+        return res.redirect("/tenant/students");
       }
 
       if (action === "delete") {
-        await Student.updateMany({ _id: { $in: ids } }, { $set: { isDeleted: true, deletedAt: new Date(), status: "archived" } });
+        await Student.updateMany(
+          { _id: { $in: ids } },
+          { $set: { isDeleted: true, deletedAt: new Date(), status: "archived" } }
+        );
         req.flash?.("success", `Deleted (soft) ${ids.length} student(s).`);
-        return res.redirect("/admin/students");
+        return res.redirect("/tenant/students");
       }
 
       req.flash?.("error", "Invalid bulk action.");
-      return res.redirect("/admin/students");
+      return res.redirect("/tenant/students");
     } catch (err) {
       console.error("STUDENT BULK ERROR:", err);
       req.flash?.("error", "Bulk action failed.");
-      return res.redirect("/admin/students");
+      return res.redirect("/tenant/students");
     }
   },
 
   importCsv: async (req, res) => {
-    try {
-      const { Student, Program, Class: ClassModel } = req.models;
-      const actorId = actorObjectId(req);
-
-      if (!req.file?.buffer) {
-        req.flash?.("error", "CSV file is required.");
-        return res.redirect("/admin/students");
-      }
-
-      const text = req.file.buffer.toString("utf8");
-      const rows = parseCsv(text);
-      if (!rows.length) {
-        req.flash?.("error", "CSV is empty.");
-        return res.redirect("/admin/students");
-      }
-
-      const headers = rows[0].map((h) => cleanStr(h, 60));
-      const idx = (name) => headers.findIndex((h) => h.toLowerCase() === name.toLowerCase());
-
-      const iReg = idx("regNo");
-      const iFull = idx("fullName");
-      const iEmail = idx("email");
-      const iPhone = idx("phone");
-      const iYear = idx("yearLevel");
-      const iAcad = idx("academicYear");
-      const iSem = idx("semester");
-      const iStatus = idx("status");
-      const iHoldType = idx("holdType");
-      const iHoldReason = idx("holdReason");
-      const iProgCode = idx("programCode");
-      const iClassCode = idx("classCode");
-
-      if (iReg < 0) {
-        req.flash?.("error", "CSV must include header: regNo");
-        return res.redirect("/admin/students");
-      }
-
-      const progByCode = new Map();
-      if (Program) {
-        const progs = await Program.find({ status: { $ne: "archived" } }).select("_id code").lean();
-        progs.forEach((p) => {
-          const code = String(p.code || "").trim().toUpperCase();
-          if (code) progByCode.set(code, p);
-        });
-      }
-
-      const classByCode = new Map();
-      if (ClassModel) {
-        const allClasses = await ClassModel.find({}).select("_id code").lean();
-        allClasses.forEach((c) => {
-          const code = String(c.code || "").trim().toUpperCase();
-          if (code) classByCode.set(code, c);
-        });
-      }
-
-      const ops = [];
-      let processed = 0;
-
-      for (let r = 1; r < rows.length; r++) {
-        const row = rows[r];
-        const regNo = cleanStr(row[iReg], 60).replace(/\s+/g, " ");
-        if (!regNo) continue;
-
-        const fullName = iFull >= 0 ? cleanStr(row[iFull], 120) : "";
-        const email = iEmail >= 0 ? normalizeEmailOptional(row[iEmail]) : undefined;
-        const phone = iPhone >= 0 ? cleanStr(row[iPhone], 40) || undefined : undefined;
-        const yearLevel = iYear >= 0 ? cleanStr(row[iYear], 30) : "";
-        const academicYear = iAcad >= 0 ? cleanStr(row[iAcad], 20) : "";
-        const semester = iSem >= 0 ? Math.max(0, Math.min(Number(row[iSem] || 1), 6)) : 1;
-        const status = iStatus >= 0 ? normalizeStatus(row[iStatus]) || "active" : "active";
-        const holdType = iHoldType >= 0 ? cleanStr(row[iHoldType], 60) : "";
-        const holdReason = iHoldReason >= 0 ? cleanStr(row[iHoldReason], 200) : "";
-
-        let program = null;
-        if (iProgCode >= 0) {
-          const code = cleanStr(row[iProgCode], 40).toUpperCase();
-          const p = progByCode.get(code);
-          if (p?._id) program = p._id;
-        }
-
-        let classGroup = null;
-        if (iClassCode >= 0) {
-          const code = cleanStr(row[iClassCode], 40).toUpperCase();
-          const c = classByCode.get(code);
-          if (c?._id) classGroup = c._id;
-        }
-
-        const canInsert = !!(program && classGroup);
-
-        ops.push({
-          updateOne: {
-            filter: { regNo, isDeleted: { $ne: true } },
-            update: {
-              $set: {
-                regNo,
-                fullName,
-                ...(email ? { email } : {}),
-                ...(phone ? { phone } : {}),
-                yearLevel,
-                academicYear,
-                semester,
-                status,
-                holdType,
-                holdReason,
-                ...(program ? { program } : {}),
-                ...(classGroup ? { classGroup } : {}),
-                ...(actorId ? { updatedBy: actorId } : {}),
-              },
-              ...(canInsert ? { $setOnInsert: { ...(actorId ? { createdBy: actorId } : {}), program, classGroup } } : {}),
-            },
-            upsert: canInsert,
-          },
-        });
-
-        processed++;
-        if (ops.length >= 500) {
-          await Student.bulkWrite(ops, { ordered: false });
-          ops.length = 0;
-        }
-      }
-
-      if (ops.length) await Student.bulkWrite(ops, { ordered: false });
-      if (!processed) {
-        req.flash?.("error", "No valid rows imported.");
-        return res.redirect("/admin/students");
-      }
-
-      req.flash?.("success", `Imported/updated ${processed} row(s). New inserts require programCode + classCode.`);
-      return res.redirect("/admin/students");
-    } catch (err) {
-      console.error("STUDENT IMPORT ERROR:", err);
-      req.flash?.("error", String(err?.code) === "11000" ? "Import failed: duplicate regNo exists." : "Import failed. Check CSV headers and values.");
-      return res.redirect("/admin/students");
-    }
-  },
-
-  exportCsv: async (req, res) => {
-    try {
-      const { Student, Program, Class: ClassModel } = req.models;
-      const q = cleanStr(req.query.q, 120);
-      const program = cleanStr(req.query.program, 80);
-      const classGroup = cleanStr(req.query.classGroup, 80);
-      const yearLevel = cleanStr(req.query.yearLevel, 30);
-      const status = cleanStr(req.query.status, 20);
-      const filter = buildStudentFilter({ q, program, classGroup, yearLevel, status });
-
-      const [rows, programs, classes] = await Promise.all([
-        Student.find(filter)
-          .select("regNo fullName email phone program classGroup yearLevel academicYear semester status holdType holdReason createdAt")
-          .sort({ createdAt: -1, _id: -1 })
-          .lean(),
-        Program ? Program.find({}).select("_id code").lean() : Promise.resolve([]),
-        ClassModel ? ClassModel.find({}).select("_id code").lean() : Promise.resolve([]),
-      ]);
-
-      const programMap = new Map((programs || []).map((p) => [String(p._id), p.code || ""]));
-      const classMap = new Map((classes || []).map((c) => [String(c._id), c.code || ""]));
-
-      const header = ["regNo", "fullName", "email", "phone", "programCode", "classCode", "yearLevel", "academicYear", "semester", "status", "holdType", "holdReason"];
-      const lines = [header.join(",")];
-
-      rows.forEach((s) => {
-        lines.push([
-          csvEsc(s.regNo || ""),
-          csvEsc(s.fullName || ""),
-          csvEsc(s.email || ""),
-          csvEsc(s.phone || ""),
-          csvEsc(s.program ? programMap.get(String(s.program)) || "" : ""),
-          csvEsc(s.classGroup ? classMap.get(String(s.classGroup)) || "" : ""),
-          csvEsc(s.yearLevel || ""),
-          csvEsc(s.academicYear || ""),
-          csvEsc(s.semester ?? 1),
-          csvEsc(s.status || ""),
-          csvEsc(s.holdType || ""),
-          csvEsc(s.holdReason || ""),
-        ].join(","));
-      });
-
-      res.setHeader("Content-Type", "text/csv; charset=utf-8");
-      res.setHeader("Content-Disposition", 'attachment; filename="students_export.csv"');
-      return res.send(lines.join("\n"));
-    } catch (err) {
-      console.error("STUDENT EXPORT ERROR:", err);
-      req.flash?.("error", "Export failed.");
-      return res.redirect("/admin/students");
-    }
+    req.flash?.("error", "CSV import was not changed in this update.");
+    return res.redirect("/tenant/students");
   },
 };

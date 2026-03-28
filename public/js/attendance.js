@@ -99,8 +99,12 @@
               <span class="cell-ellipsis" title="${escapeHtml(r.regNo || "—")}">${escapeHtml(r.regNo || "—")}</span>
             </td>
 
-            <td class="col-course">
-              <span class="cell-ellipsis" title="${escapeHtml(r.courseName || "—")}">${escapeHtml(r.courseName || "—")}</span>
+            <td class="col-class">
+              <span class="cell-ellipsis" title="${escapeHtml(r.className || "—")}">${escapeHtml(r.className || "—")}</span>
+            </td>
+
+            <td class="col-subject">
+              <span class="cell-ellipsis" title="${escapeHtml(r.subjectName || "—")}">${escapeHtml(r.subjectName || "—")}</span>
             </td>
 
             <td class="col-session">
@@ -130,7 +134,7 @@
       }).join("") ||
       `
       <tr>
-        <td colspan="8" style="padding:18px;">
+        <td colspan="9" style="padding:18px;">
           <div class="muted">No attendance records found.</div>
         </td>
       </tr>
@@ -145,9 +149,13 @@
   }
 
   function fillHiddenStatusForm(r, status) {
-    $("hsCourse").value = r.courseId || "";
+    $("hsClassGroup").value = r.classGroupId || "";
+    $("hsSubject").value = r.subjectId || "";
+    $("hsTeacher").value = r.teacherId || "";
     $("hsStudent").value = r.studentId || "";
     $("hsRegNo").value = r.regNo || "";
+    $("hsAcademicYear").value = r.academicYear || "";
+    $("hsTerm").value = r.term || "1";
     $("hsSessionAt").value = r.sessionAt || "";
     $("hsStatus").value = status || r.status || "present";
     $("hsNotes").value = r.notes || "";
@@ -159,7 +167,7 @@
 
     fillHiddenStatusForm(r, status);
     const form = $("rowActionForm");
-    form.action = `/admin/attendance/${encodeURIComponent(r.id)}`;
+    form.action = `/tenant/attendance/${encodeURIComponent(r.id)}`;
     form.submit();
   }
 
@@ -167,7 +175,7 @@
     if (!r) return;
     if (!window.confirm(`Delete attendance for "${r.studentName}"?`)) return;
     const form = $("deleteForm");
-    form.action = `/admin/attendance/${encodeURIComponent(r.id)}/delete`;
+    form.action = `/tenant/attendance/${encodeURIComponent(r.id)}/delete`;
     form.submit();
   }
 
@@ -175,11 +183,15 @@
     const r = prefill || null;
 
     $("mTitle").textContent = r ? "Edit Attendance" : "Mark Attendance";
-    $("attendanceForm").action = r ? `/admin/attendance/${encodeURIComponent(r.id)}` : "/admin/attendance";
+    $("attendanceForm").action = r ? `/tenant/attendance/${encodeURIComponent(r.id)}` : "/tenant/attendance";
 
     $("mStudent").value = r ? r.studentId || "" : "";
     $("mRegNo").value = r ? r.regNo || "" : "";
-    $("mCourse").value = r ? r.courseId || "" : "";
+    $("mClassGroup").value = r ? r.classGroupId || "" : "";
+    $("mSubject").value = r ? r.subjectId || "" : "";
+    $("mTeacher").value = r ? r.teacherId || "" : "";
+    $("mAcademicYear").value = r ? r.academicYear || "" : "";
+    $("mTerm").value = r ? String(r.term || 1) : "1";
     $("mSessionAt").value = r ? r.sessionAt || "" : nowLocalDateTimeValue();
     $("mStatus").value = r ? r.status || "present" : "present";
     $("mNotes").value = r ? r.notes || "" : "";
@@ -195,7 +207,10 @@
     $("vStudent").textContent = r.studentName || "—";
     $("vRegNo").textContent = r.regNo || "—";
     $("vEmail").textContent = r.email || "—";
-    $("vCourse").textContent = r.courseName || "—";
+    $("vClassGroup").textContent = r.className || "—";
+    $("vSubject").textContent = r.subjectName || "—";
+    $("vTeacher").textContent = r.teacherName || "—";
+    $("vAcademic").textContent = `${r.academicYear || "—"} • Term ${r.term || 1}`;
     $("vSession").textContent = r.sessionAtLabel || "—";
     $("vStatus").innerHTML = statusPill(r.status || "present");
     $("vNotes").textContent = r.notes || "—";
@@ -206,11 +221,11 @@
   function saveAttendance(saveAndNew) {
     const student = $("mStudent").value.trim();
     const regNo = $("mRegNo").value.trim();
-    const course = $("mCourse").value.trim();
+    const subject = $("mSubject").value.trim();
     const sessionAt = $("mSessionAt").value.trim();
 
     if (!student && !regNo) return alert("Select student or enter Reg No.");
-    if (!course) return alert("Course is required.");
+    if (!subject) return alert("Subject is required.");
     if (!sessionAt) return alert("Session date/time is required.");
 
     state.saveAndNew = !!saveAndNew;

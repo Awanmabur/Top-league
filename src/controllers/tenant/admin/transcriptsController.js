@@ -3,10 +3,7 @@ const crypto = require("crypto");
 const QRCode = require("qrcode");
 const { body, validationResult } = require("express-validator");
 
-/* -----------------------------
-   Helpers
------------------------------- */
-const isObjId = (v) => mongoose.Types.ObjectId.isValid(String(v || ""));
+const isObjId = (v) => mongoose.Types.ObjectId.isValid(String(v || "").trim());
 
 function safeStr(v, max = 180) {
   return String(v || "").trim().slice(0, max);
@@ -22,19 +19,12 @@ function normalizeAY(ay) {
   return safeStr(ay, 20);
 }
 
-function ayInRange(ay, from, to) {
-  if (!ay) return true;
-  if (from && ay < from) return false;
-  if (to && ay > to) return false;
-  return true;
-}
-
 function studentName(s) {
   return (
     s?.fullName ||
     [s?.firstName, s?.middleName, s?.lastName].filter(Boolean).join(" ") ||
     s?.name ||
-    "Student"
+    "Learner"
   );
 }
 
@@ -42,39 +32,20 @@ function studentReg(s) {
   return s?.regNo || s?.registrationNumber || s?.studentNo || s?.indexNumber || "";
 }
 
-/* -----------------------------
-   GPA / grading
------------------------------- */
-const GP = { A: 5, B: 4, C: 3, D: 2, E: 1, F: 0 };
-
-function gradePoint(grade) {
-  const g = String(grade || "").trim().toUpperCase();
-  return GP[g] ?? 0;
+function defaultGrading(percentage) {
+  const p = Number(percentage || 0);
+  if (p >= 80) return { grade: "A", remark: "Excellent" };
+  if (p >= 75) return { grade: "A-", remark: "Very Good" };
+  if (p >= 70) return { grade: "B+", remark: "Very Good" };
+  if (p >= 65) return { grade: "B", remark: "Good" };
+  if (p >= 60) return { grade: "B-", remark: "Good" };
+  if (p >= 55) return { grade: "C+", remark: "Satisfactory" };
+  if (p >= 50) return { grade: "C", remark: "Satisfactory" };
+  if (p >= 45) return { grade: "C-", remark: "Pass" };
+  if (p >= 40) return { grade: "D", remark: "Pass" };
+  return { grade: "F", remark: "Fail" };
 }
 
-function courseCredits(course) {
-  const c = course || {};
-  const v = c.credits ?? c.creditUnits ?? c.units ?? c.unit ?? c.credit ?? 3;
-  const n = Number(v);
-  return Number.isFinite(n) && n > 0 ? n : 3;
-}
-
-function classifyCGPA(cgpa) {
-  const x = Number(cgpa || 0);
-  if (x >= 4.4) return "First Class";
-  if (x >= 3.6) return "Second Class Upper";
-  if (x >= 2.8) return "Second Class Lower";
-  if (x >= 2.0) return "Pass";
-  return "Fail";
-}
-
-function semesterDecision(gpa) {
-  return Number(gpa || 0) >= 2.0 ? "PASS" : "FAIL";
-}
-
-/* -----------------------------
-   Signing / verification
------------------------------- */
 function hashSnapshot(snapshot) {
   return crypto.createHash("sha256").update(JSON.stringify(snapshot || {})).digest("hex");
 }
@@ -87,12 +58,9 @@ function signToken(payload) {
 
 function buildVerifyUrl(issueNumber, sig) {
   const base = String(process.env.APP_PUBLIC_URL || "").replace(/\/$/, "") || "";
-  return `${base}/admin/transcripts/verify/${encodeURIComponent(issueNumber)}?sig=${encodeURIComponent(sig || "")}`;
+  return `${base}/tenant/transcripts/verify/${encodeURIComponent(issueNumber)}?sig=${encodeURIComponent(sig || "")}`;
 }
 
-/* -----------------------------
-   Issue number generator
------------------------------- */
 async function nextIssueNumber(req) {
   const { Transcript } = req.models;
 
@@ -105,262 +73,318 @@ async function nextIssueNumber(req) {
   const m = prev.match(/(\d+)\s*$/);
   const lastNum = m ? parseInt(m[1], 10) : 0;
 
-  const next = lastNum + 1;
-  return `CC-TR-${String(next).padStart(6, "0")}`;
+  return `CA-TR-${String(lastNum + 1).padStart(6, "0")}`;
 }
 
-/* -----------------------------
-   Safe populate helpers
------------------------------- */
-function hasPath(Model, pathName) {
-  return Boolean(Model?.schema?.path(pathName));
+function transcriptRules() {
+  return [
+    body("student").custom((v) => isObjId(v)).withMessage("Learner is required."),
+    body("kind").optional({ checkFalsy: true }).isIn(["official", "unofficial"]),
+    body("rangeMode").optional({ checkFalsy: true }).isIn(["auto", "current_term", "all_available", "custom"]),
+    body("academicYearFrom").optional({ checkFalsy: true }).trim().isLength({ max: 20 }),
+    body("academicYearTo").optional({ checkFalsy: true }).trim().isLength({ max: 20 }),
+    body("termFrom").optional({ checkFalsy: true }).isInt({ min: 1, max: 3 }).toInt(),
+    body("termTo").optional({ checkFalsy: true }).isInt({ min: 1, max: 3 }).toInt(),
+    body("includeDraftResults").optional().isIn(["0", "1", 0, 1, true, false]),
+    body("notes").optional({ checkFalsy: true }).trim().isLength({ max: 1000 }),
+    body("teacherComment").optional({ checkFalsy: true }).trim().isLength({ max: 1000 }),
+    body("headTeacherComment").optional({ checkFalsy: true }).trim().isLength({ max: 1000 }),
+  ];
 }
 
-function getPathRef(Model, pathName) {
-  const path = Model?.schema?.path(pathName);
-  if (!path) return null;
-  if (path.options?.ref) return path.options.ref;
-  if (path.caster?.options?.ref) return path.caster.options.ref;
-  return null;
+async function getRangeFromResults(req, studentId, includeDraft) {
+  const { Result } = req.models;
+  const statusFilter = includeDraft ? { $in: ["draft", "published"] } : "published";
+
+  const rows = await Result.find({ student: studentId, status: statusFilter })
+    .select("academicYear term")
+    .sort({ academicYear: 1, term: 1 })
+    .lean();
+
+  if (!rows.length) {
+    return {
+      academicYearFrom: "",
+      academicYearTo: "",
+      termFrom: 1,
+      termTo: 3,
+      found: false,
+    };
+  }
+
+  const years = rows.map((r) => String(r.academicYear || "").trim()).filter(Boolean).sort();
+  const terms = rows.map((r) => Number(r.term || 1)).filter((n) => Number.isFinite(n)).sort((a, b) => a - b);
+
+  return {
+    academicYearFrom: years[0] || "",
+    academicYearTo: years[years.length - 1] || "",
+    termFrom: terms[0] || 1,
+    termTo: terms[terms.length - 1] || 3,
+    found: true,
+  };
 }
 
-function canPopulateRef(req, Model, pathName) {
-  if (!hasPath(Model, pathName)) return false;
-  const refName = getPathRef(Model, pathName);
-  if (!refName) return false;
-  return Boolean(req.models?.[refName]);
+async function getCurrentRange(req, studentId, includeDraft) {
+  const { Result } = req.models;
+  const statusFilter = includeDraft ? { $in: ["draft", "published"] } : "published";
+
+  const row = await Result.findOne({ student: studentId, status: statusFilter })
+    .select("academicYear term")
+    .sort({ academicYear: -1, term: -1, createdAt: -1 })
+    .lean();
+
+  if (!row) {
+    return {
+      academicYearFrom: "",
+      academicYearTo: "",
+      termFrom: 1,
+      termTo: 1,
+      found: false,
+    };
+  }
+
+  const ay = String(row.academicYear || "").trim();
+  const term = clampInt(row.term || 1, 1, 3, 1);
+
+  return {
+    academicYearFrom: ay,
+    academicYearTo: ay,
+    termFrom: term,
+    termTo: term,
+    found: true,
+  };
 }
 
-function tryPopulate(req, query, Model, pathName, select) {
-  if (!canPopulateRef(req, Model, pathName)) return query;
-  return query.populate(pathName, select);
+async function resolveRange(req, transcriptDoc) {
+  const rangeMode = String(transcriptDoc.rangeMode || "auto").trim();
+  const includeDraft = !!transcriptDoc.includeDraftResults;
+  const studentId = transcriptDoc.student;
+
+  if (rangeMode === "all_available" || rangeMode === "auto") {
+    const all = await getRangeFromResults(req, studentId, includeDraft);
+    if (all.found) return all;
+  }
+
+  if (rangeMode === "current_term") {
+    const cur = await getCurrentRange(req, studentId, includeDraft);
+    if (cur.found) return cur;
+  }
+
+  return {
+    academicYearFrom: normalizeAY(transcriptDoc.academicYearFrom),
+    academicYearTo: normalizeAY(transcriptDoc.academicYearTo),
+    termFrom: clampInt(transcriptDoc.termFrom, 1, 3, 1),
+    termTo: clampInt(transcriptDoc.termTo, 1, 3, 3),
+    found: true,
+  };
 }
 
-function getObjName(v) {
-  if (!v) return "—";
-  if (typeof v === "object") return v.name || v.title || v.code || "—";
-  return String(v);
-}
-
-/* -----------------------------
-   Build safe student query
------------------------------- */
-function makeSafeStudentQuery(req, Student, id) {
-  let q = Student.findById(id);
-
-  q = tryPopulate(req, q, Student, "program", "name code");
-  q = tryPopulate(req, q, Student, "programId", "name code");
-  q = tryPopulate(req, q, Student, "programRef", "name code");
-
-  q = tryPopulate(req, q, Student, "classGroup", "name code");
-  q = tryPopulate(req, q, Student, "classId", "name code");
-  q = tryPopulate(req, q, Student, "classRef", "name code");
-
-  q = tryPopulate(req, q, Student, "department", "name code");
-  q = tryPopulate(req, q, Student, "departmentId", "name code");
-
-  q = tryPopulate(req, q, Student, "faculty", "name code");
-  q = tryPopulate(req, q, Student, "facultyId", "name code");
-
-  return q;
-}
-
-/* -----------------------------
-   Build transcript (live)
------------------------------- */
 async function buildTranscriptLive(req, transcriptDoc) {
-  const { Student, Result } = req.models;
+  const { Student, Result, Attendance } = req.models;
   const t = transcriptDoc;
 
-  const student = await makeSafeStudentQuery(req, Student, t.student).lean();
-  if (!student) return null;
+  const student = await Student.findById(t.student)
+    .populate("classGroup", "name code")
+    .lean();
 
-  const programName =
-    student.program?.name ||
-    student.programId?.name ||
-    student.programRef?.name ||
-    student.programName ||
-    student.programTitle ||
-    getObjName(student.program) ||
-    getObjName(student.programId) ||
-    getObjName(student.programRef) ||
-    "—";
+  if (!student) return null;
 
   const className =
     student.classGroup?.name ||
-    student.classId?.name ||
-    student.classRef?.name ||
+    student.classGroup?.code ||
     student.className ||
-    student.classGroupName ||
-    getObjName(student.classGroup) ||
-    getObjName(student.classId) ||
-    getObjName(student.classRef) ||
-    "—";
-
-  const deptName =
-    student.department?.name ||
-    student.departmentId?.name ||
-    student.departmentName ||
-    getObjName(student.department) ||
-    getObjName(student.departmentId) ||
-    "—";
-
-  const facultyName =
-    student.faculty?.name ||
-    student.facultyId?.name ||
-    student.facultyName ||
-    getObjName(student.faculty) ||
-    getObjName(student.facultyId) ||
     "—";
 
   const includeDraft = !!t.includeDraftResults;
   const statusFilter = includeDraft ? { $in: ["draft", "published"] } : "published";
+  const range = await resolveRange(req, t);
 
-  let resultsQuery = Result.find({
+  const results = await Result.find({
     student: student._id,
     status: statusFilter,
-  }).sort({ academicYear: 1, semester: 1, createdAt: 1 });
+  })
+    .populate("subject", "title code shortTitle")
+    .populate("exam", "title")
+    .sort({ academicYear: 1, term: 1, createdAt: 1 })
+    .lean();
 
-  resultsQuery = tryPopulate(req, resultsQuery, Result, "course", "code title credits creditUnits units unit");
+  const filtered = results.filter((r) => {
+    const ay = normalizeAY(r.academicYear || "");
+    const term = clampInt(r.term, 1, 3, 1);
 
-  const results = await resultsQuery.lean();
-
-  const ayFrom = normalizeAY(t.academicYearFrom);
-  const ayTo = normalizeAY(t.academicYearTo);
-  const semFrom = clampInt(t.semesterFrom, 0, 6, 0);
-  const semTo = clampInt(t.semesterTo, 0, 6, 6);
-
-  const filtered = (results || []).filter((r) => {
-    const ay = normalizeAY(r.academicYear || r.year || "");
-    const sem = Number(r.semester ?? r.term ?? 1);
-    if (!ayInRange(ay, ayFrom, ayTo)) return false;
-    if (sem < semFrom || sem > semTo) return false;
+    if (range.academicYearFrom && ay < range.academicYearFrom) return false;
+    if (range.academicYearTo && ay > range.academicYearTo) return false;
+    if (term < range.termFrom || term > range.termTo) return false;
     return true;
   });
 
+  const attendanceRows = await Attendance.find({
+    student: student._id,
+    academicYear: { $gte: range.academicYearFrom || "", $lte: range.academicYearTo || "zzzz" },
+    term: { $gte: range.termFrom, $lte: range.termTo },
+  })
+    .select("status")
+    .lean();
+
+  const attendanceSummary = {
+    present: attendanceRows.filter((x) => x.status === "present").length,
+    absent: attendanceRows.filter((x) => x.status === "absent").length,
+    late: attendanceRows.filter((x) => x.status === "late").length,
+    excused: attendanceRows.filter((x) => x.status === "excused").length,
+  };
+
   const buckets = new Map();
+
   for (const r of filtered) {
-    const ay = normalizeAY(r.academicYear || r.year || "") || "—";
-    const sem = Number(r.semester ?? r.term ?? 1);
-    const key = `${ay}::${sem}`;
-    if (!buckets.has(key)) buckets.set(key, { academicYear: ay, semester: sem, rows: [] });
-    buckets.get(key).rows.push(r);
+    const ay = normalizeAY(r.academicYear || "") || "—";
+    const term = clampInt(r.term, 1, 3, 1);
+    const key = `${ay}::${term}`;
+
+    if (!buckets.has(key)) {
+      buckets.set(key, {
+        academicYear: ay,
+        term,
+        rows: [],
+      });
+    }
+
+    const percentage = Number(r.percentage || 0);
+    const auto = defaultGrading(percentage);
+
+    buckets.get(key).rows.push({
+      subjectCode: r.subject?.code || "",
+      subjectTitle: r.subject?.title || r.subject?.shortTitle || "Subject",
+      examTitle: r.exam?.title || "Exam",
+      score: Number(r.score || 0),
+      total: Number(r.totalMarks || 100),
+      percentage,
+      grade: r.grade || auto.grade,
+      remark: r.remark || auto.remark,
+    });
   }
 
-  let cumCredits = 0;
-  let cumPoints = 0;
+  const terms = Array.from(buckets.values())
+    .sort((a, b) => (a.academicYear > b.academicYear ? 1 : -1) || a.term - b.term)
+    .map((bucket) => {
+      const avg = bucket.rows.length
+        ? Math.round((bucket.rows.reduce((a, x) => a + (Number(x.percentage) || 0), 0) / bucket.rows.length) * 100) / 100
+        : 0;
 
-  const semesters = Array.from(buckets.values())
-    .sort((a, b) => (a.academicYear > b.academicYear ? 1 : -1) || a.semester - b.semester)
-    .map((b) => {
-      let semCredits = 0;
-      let semPoints = 0;
-
-      const rows = (b.rows || []).map((r) => {
-        const cr = courseCredits(r.course);
-        const g = String(r.grade || r.letterGrade || "F").toUpperCase();
-        const gp = gradePoint(g);
-        const pts = cr * gp;
-
-        semCredits += cr;
-        semPoints += pts;
-
-        const score = r.score ?? r.marks ?? r.mark ?? 0;
-        const total = r.totalMarks ?? r.outOf ?? r.total ?? 100;
-
-        return {
-          courseCode: r.course?.code || r.courseCode || "COURSE",
-          courseTitle: r.course?.title || r.courseTitle || "",
-          credits: cr,
-          score,
-          total,
-          grade: g,
-          gp,
-          points: pts,
-        };
-      });
-
-      cumCredits += semCredits;
-      cumPoints += semPoints;
-
-      const gpa = semCredits > 0 ? semPoints / semCredits : 0;
-      const cgpa = cumCredits > 0 ? cumPoints / cumCredits : 0;
+      const overall = defaultGrading(avg);
 
       return {
-        academicYear: b.academicYear,
-        semester: b.semester,
-        rows,
-        semCredits,
-        semPoints,
-        gpa,
-        cgpa,
-        decision: semesterDecision(gpa),
+        academicYear: bucket.academicYear,
+        term: bucket.term,
+        rows: bucket.rows,
+        average: avg,
+        grade: overall.grade,
+        remark: overall.remark,
       };
     });
 
-  const overallCGPA = cumCredits > 0 ? cumPoints / cumCredits : 0;
+  const allRows = terms.flatMap((x) => x.rows);
+  const overallAverage = allRows.length
+    ? Math.round((allRows.reduce((a, x) => a + (Number(x.percentage) || 0), 0) / allRows.length) * 100) / 100
+    : 0;
+
+  const overall = defaultGrading(overallAverage);
 
   return {
     transcriptMeta: {
       _id: t._id,
-      kind: t.kind,
-      status: t.status,
+      kind: t.kind || "official",
+      status: t.status || "draft",
       issueNumber: t.issueNumber || "",
-      issuedAt: t.issuedAt,
-      revokedAt: t.revokedAt,
+      issuedAt: t.issuedAt || null,
+      revokedAt: t.revokedAt || null,
       revokeReason: t.revokeReason || "",
-      range: {
-        academicYearFrom: ayFrom,
-        academicYearTo: ayTo,
-        semesterFrom: semFrom,
-        semesterTo: semTo,
-      },
+      rangeMode: t.rangeMode || "auto",
+      range,
       includeDraftResults: includeDraft,
       notes: t.notes || "",
+      teacherComment: t.teacherComment || "",
+      headTeacherComment: t.headTeacherComment || "",
     },
     student: {
       _id: student._id,
       name: studentName(student),
       reg: studentReg(student),
-      program: programName,
       classGroup: className,
-      department: deptName,
-      faculty: facultyName,
     },
     totals: {
-      credits: cumCredits,
-      points: cumPoints,
-      cgpa: overallCGPA,
-      classification: classifyCGPA(overallCGPA),
+      subjects: allRows.length,
+      average: overallAverage,
+      overallGrade: overall.grade,
+      overallRemark: overall.remark,
+      attendanceSummary,
     },
-    semesters,
+    terms,
   };
 }
 
-/* -----------------------------
-   Validators
------------------------------- */
-const transcriptRules = [
-  body("student").custom(isObjId).withMessage("Student is required."),
-  body("kind").optional({ checkFalsy: true }).isIn(["official", "unofficial"]),
-  body("academicYearFrom").optional({ checkFalsy: true }).trim().isLength({ max: 20 }),
-  body("academicYearTo").optional({ checkFalsy: true }).trim().isLength({ max: 20 }),
-  body("semesterFrom").optional({ checkFalsy: true }).isInt({ min: 0, max: 6 }).toInt(),
-  body("semesterTo").optional({ checkFalsy: true }).isInt({ min: 0, max: 6 }).toInt(),
-  body("includeDraftResults").optional().isIn(["0", "1", 0, 1, true, false]),
-  body("notes").optional({ checkFalsy: true }).trim().isLength({ max: 500 }),
-];
+async function generateOne(req, payload, existingId = null) {
+  const { Transcript } = req.models;
+
+  const base = {
+    student: payload.student,
+    classGroup: payload.classGroup || null,
+    kind: ["official", "unofficial"].includes(payload.kind) ? payload.kind : "official",
+    rangeMode: ["auto", "current_term", "all_available", "custom"].includes(payload.rangeMode) ? payload.rangeMode : "auto",
+    academicYearFrom: normalizeAY(payload.academicYearFrom),
+    academicYearTo: normalizeAY(payload.academicYearTo),
+    termFrom: clampInt(payload.termFrom, 1, 3, 1),
+    termTo: clampInt(payload.termTo, 1, 3, 3),
+    includeDraftResults: String(payload.includeDraftResults || "0") === "1" || payload.includeDraftResults === true,
+    notes: safeStr(payload.notes, 1000),
+    teacherComment: safeStr(payload.teacherComment, 1000),
+    headTeacherComment: safeStr(payload.headTeacherComment, 1000),
+    autoGenerated: true,
+    status: "draft",
+    generatedAt: new Date(),
+    updatedBy: req.user?._id || null,
+  };
+
+  let tdoc;
+  if (existingId) {
+    await Transcript.updateOne({ _id: existingId }, { $set: base });
+    tdoc = await Transcript.findById(existingId).lean();
+  } else {
+    tdoc = await Transcript.create({
+      ...base,
+      createdBy: req.user?._id || null,
+    });
+    tdoc = tdoc.toObject();
+  }
+
+  const live = await buildTranscriptLive(req, tdoc);
+  if (!live || !live.terms?.length) {
+    return { ok: false, id: tdoc._id, reason: "No results found for selected range." };
+  }
+
+  await Transcript.updateOne(
+    { _id: tdoc._id },
+    {
+      $set: {
+        snapshot: live,
+        snapshotHash: hashSnapshot(live),
+        generatedAt: new Date(),
+      },
+    }
+  );
+
+  return { ok: true, id: tdoc._id, live };
+}
 
 module.exports = {
-  transcriptRules,
+  transcriptRules: transcriptRules(),
 
   list: async (req, res) => {
     try {
-      const { Transcript, Student } = req.models;
+      const { Transcript, Student, Class } = req.models;
 
       const q = safeStr(req.query.q, 120);
       const status = safeStr(req.query.status, 20);
       const kind = safeStr(req.query.kind, 20);
+      const classGroup = safeStr(req.query.classGroup, 60);
       const tid = safeStr(req.query.tid, 60);
 
       const page = Math.max(parseInt(req.query.page || "1", 10), 1);
@@ -369,6 +393,7 @@ module.exports = {
       const filter = {};
       if (status && ["draft", "issued", "revoked"].includes(status)) filter.status = status;
       if (kind && ["official", "unofficial"].includes(kind)) filter.kind = kind;
+      if (classGroup && isObjId(classGroup)) filter.classGroup = classGroup;
 
       if (q) {
         const students = await Student.find({
@@ -381,7 +406,7 @@ module.exports = {
           ],
         })
           .select("_id")
-          .limit(250)
+          .limit(1000)
           .lean();
 
         filter.student = students.length ? { $in: students.map((s) => s._id) } : "__none__";
@@ -393,22 +418,28 @@ module.exports = {
 
       const transcripts = await Transcript.find(filter)
         .populate("student", "fullName firstName middleName lastName regNo studentNo indexNumber name")
-        .sort({ createdAt: -1 })
+        .populate("classGroup", "name code")
+        .sort({ updatedAt: -1, _id: -1 })
         .skip((safePage - 1) * perPage)
         .limit(perPage)
         .lean();
 
       const studentsList = await Student.find({})
-        .select("fullName firstName middleName lastName regNo studentNo indexNumber name")
+        .select("fullName firstName middleName lastName regNo studentNo indexNumber name classGroup")
         .sort({ fullName: 1, firstName: 1, lastName: 1 })
-        .limit(2500)
+        .limit(4000)
+        .lean();
+
+      const classes = await Class.find({})
+        .select("name code")
+        .sort({ name: 1 })
         .lean();
 
       let preview = null;
       let previewId = null;
 
-      if (tid && mongoose.Types.ObjectId.isValid(tid)) previewId = tid;
-      else if (transcripts[0]?._id) previewId = transcripts[0]._id;
+      if (tid && isObjId(tid)) previewId = tid;
+      else if (transcripts[0]?._id) previewId = String(transcripts[0]._id);
 
       if (previewId) {
         const tdoc = await Transcript.findById(previewId).lean();
@@ -426,14 +457,15 @@ module.exports = {
         revoked: await Transcript.countDocuments({ ...filter, status: "revoked" }),
       };
 
-      return res.render("tenant/admin/transcripts/index", {
+      return res.render("tenant/transcripts/index", {
         tenant: req.tenant || null,
         transcripts,
         studentsList,
+        classes,
         preview,
         csrfToken: res.locals.csrfToken || null,
         kpis,
-        query: { q, status, kind, tid: previewId, page: safePage, total, totalPages, perPage },
+        query: { q, status, kind, classGroup, tid: previewId, page: safePage, total, totalPages, perPage },
         messages: {
           success: req.flash ? req.flash("success") : [],
           error: req.flash ? req.flash("error") : [],
@@ -446,84 +478,122 @@ module.exports = {
   },
 
   create: async (req, res) => {
-    const { Transcript } = req.models;
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       req.flash?.("error", errors.array().map((e) => e.msg).join(" "));
-      return res.redirect("/admin/transcripts");
+      return res.redirect("/tenant/transcripts");
     }
 
     try {
-      const t = await Transcript.create({
-        student: String(req.body.student || "").trim(),
-        kind: ["official", "unofficial"].includes(req.body.kind) ? req.body.kind : "official",
-        academicYearFrom: normalizeAY(req.body.academicYearFrom),
-        academicYearTo: normalizeAY(req.body.academicYearTo),
-        semesterFrom: clampInt(req.body.semesterFrom, 0, 6, 0),
-        semesterTo: clampInt(req.body.semesterTo, 0, 6, 6),
-        includeDraftResults: String(req.body.includeDraftResults || "0") === "1",
-        notes: safeStr(req.body.notes, 500),
-        status: "draft",
-      });
+      const out = await generateOne(req, req.body);
+      if (!out.ok) {
+        req.flash?.("error", out.reason || "Failed to generate transcript.");
+        return res.redirect("/tenant/transcripts");
+      }
 
-      req.flash?.("success", "Transcript created.");
-      return res.redirect(`/admin/transcripts?tid=${encodeURIComponent(t._id)}`);
+      req.flash?.("success", "Transcript generated automatically.");
+      return res.redirect(`/tenant/transcripts?tid=${encodeURIComponent(out.id)}`);
     } catch (err) {
       console.error("CREATE TRANSCRIPT ERROR:", err);
       req.flash?.("error", "Failed to create transcript.");
-      return res.redirect("/admin/transcripts");
+      return res.redirect("/tenant/transcripts");
     }
   },
 
   update: async (req, res) => {
     const { Transcript } = req.models;
     const errors = validationResult(req);
+
     if (!errors.isEmpty()) {
       req.flash?.("error", errors.array().map((e) => e.msg).join(" "));
-      return res.redirect("/admin/transcripts");
+      return res.redirect("/tenant/transcripts");
     }
 
     try {
       const id = String(req.params.id || "").trim();
-      if (!mongoose.Types.ObjectId.isValid(id)) {
+      if (!isObjId(id)) {
         req.flash?.("error", "Invalid transcript id.");
-        return res.redirect("/admin/transcripts");
+        return res.redirect("/tenant/transcripts");
       }
 
       const existing = await Transcript.findById(id).lean();
       if (!existing) {
         req.flash?.("error", "Transcript not found.");
-        return res.redirect("/admin/transcripts");
+        return res.redirect("/tenant/transcripts");
       }
 
       if (existing.status === "issued") {
         req.flash?.("error", "Issued transcripts cannot be edited. Clone instead.");
-        return res.redirect(`/admin/transcripts?tid=${encodeURIComponent(id)}`);
+        return res.redirect(`/tenant/transcripts?tid=${encodeURIComponent(id)}`);
       }
 
-      await Transcript.updateOne(
-        { _id: id },
-        {
-          $set: {
-            student: String(req.body.student || "").trim(),
-            kind: ["official", "unofficial"].includes(req.body.kind) ? req.body.kind : "official",
-            academicYearFrom: normalizeAY(req.body.academicYearFrom),
-            academicYearTo: normalizeAY(req.body.academicYearTo),
-            semesterFrom: clampInt(req.body.semesterFrom, 0, 6, 0),
-            semesterTo: clampInt(req.body.semesterTo, 0, 6, 6),
-            includeDraftResults: String(req.body.includeDraftResults || "0") === "1",
-            notes: safeStr(req.body.notes, 500),
-          },
-        },
-        { runValidators: true }
-      );
+      const out = await generateOne(req, req.body, id);
+      if (!out.ok) {
+        req.flash?.("error", out.reason || "Failed to regenerate transcript.");
+        return res.redirect(`/tenant/transcripts?tid=${encodeURIComponent(id)}`);
+      }
 
-      req.flash?.("success", "Transcript updated.");
-      return res.redirect(`/admin/transcripts?tid=${encodeURIComponent(id)}`);
+      req.flash?.("success", "Transcript regenerated.");
+      return res.redirect(`/tenant/transcripts?tid=${encodeURIComponent(id)}`);
     } catch (err) {
       console.error("UPDATE TRANSCRIPT ERROR:", err);
       req.flash?.("error", "Failed to update transcript.");
-      return res.redirect("/admin/transcripts");
+      return res.redirect("/tenant/transcripts");
+    }
+  },
+
+  bulkGenerate: async (req, res) => {
+    try {
+      const { Student } = req.models;
+
+      const classGroup = String(req.body.classGroup || "").trim();
+      const academicYear = normalizeAY(req.body.academicYear);
+      const termFrom = clampInt(req.body.termFrom, 1, 3, 1);
+      const termTo = clampInt(req.body.termTo, 1, 3, 3);
+
+      if (!isObjId(classGroup)) {
+        req.flash?.("error", "Class is required.");
+        return res.redirect("/tenant/transcripts");
+      }
+
+      const students = await Student.find({ classGroup })
+        .select("_id classGroup")
+        .lean();
+
+      if (!students.length) {
+        req.flash?.("error", "No learners found in selected class.");
+        return res.redirect("/tenant/transcripts");
+      }
+
+      let created = 0;
+      let failed = 0;
+
+      for (const s of students) {
+        const out = await generateOne(req, {
+          student: String(s._id),
+          classGroup,
+          kind: req.body.kind || "official",
+          rangeMode: academicYear ? "custom" : (req.body.rangeMode || "auto"),
+          academicYearFrom: academicYear,
+          academicYearTo: academicYear,
+          termFrom,
+          termTo,
+          includeDraftResults: req.body.includeDraftResults,
+          notes: req.body.notes || "",
+          teacherComment: "",
+          headTeacherComment: "",
+        });
+
+        if (out.ok) created += 1;
+        else failed += 1;
+      }
+
+      req.flash?.("success", `Bulk generation complete. Generated ${created}, failed ${failed}.`);
+      return res.redirect("/tenant/transcripts");
+    } catch (err) {
+      console.error("BULK GENERATE TRANSCRIPTS ERROR:", err);
+      req.flash?.("error", "Bulk generation failed.");
+      return res.redirect("/tenant/transcripts");
     }
   },
 
@@ -532,35 +602,43 @@ module.exports = {
       const { Transcript } = req.models;
       const id = String(req.params.id || "").trim();
 
-      if (!mongoose.Types.ObjectId.isValid(id)) {
+      if (!isObjId(id)) {
         req.flash?.("error", "Invalid transcript id.");
-        return res.redirect("/admin/transcripts");
+        return res.redirect("/tenant/transcripts");
       }
 
       const t = await Transcript.findById(id).lean();
       if (!t) {
         req.flash?.("error", "Transcript not found.");
-        return res.redirect("/admin/transcripts");
+        return res.redirect("/tenant/transcripts");
       }
 
       const copy = await Transcript.create({
         student: t.student,
+        classGroup: t.classGroup || null,
         kind: t.kind || "official",
+        rangeMode: t.rangeMode || "auto",
         academicYearFrom: t.academicYearFrom || "",
         academicYearTo: t.academicYearTo || "",
-        semesterFrom: t.semesterFrom ?? 0,
-        semesterTo: t.semesterTo ?? 6,
+        termFrom: t.termFrom ?? 1,
+        termTo: t.termTo ?? 3,
         includeDraftResults: !!t.includeDraftResults,
+        autoGenerated: !!t.autoGenerated,
         notes: `Cloned from ${t.issueNumber || t._id}. ${t.notes || ""}`.trim(),
+        teacherComment: t.teacherComment || "",
+        headTeacherComment: t.headTeacherComment || "",
         status: "draft",
+        createdBy: req.user?._id || null,
       });
 
+      await generateOne(req, copy.toObject(), copy._id);
+
       req.flash?.("success", "Transcript cloned as draft.");
-      return res.redirect(`/admin/transcripts?tid=${encodeURIComponent(copy._id)}`);
+      return res.redirect(`/tenant/transcripts?tid=${encodeURIComponent(copy._id)}`);
     } catch (err) {
       console.error("CLONE TRANSCRIPT ERROR:", err);
       req.flash?.("error", "Failed to clone transcript.");
-      return res.redirect("/admin/transcripts");
+      return res.redirect("/tenant/transcripts");
     }
   },
 
@@ -569,31 +647,26 @@ module.exports = {
       const { Transcript } = req.models;
       const id = String(req.params.id || "").trim();
 
-      if (!mongoose.Types.ObjectId.isValid(id)) {
+      if (!isObjId(id)) {
         req.flash?.("error", "Invalid transcript id.");
-        return res.redirect("/admin/transcripts");
+        return res.redirect("/tenant/transcripts");
       }
 
       const tdoc = await Transcript.findById(id).lean();
       if (!tdoc) {
         req.flash?.("error", "Transcript not found.");
-        return res.redirect("/admin/transcripts");
+        return res.redirect("/tenant/transcripts");
       }
 
       if (tdoc.status === "issued") {
         req.flash?.("error", "Already issued.");
-        return res.redirect(`/admin/transcripts?tid=${encodeURIComponent(id)}`);
+        return res.redirect(`/tenant/transcripts?tid=${encodeURIComponent(id)}`);
       }
 
       const live = await buildTranscriptLive(req, tdoc);
-      if (!live) {
-        req.flash?.("error", "Cannot issue: student not found.");
-        return res.redirect(`/admin/transcripts?tid=${encodeURIComponent(id)}`);
-      }
-
-      if (!live.semesters?.length) {
+      if (!live || !live.terms?.length) {
         req.flash?.("error", "Cannot issue: no results found for selected range.");
-        return res.redirect(`/admin/transcripts?tid=${encodeURIComponent(id)}`);
+        return res.redirect(`/tenant/transcripts?tid=${encodeURIComponent(id)}`);
       }
 
       const issueNumber = await nextIssueNumber(req);
@@ -625,16 +698,17 @@ module.exports = {
             revokeReason: "",
             snapshot,
             snapshotHash,
+            generatedAt: new Date(),
           },
         }
       );
 
       req.flash?.("success", `Transcript issued (${issueNumber}).`);
-      return res.redirect(`/admin/transcripts?tid=${encodeURIComponent(id)}`);
+      return res.redirect(`/tenant/transcripts?tid=${encodeURIComponent(id)}`);
     } catch (err) {
       console.error("ISSUE TRANSCRIPT ERROR:", err);
       req.flash?.("error", "Failed to issue transcript.");
-      return res.redirect("/admin/transcripts");
+      return res.redirect("/tenant/transcripts");
     }
   },
 
@@ -642,11 +716,11 @@ module.exports = {
     try {
       const { Transcript } = req.models;
       const id = String(req.params.id || "").trim();
-      const reason = safeStr(req.body.reason, 200);
+      const reason = safeStr(req.body.reason, 300);
 
-      if (!mongoose.Types.ObjectId.isValid(id)) {
+      if (!isObjId(id)) {
         req.flash?.("error", "Invalid transcript id.");
-        return res.redirect("/admin/transcripts");
+        return res.redirect("/tenant/transcripts");
       }
 
       await Transcript.updateOne(
@@ -662,11 +736,11 @@ module.exports = {
       );
 
       req.flash?.("success", "Transcript revoked.");
-      return res.redirect(`/admin/transcripts?tid=${encodeURIComponent(id)}`);
+      return res.redirect(`/tenant/transcripts?tid=${encodeURIComponent(id)}`);
     } catch (err) {
       console.error("REVOKE TRANSCRIPT ERROR:", err);
       req.flash?.("error", "Failed to revoke transcript.");
-      return res.redirect("/admin/transcripts");
+      return res.redirect("/tenant/transcripts");
     }
   },
 
@@ -675,18 +749,18 @@ module.exports = {
       const { Transcript } = req.models;
       const id = String(req.params.id || "").trim();
 
-      if (!mongoose.Types.ObjectId.isValid(id)) {
+      if (!isObjId(id)) {
         req.flash?.("error", "Invalid transcript id.");
-        return res.redirect("/admin/transcripts");
+        return res.redirect("/tenant/transcripts");
       }
 
       await Transcript.deleteOne({ _id: id });
       req.flash?.("success", "Transcript deleted.");
-      return res.redirect("/admin/transcripts");
+      return res.redirect("/tenant/transcripts");
     } catch (err) {
       console.error("DELETE TRANSCRIPT ERROR:", err);
       req.flash?.("error", "Failed to delete transcript.");
-      return res.redirect("/admin/transcripts");
+      return res.redirect("/tenant/transcripts");
     }
   },
 
@@ -698,11 +772,11 @@ module.exports = {
       const ids = String(req.body.ids || "")
         .split(",")
         .map((x) => x.trim())
-        .filter((x) => mongoose.Types.ObjectId.isValid(x));
+        .filter((x) => isObjId(x));
 
       if (!ids.length) {
         req.flash?.("error", "No transcripts selected.");
-        return res.redirect("/admin/transcripts");
+        return res.redirect("/tenant/transcripts");
       }
 
       if (action === "delete") {
@@ -711,18 +785,69 @@ module.exports = {
       } else if (action === "revoke") {
         await Transcript.updateMany(
           { _id: { $in: ids } },
-          { $set: { status: "revoked", revokedAt: new Date() } }
+          { $set: { status: "revoked", revokedAt: new Date(), revokedBy: req.user?._id || null } }
         );
         req.flash?.("success", "Selected transcripts revoked.");
+      } else if (action === "issue") {
+        let issued = 0;
+        for (const id of ids) {
+          const tdoc = await Transcript.findById(id).lean();
+          if (!tdoc || tdoc.status === "issued") continue;
+
+          const live = await buildTranscriptLive(req, tdoc);
+          if (!live || !live.terms?.length) continue;
+
+          const issueNumber = await nextIssueNumber(req);
+          const issuedAt = new Date();
+
+          const snapshot = {
+            ...live,
+            transcriptMeta: {
+              ...live.transcriptMeta,
+              status: "issued",
+              issueNumber,
+              issuedAt,
+              issuedBy: req.user?._id || null,
+            },
+          };
+
+          await Transcript.updateOne(
+            { _id: id },
+            {
+              $set: {
+                status: "issued",
+                issueNumber,
+                issuedAt,
+                issuedBy: req.user?._id || null,
+                revokedAt: null,
+                revokedBy: null,
+                revokeReason: "",
+                snapshot,
+                snapshotHash: hashSnapshot(snapshot),
+              },
+            }
+          );
+          issued += 1;
+        }
+        req.flash?.("success", `Issued ${issued} transcript(s).`);
+      } else if (action === "regenerate") {
+        let regenerated = 0;
+        for (const id of ids) {
+          const tdoc = await Transcript.findById(id).lean();
+          if (!tdoc || tdoc.status === "issued") continue;
+          const out = await generateOne(req, tdoc, id);
+          if (out.ok) regenerated += 1;
+        }
+        req.flash?.("success", `Regenerated ${regenerated} transcript(s).`);
       } else {
         req.flash?.("error", "Invalid bulk action.");
       }
 
-      return res.redirect("/admin/transcripts");
+      return res.redirect("/tenant/transcripts");
     } catch (err) {
       console.error("TRANSCRIPT BULK ERROR:", err);
       req.flash?.("error", "Bulk action failed.");
-      return res.redirect("/admin/transcripts");
+      return res.redirect("/tenant/transcripts");
     }
   },
 
@@ -731,7 +856,7 @@ module.exports = {
       const { Transcript } = req.models;
       const id = String(req.params.id || "").trim();
 
-      if (!mongoose.Types.ObjectId.isValid(id)) return res.status(404).send("Not found.");
+      if (!isObjId(id)) return res.status(404).send("Not found.");
 
       const tdoc = await Transcript.findById(id).lean();
       if (!tdoc) return res.status(404).send("Not found.");
@@ -754,7 +879,7 @@ module.exports = {
         qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 1, width: 240 });
       }
 
-      return res.render("tenant/admin/transcripts/print", {
+      return res.render("tenant/transcripts/print", {
         tenant: req.tenant || null,
         data,
         qrDataUrl,
@@ -800,9 +925,9 @@ module.exports = {
           snapshotHash: tdoc.snapshotHash || "",
           studentName: tdoc.snapshot?.student?.name || "—",
           reg: tdoc.snapshot?.student?.reg || "—",
-          program: tdoc.snapshot?.student?.program || "—",
-          cgpa: tdoc.snapshot?.totals?.cgpa ?? 0,
-          classification: tdoc.snapshot?.totals?.classification || "—",
+          classGroup: tdoc.snapshot?.student?.classGroup || "—",
+          average: tdoc.snapshot?.totals?.average ?? 0,
+          overallGrade: tdoc.snapshot?.totals?.overallGrade || "—",
         };
       }
 

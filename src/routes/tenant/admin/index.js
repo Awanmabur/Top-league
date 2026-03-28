@@ -36,8 +36,9 @@ router.use("/promotions", requireTenantModule("PromotionLog"), require("./promot
 router.use("/faculties", requireTenantModule("Faculty"), require("./faculties"));
 router.use("/departments", requireTenantModule("Department"), require("./departments"));
 router.use("/programs", requireTenantModule("Program"), require("./programs"));
-router.use("/courses", requireTenantModule("Course"), require("./courses"));
+router.use("/subjects", requireTenantModule("Course"), require("./subjects"));
 router.use("/classes", requireTenantModule("Class"), require("./classes"));
+router.use("/sections", requireTenantModule("Class"), require("./sections")); 
 
 router.use("/exams", requireTenantModule("Exam"), require("./exams"));
 router.use("/results", requireTenantModule("Result"), require("./results"));

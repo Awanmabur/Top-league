@@ -1,9 +1,6 @@
 const mongoose = require("mongoose");
 const { body, validationResult } = require("express-validator");
 
-/* -----------------------
-   Helpers
------------------------- */
 const cleanStr = (v, max = 2000) => String(v || "").trim().slice(0, max);
 const isObjId = (v) => mongoose.Types.ObjectId.isValid(String(v || ""));
 const escapeRegex = (input) => String(input || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -98,28 +95,43 @@ const buildKpis = async (Attendance, match) => {
   };
 };
 
-async function getCourseRoster(req, _courseId) {
+async function getSubjectRoster(req, classGroupId) {
   const { Student } = req.models;
 
-  // Fallback roster: all active students.
-  // Replace later with enrollment-aware course roster if you have an enrollment model.
-  return Student.find({ isDeleted: { $ne: true } })
+  const filter = { isDeleted: { $ne: true } };
+  if (isObjId(classGroupId)) filter.class = classGroupId;
+
+  return Student.find(filter)
     .sort({ fullName: 1 })
-    .select("fullName regNo email")
+    .select("fullName regNo email class")
     .lean();
 }
 
-/* -----------------------
-   Validation Rules
------------------------- */
 const attendanceRules = [
-  body("course").custom((v) => isObjId(v)).withMessage("Course is required."),
+  body("subject").custom((v) => isObjId(v)).withMessage("Subject is required."),
   body("sessionAt").custom((v) => !!parseDateTime(v)).withMessage("Session date/time is required."),
   body("status")
     .optional({ checkFalsy: true })
     .custom((v) => !!normalizeStatus(v))
     .withMessage("Invalid status."),
   body("notes").optional({ checkFalsy: true }).trim().isLength({ max: 500 }),
+  body("classGroup")
+    .optional({ checkFalsy: true })
+    .custom((v) => !v || isObjId(v))
+    .withMessage("Invalid class."),
+  body("teacher")
+    .optional({ checkFalsy: true })
+    .custom((v) => !v || isObjId(v))
+    .withMessage("Invalid teacher."),
+  body("term")
+    .optional({ checkFalsy: true })
+    .isInt({ min: 1, max: 3 })
+    .toInt()
+    .withMessage("Invalid term."),
+  body("academicYear")
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ max: 20 }),
 
   body().custom((_, { req }) => {
     const studentId = req.body.student;
@@ -133,14 +145,16 @@ const attendanceRules = [
 module.exports = {
   attendanceRules,
 
-  // GET /admin/attendance
   list: async (req, res) => {
     try {
-      const { Attendance, Student, Course } = req.models;
+      const { Attendance, Student, Subject, Class, Staff } = req.models;
 
       const q = cleanStr(req.query.q, 120);
-      const course = cleanStr(req.query.course, 80);
+      const subject = cleanStr(req.query.subject, 80);
+      const classGroup = cleanStr(req.query.classGroup, 80);
       const status = cleanStr(req.query.status, 20);
+      const academicYear = cleanStr(req.query.academicYear, 20);
+      const term = cleanStr(req.query.term, 10);
       const from = parseDateTime(req.query.from);
       const to = parseDateTime(req.query.to);
 
@@ -149,8 +163,11 @@ module.exports = {
 
       const filter = { isDeleted: { $ne: true } };
 
-      if (course && isObjId(course)) filter.course = course;
+      if (subject && isObjId(subject)) filter.subject = subject;
+      if (classGroup && isObjId(classGroup)) filter.classGroup = classGroup;
       if (status && normalizeStatus(status)) filter.status = normalizeStatus(status);
+      if (academicYear) filter.academicYear = academicYear;
+      if (term && !Number.isNaN(Number(term))) filter.term = Number(term);
 
       if (from || to) {
         filter.sessionAt = {};
@@ -175,12 +192,15 @@ module.exports = {
         const ids = studentsFound.map((s) => s._id);
 
         if (!ids.length) {
-          const courses = Course
-            ? await Course.find({ isDeleted: { $ne: true } })
-                .sort({ title: 1, code: 1 })
-                .select("title code name")
-                .lean()
-            : [];
+          const subjects = await Subject.find({})
+            .sort({ title: 1, code: 1 })
+            .select("title code shortTitle")
+            .lean();
+
+          const classes = await Class.find({})
+            .sort({ name: 1 })
+            .select("name code")
+            .lean();
 
           const students = await Student.find({ isDeleted: { $ne: true } })
             .sort({ fullName: 1 })
@@ -188,17 +208,27 @@ module.exports = {
             .limit(1000)
             .lean();
 
-          return res.render("tenant/admin/attendance/index", {
+          const staffList = await Staff.find({})
+            .sort({ fullName: 1, name: 1 })
+            .select("fullName name role email")
+            .lean();
+
+          return res.render("tenant/attendance/index", {
             tenant: req.tenant || null,
             records: [],
-            courses,
+            subjects,
+            classes,
             students,
+            staffList,
             kpis: { total: 0, present: 0, absent: 0, late: 0, excused: 0 },
             csrfToken: res.locals.csrfToken || null,
             query: {
               q,
-              course,
+              subject,
+              classGroup,
               status,
+              academicYear,
+              term,
               from: req.query.from || "",
               to: req.query.to || "",
               page: 1,
@@ -221,19 +251,24 @@ module.exports = {
       const safePage = Math.min(page, totalPages);
 
       const records = await Attendance.find(filter)
-        .populate({ path: "student", select: "fullName regNo email yearLevel" })
-        .populate({ path: "course", select: "title code name" })
+        .populate({ path: "student", select: "fullName regNo email" })
+        .populate({ path: "subject", select: "title code shortTitle" })
+        .populate({ path: "classGroup", select: "name code" })
+        .populate({ path: "teacher", select: "fullName name email role" })
         .sort({ sessionAt: -1, createdAt: -1 })
         .skip((safePage - 1) * perPage)
         .limit(perPage)
         .lean();
 
-      const courses = Course
-        ? await Course.find({ isDeleted: { $ne: true } })
-            .sort({ title: 1, code: 1 })
-            .select("title code name")
-            .lean()
-        : [];
+      const subjects = await Subject.find({})
+        .sort({ title: 1, code: 1 })
+        .select("title code shortTitle")
+        .lean();
+
+      const classes = await Class.find({})
+        .sort({ name: 1 })
+        .select("name code")
+        .lean();
 
       const students = await Student.find({ isDeleted: { $ne: true } })
         .sort({ fullName: 1 })
@@ -241,19 +276,29 @@ module.exports = {
         .limit(1000)
         .lean();
 
+      const staffList = await Staff.find({})
+        .sort({ fullName: 1, name: 1 })
+        .select("fullName name role email")
+        .lean();
+
       const kpis = await buildKpis(Attendance, filter);
 
-      return res.render("tenant/admin/attendance/index", {
+      return res.render("tenant/attendance/index", {
         tenant: req.tenant || null,
         records,
-        courses,
+        subjects,
+        classes,
         students,
+        staffList,
         kpis,
         csrfToken: res.locals.csrfToken || null,
         query: {
           q,
-          course,
+          subject,
+          classGroup,
           status,
+          academicYear,
+          term,
           from: req.query.from || "",
           to: req.query.to || "",
           page: safePage,
@@ -272,35 +317,46 @@ module.exports = {
     }
   },
 
-  // GET /admin/attendance/sheet
   sheet: async (req, res) => {
     try {
-      const { Attendance, Course } = req.models;
+      const { Attendance, Subject, Class } = req.models;
 
-      const courseId = cleanStr(req.query.course, 80);
+      const subjectId = cleanStr(req.query.subject, 80);
+      const classGroupId = cleanStr(req.query.classGroup, 80);
       const sessionAtRaw = cleanStr(req.query.sessionAt, 40);
+      const academicYear = cleanStr(req.query.academicYear, 20);
+      const term = Math.max(1, Math.min(Number(req.query.term || 1), 3));
       const sessionAt = parseDateTime(sessionAtRaw);
 
-      const courses = Course
-        ? await Course.find({ isDeleted: { $ne: true } })
-            .sort({ title: 1, code: 1 })
-            .select("title code name")
-            .lean()
-        : [];
+      const subjects = await Subject.find({})
+        .sort({ title: 1, code: 1 })
+        .select("title code shortTitle")
+        .lean();
 
-      let selectedCourse = null;
+      const classes = await Class.find({})
+        .sort({ name: 1 })
+        .select("name code")
+        .lean();
+
+      let selectedSubject = null;
+      let selectedClass = null;
       let roster = [];
       let existingMap = {};
 
-      if (isObjId(courseId)) {
-        selectedCourse = await Course.findById(courseId).select("title code name").lean();
+      if (isObjId(subjectId)) {
+        selectedSubject = await Subject.findById(subjectId).select("title code shortTitle").lean();
       }
 
-      if (selectedCourse && sessionAt) {
-        roster = await getCourseRoster(req, courseId);
+      if (isObjId(classGroupId)) {
+        selectedClass = await Class.findById(classGroupId).select("name code").lean();
+      }
+
+      if (selectedSubject && selectedClass && sessionAt) {
+        roster = await getSubjectRoster(req, classGroupId);
 
         const existing = await Attendance.find({
-          course: courseId,
+          subject: subjectId,
+          classGroup: classGroupId,
           sessionAt,
           isDeleted: { $ne: true },
         })
@@ -316,12 +372,16 @@ module.exports = {
         });
       }
 
-      return res.render("tenant/admin/attendance/sheet", {
+      return res.render("tenant/attendance/sheet", {
         tenant: req.tenant || null,
-        courses,
-        selectedCourse,
+        subjects,
+        classes,
+        selectedSubject,
+        selectedClass,
         roster,
         existingMap,
+        academicYear,
+        term,
         sessionAtValue: sessionAt ? new Date(sessionAt).toISOString().slice(0, 16) : "",
         csrfToken: res.locals.csrfToken || null,
         messages: {
@@ -335,34 +395,43 @@ module.exports = {
     }
   },
 
-  // POST /admin/attendance/sheet
   saveSheet: async (req, res) => {
     try {
-      const { Attendance, Student, Course } = req.models;
+      const { Attendance, Student, Subject, Class } = req.models;
 
-      const courseId = cleanStr(req.body.course, 80);
+      const subjectId = cleanStr(req.body.subject, 80);
+      const classGroupId = cleanStr(req.body.classGroup, 80);
       const sessionAt = parseDateTime(req.body.sessionAt);
+      const academicYear = cleanStr(req.body.academicYear, 20);
+      const term = Math.max(1, Math.min(Number(req.body.term || 1), 3));
 
-      if (!isObjId(courseId)) {
-        req.flash?.("error", "Course is required.");
-        return res.redirect("/admin/attendance/sheet");
+      if (!isObjId(subjectId)) {
+        req.flash?.("error", "Subject is required.");
+        return res.redirect("/tenant/attendance/sheet");
       }
 
-      const course = await Course.findById(courseId).select("_id").lean();
-      if (!course) {
-        req.flash?.("error", "Course not found.");
-        return res.redirect("/admin/attendance/sheet");
+      if (!isObjId(classGroupId)) {
+        req.flash?.("error", "Class is required.");
+        return res.redirect(`/tenant/attendance/sheet?subject=${encodeURIComponent(subjectId)}`);
+      }
+
+      const subject = await Subject.findById(subjectId).select("_id").lean();
+      const classGroup = await Class.findById(classGroupId).select("_id").lean();
+
+      if (!subject || !classGroup) {
+        req.flash?.("error", "Subject or class not found.");
+        return res.redirect("/tenant/attendance/sheet");
       }
 
       if (!sessionAt) {
         req.flash?.("error", "Session date/time is required.");
-        return res.redirect(`/admin/attendance/sheet?course=${encodeURIComponent(courseId)}`);
+        return res.redirect(`/tenant/attendance/sheet?subject=${encodeURIComponent(subjectId)}&classGroup=${encodeURIComponent(classGroupId)}`);
       }
 
       const rows = Array.isArray(req.body.rows) ? req.body.rows : [];
       if (!rows.length) {
         req.flash?.("error", "No attendance rows submitted.");
-        return res.redirect(`/admin/attendance/sheet?course=${encodeURIComponent(courseId)}&sessionAt=${encodeURIComponent(req.body.sessionAt || "")}`);
+        return res.redirect(`/tenant/attendance/sheet?subject=${encodeURIComponent(subjectId)}&classGroup=${encodeURIComponent(classGroupId)}&sessionAt=${encodeURIComponent(req.body.sessionAt || "")}`);
       }
 
       const regNos = rows.map((r) => cleanStr(r.regNo, 60)).filter(Boolean);
@@ -370,12 +439,9 @@ module.exports = {
 
       const students = await Student.find({
         isDeleted: { $ne: true },
-        $or: [
-          { _id: { $in: studentIds } },
-          { regNo: { $in: regNos } },
-        ],
+        $or: [{ _id: { $in: studentIds } }, { regNo: { $in: regNos } }],
       })
-        .select("_id regNo")
+        .select("_id regNo class")
         .lean();
 
       const byId = new Map();
@@ -387,6 +453,8 @@ module.exports = {
 
       const ops = [];
       let touched = 0;
+      const attendanceDate = new Date(sessionAt);
+      attendanceDate.setHours(0, 0, 0, 0);
 
       for (const raw of rows) {
         const status = normalizeStatus(raw.status);
@@ -402,19 +470,23 @@ module.exports = {
           updateOne: {
             filter: {
               student: student._id,
-              course: courseId,
+              subject: subjectId,
               sessionAt,
               isDeleted: { $ne: true },
             },
             update: {
               $set: {
+                classGroup: classGroupId,
+                academicYear,
+                term,
+                attendanceDate,
                 status,
                 notes,
                 updatedBy: req.user?._id || null,
               },
               $setOnInsert: {
                 student: student._id,
-                course: courseId,
+                subject: subjectId,
                 sessionAt,
                 createdBy: req.user?._id || null,
               },
@@ -428,47 +500,52 @@ module.exports = {
 
       if (!ops.length) {
         req.flash?.("error", "No valid attendance rows to save.");
-        return res.redirect(`/admin/attendance/sheet?course=${encodeURIComponent(courseId)}&sessionAt=${encodeURIComponent(req.body.sessionAt || "")}`);
+        return res.redirect(`/tenant/attendance/sheet?subject=${encodeURIComponent(subjectId)}&classGroup=${encodeURIComponent(classGroupId)}&sessionAt=${encodeURIComponent(req.body.sessionAt || "")}`);
       }
 
       await Attendance.bulkWrite(ops, { ordered: false });
 
       req.flash?.("success", `Saved ${touched} attendance row(s).`);
-      return res.redirect(`/admin/attendance/sheet?course=${encodeURIComponent(courseId)}&sessionAt=${encodeURIComponent(req.body.sessionAt || "")}`);
+      return res.redirect(`/tenant/attendance/sheet?subject=${encodeURIComponent(subjectId)}&classGroup=${encodeURIComponent(classGroupId)}&sessionAt=${encodeURIComponent(req.body.sessionAt || "")}&academicYear=${encodeURIComponent(academicYear)}&term=${encodeURIComponent(term)}`);
     } catch (err) {
       console.error("ATTENDANCE SHEET SAVE ERROR:", err);
       req.flash?.("error", "Failed to save attendance sheet.");
-      return res.redirect("/admin/attendance/sheet");
+      return res.redirect("/tenant/attendance/sheet");
     }
   },
 
-  // POST /admin/attendance
   create: async (req, res) => {
-    const { Attendance, Student, Course } = req.models;
+    const { Attendance, Student, Subject } = req.models;
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
       req.flash?.("error", errors.array().map((e) => e.msg).join(" "));
-      return res.redirect("/admin/attendance");
+      return res.redirect("/tenant/attendance");
     }
 
     try {
-      const courseId = cleanStr(req.body.course, 80);
-      const course = Course ? await Course.findById(courseId).select("_id").lean() : null;
+      const subjectId = cleanStr(req.body.subject, 80);
+      const subject = await Subject.findById(subjectId).select("_id").lean();
 
-      if (!course) {
-        req.flash?.("error", "Course not found.");
-        return res.redirect("/admin/attendance");
+      if (!subject) {
+        req.flash?.("error", "Subject not found.");
+        return res.redirect("/tenant/attendance");
       }
 
       const sessionAt = parseDateTime(req.body.sessionAt);
       if (!sessionAt) {
         req.flash?.("error", "Session date/time is required.");
-        return res.redirect("/admin/attendance");
+        return res.redirect("/tenant/attendance");
       }
 
       const status = normalizeStatus(req.body.status) || "present";
       const notes = cleanStr(req.body.notes, 500);
+      const classGroup = isObjId(req.body.classGroup) ? req.body.classGroup : null;
+      const teacher = isObjId(req.body.teacher) ? req.body.teacher : null;
+      const academicYear = cleanStr(req.body.academicYear, 20);
+      const term = Math.max(1, Math.min(Number(req.body.term || 1), 3));
+      const attendanceDate = new Date(sessionAt);
+      attendanceDate.setHours(0, 0, 0, 0);
 
       let studentId = cleanStr(req.body.student, 80);
       if (!isObjId(studentId)) {
@@ -476,17 +553,22 @@ module.exports = {
         const student = await Student.findOne({ regNo, isDeleted: { $ne: true } }).select("_id").lean();
         if (!student) {
           req.flash?.("error", "Student not found by RegNo.");
-          return res.redirect("/admin/attendance");
+          return res.redirect("/tenant/attendance");
         }
         studentId = String(student._id);
       }
 
       await Attendance.updateOne(
-        { student: studentId, course: courseId, sessionAt, isDeleted: { $ne: true } },
+        { student: studentId, subject: subjectId, sessionAt, isDeleted: { $ne: true } },
         {
           $set: {
             student: studentId,
-            course: courseId,
+            classGroup,
+            subject: subjectId,
+            teacher,
+            academicYear,
+            term,
+            attendanceDate,
             sessionAt,
             status,
             notes,
@@ -500,48 +582,53 @@ module.exports = {
       );
 
       req.flash?.("success", "Attendance saved.");
-      return res.redirect("/admin/attendance");
+      return res.redirect("/tenant/attendance");
     } catch (err) {
       console.error("ATTENDANCE CREATE ERROR:", err);
       if (String(err?.code) === "11000") req.flash?.("error", "Duplicate attendance record.");
       else req.flash?.("error", "Failed to save attendance.");
-      return res.redirect("/admin/attendance");
+      return res.redirect("/tenant/attendance");
     }
   },
 
-  // POST /admin/attendance/:id
   update: async (req, res) => {
-    const { Attendance, Student, Course } = req.models;
+    const { Attendance, Student, Subject } = req.models;
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
       req.flash?.("error", errors.array().map((e) => e.msg).join(" "));
-      return res.redirect("/admin/attendance");
+      return res.redirect("/tenant/attendance");
     }
 
     try {
       const id = cleanStr(req.params.id, 80);
       if (!isObjId(id)) {
         req.flash?.("error", "Invalid attendance id.");
-        return res.redirect("/admin/attendance");
+        return res.redirect("/tenant/attendance");
       }
 
-      const courseId = cleanStr(req.body.course, 80);
-      const course = Course ? await Course.findById(courseId).select("_id").lean() : null;
+      const subjectId = cleanStr(req.body.subject, 80);
+      const subject = await Subject.findById(subjectId).select("_id").lean();
 
-      if (!course) {
-        req.flash?.("error", "Course not found.");
-        return res.redirect("/admin/attendance");
+      if (!subject) {
+        req.flash?.("error", "Subject not found.");
+        return res.redirect("/tenant/attendance");
       }
 
       const sessionAt = parseDateTime(req.body.sessionAt);
       if (!sessionAt) {
         req.flash?.("error", "Session date/time is required.");
-        return res.redirect("/admin/attendance");
+        return res.redirect("/tenant/attendance");
       }
 
       const status = normalizeStatus(req.body.status) || "present";
       const notes = cleanStr(req.body.notes, 500);
+      const classGroup = isObjId(req.body.classGroup) ? req.body.classGroup : null;
+      const teacher = isObjId(req.body.teacher) ? req.body.teacher : null;
+      const academicYear = cleanStr(req.body.academicYear, 20);
+      const term = Math.max(1, Math.min(Number(req.body.term || 1), 3));
+      const attendanceDate = new Date(sessionAt);
+      attendanceDate.setHours(0, 0, 0, 0);
 
       let studentId = cleanStr(req.body.student, 80);
       if (!isObjId(studentId)) {
@@ -549,7 +636,7 @@ module.exports = {
         const student = await Student.findOne({ regNo, isDeleted: { $ne: true } }).select("_id").lean();
         if (!student) {
           req.flash?.("error", "Student not found by RegNo.");
-          return res.redirect("/admin/attendance");
+          return res.redirect("/tenant/attendance");
         }
         studentId = String(student._id);
       }
@@ -559,7 +646,12 @@ module.exports = {
         {
           $set: {
             student: studentId,
-            course: courseId,
+            classGroup,
+            subject: subjectId,
+            teacher,
+            academicYear,
+            term,
+            attendanceDate,
             sessionAt,
             status,
             notes,
@@ -570,16 +662,15 @@ module.exports = {
       );
 
       req.flash?.("success", "Attendance updated.");
-      return res.redirect("/admin/attendance");
+      return res.redirect("/tenant/attendance");
     } catch (err) {
       console.error("ATTENDANCE UPDATE ERROR:", err);
       if (String(err?.code) === "11000") req.flash?.("error", "Duplicate attendance record.");
       else req.flash?.("error", "Failed to update attendance.");
-      return res.redirect("/admin/attendance");
+      return res.redirect("/tenant/attendance");
     }
   },
 
-  // POST /admin/attendance/:id/delete
   remove: async (req, res) => {
     try {
       const { Attendance } = req.models;
@@ -587,20 +678,19 @@ module.exports = {
 
       if (!isObjId(id)) {
         req.flash?.("error", "Invalid attendance id.");
-        return res.redirect("/admin/attendance");
+        return res.redirect("/tenant/attendance");
       }
 
       await Attendance.deleteOne({ _id: id });
       req.flash?.("success", "Attendance deleted.");
-      return res.redirect("/admin/attendance");
+      return res.redirect("/tenant/attendance");
     } catch (err) {
       console.error("ATTENDANCE DELETE ERROR:", err);
       req.flash?.("error", "Failed to delete attendance.");
-      return res.redirect("/admin/attendance");
+      return res.redirect("/tenant/attendance");
     }
   },
 
-  // POST /admin/attendance/bulk
   bulk: async (req, res) => {
     try {
       const { Attendance } = req.models;
@@ -615,40 +705,39 @@ module.exports = {
 
       if (!ids.length) {
         req.flash?.("error", "No records selected.");
-        return res.redirect("/admin/attendance");
+        return res.redirect("/tenant/attendance");
       }
 
       if (action === "set_status") {
         if (!status) {
           req.flash?.("error", "Choose a valid status.");
-          return res.redirect("/admin/attendance");
+          return res.redirect("/tenant/attendance");
         }
 
         await Attendance.updateMany({ _id: { $in: ids } }, { $set: { status } });
         req.flash?.("success", `Updated ${ids.length} record(s).`);
-        return res.redirect("/admin/attendance");
+        return res.redirect("/tenant/attendance");
       }
 
       if (action === "delete") {
         await Attendance.deleteMany({ _id: { $in: ids } });
         req.flash?.("success", `Deleted ${ids.length} record(s).`);
-        return res.redirect("/admin/attendance");
+        return res.redirect("/tenant/attendance");
       }
 
       req.flash?.("error", "Invalid bulk action.");
-      return res.redirect("/admin/attendance");
+      return res.redirect("/tenant/attendance");
     } catch (err) {
       console.error("ATTENDANCE BULK ERROR:", err);
       req.flash?.("error", "Bulk action failed.");
-      return res.redirect("/admin/attendance");
+      return res.redirect("/tenant/attendance");
     }
   },
 
-  // GET /admin/attendance/import-template
   importTemplate: async (_req, res) => {
     const rows = [
-      ["regNo", "courseCode", "sessionAt", "status", "notes"],
-      ["REG/2024/CS/031", "CSC101", "2026-03-19 08:00", "present", "On time"],
+      ["regNo", "subjectCode", "sessionAt", "status", "notes"],
+      ["REG/2026/001", "MATH-P4", "2026-03-19 08:00", "present", "On time"],
     ];
 
     const csv = rows.map((row) => row.map((v) => csvEsc(v)).join(",")).join("\n");
@@ -658,14 +747,13 @@ module.exports = {
     return res.send(csv);
   },
 
-  // POST /admin/attendance/import
   importCsv: async (req, res) => {
     try {
-      const { Attendance, Student, Course } = req.models;
+      const { Attendance, Student, Subject } = req.models;
 
       if (!req.file?.buffer) {
         req.flash?.("error", "CSV file is required.");
-        return res.redirect("/admin/attendance");
+        return res.redirect("/tenant/attendance");
       }
 
       const text = req.file.buffer.toString("utf8");
@@ -673,31 +761,31 @@ module.exports = {
 
       if (!rows.length) {
         req.flash?.("error", "CSV is empty.");
-        return res.redirect("/admin/attendance");
+        return res.redirect("/tenant/attendance");
       }
 
       const headers = rows[0].map((h) => cleanStr(h, 60).toLowerCase());
       const idx = (name) => headers.findIndex((h) => h === name.toLowerCase());
 
       const iReg = idx("regno");
-      const iCourseCode = idx("coursecode");
+      const iSubjectCode = idx("subjectcode");
       const iSessionAt = idx("sessionat");
       const iStatus = idx("status");
       const iNotes = idx("notes");
 
-      if (iReg < 0 || iCourseCode < 0 || iSessionAt < 0 || iStatus < 0) {
-        req.flash?.("error", "Required headers: regNo, courseCode, sessionAt, status.");
-        return res.redirect("/admin/attendance");
+      if (iReg < 0 || iSubjectCode < 0 || iSessionAt < 0 || iStatus < 0) {
+        req.flash?.("error", "Required headers: regNo, subjectCode, sessionAt, status.");
+        return res.redirect("/tenant/attendance");
       }
 
-      const allCourses = Course
-        ? await Course.find({ isDeleted: { $ne: true } }).select("code title name").lean()
-        : [];
+      const allSubjects = await Subject.find({})
+        .select("code title")
+        .lean();
 
-      const courseByCode = new Map();
-      allCourses.forEach((c) => {
-        const code = String(c.code || "").trim().toUpperCase();
-        if (code) courseByCode.set(code, c);
+      const subjectByCode = new Map();
+      allSubjects.forEach((s) => {
+        const code = String(s.code || "").trim().toUpperCase();
+        if (code) subjectByCode.set(code, s);
       });
 
       const regNos = [];
@@ -707,7 +795,7 @@ module.exports = {
       }
 
       const students = await Student.find({ regNo: { $in: regNos }, isDeleted: { $ne: true } })
-        .select("_id regNo")
+        .select("_id regNo class")
         .lean();
 
       const studentByReg = new Map();
@@ -720,22 +808,27 @@ module.exports = {
         const row = rows[r];
 
         const regNo = cleanStr(row[iReg], 60);
-        const courseCode = cleanStr(row[iCourseCode], 40).toUpperCase();
+        const subjectCode = cleanStr(row[iSubjectCode], 40).toUpperCase();
         const sessionAt = parseDateTime(row[iSessionAt]);
         const status = normalizeStatus(row[iStatus]);
         const notes = iNotes >= 0 ? cleanStr(row[iNotes], 500) : "";
 
-        if (!regNo || !courseCode || !sessionAt || !status) continue;
+        if (!regNo || !subjectCode || !sessionAt || !status) continue;
 
         const student = studentByReg.get(regNo);
-        const course = courseByCode.get(courseCode);
-        if (!student || !course) continue;
+        const subject = subjectByCode.get(subjectCode);
+        if (!student || !subject) continue;
+
+        const attendanceDate = new Date(sessionAt);
+        attendanceDate.setHours(0, 0, 0, 0);
 
         ops.push({
           updateOne: {
-            filter: { student: student._id, course: course._id, sessionAt, isDeleted: { $ne: true } },
+            filter: { student: student._id, subject: subject._id, sessionAt, isDeleted: { $ne: true } },
             update: {
               $set: {
+                classGroup: student.class || null,
+                attendanceDate,
                 status,
                 notes,
                 updatedBy: req.user?._id || null,
@@ -743,7 +836,7 @@ module.exports = {
               $setOnInsert: {
                 createdBy: req.user?._id || null,
                 student: student._id,
-                course: course._id,
+                subject: subject._id,
                 sessionAt,
               },
             },
@@ -763,33 +856,38 @@ module.exports = {
 
       if (!imported) {
         req.flash?.("error", "No valid rows imported.");
-        return res.redirect("/admin/attendance");
+        return res.redirect("/tenant/attendance");
       }
 
       req.flash?.("success", `Imported/updated ${imported} attendance record(s).`);
-      return res.redirect("/admin/attendance");
+      return res.redirect("/tenant/attendance");
     } catch (err) {
       console.error("ATTENDANCE IMPORT ERROR:", err);
       req.flash?.("error", "Import failed.");
-      return res.redirect("/admin/attendance");
+      return res.redirect("/tenant/attendance");
     }
   },
 
-  // GET /admin/attendance/export
   exportCsv: async (req, res) => {
     try {
       const { Attendance, Student } = req.models;
 
       const q = cleanStr(req.query.q, 120);
-      const course = cleanStr(req.query.course, 80);
+      const subject = cleanStr(req.query.subject, 80);
+      const classGroup = cleanStr(req.query.classGroup, 80);
       const status = cleanStr(req.query.status, 20);
+      const academicYear = cleanStr(req.query.academicYear, 20);
+      const term = cleanStr(req.query.term, 10);
       const from = parseDateTime(req.query.from);
       const to = parseDateTime(req.query.to);
 
       const filter = { isDeleted: { $ne: true } };
 
-      if (course && isObjId(course)) filter.course = course;
+      if (subject && isObjId(subject)) filter.subject = subject;
+      if (classGroup && isObjId(classGroup)) filter.classGroup = classGroup;
       if (status && normalizeStatus(status)) filter.status = normalizeStatus(status);
+      if (academicYear) filter.academicYear = academicYear;
+      if (term && !Number.isNaN(Number(term))) filter.term = Number(term);
 
       if (from || to) {
         filter.sessionAt = {};
@@ -815,7 +913,7 @@ module.exports = {
         if (!ids.length) {
           res.setHeader("Content-Type", "text/csv; charset=utf-8");
           res.setHeader("Content-Disposition", 'attachment; filename="attendance.csv"');
-          return res.send("regNo,studentName,email,courseCode,courseTitle,sessionAt,status,notes\n");
+          return res.send("regNo,studentName,email,className,subjectCode,subjectTitle,sessionAt,status,notes\n");
         }
 
         filter.student = { $in: ids };
@@ -823,11 +921,12 @@ module.exports = {
 
       const rows = await Attendance.find(filter)
         .populate({ path: "student", select: "fullName regNo email" })
-        .populate({ path: "course", select: "code title name" })
+        .populate({ path: "classGroup", select: "name code" })
+        .populate({ path: "subject", select: "code title shortTitle" })
         .sort({ sessionAt: -1 })
         .lean();
 
-      const header = ["regNo", "studentName", "email", "courseCode", "courseTitle", "sessionAt", "status", "notes"];
+      const header = ["regNo", "studentName", "email", "className", "subjectCode", "subjectTitle", "sessionAt", "status", "notes"];
       const lines = [header.join(",")];
 
       rows.forEach((a) => {
@@ -836,8 +935,9 @@ module.exports = {
           csvEsc(a.student?.regNo || ""),
           csvEsc(a.student?.fullName || ""),
           csvEsc(a.student?.email || ""),
-          csvEsc(a.course?.code || ""),
-          csvEsc(a.course?.title || a.course?.name || ""),
+          csvEsc(a.classGroup?.name || ""),
+          csvEsc(a.subject?.code || ""),
+          csvEsc(a.subject?.title || a.subject?.shortTitle || ""),
           csvEsc(sessionAt),
           csvEsc(a.status || ""),
           csvEsc(a.notes || ""),

@@ -1,6 +1,20 @@
 const mongoose = require("mongoose");
 const { body, validationResult } = require("express-validator");
 
+const LEVEL_TYPES = ["nursery", "primary", "secondary"];
+const SHIFTS = ["day", "boarding", "both"];
+const STATUSES = ["active", "inactive", "archived"];
+const CLASS_LEVELS = [
+  "BABY", "MIDDLE", "TOP",
+  "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8",
+  "S1", "S2", "S3", "S4", "S5", "S6",
+];
+const LEVEL_CLASS_MAP = {
+  nursery: ["BABY", "MIDDLE", "TOP"],
+  primary: ["P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"],
+  secondary: ["S1", "S2", "S3", "S4", "S5", "S6"],
+};
+
 function slugCode(input) {
   return String(input || "")
     .trim()
@@ -8,178 +22,142 @@ function slugCode(input) {
     .replace(/&/g, "AND")
     .replace(/[^A-Z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "")
-    .slice(0, 30);
+    .slice(0, 40);
 }
 
-const isObjId = (v) => !v || mongoose.Types.ObjectId.isValid(String(v));
+function normalizeClassLevel(value) {
+  return String(value || "").trim().toUpperCase();
+}
+
+function getSchoolUnits(req) {
+  return req.tenantDoc?.settings?.academics?.schoolUnits
+    || req.tenant?.settings?.academics?.schoolUnits
+    || [];
+}
+
+function findPlacement(req, schoolUnitId, campusId, levelType) {
+  const schoolUnits = getSchoolUnits(req);
+  for (const schoolUnit of schoolUnits) {
+    if (String(schoolUnit.id || schoolUnit._id || "") !== String(schoolUnitId || "")) continue;
+    for (const campus of schoolUnit.campuses || []) {
+      if (String(campus.id || campus._id || "") !== String(campusId || "")) continue;
+      const level = (campus.levels || []).find(
+        (l) => String(l.type || "").toLowerCase() === String(levelType || "").toLowerCase()
+      );
+      return { schoolUnit, campus, level: level || null };
+    }
+  }
+  return null;
+}
+
+function buildStructure(req) {
+  return (getSchoolUnits(req) || []).map((schoolUnit) => ({
+    id: String(schoolUnit.id || schoolUnit._id || ""),
+    name: schoolUnit.name || "",
+    code: schoolUnit.code || "",
+    campuses: (schoolUnit.campuses || []).map((campus) => ({
+      id: String(campus.id || campus._id || ""),
+      name: campus.name || "",
+      code: campus.code || "",
+      levels: (campus.levels || []).map((level) => ({
+        id: String(level.id || level._id || ""),
+        name: level.name || "",
+        type: level.type || "",
+        code: level.code || "",
+      })),
+    })),
+  }));
+}
+
+function buildSmartCode(body, placement, sectionName) {
+  const levelType = String(body.levelType || "").trim().toUpperCase();
+  const classLevel = normalizeClassLevel(body.classLevel || "");
+  const term = Math.max(1, Math.min(Number(body.term || 1), 3));
+  const year = String(body.academicYear || "").trim();
+  const campusCode = slugCode(placement?.campus?.code || placement?.campus?.name || "CAMPUS");
+
+  const shortLevel =
+    levelType === "NURSERY" ? "NRY" :
+    levelType === "PRIMARY" ? "PRI" :
+    levelType === "SECONDARY" ? "SEC" : "SCH";
+
+  const sectionCode = slugCode(sectionName || "GENERAL");
+  return slugCode(`${campusCode}-${shortLevel}-${classLevel}-${sectionCode}-T${term}-${year}`);
+}
 
 const classRules = [
-  body("name")
-    .trim()
-    .isLength({ min: 2, max: 160 })
-    .withMessage("Name is required (2-160 chars)."),
-
-  body("code")
-    .optional({ checkFalsy: true })
-    .trim()
-    .isLength({ min: 2, max: 30 })
-    .withMessage("Code must be 2-30 chars.")
-    .customSanitizer((v) => String(v || "").toUpperCase()),
-
-  body("program")
-    .optional({ checkFalsy: true })
-    .custom(isObjId)
-    .withMessage("Invalid program id."),
-
-  body("department")
-    .optional({ checkFalsy: true })
-    .custom(isObjId)
-    .withMessage("Invalid department id."),
-
-  body("advisor")
-    .optional({ checkFalsy: true })
-    .custom(isObjId)
-    .withMessage("Invalid advisor id."),
-
-  body("academicYear")
-    .optional({ checkFalsy: true })
-    .trim()
-    .isLength({ max: 20 }),
-
-  body("yearOfStudy")
-    .optional({ checkFalsy: true })
-    .isInt({ min: 0, max: 20 })
-    .toInt(),
-
-  body("semester")
-    .optional({ checkFalsy: true })
-    .isInt({ min: 0, max: 6 })
-    .toInt(),
-
-  body("section")
-    .optional({ checkFalsy: true })
-    .trim()
-    .isLength({ max: 10 }),
-
-  body("studyMode")
-    .optional({ checkFalsy: true })
-    .isIn(["day", "evening", "weekend", "online"])
-    .withMessage("Invalid study mode."),
-
-  body("intake")
-    .optional({ checkFalsy: true })
-    .trim()
-    .isLength({ max: 30 }),
-
-  body("capacity")
-    .optional({ checkFalsy: true })
-    .isInt({ min: 0, max: 100000 })
-    .toInt(),
-
-  body("enrolledCount")
-    .optional({ checkFalsy: true })
-    .isInt({ min: 0, max: 100000 })
-    .toInt(),
-
-  body("meetingRoom")
-    .optional({ checkFalsy: true })
-    .trim()
-    .isLength({ max: 80 }),
-
-  body("campus")
-    .optional({ checkFalsy: true })
-    .trim()
-    .isLength({ max: 80 }),
-
-  body("status")
-    .optional({ checkFalsy: true })
-    .isIn(["active", "inactive", "archived"])
-    .withMessage("Invalid status."),
-
-  body("description")
-    .optional({ checkFalsy: true })
-    .trim()
-    .isLength({ max: 1200 }),
+  body("name").trim().isLength({ min: 2, max: 180 }).withMessage("Class name is required (2-180 chars)."),
+  body("schoolUnitId").trim().notEmpty().withMessage("School unit is required."),
+  body("campusId").trim().notEmpty().withMessage("Campus is required."),
+  body("levelType").trim().isIn(LEVEL_TYPES).withMessage("Invalid level."),
+  body("classLevel").trim().isIn(CLASS_LEVELS).withMessage("Invalid class level."),
+  body("sectionId").optional({ checkFalsy: true }).trim().custom((v) => !v || mongoose.Types.ObjectId.isValid(v)).withMessage("Select a valid section."),
+  body("code").optional({ checkFalsy: true }).trim().isLength({ min: 2, max: 40 }).withMessage("Code must be 2-40 chars."),
+  body("term").optional({ checkFalsy: true }).isInt({ min: 1, max: 3 }).toInt().withMessage("Term must be 1-3."),
+  body("academicYear").optional({ checkFalsy: true }).trim().isLength({ max: 20 }),
+  body("classTeacher").optional({ checkFalsy: true }).custom((v) => !v || mongoose.Types.ObjectId.isValid(v)).withMessage("Invalid class teacher."),
+  body("shift").optional({ checkFalsy: true }).isIn(SHIFTS).withMessage("Invalid shift."),
+  body("status").optional({ checkFalsy: true }).isIn(STATUSES).withMessage("Invalid status."),
+  body("capacity").optional({ checkFalsy: true }).isInt({ min: 0, max: 100000 }).toInt(),
+  body("enrolledCount").optional({ checkFalsy: true }).isInt({ min: 0, max: 100000 }).toInt(),
+  body("room").optional({ checkFalsy: true }).trim().isLength({ max: 80 }),
+  body("description").optional({ checkFalsy: true }).trim().isLength({ max: 1200 }),
 ];
-
-async function buildSmartCode(Program, body) {
-  let programCode = "";
-  if (body.program && mongoose.Types.ObjectId.isValid(String(body.program))) {
-    const p = await Program.findById(body.program).select("code name").lean();
-    programCode = p?.code || slugCode(p?.name || "");
-  }
-
-  const y = Math.max(0, Math.min(Number(body.yearOfStudy || 1), 20));
-  const s = Math.max(0, Math.min(Number(body.semester || 1), 6));
-  const sec = String(body.section || "A").trim().toUpperCase() || "A";
-
-  const base = programCode
-    ? `${programCode}-Y${y}-S${s}-${sec}`
-    : `${String(body.name || "").trim()}-Y${y}-S${s}-${sec}`;
-
-  return slugCode(base);
-}
 
 module.exports = {
   classRules,
 
   list: async (req, res) => {
     try {
-      const { Class, Program, Department, Staff } = req.models;
+      const { Class, Staff, Section } = req.models;
 
       const q = String(req.query.q || "").trim();
       const status = String(req.query.status || "").trim();
-      const program = String(req.query.program || "").trim();
-      const department = String(req.query.department || "").trim();
+      const levelType = String(req.query.levelType || "").trim();
+      const classLevel = String(req.query.classLevel || "").trim().toUpperCase();
       const academicYear = String(req.query.academicYear || "").trim();
+      const term = String(req.query.term || "").trim();
+      const schoolUnitId = String(req.query.schoolUnitId || "").trim();
+      const campusId = String(req.query.campusId || "").trim();
+      const sectionId = String(req.query.sectionId || "").trim();
 
       const page = Math.max(parseInt(req.query.page || "1", 10), 1);
       const perPage = 10;
 
       const filter = {};
-
       if (q) {
         filter.$or = [
           { name: { $regex: q, $options: "i" } },
           { code: { $regex: q, $options: "i" } },
-          { campus: { $regex: q, $options: "i" } },
-          { meetingRoom: { $regex: q, $options: "i" } },
-          { intake: { $regex: q, $options: "i" } },
-          { studyMode: { $regex: q, $options: "i" } },
+          { classLevel: { $regex: q, $options: "i" } },
+          { sectionName: { $regex: q, $options: "i" } },
+          { stream: { $regex: q, $options: "i" } },
+          { campusName: { $regex: q, $options: "i" } },
+          { room: { $regex: q, $options: "i" } },
+          { shift: { $regex: q, $options: "i" } },
         ];
       }
 
       if (status) filter.status = status;
+      if (levelType) filter.levelType = levelType;
+      if (classLevel) filter.classLevel = classLevel;
       if (academicYear) filter.academicYear = academicYear;
-      if (program && mongoose.Types.ObjectId.isValid(program)) filter.program = program;
-      if (department && mongoose.Types.ObjectId.isValid(department)) filter.department = department;
+      if (term && !Number.isNaN(Number(term))) filter.term = Number(term);
+      if (schoolUnitId) filter.schoolUnitId = schoolUnitId;
+      if (campusId) filter.campusId = campusId;
+      if (sectionId) filter.sectionId = sectionId;
 
       const total = await Class.countDocuments(filter);
       const totalPages = Math.max(Math.ceil(total / perPage), 1);
       const safePage = Math.min(page, totalPages);
 
       const classes = await Class.find(filter)
-        .populate("program", "name code faculty level")
-        .populate("department", "name code")
-        .populate("advisor", "fullName name email role")
+        .populate("classTeacher", "fullName name email role")
+        .populate("sectionId", "name code classId className")
         .sort({ createdAt: -1 })
         .skip((safePage - 1) * perPage)
         .limit(perPage)
         .lean();
-
-      const programsList = Program
-        ? await Program.find({ status: { $ne: "archived" } })
-            .select("name code faculty level")
-            .sort({ name: 1 })
-            .lean()
-        : [];
-
-      const departmentsList = Department
-        ? await Department.find({ status: { $ne: "inactive" } })
-            .select("name code")
-            .sort({ name: 1 })
-            .lean()
-        : [];
 
       const staffList = Staff
         ? await Staff.find({})
@@ -188,7 +166,15 @@ module.exports = {
             .lean()
         : [];
 
+      const sections = Section
+        ? await Section.find({})
+            .select("name code schoolUnitId campusId levelType classId className classLevel classStream status")
+            .sort({ name: 1, createdAt: -1 })
+            .lean()
+        : [];
+
       const academicYears = (await Class.distinct("academicYear")).filter(Boolean).sort();
+      const classLevels = (await Class.distinct("classLevel")).filter(Boolean).sort();
 
       const kpis = {
         total,
@@ -200,18 +186,24 @@ module.exports = {
       return res.render("tenant/admin/classes/index", {
         tenant: req.tenant || null,
         classes,
-        programsList,
-        departmentsList,
         staffList,
+        sections,
+        structure: buildStructure(req),
         academicYears,
+        classLevels,
+        classLevelMap: LEVEL_CLASS_MAP,
         csrfToken: res.locals.csrfToken || null,
         kpis,
         query: {
           q,
           status,
-          program,
-          department,
+          levelType,
+          classLevel,
           academicYear,
+          term,
+          schoolUnitId,
+          campusId,
+          sectionId,
           page: safePage,
           total,
           totalPages,
@@ -229,7 +221,7 @@ module.exports = {
   },
 
   create: async (req, res) => {
-    const { Class, Program } = req.models;
+    const { Class, Section } = req.models;
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -238,10 +230,31 @@ module.exports = {
     }
 
     try {
-      const name = String(req.body.name || "").trim();
+      const placement = findPlacement(req, req.body.schoolUnitId, req.body.campusId, req.body.levelType);
+      if (!placement) {
+        req.flash?.("error", "Selected school unit, campus, or level was not found.");
+        return res.redirect("/admin/classes");
+      }
 
+      const allowed = LEVEL_CLASS_MAP[req.body.levelType] || [];
+      const normalizedClassLevel = normalizeClassLevel(req.body.classLevel);
+      if (!allowed.includes(normalizedClassLevel)) {
+        req.flash?.("error", "Selected class does not match the chosen level.");
+        return res.redirect("/admin/classes");
+      }
+
+      let section = null;
+      if (req.body.sectionId) {
+        section = await Section.findById(req.body.sectionId).lean();
+        if (!section) {
+          req.flash?.("error", "Selected section was not found.");
+          return res.redirect("/admin/classes");
+        }
+      }
+
+      const name = String(req.body.name || "").trim();
       let code = String(req.body.code || "").trim().toUpperCase();
-      if (!code) code = await buildSmartCode(Program, req.body);
+      if (!code) code = buildSmartCode(req.body, placement, section?.name || "");
       code = slugCode(code);
 
       const exists = await Class.findOne({ code }).lean();
@@ -253,20 +266,32 @@ module.exports = {
       const doc = {
         name,
         code,
-        program: req.body.program && mongoose.Types.ObjectId.isValid(req.body.program) ? req.body.program : null,
-        department: req.body.department && mongoose.Types.ObjectId.isValid(req.body.department) ? req.body.department : null,
-        advisor: req.body.advisor && mongoose.Types.ObjectId.isValid(req.body.advisor) ? req.body.advisor : null,
+        schoolUnitId: String(placement.schoolUnit.id || placement.schoolUnit._id || ""),
+        schoolUnitName: String(placement.schoolUnit.name || "").trim(),
+        schoolUnitCode: slugCode(placement.schoolUnit.code || placement.schoolUnit.name || "UNIT"),
+        campusId: String(placement.campus.id || placement.campus._id || ""),
+        campusName: String(placement.campus.name || "").trim(),
+        campusCode: slugCode(placement.campus.code || placement.campus.name || "CAMPUS"),
+        levelId: String(placement.level?.id || placement.level?._id || ""),
+        levelName: String(placement.level?.name || req.body.levelType).trim(),
+        levelType: LEVEL_TYPES.includes(req.body.levelType) ? req.body.levelType : "primary",
+        classLevel: normalizedClassLevel,
+
+        sectionId: section?._id || null,
+        sectionName: section ? String(section.name || "").trim() : "",
+        stream: section ? String(section.name || "").trim() : "",
+
+        term: Math.max(1, Math.min(Number(req.body.term || 1), 3)),
         academicYear: String(req.body.academicYear || "").trim().slice(0, 20),
-        yearOfStudy: Math.max(0, Math.min(Number(req.body.yearOfStudy || 1), 20)),
-        semester: Math.max(0, Math.min(Number(req.body.semester || 1), 6)),
-        section: String(req.body.section || "A").trim().slice(0, 10) || "A",
-        studyMode: ["day", "evening", "weekend", "online"].includes(req.body.studyMode) ? req.body.studyMode : "day",
-        intake: String(req.body.intake || "").trim().slice(0, 30),
+        classTeacher:
+          req.body.classTeacher && mongoose.Types.ObjectId.isValid(req.body.classTeacher)
+            ? req.body.classTeacher
+            : null,
         capacity: Math.max(0, Math.min(Number(req.body.capacity || 0), 100000)),
         enrolledCount: Math.max(0, Math.min(Number(req.body.enrolledCount || 0), 100000)),
-        meetingRoom: String(req.body.meetingRoom || "").trim().slice(0, 80),
-        campus: String(req.body.campus || "").trim().slice(0, 80),
-        status: ["active", "inactive", "archived"].includes(req.body.status) ? req.body.status : "active",
+        room: String(req.body.room || "").trim().slice(0, 80),
+        shift: SHIFTS.includes(req.body.shift) ? req.body.shift : "day",
+        status: STATUSES.includes(req.body.status) ? req.body.status : "active",
         description: String(req.body.description || "").trim().slice(0, 1200),
         createdBy: req.user?._id || null,
       };
@@ -277,14 +302,14 @@ module.exports = {
       return res.redirect("/admin/classes");
     } catch (err) {
       console.error("CREATE CLASS ERROR:", err);
-      if (String(err?.code) === "11000") req.flash?.("error", "Class code already exists.");
+      if (String(err?.code) === "11000") req.flash?.("error", "Class already exists for that placement and section.");
       else req.flash?.("error", "Failed to create class.");
       return res.redirect("/admin/classes");
     }
   },
 
   update: async (req, res) => {
-    const { Class, Program } = req.models;
+    const { Class, Section } = req.models;
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -299,10 +324,31 @@ module.exports = {
         return res.redirect("/admin/classes");
       }
 
-      const name = String(req.body.name || "").trim();
+      const placement = findPlacement(req, req.body.schoolUnitId, req.body.campusId, req.body.levelType);
+      if (!placement) {
+        req.flash?.("error", "Selected school unit, campus, or level was not found.");
+        return res.redirect("/admin/classes");
+      }
 
+      const allowed = LEVEL_CLASS_MAP[req.body.levelType] || [];
+      const normalizedClassLevel = normalizeClassLevel(req.body.classLevel);
+      if (!allowed.includes(normalizedClassLevel)) {
+        req.flash?.("error", "Selected class does not match the chosen level.");
+        return res.redirect("/admin/classes");
+      }
+
+      let section = null;
+      if (req.body.sectionId) {
+        section = await Section.findById(req.body.sectionId).lean();
+        if (!section) {
+          req.flash?.("error", "Selected section was not found.");
+          return res.redirect("/admin/classes");
+        }
+      }
+
+      const name = String(req.body.name || "").trim();
       let code = String(req.body.code || "").trim().toUpperCase();
-      if (!code) code = await buildSmartCode(Program, req.body);
+      if (!code) code = buildSmartCode(req.body, placement, section?.name || "");
       code = slugCode(code);
 
       const collision = await Class.findOne({ code, _id: { $ne: id } }).lean();
@@ -314,20 +360,32 @@ module.exports = {
       const update = {
         name,
         code,
-        program: req.body.program && mongoose.Types.ObjectId.isValid(req.body.program) ? req.body.program : null,
-        department: req.body.department && mongoose.Types.ObjectId.isValid(req.body.department) ? req.body.department : null,
-        advisor: req.body.advisor && mongoose.Types.ObjectId.isValid(req.body.advisor) ? req.body.advisor : null,
+        schoolUnitId: String(placement.schoolUnit.id || placement.schoolUnit._id || ""),
+        schoolUnitName: String(placement.schoolUnit.name || "").trim(),
+        schoolUnitCode: slugCode(placement.schoolUnit.code || placement.schoolUnit.name || "UNIT"),
+        campusId: String(placement.campus.id || placement.campus._id || ""),
+        campusName: String(placement.campus.name || "").trim(),
+        campusCode: slugCode(placement.campus.code || placement.campus.name || "CAMPUS"),
+        levelId: String(placement.level?.id || placement.level?._id || ""),
+        levelName: String(placement.level?.name || req.body.levelType).trim(),
+        levelType: LEVEL_TYPES.includes(req.body.levelType) ? req.body.levelType : "primary",
+        classLevel: normalizedClassLevel,
+
+        sectionId: section?._id || null,
+        sectionName: section ? String(section.name || "").trim() : "",
+        stream: section ? String(section.name || "").trim() : "",
+
+        term: Math.max(1, Math.min(Number(req.body.term || 1), 3)),
         academicYear: String(req.body.academicYear || "").trim().slice(0, 20),
-        yearOfStudy: Math.max(0, Math.min(Number(req.body.yearOfStudy || 1), 20)),
-        semester: Math.max(0, Math.min(Number(req.body.semester || 1), 6)),
-        section: String(req.body.section || "A").trim().slice(0, 10) || "A",
-        studyMode: ["day", "evening", "weekend", "online"].includes(req.body.studyMode) ? req.body.studyMode : "day",
-        intake: String(req.body.intake || "").trim().slice(0, 30),
+        classTeacher:
+          req.body.classTeacher && mongoose.Types.ObjectId.isValid(req.body.classTeacher)
+            ? req.body.classTeacher
+            : null,
         capacity: Math.max(0, Math.min(Number(req.body.capacity || 0), 100000)),
         enrolledCount: Math.max(0, Math.min(Number(req.body.enrolledCount || 0), 100000)),
-        meetingRoom: String(req.body.meetingRoom || "").trim().slice(0, 80),
-        campus: String(req.body.campus || "").trim().slice(0, 80),
-        status: ["active", "inactive", "archived"].includes(req.body.status) ? req.body.status : "active",
+        room: String(req.body.room || "").trim().slice(0, 80),
+        shift: SHIFTS.includes(req.body.shift) ? req.body.shift : "day",
+        status: STATUSES.includes(req.body.status) ? req.body.status : "active",
         description: String(req.body.description || "").trim().slice(0, 1200),
       };
 
@@ -337,7 +395,7 @@ module.exports = {
       return res.redirect("/admin/classes");
     } catch (err) {
       console.error("UPDATE CLASS ERROR:", err);
-      if (String(err?.code) === "11000") req.flash?.("error", "Class code already exists.");
+      if (String(err?.code) === "11000") req.flash?.("error", "Class already exists for that placement and section.");
       else req.flash?.("error", "Failed to update class.");
       return res.redirect("/admin/classes");
     }
@@ -353,7 +411,7 @@ module.exports = {
         return res.redirect("/admin/classes");
       }
 
-      const next = ["active", "inactive", "archived"].includes(req.body.status) ? req.body.status : null;
+      const next = STATUSES.includes(req.body.status) ? req.body.status : null;
       if (!next) {
         req.flash?.("error", "Invalid status.");
         return res.redirect("/admin/classes");
@@ -392,7 +450,6 @@ module.exports = {
   bulk: async (req, res) => {
     try {
       const { Class } = req.models;
-
       const action = String(req.body.action || "").trim();
       const ids = String(req.body.ids || "")
         .split(",")

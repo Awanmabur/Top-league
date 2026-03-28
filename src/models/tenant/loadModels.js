@@ -27,9 +27,9 @@ module.exports = function loadTenantModels(conn) {
     Transcript: defineModel("Transcript"),
     AcademicEvent: defineModel("AcademicEvent"),
     Assignment: defineModel("Assignment"),
-    Course: defineModel("Course"),
+    Subject: defineModel("Subject"),
 
-    FeeStructure: defineModel("FeeStructure"),
+    Fees: defineModel("Fees"),
     Scholarship: defineModel("Scholarship"),
     ScholarshipApplication: defineModel("ScholarshipApplication"),
     Notification: defineModel("Notification"),
@@ -51,6 +51,7 @@ module.exports = function loadTenantModels(conn) {
 
     Class: defineModel("Class"),
     TimetableEntry: defineModel("TimetableEntry"),
+    Section: defineModel("Section"),
 
     Student: defineModel("Student"),
     Parent: defineModel("Parent"),

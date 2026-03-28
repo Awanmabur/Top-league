@@ -1,24 +1,34 @@
 (function () {
   const $ = (id) => document.getElementById(id);
 
-  function readClassesData() {
-    const el = $("classesData");
-    if (!el) return [];
+  function readJson(id, fallback) {
+    const el = $(id);
+    if (!el) return fallback;
     try {
-      return JSON.parse(el.value || "[]");
+      return JSON.parse(el.value || JSON.stringify(fallback));
     } catch (err) {
-      console.error("Failed to parse classes data:", err);
-      return [];
+      console.error("Failed to parse JSON:", id, err);
+      return fallback;
     }
   }
 
-  const CLASSES = readClassesData();
+  const CLASSES = readJson("classesData", []);
+  const STRUCTURE = readJson("structureData", []);
+  const CLASS_LEVEL_MAP = readJson("classLevelMap", {});
+  const SECTIONS = readJson("sectionsData", []);
+  const DEFAULT_LEVEL_OPTIONS = [
+    { type: "nursery", name: "Nursery" },
+    { type: "primary", name: "Primary" },
+    { type: "secondary", name: "Secondary" },
+  ];
+  const DEFAULT_CLASS_LEVEL_MAP = {
+    nursery: ["BABY", "MIDDLE", "TOP"],
+    primary: ["P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"],
+    secondary: ["S1", "S2", "S3", "S4", "S5", "S6"],
+  };
   if (!$("tbodyClasses")) return;
 
-  const state = {
-    selected: new Set(),
-    currentViewId: null,
-  };
+  const state = { selected: new Set(), currentViewId: null };
 
   function escapeHtml(v) {
     return String(v ?? "")
@@ -57,84 +67,136 @@
   }
 
   function statusPill(status) {
-    if (status === "active") {
-      return '<span class="pill ok"><i class="fa-solid fa-circle-check"></i> Active</span>';
-    }
-    if (status === "archived") {
-      return '<span class="pill bad"><i class="fa-solid fa-box-archive"></i> Archived</span>';
-    }
+    if (status === "active") return '<span class="pill ok"><i class="fa-solid fa-circle-check"></i> Active</span>';
+    if (status === "archived") return '<span class="pill bad"><i class="fa-solid fa-box-archive"></i> Archived</span>';
     return '<span class="pill warn"><i class="fa-solid fa-circle-pause"></i> Inactive</span>';
   }
 
-  function modeLabel(mode) {
-    const map = {
-      day: "Day",
-      evening: "Evening",
-      weekend: "Weekend",
-      online: "Online",
-    };
-    return map[mode] || mode || "—";
+  function schoolLevelLabel(level) {
+    const map = { nursery: "Nursery", primary: "Primary", secondary: "Secondary" };
+    return map[level] || level || "—";
+  }
+
+  function shiftLabel(shift) {
+    const map = { day: "Day", boarding: "Boarding", both: "Both" };
+    return map[shift] || shift || "—";
+  }
+
+  function campusesForUnit(unitId) {
+    const unit = STRUCTURE.find((x) => String(x.id) === String(unitId));
+    return unit ? (unit.campuses || []) : [];
+  }
+
+  function levelsForCampus(unitId, campusId) {
+    const campus = campusesForUnit(unitId).find((x) => String(x.id) === String(campusId));
+    return campus ? (campus.levels || []) : [];
+  }
+
+  function sectionOptions(unitId, campusId, levelType, classLevel) {
+    return SECTIONS.filter((section) =>
+      (!unitId || String(section.schoolUnitId || "") === String(unitId)) &&
+      (!campusId || String(section.campusId || "") === String(campusId)) &&
+      (!levelType || String(section.levelType || "") === String(levelType)) &&
+      (!classLevel || String(section.classLevel || "").toUpperCase() === String(classLevel || "").toUpperCase())
+    );
+  }
+
+  function fillCampusOptions(unitId, selected) {
+    const options = campusesForUnit(unitId).map((c) => (
+      `<option value="${escapeHtml(c.id)}" ${String(selected || "") === String(c.id) ? "selected" : ""}>${escapeHtml(c.name)}</option>`
+    )).join("");
+    $("mCampusId").innerHTML = `<option value="">— Select Campus —</option>${options}`;
+  }
+
+  function fillLevelOptions(unitId, campusId, selectedLevelType) {
+    const rawLevels = levelsForCampus(unitId, campusId);
+    const normalized = rawLevels
+      .map((l) => ({
+        type: String(l?.type || "").toLowerCase(),
+        name: l?.name || schoolLevelLabel(l?.type),
+      }))
+      .filter((l) => l.type);
+
+    const unique = [];
+    const seen = new Set();
+    normalized.forEach((l) => {
+      if (seen.has(l.type)) return;
+      seen.add(l.type);
+      unique.push(l);
+    });
+
+    const levels = unique.length ? unique : DEFAULT_LEVEL_OPTIONS;
+    const preferred = String(selectedLevelType || "").toLowerCase();
+    const matchExists = levels.some((l) => String(l.type) === preferred);
+    const finalSelected = matchExists ? preferred : "";
+
+    const options = levels.map((l) => (
+      `<option value="${escapeHtml(l.type)}" ${String(finalSelected) === String(l.type) ? "selected" : ""}>${escapeHtml(l.name || schoolLevelLabel(l.type))}</option>`
+    )).join("");
+    $("mLevelType").innerHTML = `<option value="">— Select Level —</option>${options}`;
+  }
+
+  function fillClassLevelOptions(levelType, selectedClassLevel) {
+    const normalizedType = String(levelType || "").toLowerCase();
+    const levels = CLASS_LEVEL_MAP[normalizedType] || DEFAULT_CLASS_LEVEL_MAP[normalizedType] || [];
+    const normalizedSelected = String(selectedClassLevel || "").toUpperCase();
+    const matchExists = levels.some((item) => String(item) === normalizedSelected);
+    const finalSelected = matchExists ? normalizedSelected : "";
+
+    const options = levels.map((item) => (
+      `<option value="${escapeHtml(item)}" ${String(finalSelected) === String(item) ? "selected" : ""}>${escapeHtml(item)}</option>`
+    )).join("");
+    $("mClassLevel").innerHTML = `<option value="">— Select Class Level —</option>${options}`;
+  }
+
+  function fillSectionOptions(selectedSectionId) {
+    const select = $("mSectionId");
+    if (!select) return;
+
+    const unitId = $("mSchoolUnitId").value;
+    const campusId = $("mCampusId").value;
+    const levelType = $("mLevelType").value;
+    const classLevel = $("mClassLevel").value;
+
+    const optionsList = sectionOptions(unitId, campusId, levelType, classLevel);
+    const selected = String(selectedSectionId || "");
+
+    const options = optionsList.map((section) => {
+      const labelBits = [section.name || "Section"];
+      if (section.className) labelBits.push(section.className);
+      if (section.classStream) labelBits.push(section.classStream);
+      return `<option value="${escapeHtml(section._id || section.id)}" ${String(section._id || section.id) === selected ? "selected" : ""}>${escapeHtml(labelBits.join(" • "))}</option>`;
+    }).join("");
+
+    select.innerHTML = `<option value="">— No Section / Stream —</option>${options}`;
+    $("sectionHint").textContent = optionsList.length
+      ? `${optionsList.length} optional section option(s) available from the Section module.`
+      : "No sections found for this placement. You can still save the class without selecting a section.";
   }
 
   function renderTable() {
     $("tbodyClasses").innerHTML =
       CLASSES.map((c) => {
         const checked = state.selected.has(c.id) ? "checked" : "";
-        const yss = `Y${Number(c.yearOfStudy || 1)} / S${Number(c.semester || 1)} / ${c.section || "A"}`;
+        const sectionTerm = `${c.sectionName || c.stream || "—"} / Term ${Number(c.term || 1)}`;
 
         return `
           <tr class="row-clickable" data-id="${escapeHtml(c.id)}">
-            <td class="col-check">
-              <input type="checkbox" class="rowCheck" data-id="${escapeHtml(c.id)}" ${checked}>
-            </td>
-
+            <td class="col-check"><input type="checkbox" class="rowCheck" data-id="${escapeHtml(c.id)}" ${checked}></td>
             <td class="col-class">
               <div class="class-main">
                 <div class="class-title" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</div>
                 <div class="class-sub" title="${escapeHtml(c.code || "—")}">${escapeHtml(c.code || "—")}</div>
               </div>
             </td>
-
-            <td class="col-program">
-              <span class="cell-ellipsis" title="${escapeHtml(c.programName || "—")}">
-                ${escapeHtml(c.programName || "—")}
-              </span>
-            </td>
-
-            <td class="col-department">
-              <span class="cell-ellipsis" title="${escapeHtml(c.departmentName || "—")}">
-                ${escapeHtml(c.departmentName || "—")}
-              </span>
-            </td>
-
-            <td class="col-academic">
-              <span class="cell-ellipsis" title="${escapeHtml(c.academicYear || "—")}">
-                ${escapeHtml(c.academicYear || "—")}
-              </span>
-            </td>
-
-            <td class="col-yss">
-              <span class="cell-ellipsis" title="${escapeHtml(yss)}">${escapeHtml(yss)}</span>
-            </td>
-
-            <td class="col-mode">
-              <span class="cell-ellipsis">${escapeHtml(modeLabel(c.studyMode))}</span>
-            </td>
-
-            <td class="col-capacity">
-              <span class="cell-ellipsis">${escapeHtml(String(c.capacity || 0))} / ${escapeHtml(String(c.enrolledCount || 0))}</span>
-            </td>
-
-            <td class="col-advisor">
-              <span class="cell-ellipsis" title="${escapeHtml(c.advisorName || "—")}">
-                ${escapeHtml(c.advisorName || "—")}
-              </span>
-            </td>
-
-            <td class="col-status">
-              ${statusPill(c.status)}
-            </td>
-
+            <td class="col-level"><span class="cell-ellipsis">${escapeHtml(schoolLevelLabel(c.levelType))}</span></td>
+            <td class="col-classlevel"><span class="cell-ellipsis">${escapeHtml(c.classLevel || "—")}</span></td>
+            <td class="col-streamterm"><span class="cell-ellipsis">${escapeHtml(sectionTerm)}</span></td>
+            <td class="col-year"><span class="cell-ellipsis">${escapeHtml(c.academicYear || "—")}</span></td>
+            <td class="col-shift"><span class="cell-ellipsis">${escapeHtml(shiftLabel(c.shift))}</span></td>
+            <td class="col-capacity"><span class="cell-ellipsis">${escapeHtml(String(c.capacity || 0))} / ${escapeHtml(String(c.enrolledCount || 0))}</span></td>
+            <td class="col-teacher"><span class="cell-ellipsis">${escapeHtml(c.classTeacherName || "—")}</span></td>
+            <td class="col-status">${statusPill(c.status)}</td>
             <td class="col-actions">
               <div class="actions">
                 <button class="btn-xs actView" type="button" title="View"><i class="fa-solid fa-eye"></i></button>
@@ -146,13 +208,7 @@
           </tr>
         `;
       }).join("") ||
-      `
-      <tr>
-        <td colspan="11" style="padding:18px;">
-          <div class="muted">No classes found.</div>
-        </td>
-      </tr>
-      `;
+      `<tr><td colspan="11" style="padding:18px;"><div class="muted">No classes found.</div></td></tr>`;
 
     $("checkAll").checked = CLASSES.length > 0 && CLASSES.every((c) => state.selected.has(c.id));
     syncBulkbar();
@@ -171,19 +227,18 @@
     $("mName").value = c ? c.name || "" : "";
     $("mCode").value = c ? c.code || "" : "";
     $("mStatus").value = c ? c.status || "active" : "active";
-    $("mProgram").value = c ? c.programId || "" : "";
-    $("mDepartment").value = c ? c.departmentId || "" : "";
-    $("mAdvisor").value = c ? c.advisorId || "" : "";
+    $("mSchoolUnitId").value = c ? c.schoolUnitId || "" : "";
+    fillCampusOptions($("mSchoolUnitId").value, c ? c.campusId : "");
+    fillLevelOptions($("mSchoolUnitId").value, $("mCampusId").value, c ? c.levelType : "");
+    fillClassLevelOptions($("mLevelType").value, c ? c.classLevel : "");
+    fillSectionOptions(c ? c.sectionId : "");
+    $("mTerm").value = c ? String(c.term ?? 1) : "1";
     $("mAcademicYear").value = c ? c.academicYear || "" : "";
-    $("mIntake").value = c ? c.intake || "" : "";
-    $("mStudyMode").value = c ? c.studyMode || "day" : "day";
-    $("mYearOfStudy").value = c ? String(c.yearOfStudy ?? 1) : "1";
-    $("mSemester").value = c ? String(c.semester ?? 1) : "1";
-    $("mSection").value = c ? c.section || "A" : "A";
+    $("mClassTeacher").value = c ? c.classTeacherId || "" : "";
+    $("mShift").value = c ? c.shift || "day" : "day";
     $("mCapacity").value = c ? String(c.capacity || 0) : "";
     $("mEnrolledCount").value = c ? String(c.enrolledCount || 0) : "";
-    $("mMeetingRoom").value = c ? c.meetingRoom || "" : "";
-    $("mCampus").value = c ? c.campus || "" : "";
+    $("mRoom").value = c ? c.room || "" : "";
     $("mDescription").value = c ? c.description || "" : "";
 
     updateCounters();
@@ -192,21 +247,20 @@
 
   function openViewModal(c) {
     if (!c) return;
-
     state.currentViewId = c.id;
 
     $("vName").textContent = c.name || "—";
     $("vCode").textContent = c.code || "—";
-    $("vProgram").textContent = c.programName || "—";
-    $("vDepartment").textContent = c.departmentName || "—";
-    $("vAdvisor").textContent = c.advisorName || "—";
-    $("vAcademicYear").textContent = c.academicYear || "—";
-    $("vIntake").textContent = c.intake || "—";
-    $("vStudyMode").textContent = modeLabel(c.studyMode);
-    $("vYSS").textContent = `Year ${Number(c.yearOfStudy || 1)} • Semester ${Number(c.semester || 1)} • Section ${c.section || "A"}`;
-    $("vCapacity").textContent = `Capacity ${Number(c.capacity || 0)} • Enrolled ${Number(c.enrolledCount || 0)}`;
-    $("vRoomCampus").textContent = `${c.meetingRoom || "—"} • ${c.campus || "—"}`;
     $("vStatus").innerHTML = statusPill(c.status || "active");
+    $("vSchoolLevel").textContent = schoolLevelLabel(c.levelType);
+    $("vClassLevel").textContent = c.classLevel || "—";
+    $("vClassTeacher").textContent = c.classTeacherName || "—";
+    $("vAcademicYear").textContent = c.academicYear || "—";
+    $("vTerm").textContent = `Term ${Number(c.term || 1)}`;
+    $("vStream").textContent = c.sectionName || c.stream || "—";
+    $("vShift").textContent = shiftLabel(c.shift);
+    $("vCapacity").textContent = `Capacity ${Number(c.capacity || 0)} • Enrolled ${Number(c.enrolledCount || 0)}`;
+    $("vRoomCampus").textContent = `${c.room || "—"} • ${c.campusName || "—"}`;
     $("vDescription").textContent = c.description || "—";
 
     openModal("mView");
@@ -215,6 +269,16 @@
   function saveClass() {
     const name = $("mName").value.trim();
     if (!name) return alert("Class name is required.");
+
+    const missing = [];
+    if (!$("mSchoolUnitId").value) missing.push("school unit");
+    if (!$("mCampusId").value) missing.push("campus");
+    if (!$("mLevelType").value) missing.push("level");
+    if (!$("mClassLevel").value) missing.push("class level");
+    if (missing.length) {
+      return alert(`Please select: ${missing.join(", ")}.`);
+    }
+
     $("classForm").submit();
   }
 
@@ -224,11 +288,9 @@
       if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
       return s;
     };
-
     const csv = rows.map((row) => row.map(esc).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
-
     const a = document.createElement("a");
     a.href = url;
     a.download = filename;
@@ -239,46 +301,27 @@
   }
 
   function exportClasses() {
-    const rows = [
-      [
-        "Name",
-        "Code",
-        "Program",
-        "Department",
-        "Advisor",
-        "AcademicYear",
-        "Intake",
-        "StudyMode",
-        "YearOfStudy",
-        "Semester",
-        "Section",
-        "Capacity",
-        "EnrolledCount",
-        "MeetingRoom",
-        "Campus",
-        "Status",
-        "Description"
-      ],
-      ...CLASSES.map((c) => [
-        c.name || "",
-        c.code || "",
-        c.programName || "",
-        c.departmentName || "",
-        c.advisorName || "",
-        c.academicYear || "",
-        c.intake || "",
-        c.studyMode || "",
-        c.yearOfStudy || 1,
-        c.semester || 1,
-        c.section || "",
-        c.capacity || 0,
-        c.enrolledCount || 0,
-        c.meetingRoom || "",
-        c.campus || "",
-        c.status || "",
-        c.description || "",
-      ]),
-    ];
+    const rows = [[
+      "Name", "Code", "SchoolUnit", "Campus", "LevelType", "ClassLevel", "Section", "Term",
+      "AcademicYear", "ClassTeacher", "Shift", "Capacity", "EnrolledCount", "Room", "Status", "Description"
+    ]].concat(CLASSES.map((c) => ([
+      c.name || "",
+      c.code || "",
+      c.schoolUnitName || "",
+      c.campusName || "",
+      c.levelType || "",
+      c.classLevel || "",
+      c.sectionName || c.stream || "",
+      c.term || 1,
+      c.academicYear || "",
+      c.classTeacherName || "",
+      c.shift || "",
+      c.capacity || 0,
+      c.enrolledCount || 0,
+      c.room || "",
+      c.status || "",
+      c.description || "",
+    ])));
 
     downloadCsv("classes-export.csv", rows);
   }
@@ -286,15 +329,8 @@
   function submitBulk(action) {
     const ids = Array.from(state.selected);
     if (!ids.length) return alert("Select at least one class.");
-
-    if (action === "delete" && !window.confirm(`Delete ${ids.length} selected class(es) permanently?`)) {
-      return;
-    }
-
-    if (action === "archive" && !window.confirm(`Archive ${ids.length} selected class(es)?`)) {
-      return;
-    }
-
+    if (action === "delete" && !window.confirm(`Delete ${ids.length} selected class(es) permanently?`)) return;
+    if (action === "archive" && !window.confirm(`Archive ${ids.length} selected class(es)?`)) return;
     $("bulkActionField").value = action;
     $("bulkIdsField").value = ids.join(",");
     $("bulkForm").submit();
@@ -307,55 +343,57 @@
     submitRowAction(`/admin/classes/${encodeURIComponent(c.id)}/status`, nextStatus);
   }
 
-  $("btnCreate").addEventListener("click", function () {
+  $("btnCreate").addEventListener("click", function () { openEditor(); });
+  $("quickNursery").addEventListener("click", function () {
     openEditor();
+    $("mLevelType").value = "nursery";
+    fillClassLevelOptions("nursery", "BABY");
+    fillSectionOptions("");
+  });
+  $("quickPrimary").addEventListener("click", function () {
+    openEditor();
+    $("mLevelType").value = "primary";
+    fillClassLevelOptions("primary", "P1");
+    fillSectionOptions("");
+  });
+  $("quickSecondary").addEventListener("click", function () {
+    openEditor();
+    $("mLevelType").value = "secondary";
+    fillClassLevelOptions("secondary", "S1");
+    fillSectionOptions("");
   });
 
-  $("quickDay").addEventListener("click", function () {
-    openEditor();
-    $("mStudyMode").value = "day";
+  $("mSchoolUnitId").addEventListener("change", function () {
+    fillCampusOptions($("mSchoolUnitId").value, "");
+    fillLevelOptions($("mSchoolUnitId").value, "", "");
+    fillClassLevelOptions("", "");
+    fillSectionOptions("");
   });
-
-  $("quickEvening").addEventListener("click", function () {
-    openEditor();
-    $("mStudyMode").value = "evening";
+  $("mCampusId").addEventListener("change", function () {
+    fillLevelOptions($("mSchoolUnitId").value, $("mCampusId").value, "");
+    fillClassLevelOptions("", "");
+    fillSectionOptions("");
   });
-
-  $("quickWeekend").addEventListener("click", function () {
-    openEditor();
-    $("mStudyMode").value = "weekend";
+  $("mLevelType").addEventListener("change", function () {
+    fillClassLevelOptions($("mLevelType").value, "");
+    fillSectionOptions("");
+  });
+  $("mClassLevel").addEventListener("change", function () {
+    fillSectionOptions("");
   });
 
   $("btnExport").addEventListener("click", exportClasses);
-  $("btnPrint").addEventListener("click", function () {
-    window.print();
-  });
+  $("btnPrint").addEventListener("click", function () { window.print(); });
 
   $("btnBulk").addEventListener("click", function () {
     if (!state.selected.size) return alert("Select at least one class.");
     $("bulkbar").classList.add("show");
   });
-
-  $("bulkActivate").addEventListener("click", function () {
-    submitBulk("activate");
-  });
-
-  $("bulkDeactivate").addEventListener("click", function () {
-    submitBulk("deactivate");
-  });
-
-  $("bulkArchive").addEventListener("click", function () {
-    submitBulk("archive");
-  });
-
-  $("bulkDelete").addEventListener("click", function () {
-    submitBulk("delete");
-  });
-
-  $("bulkClear").addEventListener("click", function () {
-    state.selected.clear();
-    renderTable();
-  });
+  $("bulkActivate").addEventListener("click", function () { submitBulk("activate"); });
+  $("bulkDeactivate").addEventListener("click", function () { submitBulk("deactivate"); });
+  $("bulkArchive").addEventListener("click", function () { submitBulk("archive"); });
+  $("bulkDelete").addEventListener("click", function () { submitBulk("delete"); });
+  $("bulkClear").addEventListener("click", function () { state.selected.clear(); renderTable(); });
 
   $("checkAll").addEventListener("change", function (e) {
     if (e.target.checked) CLASSES.forEach((c) => state.selected.add(c.id));
@@ -378,11 +416,7 @@
     const c = CLASSES.find((x) => x.id === tr.dataset.id);
     if (!c) return;
 
-    if (
-      e.target.closest(".rowCheck") ||
-      e.target.closest(".actions") ||
-      e.target.closest(".btn-xs")
-    ) {
+    if (e.target.closest(".rowCheck") || e.target.closest(".actions") || e.target.closest(".btn-xs")) {
       if (e.target.closest(".actView")) return openViewModal(c);
       if (e.target.closest(".actEdit")) return openEditor(c);
 
@@ -396,7 +430,6 @@
         if (!window.confirm(`Delete "${c.name}" permanently?`)) return;
         return submitRowAction(`/admin/classes/${encodeURIComponent(c.id)}/delete`);
       }
-
       return;
     }
 
@@ -410,25 +443,15 @@
     openEditor(c);
   });
 
-  $("viewActivateBtn").addEventListener("click", function () {
-    updateStatusCurrent("active");
-  });
-
-  $("viewDeactivateBtn").addEventListener("click", function () {
-    updateStatusCurrent("inactive");
-  });
-
-  $("viewArchiveBtn").addEventListener("click", function () {
-    updateStatusCurrent("archived");
-  });
+  $("viewActivateBtn").addEventListener("click", function () { updateStatusCurrent("active"); });
+  $("viewInactiveBtn").addEventListener("click", function () { updateStatusCurrent("inactive"); });
+  $("viewArchiveBtn").addEventListener("click", function () { updateStatusCurrent("archived"); });
 
   $("saveBtn").addEventListener("click", saveClass);
   $("mDescription").addEventListener("input", updateCounters);
 
   document.querySelectorAll("[data-close-modal]").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      closeModal(btn.dataset.closeModal);
-    });
+    btn.addEventListener("click", function () { closeModal(btn.dataset.closeModal); });
   });
 
   ["mEdit", "mView"].forEach(function (mid) {
@@ -441,9 +464,7 @@
 
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape") {
-      document.querySelectorAll(".modal-backdrop.show").forEach(function (el) {
-        el.classList.remove("show");
-      });
+      document.querySelectorAll(".modal-backdrop.show").forEach(function (el) { el.classList.remove("show"); });
       document.body.style.overflow = "";
     }
   });

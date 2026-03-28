@@ -72,11 +72,10 @@ function parseCsv(text) {
 
 const timetableRules = [
   body("classGroup").custom(isObjId).withMessage("Class is required."),
-  body("course").custom(isObjId).withMessage("Course is required."),
-  body("lecturer").optional({ checkFalsy: true }).custom((v) => !v || isObjId(v)).withMessage("Invalid lecturer."),
+  body("subject").custom(isObjId).withMessage("Subject is required."),
+  body("teacher").optional({ checkFalsy: true }).custom((v) => !v || isObjId(v)).withMessage("Invalid teacher."),
   body("academicYear").optional({ checkFalsy: true }).trim().isLength({ max: 20 }),
-  body("semester").optional({ checkFalsy: true }).isInt({ min: 0, max: 6 }).toInt(),
-  body("term").optional({ checkFalsy: true }).trim().isLength({ max: 30 }),
+  body("term").optional({ checkFalsy: true }).isInt({ min: 1, max: 3 }).toInt(),
   body("dayOfWeek").isIn(DAYS).withMessage("Invalid day."),
   body("startTime").custom((v) => toMinutes(v) !== null).withMessage("Invalid start time (HH:MM)."),
   body("endTime").custom((v) => toMinutes(v) !== null).withMessage("Invalid end time (HH:MM)."),
@@ -94,15 +93,15 @@ async function findConflicts({
   startMin,
   endMin,
   academicYear,
-  semester,
+  term,
   classGroup,
-  lecturer,
+  teacher,
   room,
 }) {
   const base = {
     dayOfWeek,
     academicYear: academicYear || "",
-    semester: Number.isFinite(semester) ? semester : 1,
+    term: Number.isFinite(term) ? term : 1,
     status: { $ne: "archived" },
   };
 
@@ -111,29 +110,29 @@ async function findConflicts({
   const conflicts = [];
 
   const classItems = await TimetableEntry.find({ ...base, classGroup })
-    .select("startMinutes endMinutes course lecturer room")
-    .populate("course", "code title")
-    .populate("lecturer", "fullName name")
+    .select("startMinutes endMinutes subject teacher room")
+    .populate("subject", "code title")
+    .populate("teacher", "fullName name")
     .lean();
 
   const classConflict = classItems.find((x) => overlaps(startMin, endMin, x.startMinutes, x.endMinutes));
   if (classConflict) conflicts.push({ type: "Class conflict", item: classConflict });
 
-  if (lecturer) {
-    const lecItems = await TimetableEntry.find({ ...base, lecturer })
-      .select("startMinutes endMinutes classGroup course room")
-      .populate("course", "code title")
+  if (teacher) {
+    const teacherItems = await TimetableEntry.find({ ...base, teacher })
+      .select("startMinutes endMinutes classGroup subject room")
+      .populate("subject", "code title")
       .populate("classGroup", "name code")
       .lean();
 
-    const lecConflict = lecItems.find((x) => overlaps(startMin, endMin, x.startMinutes, x.endMinutes));
-    if (lecConflict) conflicts.push({ type: "Lecturer conflict", item: lecConflict });
+    const teacherConflict = teacherItems.find((x) => overlaps(startMin, endMin, x.startMinutes, x.endMinutes));
+    if (teacherConflict) conflicts.push({ type: "Teacher conflict", item: teacherConflict });
   }
 
   if (room) {
     const roomItems = await TimetableEntry.find({ ...base, room })
-      .select("startMinutes endMinutes classGroup course lecturer")
-      .populate("course", "code title")
+      .select("startMinutes endMinutes classGroup subject teacher")
+      .populate("subject", "code title")
       .populate("classGroup", "name code")
       .lean();
 
@@ -149,13 +148,13 @@ module.exports = {
 
   list: async (req, res) => {
     try {
-      const { TimetableEntry, Class, Course, Staff } = req.models;
+      const { TimetableEntry, Class, Subject, Staff } = req.models;
 
       const q = safeStr(req.query.q, 120);
       const academicYear = safeStr(req.query.academicYear, 20);
-      const semester = safeStr(req.query.semester, 6);
+      const term = safeStr(req.query.term, 6);
       const classGroup = safeStr(req.query.classGroup, 50);
-      const lecturer = safeStr(req.query.lecturer, 50);
+      const teacher = safeStr(req.query.teacher, 50);
       const dayOfWeek = safeStr(req.query.dayOfWeek, 10);
       const status = safeStr(req.query.status, 20);
 
@@ -164,17 +163,17 @@ module.exports = {
 
       const filter = {};
       if (academicYear) filter.academicYear = academicYear;
-      if (semester && !Number.isNaN(Number(semester))) filter.semester = Number(semester);
+      if (term && !Number.isNaN(Number(term))) filter.term = Number(term);
       if (dayOfWeek && DAYS.includes(dayOfWeek)) filter.dayOfWeek = dayOfWeek;
       if (classGroup && isObjId(classGroup)) filter.classGroup = classGroup;
-      if (lecturer && isObjId(lecturer)) filter.lecturer = lecturer;
+      if (teacher && isObjId(teacher)) filter.teacher = teacher;
       if (["active", "inactive", "archived"].includes(status)) filter.status = status;
 
       if (q) {
         filter.$or = [
           { room: { $regex: q, $options: "i" } },
           { campus: { $regex: q, $options: "i" } },
-          { term: { $regex: q, $options: "i" } },
+          { note: { $regex: q, $options: "i" } },
         ];
       }
 
@@ -183,21 +182,21 @@ module.exports = {
       const safePage = Math.min(page, totalPages);
 
       const entries = await TimetableEntry.find(filter)
-        .populate("classGroup", "name code yearOfStudy semester section")
-        .populate("course", "title code")
-        .populate("lecturer", "fullName name role email")
+        .populate("classGroup", "name code schoolLevel classLevel stream")
+        .populate("subject", "title code shortTitle")
+        .populate("teacher", "fullName name role email")
         .sort({ dayOfWeek: 1, startMinutes: 1, createdAt: -1 })
         .skip((safePage - 1) * perPage)
         .limit(perPage)
         .lean();
 
       const classes = await Class.find({})
-        .select("name code yearOfStudy semester section")
+        .select("name code schoolLevel classLevel stream")
         .sort({ name: 1 })
         .lean();
 
-      const courses = await Course.find({})
-        .select("title code")
+      const subjects = await Subject.find({})
+        .select("title code shortTitle schoolLevel")
         .sort({ title: 1 })
         .lean();
 
@@ -215,11 +214,11 @@ module.exports = {
         archived: await TimetableEntry.countDocuments({ ...filter, status: "archived" }),
       };
 
-      return res.render("tenant/admin/timetable/index", {
+      return res.render("tenant/timetable/index", {
         tenant: req.tenant || null,
         entries,
         classes,
-        courses,
+        subjects,
         staffList,
         academicYears,
         days: DAYS,
@@ -228,9 +227,9 @@ module.exports = {
         query: {
           q,
           academicYear,
-          semester,
+          term,
           classGroup,
-          lecturer,
+          teacher,
           dayOfWeek,
           status,
           page: safePage,
@@ -255,7 +254,7 @@ module.exports = {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       req.flash?.("error", errors.array().map((e) => e.msg).join(" "));
-      return res.redirect("/admin/timetable");
+      return res.redirect("/tenant/timetable");
     }
 
     try {
@@ -264,16 +263,15 @@ module.exports = {
 
       if (startMin === null || endMin === null || endMin <= startMin) {
         req.flash?.("error", "End time must be later than start time.");
-        return res.redirect("/admin/timetable");
+        return res.redirect("/tenant/timetable");
       }
 
       const doc = {
         academicYear: safeStr(req.body.academicYear, 20),
-        semester: Math.max(0, Math.min(Number(req.body.semester || 1), 6)),
-        term: safeStr(req.body.term, 30),
+        term: Math.max(1, Math.min(Number(req.body.term || 1), 3)),
         classGroup: req.body.classGroup,
-        course: req.body.course,
-        lecturer: req.body.lecturer && isObjId(req.body.lecturer) ? req.body.lecturer : null,
+        subject: req.body.subject,
+        teacher: req.body.teacher && isObjId(req.body.teacher) ? req.body.teacher : null,
         room: safeStr(req.body.room, 60),
         campus: safeStr(req.body.campus, 80),
         dayOfWeek: req.body.dayOfWeek,
@@ -294,28 +292,28 @@ module.exports = {
         startMin: doc.startMinutes,
         endMin: doc.endMinutes,
         academicYear: doc.academicYear,
-        semester: doc.semester,
+        term: doc.term,
         classGroup: doc.classGroup,
-        lecturer: doc.lecturer,
+        teacher: doc.teacher,
         room: doc.room,
       });
 
       if (conflicts.length) {
         const msg = conflicts
-          .map((c) => `${c.type} (${c.item?.course?.code || "Course"} ${c.item?.startMinutes}-${c.item?.endMinutes})`)
+          .map((c) => `${c.type} (${c.item?.subject?.code || "Subject"} ${c.item?.startMinutes}-${c.item?.endMinutes})`)
           .join(" | ");
         req.flash?.("error", `Schedule conflict detected: ${msg}`);
-        return res.redirect("/admin/timetable");
+        return res.redirect("/tenant/timetable");
       }
 
       await TimetableEntry.create(doc);
 
       req.flash?.("success", "Timetable entry created.");
-      return res.redirect("/admin/timetable");
+      return res.redirect("/tenant/timetable");
     } catch (err) {
       console.error("CREATE TIMETABLE ERROR:", err);
       req.flash?.("error", "Failed to create timetable entry.");
-      return res.redirect("/admin/timetable");
+      return res.redirect("/tenant/timetable");
     }
   },
 
@@ -325,14 +323,14 @@ module.exports = {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       req.flash?.("error", errors.array().map((e) => e.msg).join(" "));
-      return res.redirect("/admin/timetable");
+      return res.redirect("/tenant/timetable");
     }
 
     try {
       const id = String(req.params.id || "").trim();
       if (!mongoose.Types.ObjectId.isValid(id)) {
         req.flash?.("error", "Invalid timetable entry id.");
-        return res.redirect("/admin/timetable");
+        return res.redirect("/tenant/timetable");
       }
 
       const startMin = toMinutes(req.body.startTime);
@@ -340,16 +338,15 @@ module.exports = {
 
       if (startMin === null || endMin === null || endMin <= startMin) {
         req.flash?.("error", "End time must be later than start time.");
-        return res.redirect("/admin/timetable");
+        return res.redirect("/tenant/timetable");
       }
 
       const update = {
         academicYear: safeStr(req.body.academicYear, 20),
-        semester: Math.max(0, Math.min(Number(req.body.semester || 1), 6)),
-        term: safeStr(req.body.term, 30),
+        term: Math.max(1, Math.min(Number(req.body.term || 1), 3)),
         classGroup: req.body.classGroup,
-        course: req.body.course,
-        lecturer: req.body.lecturer && isObjId(req.body.lecturer) ? req.body.lecturer : null,
+        subject: req.body.subject,
+        teacher: req.body.teacher && isObjId(req.body.teacher) ? req.body.teacher : null,
         room: safeStr(req.body.room, 60),
         campus: safeStr(req.body.campus, 80),
         dayOfWeek: req.body.dayOfWeek,
@@ -369,28 +366,28 @@ module.exports = {
         startMin: update.startMinutes,
         endMin: update.endMinutes,
         academicYear: update.academicYear,
-        semester: update.semester,
+        term: update.term,
         classGroup: update.classGroup,
-        lecturer: update.lecturer,
+        teacher: update.teacher,
         room: update.room,
       });
 
       if (conflicts.length) {
         const msg = conflicts
-          .map((c) => `${c.type} (${c.item?.course?.code || "Course"} ${c.item?.startMinutes}-${c.item?.endMinutes})`)
+          .map((c) => `${c.type} (${c.item?.subject?.code || "Subject"} ${c.item?.startMinutes}-${c.item?.endMinutes})`)
           .join(" | ");
         req.flash?.("error", `Schedule conflict detected: ${msg}`);
-        return res.redirect("/admin/timetable");
+        return res.redirect("/tenant/timetable");
       }
 
       await TimetableEntry.updateOne({ _id: id }, { $set: update }, { runValidators: true });
 
       req.flash?.("success", "Timetable entry updated.");
-      return res.redirect("/admin/timetable");
+      return res.redirect("/tenant/timetable");
     } catch (err) {
       console.error("UPDATE TIMETABLE ERROR:", err);
       req.flash?.("error", "Failed to update timetable entry.");
-      return res.redirect("/admin/timetable");
+      return res.redirect("/tenant/timetable");
     }
   },
 
@@ -401,22 +398,22 @@ module.exports = {
 
       if (!mongoose.Types.ObjectId.isValid(id)) {
         req.flash?.("error", "Invalid timetable entry id.");
-        return res.redirect("/admin/timetable");
+        return res.redirect("/tenant/timetable");
       }
 
       const next = ["active", "inactive", "archived"].includes(req.body.status) ? req.body.status : null;
       if (!next) {
         req.flash?.("error", "Invalid status.");
-        return res.redirect("/admin/timetable");
+        return res.redirect("/tenant/timetable");
       }
 
       await TimetableEntry.updateOne({ _id: id }, { $set: { status: next } });
       req.flash?.("success", "Status updated.");
-      return res.redirect("/admin/timetable");
+      return res.redirect("/tenant/timetable");
     } catch (err) {
       console.error("SET TIMETABLE STATUS ERROR:", err);
       req.flash?.("error", "Failed to update status.");
-      return res.redirect("/admin/timetable");
+      return res.redirect("/tenant/timetable");
     }
   },
 
@@ -427,16 +424,16 @@ module.exports = {
 
       if (!mongoose.Types.ObjectId.isValid(id)) {
         req.flash?.("error", "Invalid timetable entry id.");
-        return res.redirect("/admin/timetable");
+        return res.redirect("/tenant/timetable");
       }
 
       await TimetableEntry.deleteOne({ _id: id });
       req.flash?.("success", "Timetable entry deleted.");
-      return res.redirect("/admin/timetable");
+      return res.redirect("/tenant/timetable");
     } catch (err) {
       console.error("DELETE TIMETABLE ERROR:", err);
       req.flash?.("error", "Failed to delete timetable entry.");
-      return res.redirect("/admin/timetable");
+      return res.redirect("/tenant/timetable");
     }
   },
 
@@ -452,7 +449,7 @@ module.exports = {
 
       if (!ids.length) {
         req.flash?.("error", "No timetable items selected.");
-        return res.redirect("/admin/timetable");
+        return res.redirect("/tenant/timetable");
       }
 
       if (action === "activate") {
@@ -471,21 +468,21 @@ module.exports = {
         req.flash?.("error", "Invalid bulk action.");
       }
 
-      return res.redirect("/admin/timetable");
+      return res.redirect("/tenant/timetable");
     } catch (err) {
       console.error("TIMETABLE BULK ERROR:", err);
       req.flash?.("error", "Bulk action failed.");
-      return res.redirect("/admin/timetable");
+      return res.redirect("/tenant/timetable");
     }
   },
 
   importCsv: async (req, res) => {
     try {
-      const { TimetableEntry, Class, Course, Staff } = req.models;
+      const { TimetableEntry, Class, Subject, Staff } = req.models;
 
       if (!req.file || !req.file.buffer) {
         req.flash?.("error", "CSV file is required.");
-        return res.redirect("/admin/timetable");
+        return res.redirect("/tenant/timetable");
       }
 
       const raw = String(req.file.buffer.toString("utf8") || "").replace(/^\uFEFF/, "");
@@ -493,7 +490,7 @@ module.exports = {
 
       if (!rows.length) {
         req.flash?.("error", "CSV file is empty.");
-        return res.redirect("/admin/timetable");
+        return res.redirect("/tenant/timetable");
       }
 
       const headers = rows[0].map((h) => String(h || "").trim());
@@ -502,31 +499,30 @@ module.exports = {
       const idx = (name) => headers.findIndex((h) => h.toLowerCase() === name.toLowerCase());
 
       const iClassCode = idx("classCode");
-      const iCourseCode = idx("courseCode");
+      const iSubjectCode = idx("subjectCode");
       const iDay = idx("dayOfWeek");
       const iStart = idx("startTime");
       const iEnd = idx("endTime");
       const iAY = idx("academicYear");
-      const iSem = idx("semester");
       const iTerm = idx("term");
-      const iLecturerEmail = idx("lecturerEmail");
+      const iTeacherEmail = idx("teacherEmail");
       const iRoom = idx("room");
       const iCampus = idx("campus");
       const iWeek = idx("weekPattern");
       const iStatus = idx("status");
       const iNote = idx("note");
 
-      if ([iClassCode, iCourseCode, iDay, iStart, iEnd].some((x) => x === -1)) {
-        req.flash?.("error", "CSV must include classCode, courseCode, dayOfWeek, startTime, endTime.");
-        return res.redirect("/admin/timetable");
+      if ([iClassCode, iSubjectCode, iDay, iStart, iEnd].some((x) => x === -1)) {
+        req.flash?.("error", "CSV must include classCode, subjectCode, dayOfWeek, startTime, endTime.");
+        return res.redirect("/tenant/timetable");
       }
 
       const classes = await Class.find({}).select("_id code name").lean();
-      const courses = await Course.find({}).select("_id code title").lean();
+      const subjects = await Subject.find({}).select("_id code title").lean();
       const staff = await Staff.find({}).select("_id email").lean();
 
       const classByCode = new Map(classes.filter((x) => x.code).map((x) => [String(x.code).trim().toUpperCase(), String(x._id)]));
-      const courseByCode = new Map(courses.filter((x) => x.code).map((x) => [String(x.code).trim().toUpperCase(), String(x._id)]));
+      const subjectByCode = new Map(subjects.filter((x) => x.code).map((x) => [String(x.code).trim().toUpperCase(), String(x._id)]));
       const staffByEmail = new Map(staff.filter((x) => x.email).map((x) => [String(x.email).trim().toLowerCase(), String(x._id)]));
 
       let created = 0;
@@ -534,36 +530,35 @@ module.exports = {
 
       for (const row of bodyRows.slice(0, 3000)) {
         const classCode = String(row[iClassCode] || "").trim().toUpperCase();
-        const courseCode = String(row[iCourseCode] || "").trim().toUpperCase();
+        const subjectCode = String(row[iSubjectCode] || "").trim().toUpperCase();
         const dayOfWeek = String(row[iDay] || "").trim();
         const startTime = String(row[iStart] || "").trim();
         const endTime = String(row[iEnd] || "").trim();
 
         const classId = classByCode.get(classCode);
-        const courseId = courseByCode.get(courseCode);
+        const subjectId = subjectByCode.get(subjectCode);
         const startMin = toMinutes(startTime);
         const endMin = toMinutes(endTime);
 
-        if (!classId || !courseId || !DAYS.includes(dayOfWeek) || startMin === null || endMin === null || endMin <= startMin) {
+        if (!classId || !subjectId || !DAYS.includes(dayOfWeek) || startMin === null || endMin === null || endMin <= startMin) {
           skipped += 1;
           continue;
         }
 
-        const lecturerEmail = iLecturerEmail >= 0 ? String(row[iLecturerEmail] || "").trim().toLowerCase() : "";
-        const lecturerId = lecturerEmail && staffByEmail.has(lecturerEmail) ? staffByEmail.get(lecturerEmail) : null;
+        const teacherEmail = iTeacherEmail >= 0 ? String(row[iTeacherEmail] || "").trim().toLowerCase() : "";
+        const teacherId = teacherEmail && staffByEmail.has(teacherEmail) ? staffByEmail.get(teacherEmail) : null;
 
         const doc = {
           classGroup: classId,
-          course: courseId,
-          lecturer: lecturerId,
+          subject: subjectId,
+          teacher: teacherId,
           dayOfWeek,
           startTime,
           endTime,
           startMinutes: startMin,
           endMinutes: endMin,
           academicYear: iAY >= 0 ? safeStr(row[iAY], 20) : "",
-          semester: iSem >= 0 ? Math.max(0, Math.min(Number(row[iSem] || 1), 6)) : 1,
-          term: iTerm >= 0 ? safeStr(row[iTerm], 30) : "",
+          term: iTerm >= 0 ? Math.max(1, Math.min(Number(row[iTerm] || 1), 3)) : 1,
           room: iRoom >= 0 ? safeStr(row[iRoom], 60) : "",
           campus: iCampus >= 0 ? safeStr(row[iCampus], 80) : "",
           weekPattern: iWeek >= 0 && ["all", "odd", "even"].includes(String(row[iWeek] || "").trim()) ? String(row[iWeek]).trim() : "all",
@@ -579,9 +574,9 @@ module.exports = {
           startMin: doc.startMinutes,
           endMin: doc.endMinutes,
           academicYear: doc.academicYear,
-          semester: doc.semester,
+          term: doc.term,
           classGroup: doc.classGroup,
-          lecturer: doc.lecturer,
+          teacher: doc.teacher,
           room: doc.room,
         });
 
@@ -593,17 +588,17 @@ module.exports = {
         try {
           await TimetableEntry.create(doc);
           created += 1;
-        } catch (e) {
+        } catch {
           skipped += 1;
         }
       }
 
       req.flash?.("success", `Import completed. Created ${created}, skipped ${skipped}.`);
-      return res.redirect("/admin/timetable");
+      return res.redirect("/tenant/timetable");
     } catch (err) {
       console.error("IMPORT TIMETABLE CSV ERROR:", err);
       req.flash?.("error", "Failed to import CSV.");
-      return res.redirect("/admin/timetable");
+      return res.redirect("/tenant/timetable");
     }
   },
 };

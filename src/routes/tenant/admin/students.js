@@ -26,6 +26,6 @@ router.post("/:id/delete", ctrl.remove);
 router.post("/:id/resend-setup", ctrl.resendSetupLink);
 router.post("/bulk", ctrl.bulk);
 router.post("/import", upload.single("file"), ctrl.importCsv);
-router.get("/export", ctrl.exportCsv);
+// router.get("/export", ctrl.exportCsv);
 
 module.exports = router;

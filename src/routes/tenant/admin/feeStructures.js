@@ -1,14 +1,16 @@
 const express = require("express");
 const router = express.Router();
 
-const ctrl = require("../../../controllers/tenant/admin/feeStructuresController");
+const feesController = require("../../../controllers/tenant/admin/feesController");
 
-router.get("/", ctrl.index);
-router.post("/", ctrl.create);
-router.post("/bulk", ctrl.bulkAction);
-router.post("/:id/update", ctrl.update);
-router.post("/:id/activate", ctrl.activate);
-router.post("/:id/archive", ctrl.archive);
-router.post("/:id/delete", ctrl.delete);
+router.get("/", feesController.list);
+router.post("/", feesController.feeRules, feesController.create);
+router.post("/bulk-generate", feesController.bulkGenerate);
+router.post("/:id", feesController.feeRules, feesController.update);
+router.post("/:id/issue", feesController.issue);
+router.post("/:id/void", feesController.voidFee);
+router.post("/:id/delete", feesController.remove);
+router.post("/bulk", feesController.bulk);
 
 module.exports = router;
+

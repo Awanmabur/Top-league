@@ -5,75 +5,149 @@ module.exports = (connection) => {
 
   const ExamSchema = new Schema(
     {
-      title: { type: String, required: true, trim: true }, // e.g., "Midterm Exam"
-      examType: { type: String, enum: ["midterm", "final", "quiz", "test", "mock", "practical", "other"], default: "final", index: true },
+      title: {
+        type: String,
+        required: true,
+        trim: true,
+        index: true,
+      },
 
-      academicYear: { type: String, default: "", trim: true, index: true },
-      semester: { type: Number, default: 1, min: 0, max: 6, index: true },
+      code: {
+        type: String,
+        required: true,
+        trim: true,
+        uppercase: true,
+        index: true,
+      },
 
-      classGroup: { type: Schema.Types.ObjectId, ref: "Class", required: true, index: true },
-      program: { type: Schema.Types.ObjectId, ref: "Program", default: null, index: true },
-      course: { type: Schema.Types.ObjectId, ref: "Course", required: true, index: true },
+      classGroup: {
+        type: Schema.Types.ObjectId,
+        ref: "Class",
+        required: true,
+        index: true,
+      },
 
-      date: { type: Date, required: true, index: true },
-      dateKey: { type: String, required: true, index: true }, // YYYY-MM-DD
-      startTime: { type: String, required: true },   // "09:00"
-      endTime: { type: String, required: true },     // "12:00"
-      startMinutes: { type: Number, required: true, min: 0, max: 1439, index: true },
-      endMinutes: { type: Number, required: true, min: 1, max: 1440, index: true },
+      subject: {
+        type: Schema.Types.ObjectId,
+        ref: "Subject",
+        required: true,
+        index: true,
+      },
 
-      durationMinutes: { type: Number, default: 120, min: 1, max: 1440 },
+      teacher: {
+        type: Schema.Types.ObjectId,
+        ref: "Staff",
+        default: null,
+        index: true,
+      },
 
-      room: { type: String, default: "", trim: true, index: true },
-      campus: { type: String, default: "", trim: true },
+      academicYear: {
+        type: String,
+        default: "",
+        trim: true,
+        index: true,
+      },
 
-      invigilator: { type: Schema.Types.ObjectId, ref: "Staff", default: null, index: true },
-      instructions: { type: String, default: "" },
+      term: {
+        type: Number,
+        default: 1,
+        min: 1,
+        max: 3,
+        index: true,
+      },
 
-      totalMarks: { type: Number, default: 100, min: 0, max: 100000 },
-      passMark: { type: Number, default: 50, min: 0, max: 100000 },
+      examType: {
+        type: String,
+        enum: ["test", "quiz", "midterm", "endterm", "mock", "practical", "oral", "assignment"],
+        default: "test",
+        index: true,
+      },
 
-      status: { type: String, enum: ["scheduled", "ongoing", "completed", "archived"], default: "scheduled", index: true },
+      examDate: {
+        type: Date,
+        required: true,
+        index: true,
+      },
 
-      // Optional structure for paper/section-based exams
-      papers: [
-        {
-          name: { type: String, default: "Paper 1" },
-          marks: { type: Number, default: 0, min: 0, max: 100000 },
-          durationMinutes: { type: Number, default: 0, min: 0, max: 1440 },
-        },
-      ],
+      startTime: {
+        type: String,
+        default: "",
+        trim: true,
+      },
 
-      createdBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
+      endTime: {
+        type: String,
+        default: "",
+        trim: true,
+      },
+
+      durationMinutes: {
+        type: Number,
+        default: 0,
+        min: 0,
+        max: 1440,
+      },
+
+      maxMarks: {
+        type: Number,
+        default: 100,
+        min: 0,
+        max: 1000,
+      },
+
+      passMark: {
+        type: Number,
+        default: 50,
+        min: 0,
+        max: 1000,
+      },
+
+      room: {
+        type: String,
+        default: "",
+        trim: true,
+      },
+
+      campus: {
+        type: String,
+        default: "",
+        trim: true,
+      },
+
+      instructions: {
+        type: String,
+        default: "",
+        trim: true,
+      },
+
+      status: {
+        type: String,
+        enum: ["draft", "scheduled", "completed", "archived"],
+        default: "draft",
+        index: true,
+      },
+
+      createdBy: {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+        default: null,
+      },
+
+      updatedBy: {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+        default: null,
+      },
     },
     { timestamps: true }
   );
 
-  ExamSchema.index({ classGroup: 1, date: 1, startMinutes: 1 });
-  ExamSchema.index({ invigilator: 1, date: 1, startMinutes: 1 });
-  ExamSchema.index({ room: 1, date: 1, startMinutes: 1 });
+  ExamSchema.index(
+    { classGroup: 1, subject: 1, academicYear: 1, term: 1, examType: 1, examDate: 1 },
+    { unique: true }
+  );
 
-
-  ExamSchema.pre("validate", async function (next) {
-    try {
-      if (this.classGroup) {
-        const Class = this.constructor.db.model("Class");
-        const cg = await Class.findById(this.classGroup)
-          .select("program academicYear semester")
-          .lean();
-
-        if (cg) {
-          this.program = cg.program || this.program;
-          this.academicYear = cg.academicYear || this.academicYear;
-          this.semester = cg.semester || this.semester;
-        }
-      }
-      next();
-    } catch (e) {
-      next(e);
-    }
-  });
-  
+  ExamSchema.index({ status: 1, examDate: -1 });
 
   return connection.model("Exam", ExamSchema);
 };

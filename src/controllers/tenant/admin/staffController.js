@@ -1,4 +1,3 @@
-// src/controllers/tenant/admin/staffController.js
 const mongoose = require("mongoose");
 
 const actorUserId = (req) =>
@@ -35,6 +34,7 @@ function buildFilters(query = {}) {
       { payrollNumber: new RegExp(q, "i") },
     ];
   }
+
   if (status !== "all") mongo.status = status;
   if (employmentType !== "all") mongo.employmentType = employmentType;
   if (departmentId !== "all" && isValidId(departmentId)) mongo.departmentId = departmentId;
@@ -48,6 +48,7 @@ function buildFilters(query = {}) {
 function serializeStaff(doc) {
   return {
     id: String(doc._id),
+    userId: doc.userId?._id ? String(doc.userId._id) : (doc.userId ? String(doc.userId) : ""),
     employeeId: doc.employeeId || "—",
     fullName: [doc.firstName, doc.middleName, doc.lastName].filter(Boolean).join(" "),
     firstName: doc.firstName || "",
@@ -55,6 +56,7 @@ function serializeStaff(doc) {
     middleName: doc.middleName || "",
     email: doc.email || "",
     phone: doc.phone || "",
+    gender: doc.gender || "",
     departmentId: doc.departmentId?._id ? String(doc.departmentId._id) : (doc.departmentId ? String(doc.departmentId) : ""),
     departmentName: doc.departmentId?.name || "—",
     roleId: doc.roleId?._id ? String(doc.roleId._id) : (doc.roleId ? String(doc.roleId) : ""),
@@ -70,6 +72,7 @@ function serializeStaff(doc) {
     bankAccountNumber: doc.bankAccountNumber || "",
     emergencyContactName: doc.emergencyContactName || "",
     emergencyContactPhone: doc.emergencyContactPhone || "",
+    address: doc.address || "",
     notes: doc.notes || "",
     createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString().slice(0, 10) : "",
   };
@@ -80,6 +83,7 @@ function computeKpis(list = []) {
     total: list.length,
     active: list.filter((x) => x.status === "Active").length,
     onLeave: list.filter((x) => x.status === "On Leave").length,
+    suspended: list.filter((x) => x.status === "Suspended").length,
     exited: list.filter((x) => x.status === "Exited").length,
   };
 }
@@ -96,10 +100,12 @@ module.exports = {
   index: async (req, res) => {
     const { Staff } = req.models;
     const { mongo, clean } = buildFilters(req.query);
+
     const [staff, lookups] = await Promise.all([
       Staff.find(mongo)
         .populate("departmentId", "name")
         .populate("roleId", "name code")
+        .populate("userId", "firstName lastName email")
         .sort({ createdAt: -1 })
         .lean(),
       loadLookups(req),
@@ -167,6 +173,7 @@ module.exports = {
 
   update: async (req, res) => {
     const { Staff } = req.models;
+
     if (!isValidId(req.params.id)) {
       req.flash?.("error", "Invalid staff ID.");
       return res.redirect("/admin/staff");
@@ -215,6 +222,7 @@ module.exports = {
 
   updateStatus: async (req, res) => {
     const { Staff } = req.models;
+
     if (!isValidId(req.params.id)) {
       req.flash?.("error", "Invalid staff ID.");
       return res.redirect("/admin/staff");
@@ -237,6 +245,7 @@ module.exports = {
 
   delete: async (req, res) => {
     const { Staff } = req.models;
+
     if (!isValidId(req.params.id)) {
       req.flash?.("error", "Invalid staff ID.");
       return res.redirect("/admin/staff");
@@ -253,6 +262,7 @@ module.exports = {
 
   bulkAction: async (req, res) => {
     const { Staff } = req.models;
+
     const ids = str(req.body.ids)
       .split(",")
       .map((x) => x.trim())
@@ -267,13 +277,15 @@ module.exports = {
     const patch = { updatedBy: actorUserId(req) };
 
     if (action === "activate") patch.status = "Active";
-    if (action === "leave") patch.status = "On Leave";
-    if (action === "suspend") patch.status = "Suspended";
-    if (action === "exit") patch.status = "Exited";
-
-    if (action === "delete") {
+    else if (action === "leave") patch.status = "On Leave";
+    else if (action === "suspend") patch.status = "Suspended";
+    else if (action === "exit") patch.status = "Exited";
+    else if (action === "delete") {
       patch.isDeleted = true;
       patch.deletedAt = new Date();
+    } else {
+      req.flash?.("error", "Invalid bulk action.");
+      return res.redirect("/admin/staff");
     }
 
     await Staff.updateMany(

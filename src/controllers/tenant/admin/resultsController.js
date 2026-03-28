@@ -95,10 +95,9 @@ function normalizeResultCard(r) {
     studentName: s.fullName || s.name || "Student",
     regNo,
     className: r.classGroup?.name || r.classGroup?.title || r.classGroup?.code || "",
-    courseInfo: r.course ? `${r.course.code || ""}${r.course.code ? " — " : ""}${r.course.title || ""}`.trim() : "",
-    programInfo: r.program ? `${r.program.code || ""}${r.program.code ? " — " : ""}${r.program.name || ""}`.trim() : "",
+    subjectInfo: r.subject ? `${r.subject.code || ""}${r.subject.code ? " — " : ""}${r.subject.title || ""}`.trim() : "",
     academicYear: r.academicYear || "",
-    semester: Number(r.semester || 1),
+    term: Number(r.term || 1),
     totalMarks: Number(r.totalMarks ?? 100),
     score: Number(r.score ?? 0),
     percentage: Number(r.percentage ?? 0),
@@ -116,10 +115,9 @@ function buildFilterPayload(req) {
   const status = String(req.query.status || "").trim();
   const exam = String(req.query.exam || "").trim();
   const classGroup = String(req.query.classGroup || "").trim();
-  const course = String(req.query.course || "").trim();
-  const program = String(req.query.program || "").trim();
+  const subject = String(req.query.subject || "").trim();
   const academicYear = String(req.query.academicYear || "").trim();
-  const semester = String(req.query.semester || "").trim();
+  const term = String(req.query.term || "").trim();
   const grade = String(req.query.grade || "").trim();
   const minScore = String(req.query.minScore || "").trim();
   const maxScore = String(req.query.maxScore || "").trim();
@@ -128,15 +126,14 @@ function buildFilterPayload(req) {
   if (status) filter.status = status;
   if (grade) filter.grade = grade;
   if (academicYear) filter.academicYear = academicYear;
-  if (semester && Number.isFinite(Number(semester))) filter.semester = Number(semester);
+  if (term && Number.isFinite(Number(term))) filter.term = Number(term);
   if (exam && isId(exam)) filter.exam = exam;
   if (classGroup && isId(classGroup)) filter.classGroup = classGroup;
-  if (course && isId(course)) filter.course = course;
-  if (program && isId(program)) filter.program = program;
+  if (subject && isId(subject)) filter.subject = subject;
   if (minScore && Number.isFinite(Number(minScore))) filter.score = { ...(filter.score || {}), $gte: Number(minScore) };
   if (maxScore && Number.isFinite(Number(maxScore))) filter.score = { ...(filter.score || {}), $lte: Number(maxScore) };
 
-  return { q, status, exam, classGroup, course, program, academicYear, semester, grade, minScore, maxScore, filter };
+  return { q, status, exam, classGroup, subject, academicYear, term, grade, minScore, maxScore, filter };
 }
 
 async function attachSearchFilter(models, q, filter) {
@@ -171,17 +168,15 @@ async function attachSearchFilter(models, q, filter) {
 }
 
 function buildResultPopulate(models) {
-  const { Exam, Student, Course, Program, Class, User, Staff, Admin } = models;
+  const { Exam, Student, Subject, Class, User, Staff, Admin } = models;
 
   const populate = [
-    { path: "exam", model: Exam, select: "title totalMarks academicYear semester" },
+    { path: "exam", model: Exam, select: "title totalMarks academicYear term subject classGroup" },
     { path: "student", model: Student, select: "fullName name regNo studentNumber indexNumber" },
-    { path: "course", model: Course, select: "title code" },
-    { path: "program", model: Program, select: "name code" },
+    { path: "subject", model: Subject, select: "title code shortTitle" },
     { path: "classGroup", model: Class, select: "name title code" },
   ];
 
-  // Optional enteredBy model resolution
   const actorModel = User || Staff || Admin;
   if (actorModel) {
     populate.push({
@@ -199,12 +194,12 @@ module.exports = {
 
   options: async (req, res) => {
     try {
-      const { Exam, Student, Course, Program, Class } = req.models;
+      const { Exam, Student, Subject, Class } = req.models;
       const examId = String(req.query.exam || "").trim();
       if (!isId(examId)) return res.json({ ok: false, message: "Invalid exam id." });
 
       const exam = await Exam.findById(examId)
-        .select("title classGroup course program academicYear semester totalMarks")
+        .select("title classGroup subject academicYear term maxMarks")
         .lean();
 
       if (!exam) return res.json({ ok: false, message: "Exam not found." });
@@ -219,8 +214,7 @@ module.exports = {
         .lean();
 
       const classDoc = exam.classGroup ? await Class.findById(exam.classGroup).select("name title code").lean() : null;
-      const courseDoc = exam.course ? await Course.findById(exam.course).select("title code").lean() : null;
-      const programDoc = exam.program ? await Program.findById(exam.program).select("name code").lean() : null;
+      const subjectDoc = exam.subject ? await Subject.findById(exam.subject).select("title code").lean() : null;
 
       return res.json({
         ok: true,
@@ -228,16 +222,14 @@ module.exports = {
           _id: exam._id,
           title: exam.title || "",
           classGroup: exam.classGroup || null,
-          course: exam.course || null,
-          program: exam.program || null,
+          subject: exam.subject || null,
           academicYear: exam.academicYear || "",
-          semester: exam.semester || 1,
-          totalMarks: exam.totalMarks ?? 100,
+          term: exam.term || 1,
+          totalMarks: exam.maxMarks ?? 100,
         },
         labels: {
           classGroup: classDoc?.name || classDoc?.title || classDoc?.code || "",
-          course: courseDoc ? `${courseDoc.code || ""}${courseDoc.code ? " — " : ""}${courseDoc.title || ""}`.trim() : "",
-          program: programDoc ? `${programDoc.code || ""}${programDoc.code ? " — " : ""}${programDoc.name || ""}`.trim() : "",
+          subject: subjectDoc ? `${subjectDoc.code || ""}${subjectDoc.code ? " — " : ""}${subjectDoc.title || ""}`.trim() : "",
         },
         students: students.map((s) => ({
           _id: s._id,
@@ -253,7 +245,7 @@ module.exports = {
 
   list: async (req, res) => {
     try {
-      const { Result, Exam, Student, Course, Program, Class } = req.models;
+      const { Result, Exam, Subject, Class } = req.models;
       const parsed = buildFilterPayload(req);
       const page = Math.max(parseInt(req.query.page || "1", 10), 1);
       const perPage = 10;
@@ -275,11 +267,10 @@ module.exports = {
         .limit(perPage)
         .lean();
 
-      const [exams, classes, courses, programs, published, draft] = await Promise.all([
+      const [exams, classes, subjects, published, draft] = await Promise.all([
         Exam.find({}).select("title").sort({ createdAt: -1 }).limit(300).lean(),
         Class.find({}).select("name title code").sort({ name: 1, title: 1 }).limit(300).lean(),
-        Course.find({}).select("title code").sort({ title: 1 }).limit(500).lean(),
-        Program.find({}).select("name code").sort({ name: 1 }).limit(300).lean(),
+        Subject.find({}).select("title code").sort({ title: 1 }).limit(500).lean(),
         Result.countDocuments({ ...parsed.filter, status: "published" }),
         Result.countDocuments({ ...parsed.filter, status: "draft" }),
       ]);
@@ -303,17 +294,16 @@ module.exports = {
           if (v !== undefined && v !== null && String(v) !== "") params.set(k, String(v));
         });
         params.set("page", String(targetPage));
-        return `/admin/results?${params.toString()}`;
+        return `/tenant/results?${params.toString()}`;
       }
 
-      return res.render("tenant/admin/results/index", {
+      return res.render("tenant/results/index", {
         tenant: req.tenant || null,
         results,
         resultsData,
         exams,
         classes,
-        courses,
-        programs,
+        subjects,
         csrfToken: res.locals.csrfToken || null,
         kpis: {
           total,
@@ -351,7 +341,7 @@ module.exports = {
 
     if (!errors.isEmpty()) {
       req.flash?.("error", errors.array().map((e) => e.msg).join(" "));
-      return res.redirect("/admin/results");
+      return res.redirect("/tenant/results");
     }
 
     try {
@@ -359,26 +349,26 @@ module.exports = {
       const studentId = String(req.body.student || "").trim();
 
       const [exam, student] = await Promise.all([
-        Exam.findById(examId).select("classGroup course program academicYear semester totalMarks").lean(),
+        Exam.findById(examId).select("classGroup subject academicYear term maxMarks").lean(),
         Student.findById(studentId).select("classGroup").lean(),
       ]);
 
       if (!exam) {
         req.flash?.("error", "Exam not found.");
-        return res.redirect("/admin/results");
+        return res.redirect("/tenant/results");
       }
 
       if (!student) {
         req.flash?.("error", "Student not found.");
-        return res.redirect("/admin/results");
+        return res.redirect("/tenant/results");
       }
 
       if (student.classGroup && exam.classGroup && String(student.classGroup) !== String(exam.classGroup)) {
         req.flash?.("error", "Student is not in the selected exam class.");
-        return res.redirect("/admin/results");
+        return res.redirect("/tenant/results");
       }
 
-      const totalMarks = clampNum(exam.totalMarks ?? 100, 0, 100000, 100);
+      const totalMarks = clampNum(exam.maxMarks ?? 100, 0, 100000, 100);
       const score = clampNum(req.body.score ?? 0, 0, 100000, 0);
       const percentage = totalMarks > 0 ? Math.round((score / totalMarks) * 10000) / 100 : 0;
       const auto = defaultGrading(percentage);
@@ -388,10 +378,9 @@ module.exports = {
         exam: examId,
         student: studentId,
         classGroup: exam.classGroup || null,
-        course: exam.course || null,
-        program: exam.program || null,
+        subject: exam.subject || null,
         academicYear: String(exam.academicYear || "").trim(),
-        semester: clampNum(exam.semester ?? 1, 1, 6, 1),
+        term: clampNum(exam.term ?? 1, 1, 3, 1),
         totalMarks,
         score,
         percentage,
@@ -403,12 +392,12 @@ module.exports = {
       });
 
       req.flash?.("success", "Result saved.");
-      return res.redirect("/admin/results");
+      return res.redirect("/tenant/results");
     } catch (err) {
       console.error("CREATE RESULT ERROR:", err);
       if (String(err?.code) === "11000") req.flash?.("error", "This student already has a result for this exam.");
       else req.flash?.("error", "Failed to save result.");
-      return res.redirect("/admin/results");
+      return res.redirect("/tenant/results");
     }
   },
 
@@ -418,46 +407,46 @@ module.exports = {
 
     if (!errors.isEmpty()) {
       req.flash?.("error", errors.array().map((e) => e.msg).join(" "));
-      return res.redirect("/admin/results");
+      return res.redirect("/tenant/results");
     }
 
     try {
       const id = String(req.params.id || "").trim();
       if (!isId(id)) {
         req.flash?.("error", "Invalid result id.");
-        return res.redirect("/admin/results");
+        return res.redirect("/tenant/results");
       }
 
       const examId = String(req.body.exam || "").trim();
       const studentId = String(req.body.student || "").trim();
 
       const [exam, student, collision] = await Promise.all([
-        Exam.findById(examId).select("classGroup course program academicYear semester totalMarks").lean(),
+        Exam.findById(examId).select("classGroup subject academicYear term maxMarks").lean(),
         Student.findById(studentId).select("classGroup").lean(),
         Result.findOne({ exam: examId, student: studentId, _id: { $ne: id } }).select("_id").lean(),
       ]);
 
       if (!exam) {
         req.flash?.("error", "Exam not found.");
-        return res.redirect("/admin/results");
+        return res.redirect("/tenant/results");
       }
 
       if (!student) {
         req.flash?.("error", "Student not found.");
-        return res.redirect("/admin/results");
+        return res.redirect("/tenant/results");
       }
 
       if (collision) {
         req.flash?.("error", "This student already has a result for this exam.");
-        return res.redirect("/admin/results");
+        return res.redirect("/tenant/results");
       }
 
       if (student.classGroup && exam.classGroup && String(student.classGroup) !== String(exam.classGroup)) {
         req.flash?.("error", "Student is not in the selected exam class.");
-        return res.redirect("/admin/results");
+        return res.redirect("/tenant/results");
       }
 
-      const totalMarks = clampNum(exam.totalMarks ?? 100, 0, 100000, 100);
+      const totalMarks = clampNum(exam.maxMarks ?? 100, 0, 100000, 100);
       const score = clampNum(req.body.score ?? 0, 0, 100000, 0);
       const percentage = totalMarks > 0 ? Math.round((score / totalMarks) * 10000) / 100 : 0;
       const auto = defaultGrading(percentage);
@@ -470,10 +459,9 @@ module.exports = {
             exam: examId,
             student: studentId,
             classGroup: exam.classGroup || null,
-            course: exam.course || null,
-            program: exam.program || null,
+            subject: exam.subject || null,
             academicYear: String(exam.academicYear || "").trim(),
-            semester: clampNum(exam.semester ?? 1, 1, 6, 1),
+            term: clampNum(exam.term ?? 1, 1, 3, 1),
             totalMarks,
             score,
             percentage,
@@ -488,12 +476,12 @@ module.exports = {
       );
 
       req.flash?.("success", "Result updated.");
-      return res.redirect("/admin/results");
+      return res.redirect("/tenant/results");
     } catch (err) {
       console.error("UPDATE RESULT ERROR:", err);
       if (String(err?.code) === "11000") req.flash?.("error", "This student already has a result for this exam.");
       else req.flash?.("error", "Failed to update result.");
-      return res.redirect("/admin/results");
+      return res.redirect("/tenant/results");
     }
   },
 
@@ -504,13 +492,13 @@ module.exports = {
 
       if (!isId(id)) {
         req.flash?.("error", "Invalid result id.");
-        return res.redirect("/admin/results");
+        return res.redirect("/tenant/results");
       }
 
       const next = ["draft", "published"].includes(req.body.status) ? req.body.status : null;
       if (!next) {
         req.flash?.("error", "Invalid status.");
-        return res.redirect("/admin/results");
+        return res.redirect("/tenant/results");
       }
 
       const update = {
@@ -522,11 +510,11 @@ module.exports = {
       await Result.updateOne({ _id: id }, { $set: update });
 
       req.flash?.("success", "Status updated.");
-      return res.redirect("/admin/results");
+      return res.redirect("/tenant/results");
     } catch (err) {
       console.error("SET RESULT STATUS ERROR:", err);
       req.flash?.("error", "Failed to update status.");
-      return res.redirect("/admin/results");
+      return res.redirect("/tenant/results");
     }
   },
 
@@ -537,16 +525,16 @@ module.exports = {
 
       if (!isId(id)) {
         req.flash?.("error", "Invalid result id.");
-        return res.redirect("/admin/results");
+        return res.redirect("/tenant/results");
       }
 
       await Result.deleteOne({ _id: id });
       req.flash?.("success", "Result deleted.");
-      return res.redirect("/admin/results");
+      return res.redirect("/tenant/results");
     } catch (err) {
       console.error("DELETE RESULT ERROR:", err);
       req.flash?.("error", "Failed to delete result.");
-      return res.redirect("/admin/results");
+      return res.redirect("/tenant/results");
     }
   },
 
@@ -562,7 +550,7 @@ module.exports = {
 
       if (!ids.length) {
         req.flash?.("error", "No results selected.");
-        return res.redirect("/admin/results");
+        return res.redirect("/tenant/results");
       }
 
       if (action === "publish") {
@@ -584,11 +572,11 @@ module.exports = {
         req.flash?.("error", "Invalid bulk action.");
       }
 
-      return res.redirect("/admin/results");
+      return res.redirect("/tenant/results");
     } catch (err) {
       console.error("RESULT BULK ERROR:", err);
       req.flash?.("error", "Bulk action failed.");
-      return res.redirect("/admin/results");
+      return res.redirect("/tenant/results");
     }
   },
 
@@ -598,13 +586,13 @@ module.exports = {
 
       if (!req.file || !req.file.buffer) {
         req.flash?.("error", "Please choose a CSV file.");
-        return res.redirect("/admin/results");
+        return res.redirect("/tenant/results");
       }
 
       const rows = parseCsvBuffer(req.file.buffer);
       if (rows.length < 2) {
         req.flash?.("error", "CSV file is empty or invalid.");
-        return res.redirect("/admin/results");
+        return res.redirect("/tenant/results");
       }
 
       const header = rows[0].map((x) => String(x || "").trim().toLowerCase());
@@ -619,13 +607,13 @@ module.exports = {
 
       if (idx.examId < 0 || idx.studentId < 0 || idx.score < 0) {
         req.flash?.("error", "CSV must include examId, studentId and score columns.");
-        return res.redirect("/admin/results");
+        return res.redirect("/tenant/results");
       }
 
       const bodyRows = rows.slice(1).slice(0, 3000);
       if (!bodyRows.length) {
         req.flash?.("error", "No import rows found.");
-        return res.redirect("/admin/results");
+        return res.redirect("/tenant/results");
       }
 
       let created = 0;
@@ -646,7 +634,7 @@ module.exports = {
           }
 
           const [exam, student, exists] = await Promise.all([
-            Exam.findById(examId).select("classGroup course program academicYear semester totalMarks").lean(),
+            Exam.findById(examId).select("classGroup subject academicYear term maxMarks").lean(),
             Student.findById(studentId).select("classGroup").lean(),
             Result.findOne({ exam: examId, student: studentId }).select("_id").lean(),
           ]);
@@ -661,7 +649,7 @@ module.exports = {
             continue;
           }
 
-          const totalMarks = clampNum(exam.totalMarks ?? 100, 0, 100000, 100);
+          const totalMarks = clampNum(exam.maxMarks ?? 100, 0, 100000, 100);
           const score = clampNum(rawScore, 0, 100000, 0);
           const percentage = totalMarks > 0 ? Math.round((score / totalMarks) * 10000) / 100 : 0;
           const auto = defaultGrading(percentage);
@@ -671,10 +659,9 @@ module.exports = {
             exam: examId,
             student: studentId,
             classGroup: exam.classGroup || null,
-            course: exam.course || null,
-            program: exam.program || null,
+            subject: exam.subject || null,
             academicYear: String(exam.academicYear || "").trim(),
-            semester: clampNum(exam.semester ?? 1, 1, 6, 1),
+            term: clampNum(exam.term ?? 1, 1, 3, 1),
             totalMarks,
             score,
             percentage,
@@ -686,17 +673,17 @@ module.exports = {
           });
 
           created += 1;
-        } catch (err) {
+        } catch {
           failed += 1;
         }
       }
 
       req.flash?.("success", `Import completed. Created ${created} result(s). Failed ${failed}.`);
-      return res.redirect("/admin/results");
+      return res.redirect("/tenant/results");
     } catch (err) {
       console.error("IMPORT RESULT CSV ERROR:", err);
       req.flash?.("error", "Failed to import CSV.");
-      return res.redirect("/admin/results");
+      return res.redirect("/tenant/results");
     }
   },
 
@@ -724,10 +711,9 @@ module.exports = {
         "Student",
         "RegNo",
         "Class",
-        "Course",
-        "Program",
+        "Subject",
         "AcademicYear",
-        "Semester",
+        "Term",
         "TotalMarks",
         "Score",
         "Percentage",
@@ -748,10 +734,9 @@ module.exports = {
           s.fullName || s.name || "",
           regNo,
           r.classGroup?.name || r.classGroup?.title || r.classGroup?.code || "",
-          r.course ? `${r.course.code || ""}${r.course.code ? " — " : ""}${r.course.title || ""}`.trim() : "",
-          r.program ? `${r.program.code || ""}${r.program.code ? " — " : ""}${r.program.name || ""}`.trim() : "",
+          r.subject ? `${r.subject.code || ""}${r.subject.code ? " — " : ""}${r.subject.title || ""}`.trim() : "",
           r.academicYear || "",
-          r.semester || "",
+          r.term || "",
           r.totalMarks ?? "",
           r.score ?? "",
           r.percentage ?? "",

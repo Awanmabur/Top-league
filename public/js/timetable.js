@@ -57,12 +57,8 @@
   }
 
   function statusPill(status) {
-    if (status === "active") {
-      return '<span class="pill ok"><i class="fa-solid fa-circle-check"></i> Active</span>';
-    }
-    if (status === "archived") {
-      return '<span class="pill bad"><i class="fa-solid fa-box-archive"></i> Archived</span>';
-    }
+    if (status === "active") return '<span class="pill ok"><i class="fa-solid fa-circle-check"></i> Active</span>';
+    if (status === "archived") return '<span class="pill bad"><i class="fa-solid fa-box-archive"></i> Archived</span>';
     return '<span class="pill warn"><i class="fa-solid fa-circle-pause"></i> Inactive</span>';
   }
 
@@ -76,11 +72,17 @@
     return `${m}m`;
   }
 
+  function parseTimeToMinutes(v) {
+    const m = String(v || "").trim().match(/^([01]\d|2[0-3]):([0-5]\d)$/);
+    if (!m) return 0;
+    return Number(m[1]) * 60 + Number(m[2]);
+  }
+
   function renderTable() {
     $("tbodyEntries").innerHTML =
       ENTRIES.map((e) => {
         const checked = state.selected.has(e.id) ? "checked" : "";
-        const courseLabel = [e.courseCode, e.courseTitle].filter(Boolean).join(" — ") || "—";
+        const subjectLabel = [e.subjectCode, e.subjectTitle].filter(Boolean).join(" — ") || "—";
 
         return `
           <tr class="row-clickable" data-id="${escapeHtml(e.id)}">
@@ -88,10 +90,10 @@
               <input type="checkbox" class="rowCheck" data-id="${escapeHtml(e.id)}" ${checked}>
             </td>
 
-            <td class="col-course">
+            <td class="col-subject">
               <div class="entry-main">
-                <div class="entry-title" title="${escapeHtml(courseLabel)}">${escapeHtml(courseLabel)}</div>
-                <div class="entry-sub" title="${escapeHtml(e.term || "—")}">${escapeHtml(e.term || "—")}</div>
+                <div class="entry-title" title="${escapeHtml(subjectLabel)}">${escapeHtml(subjectLabel)}</div>
+                <div class="entry-sub" title="${escapeHtml(e.note || "—")}">${escapeHtml(e.note || "—")}</div>
               </div>
             </td>
 
@@ -99,8 +101,8 @@
               <span class="cell-ellipsis" title="${escapeHtml(e.className || "—")}">${escapeHtml(e.className || "—")}</span>
             </td>
 
-            <td class="col-lecturer">
-              <span class="cell-ellipsis" title="${escapeHtml(e.lecturerName || "—")}">${escapeHtml(e.lecturerName || "—")}</span>
+            <td class="col-teacher">
+              <span class="cell-ellipsis" title="${escapeHtml(e.teacherName || "—")}">${escapeHtml(e.teacherName || "—")}</span>
             </td>
 
             <td class="col-day">
@@ -120,8 +122,8 @@
             </td>
 
             <td class="col-academic">
-              <span class="cell-ellipsis" title="${escapeHtml((e.academicYear || "—") + " • Sem " + (e.semester || 1))}">
-                ${escapeHtml(e.academicYear || "—")} • Sem ${escapeHtml(String(e.semester || 1))}
+              <span class="cell-ellipsis" title="${escapeHtml((e.academicYear || "—") + " • Term " + (e.term || 1))}">
+                ${escapeHtml(e.academicYear || "—")} • Term ${escapeHtml(String(e.term || 1))}
               </span>
             </td>
 
@@ -164,27 +166,20 @@
     );
   }
 
-  function parseTimeToMinutes(v) {
-    const m = String(v || "").trim().match(/^([01]\d|2[0-3]):([0-5]\d)$/);
-    if (!m) return 0;
-    return Number(m[1]) * 60 + Number(m[2]);
-  }
-
   function openEditor(prefill) {
     const e = prefill || null;
 
     $("mTitle").textContent = e ? "Edit Timetable Slot" : "Add Timetable Slot";
-    $("entryForm").action = e ? `/admin/timetable/${encodeURIComponent(e.id)}` : "/admin/timetable";
+    $("entryForm").action = e ? `/tenant/timetable/${encodeURIComponent(e.id)}` : "/tenant/timetable";
 
     $("mClass").value = e ? e.classId || "" : "";
-    $("mCourse").value = e ? e.courseId || "" : "";
-    $("mLect").value = e ? e.lecturerId || "" : "";
+    $("mSubject").value = e ? e.subjectId || "" : "";
+    $("mTeacher").value = e ? e.teacherId || "" : "";
     $("mDay").value = e ? e.dayOfWeek || "Mon" : "Mon";
     $("mStart").value = e ? e.startTime || "08:00" : "08:00";
     $("mEnd").value = e ? e.endTime || "10:00" : "10:00";
     $("mAY").value = e ? e.academicYear || "" : "";
-    $("mSem").value = e ? String(e.semester || 1) : "1";
-    $("mTerm").value = e ? e.term || "" : "";
+    $("mTerm").value = e ? String(e.term || 1) : "1";
     $("mRoom").value = e ? e.room || "" : "";
     $("mCampus").value = e ? e.campus || "" : "";
     $("mWeek").value = e ? e.weekPattern || "all" : "all";
@@ -200,15 +195,15 @@
 
     state.currentViewId = e.id;
 
-    $("vCourse").textContent = [e.courseCode, e.courseTitle].filter(Boolean).join(" — ") || "—";
+    $("vSubject").textContent = [e.subjectCode, e.subjectTitle].filter(Boolean).join(" — ") || "—";
     $("vClass").textContent = e.className || "—";
-    $("vLecturer").textContent = e.lecturerName || "—";
+    $("vTeacher").textContent = e.teacherName || "—";
     $("vDay").textContent = e.dayOfWeek || "—";
     $("vTime").textContent = `${e.startTime || "—"} – ${e.endTime || "—"} (${formatDuration(e.startMinutes, e.endMinutes)})`;
     $("vStatus").innerHTML = statusPill(e.status || "active");
     $("vRoom").textContent = e.room || "—";
     $("vCampus").textContent = e.campus || "—";
-    $("vAcademic").textContent = `${e.academicYear || "—"} • Sem ${e.semester || 1} • ${e.weekPattern || "all"} • ${e.term || "—"}`;
+    $("vAcademic").textContent = `${e.academicYear || "—"} • Term ${e.term || 1} • ${e.weekPattern || "all"}`;
     $("vNote").textContent = e.note || "—";
 
     openModal("mView");
@@ -216,12 +211,12 @@
 
   function saveEntry() {
     const classGroup = $("mClass").value.trim();
-    const course = $("mCourse").value.trim();
+    const subject = $("mSubject").value.trim();
     const start = $("mStart").value.trim();
     const end = $("mEnd").value.trim();
 
     if (!classGroup) return alert("Class is required.");
-    if (!course) return alert("Course is required.");
+    if (!subject) return alert("Subject is required.");
     if (!/^\d{2}:\d{2}$/.test(start)) return alert("Start time must be HH:MM.");
     if (!/^\d{2}:\d{2}$/.test(end)) return alert("End time must be HH:MM.");
     if (parseTimeToMinutes(end) <= parseTimeToMinutes(start)) return alert("End time must be later than start time.");
@@ -251,20 +246,19 @@
 
   function exportEntries() {
     const rows = [
-      ["CourseCode", "CourseTitle", "Class", "Lecturer", "Day", "StartTime", "EndTime", "Room", "Campus", "AcademicYear", "Semester", "Term", "WeekPattern", "Status", "Note"],
+      ["SubjectCode", "SubjectTitle", "Class", "Teacher", "Day", "StartTime", "EndTime", "Room", "Campus", "AcademicYear", "Term", "WeekPattern", "Status", "Note"],
       ...ENTRIES.map((e) => [
-        e.courseCode || "",
-        e.courseTitle || "",
+        e.subjectCode || "",
+        e.subjectTitle || "",
         e.className || "",
-        e.lecturerName || "",
+        e.teacherName || "",
         e.dayOfWeek || "",
         e.startTime || "",
         e.endTime || "",
         e.room || "",
         e.campus || "",
         e.academicYear || "",
-        e.semester || 1,
-        e.term || "",
+        e.term || 1,
         e.weekPattern || "",
         e.status || "",
         e.note || "",
@@ -315,7 +309,7 @@
       const div = document.createElement("div");
       div.className = "block";
       div.innerHTML = `
-        <div class="b1">${escapeHtml(e.courseCode || "COURSE")}</div>
+        <div class="b1">${escapeHtml(e.subjectCode || "SUBJECT")}</div>
         <div class="b2">${escapeHtml((e.startTime || "") + "–" + (e.endTime || ""))} • ${escapeHtml(e.room || "—")}</div>
         <div class="b2">${escapeHtml(e.className || "—")}</div>
       `;
@@ -416,13 +410,13 @@
 
       if (e.target.closest(".actStatus")) {
         const next = item.status === "active" ? "inactive" : item.status === "inactive" ? "archived" : "active";
-        if (!window.confirm(`Set "${item.courseCode || "slot"}" to ${next}?`)) return;
-        return submitRowAction(`/admin/timetable/${encodeURIComponent(item.id)}/status`, next);
+        if (!window.confirm(`Set "${item.subjectCode || "slot"}" to ${next}?`)) return;
+        return submitRowAction(`/tenant/timetable/${encodeURIComponent(item.id)}/status`, next);
       }
 
       if (e.target.closest(".actDelete")) {
-        if (!window.confirm(`Delete "${item.courseCode || "slot"}" permanently?`)) return;
-        return submitRowAction(`/admin/timetable/${encodeURIComponent(item.id)}/delete`);
+        if (!window.confirm(`Delete "${item.subjectCode || "slot"}" permanently?`)) return;
+        return submitRowAction(`/tenant/timetable/${encodeURIComponent(item.id)}/delete`);
       }
 
       return;

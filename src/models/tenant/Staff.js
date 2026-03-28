@@ -1,4 +1,3 @@
-// src/models/tenant/Staff.js
 const mongoose = require("mongoose");
 
 module.exports = function StaffModel(conn) {

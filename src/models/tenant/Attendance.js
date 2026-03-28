@@ -5,11 +5,60 @@ module.exports = (connection) => {
 
   const AttendanceSchema = new Schema(
     {
-      student: { type: Schema.Types.ObjectId, ref: "Student", required: true, index: true },
-      course: { type: Schema.Types.ObjectId, ref: "Course", required: true, index: true },
+      student: {
+        type: Schema.Types.ObjectId,
+        ref: "Student",
+        required: true,
+        index: true,
+      },
 
-      // Exact session time (supports multiple sessions in a day)
-      sessionAt: { type: Date, required: true, index: true },
+      classGroup: {
+        type: Schema.Types.ObjectId,
+        ref: "Class",
+        default: null,
+        index: true,
+      },
+
+      subject: {
+        type: Schema.Types.ObjectId,
+        ref: "Subject",
+        required: true,
+        index: true,
+      },
+
+      teacher: {
+        type: Schema.Types.ObjectId,
+        ref: "Staff",
+        default: null,
+        index: true,
+      },
+
+      academicYear: {
+        type: String,
+        default: "",
+        trim: true,
+        index: true,
+      },
+
+      term: {
+        type: Number,
+        default: 1,
+        min: 1,
+        max: 3,
+        index: true,
+      },
+
+      attendanceDate: {
+        type: Date,
+        required: true,
+        index: true,
+      },
+
+      sessionAt: {
+        type: Date,
+        required: true,
+        index: true,
+      },
 
       status: {
         type: String,
@@ -18,35 +67,41 @@ module.exports = (connection) => {
         index: true,
       },
 
-      notes: { type: String, trim: true, maxlength: 500 },
+      notes: {
+        type: String,
+        default: "",
+        trim: true,
+      },
 
-      // audit
-      createdBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
-      updatedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
+      isDeleted: {
+        type: Boolean,
+        default: false,
+        index: true,
+      },
 
-      // soft delete
-      isDeleted: { type: Boolean, default: false, index: true },
-      deletedAt: { type: Date },
+      createdBy: {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+        default: null,
+      },
+
+      updatedBy: {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+        default: null,
+      },
     },
     { timestamps: true }
   );
 
-  // Per-tenant DB unique constraint
   AttendanceSchema.index(
-    { student: 1, course: 1, sessionAt: 1 },
-    { unique: true, partialFilterExpression: { isDeleted: { $ne: true } } }
+    { student: 1, subject: 1, sessionAt: 1, isDeleted: 1 },
+    { unique: true, partialFilterExpression: { isDeleted: { $eq: false } } }
   );
 
-  AttendanceSchema.pre("save", function (next) {
-    if (this.notes) this.notes = String(this.notes).trim().replace(/\s+/g, " ").slice(0, 500);
-    next();
-  });
-
-  AttendanceSchema.methods.softDelete = async function () {
-    this.isDeleted = true;
-    this.deletedAt = new Date();
-    await this.save();
-  };
+  AttendanceSchema.index({ classGroup: 1, attendanceDate: 1, term: 1 });
+  AttendanceSchema.index({ subject: 1, attendanceDate: 1, term: 1 });
+  AttendanceSchema.index({ student: 1, attendanceDate: 1 });
 
   return connection.model("Attendance", AttendanceSchema);
 };

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Apply Now — CampusSaaS</title>
+  <title>Apply Now — <%= (tenant && tenant.name) ? tenant.name : "Classic Academy" %></title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
 
   <link rel="stylesheet"
@@ -46,7 +46,6 @@
     .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
     .card-head{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;gap:12px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
     .title{font-size:18px;font-weight:1000;margin:0}
-    .desc{margin:6px 0 0;color:rgba(255,255,255,.86);font-size:12px}
     .card-body{padding:16px}
     .section{padding:14px;border:1px dashed rgba(13,64,96,.2);border-radius:14px;background:rgba(10,111,191,.05);margin-bottom:12px}
     .section h3{margin:0 0 10px;font-size:14px}
@@ -62,7 +61,6 @@
     .input:focus,.select:focus,.textarea:focus{border-color:rgba(10,111,191,.45);box-shadow:0 0 0 3px rgba(10,111,191,.12)}
     .req{color:var(--danger);font-weight:1000;margin-left:4px}
     .hint{font-size:11px;color:var(--muted)}
-
     .drop{
       border:2px dashed rgba(13,64,96,.25);
       border-radius:14px;
@@ -84,7 +82,6 @@
     .ok{background:#ecfdf3;color:#15803d}
     .bad{background:#fee2e2;color:#b91c1c}
     .warn{background:#fff7ed;color:#92400e}
-
     .actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;margin-top:12px}
     .error{color:#b91c1c;font-size:12px;font-weight:800;margin-top:6px;display:none}
     .success-pane{
@@ -104,9 +101,6 @@
     .notice ul{margin:8px 0 0;padding-left:18px}
     .notice li{font-size:12px;color:var(--muted);margin:6px 0}
 
-    /* =========================
-       OVERFLOW FIX PATCH
-    ========================= */
     html, body { max-width: 100%; overflow-x: hidden; }
 
     .container,
@@ -138,9 +132,6 @@
       max-width: 100%;
     }
 
-    /* =========================
-       RESPONSIVE FIX (KEEP UI SAME)
-    ========================= */
     @media (max-width: 1024px){
       .container{ grid-template-columns: 1fr; }
     }
@@ -163,37 +154,26 @@
     .drop{ width:100%; }
     .file{ flex-wrap:wrap; gap:8px; }
     .file .badge{ white-space:nowrap; }
-
-    /* ✅ Fix VS Code warning: avoid inline style EJS and use a class */
     .hidden{display:none !important;}
+    .subject-multi{min-height:220px}
   </style>
 </head>
 
 <body>
 <%
-  // -------- SAFE VARS (NO "is not defined") ----------
   const _tenant = (typeof tenant !== "undefined" && tenant) ? tenant : null;
   const _errors = (typeof errors !== "undefined" && errors) ? errors : null;
   const _formData = (typeof formData !== "undefined" && formData) ? formData : null;
-
-  const programsArr = (typeof programs !== "undefined" && Array.isArray(programs)) ? programs : [];
-  const classesArr  = (typeof classes !== "undefined" && Array.isArray(classes)) ? classes : [];
-
+  const subjectsArr = (typeof subjects !== "undefined" && Array.isArray(subjects)) ? subjects : [];
   const yearsArr = (typeof academicYears !== "undefined" && Array.isArray(academicYears) && academicYears.length)
     ? academicYears
     : (() => {
         const y = new Date().getFullYear();
         return [`${y}/${y+1}`, `${y+1}/${y+2}`];
       })();
-
-  const intakesArr = (typeof intakes !== "undefined" && Array.isArray(intakes) && intakes.length)
-    ? intakes
-    : [{value:"jan",label:"January"},{value:"may",label:"May"},{value:"aug",label:"August"}];
-
-  const modesArr = (typeof studyModes !== "undefined" && Array.isArray(studyModes) && studyModes.length)
-    ? studyModes
-    : ["Full-time","Part-time","Evening","Weekend","Distance"];
-
+  const schoolLevelsArr = (typeof schoolLevels !== "undefined" && Array.isArray(schoolLevels)) ? schoolLevels : [];
+  const classLevelsArr = (typeof classLevels !== "undefined" && Array.isArray(classLevels)) ? classLevels : [];
+  const termsArr = (typeof terms !== "undefined" && Array.isArray(terms)) ? terms : [];
   const _appId = (typeof applicationId !== "undefined" && applicationId) ? applicationId : null;
   const _csrf = (typeof csrfToken !== "undefined" && csrfToken) ? csrfToken : null;
 
@@ -219,17 +199,24 @@
     }
     return "";
   };
+
+  const selectedSubjectsRaw = _formData && _formData.subjects !== undefined ? _formData.subjects : [];
+  const selectedSubjects = Array.isArray(selectedSubjectsRaw) ? selectedSubjectsRaw.map(String) : (selectedSubjectsRaw ? [String(selectedSubjectsRaw)] : []);
+
+  const labelSchoolLevel = (v) => {
+    const map = { nursery: "Nursery", primary: "Primary", secondary: "Secondary" };
+    return map[String(v || "").toLowerCase()] || "—";
+  };
 %>
 
 <div class="wrap">
 
-  <!-- Header -->
   <header class="top">
     <div class="top-inner">
       <a class="brand" href="/">
-        <div class="logo">CS</div>
+        <div class="logo">CA</div>
         <div>
-          <h1>CampusSaaS</h1>
+          <h1><%= (_tenant && _tenant.name) ? _tenant.name : "Classic Academy" %></h1>
           <div class="sub">Student Application Portal</div>
         </div>
       </a>
@@ -244,12 +231,11 @@
 
   <main class="container">
 
-    <!-- LEFT: FORM -->
     <section class="card">
       <div class="card-head">
         <div>
           <h2 class="title">Apply for Admission</h2>
-          <div class="muted">Fill the form and upload required documents. Your application will appear in Admissions → Applicants List after submission.</div>
+          <div class="muted">Fill the form and upload required documents. Your application will appear in Admissions after submission.</div>
           <% if (err("general")) { %>
             <div class="error" style="display:block;margin-top:8px"><%= err("general") %></div>
           <% } %>
@@ -259,7 +245,6 @@
 
       <div class="card-body">
 
-        <!-- ✅ SUCCESS (NO inline style EJS) -->
         <div class="success-pane <%= _appId ? '' : 'hidden' %>" id="successPane">
           <h2><i class="fa-solid fa-circle-check"></i> Application submitted</h2>
           <div class="muted">Keep your Application ID to track status.</div>
@@ -273,7 +258,6 @@
           </div>
         </div>
 
-        <!-- ✅ FORM (NO inline style EJS) -->
         <form action="/admissions/apply"
               method="post"
               id="applyForm"
@@ -282,7 +266,6 @@
               class="<%= _appId ? 'hidden' : '' %>">
           <% if (_csrf) { %><input type="hidden" name="_csrf" value="<%= _csrf %>"><% } %>
 
-          <!-- PERSONAL INFO -->
           <div class="section">
             <h3><i class="fa-solid fa-user"></i> Personal Information</h3>
 
@@ -351,9 +334,8 @@
             </div>
           </div>
 
-          <!-- PROGRAM / ACADEMIC -->
           <div class="section">
-            <h3><i class="fa-solid fa-graduation-cap"></i> Program Selection</h3>
+            <h3><i class="fa-solid fa-graduation-cap"></i> Academy Placement</h3>
 
             <div class="grid-3">
               <div class="field">
@@ -368,84 +350,65 @@
               </div>
 
               <div class="field">
-                <label>Intake <span class="req">*</span></label>
-                <select class="select" name="intake" required>
+                <label>School Level <span class="req">*</span></label>
+                <select class="select" name="schoolLevel" required>
                   <option value="">Select</option>
-                  <% intakesArr.forEach(i => { %>
-                    <option value="<%= i.value %>" <%= val('intake')===String(i.value) ? "selected" : "" %>><%= i.label %></option>
+                  <% schoolLevelsArr.forEach(item => { %>
+                    <option value="<%= item.value %>" <%= val('schoolLevel')===String(item.value) ? "selected" : "" %>><%= item.label %></option>
                   <% }) %>
                 </select>
-                <% if (err('intake')) { %><div class="error" style="display:block"><%= err('intake') %></div><% } %>
+                <% if (err('schoolLevel')) { %><div class="error" style="display:block"><%= err('schoolLevel') %></div><% } %>
               </div>
 
               <div class="field">
-                <label>Study Mode <span class="req">*</span></label>
-                <select class="select" name="studyMode" required>
+                <label>Class Level <span class="req">*</span></label>
+                <select class="select" name="classLevel" required>
                   <option value="">Select</option>
-                  <% modesArr.forEach(m => { %>
-                    <option value="<%= m %>" <%= val('studyMode')===String(m) ? "selected" : "" %>><%= m %></option>
+                  <% classLevelsArr.forEach(level => { %>
+                    <option value="<%= level %>" <%= val('classLevel')===String(level) ? "selected" : "" %>><%= level %></option>
                   <% }) %>
                 </select>
-                <% if (err('studyMode')) { %><div class="error" style="display:block"><%= err('studyMode') %></div><% } %>
-              </div>
-            </div>
-
-            <div class="grid-3" style="margin-top:12px">
-              <div class="field">
-                <label>Semester <span class="req">*</span></label>
-                <input class="input" type="number" name="semester" min="0" max="6" required value="<%= val('semester','1') %>">
-                <% if (err('semester')) { %><div class="error" style="display:block"><%= err('semester') %></div><% } %>
-              </div>
-
-              <div class="field">
-                <label>Year Level <span class="req">*</span></label>
-                <input class="input" name="yearLevel" required placeholder="Year 1" value="<%= val('yearLevel','Year 1') %>">
-                <% if (err('yearLevel')) { %><div class="error" style="display:block"><%= err('yearLevel') %></div><% } %>
-              </div>
-
-              <div class="field">
-                <label>Preferred Class (optional)</label>
-                <select class="select" name="preferredClassGroup">
-                  <option value="">Optional</option>
-                  <% classesArr.forEach(c => { %>
-                    <option value="<%= c._id %>" <%= val('preferredClassGroup')===String(c._id) ? "selected" : "" %>>
-                      <%= (c.code ? c.code + " — " : "") + (c.name || c.title || "Class") %>
-                    </option>
-                  <% }) %>
-                </select>
+                <% if (err('classLevel')) { %><div class="error" style="display:block"><%= err('classLevel') %></div><% } %>
               </div>
             </div>
 
             <div class="grid-2" style="margin-top:12px">
               <div class="field">
-                <label>Program (First Choice) <span class="req">*</span></label>
-                <select class="select" name="program1" required>
-                  <option value="">Select program</option>
-                  <% programsArr.forEach(p => { %>
-                    <option value="<%= p._id %>" <%= val('program1')===String(p._id) ? "selected" : "" %>>
-                      <%= (p.code ? p.code + " — " : "") + (p.name || p.title || "Program") %>
-                    </option>
+                <label>Term <span class="req">*</span></label>
+                <select class="select" name="term" required>
+                  <option value="">Select</option>
+                  <% termsArr.forEach(t => { %>
+                    <option value="<%= t.value %>" <%= val('term','1')===String(t.value) ? "selected" : "" %>><%= t.label %></option>
                   <% }) %>
                 </select>
-                <% if (err('program1')) { %><div class="error" style="display:block"><%= err('program1') %></div><% } %>
+                <% if (err('term')) { %><div class="error" style="display:block"><%= err('term') %></div><% } %>
               </div>
 
               <div class="field">
-                <label>Program (Second Choice)</label>
-                <select class="select" name="program2">
-                  <option value="">Optional</option>
-                  <% programsArr.forEach(p => { %>
-                    <option value="<%= p._id %>" <%= val('program2')===String(p._id) ? "selected" : "" %>>
-                      <%= (p.code ? p.code + " — " : "") + (p.name || p.title || "Program") %>
-                    </option>
-                  <% }) %>
-                </select>
-                <div class="hint">Optional, helps when intake is full.</div>
+                <label>Intake</label>
+                <input class="input" name="intake" placeholder="Optional intake e.g. January" value="<%= val('intake') %>">
               </div>
+            </div>
+
+            <div class="field" style="margin-top:12px">
+              <label>Subjects <span class="req">*</span></label>
+              <select class="select subject-multi" name="subjects" multiple>
+                <% subjectsArr.forEach(s => { 
+                  const label = ((s.code ? s.code + " — " : "") + (s.title || s.shortTitle || "Subject")).trim();
+                  const levelText = labelSchoolLevel(s.schoolLevel);
+                  const classText = Array.isArray(s.classLevels) ? s.classLevels.join(", ") : "";
+                  const extra = [levelText, classText, s.term ? ("Term " + s.term) : ""].filter(Boolean).join(" • ");
+                %>
+                  <option value="<%= s._id %>" <%= selectedSubjects.indexOf(String(s._id)) >= 0 ? "selected" : "" %>>
+                    <%= label %><%= extra ? " (" + extra + ")" : "" %>
+                  </option>
+                <% }) %>
+              </select>
+              <div class="hint">Use Ctrl/Cmd to select multiple subjects.</div>
+              <% if (err('subjects')) { %><div class="error" style="display:block"><%= err('subjects') %></div><% } %>
             </div>
           </div>
 
-          <!-- EDUCATION -->
           <div class="section">
             <h3><i class="fa-solid fa-school"></i> Education Background</h3>
 
@@ -454,7 +417,7 @@
                 <label>Highest Qualification <span class="req">*</span></label>
                 <select class="select" name="qualification" required>
                   <option value="">Select</option>
-                  <% ["Senior 4 / O-Level","Senior 6 / A-Level","Certificate","Diploma","Bachelor","Masters"].forEach(q => { %>
+                  <% ["Primary Leaving", "Senior 4 / O-Level", "Senior 6 / A-Level", "Certificate", "Diploma", "Bachelor", "Masters"].forEach(q => { %>
                     <option value="<%= q %>" <%= val('qualification')===q ? "selected" : "" %>><%= q %></option>
                   <% }) %>
                 </select>
@@ -478,12 +441,11 @@
               <div class="field">
                 <label>Results / Grades Summary</label>
                 <input class="input" name="grades" placeholder="e.g. A, B, C..." value="<%= val('grades') %>">
-                <div class="hint">Optional: admissions can see transcripts anyway.</div>
+                <div class="hint">Optional: admissions can still verify transcripts.</div>
               </div>
             </div>
           </div>
 
-          <!-- GUARDIAN / NEXT OF KIN -->
           <div class="section">
             <h3><i class="fa-solid fa-people-group"></i> Guardian / Next of Kin</h3>
 
@@ -512,7 +474,6 @@
             </div>
           </div>
 
-          <!-- DOCUMENTS -->
           <div class="section">
             <h3><i class="fa-solid fa-folder-open"></i> Documents Upload</h3>
             <div class="muted" style="margin-bottom:10px">
@@ -560,7 +521,6 @@
             </div>
           </div>
 
-          <!-- DECLARATION -->
           <div class="section">
             <h3><i class="fa-solid fa-file-signature"></i> Declaration</h3>
             <div class="muted">By submitting, you confirm all information is correct and documents are authentic.</div>
@@ -572,7 +532,6 @@
             <% if (err('agree')) { %><div class="error" style="display:block"><%= err('agree') %></div><% } %>
           </div>
 
-          <!-- ACTIONS -->
           <div class="actions">
             <button type="button" class="btn light" id="btnDraft"><i class="fa-solid fa-floppy-disk"></i> Save Draft</button>
             <button type="reset" class="btn light" id="btnReset"><i class="fa-solid fa-rotate-left"></i> Reset</button>
@@ -584,7 +543,6 @@
       </div>
     </section>
 
-    <!-- RIGHT: HELP -->
     <aside class="right-stack">
       <div class="card progress">
         <div class="card-head">
