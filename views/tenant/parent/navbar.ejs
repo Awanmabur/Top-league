@@ -6,7 +6,7 @@
     <a class="mglass-home" href="/parent/dashboard" aria-label="Home">
       <i class="fa fa-house"></i>
     </a>
-    <div class="mglass-title">CAMPUS</div>
+    <div class="mglass-title"><%= tenant?.name || "Classic Academy" %></div>
   </div>
 
   <button class="mglass-menu" id="mobileMenuBtn" type="button" aria-label="Open menu">
@@ -30,9 +30,9 @@
       <div class="brand-logo">CS</div>
       <div class="brand-meta">
         <h1 class="brand-title">
-          <%= tenant?.name || "Classic Campus" %>
+          <%= tenant?.name || "Classic Academy" %>
         </h1>
-        <div class="brand-sub">Classic Campus SaaS</div>
+        <div class="brand-sub">Classic Academy</div>
       </div>
     </div>
 

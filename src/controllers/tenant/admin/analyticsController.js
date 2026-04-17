@@ -408,7 +408,7 @@ module.exports = {
         alerts.push({
           title: "No program analytics available",
           meta: "No matching program rows were found for this filter.",
-          href: "/admin/programs",
+          href: "/admin/subjects",
           level: "info",
         });
       }

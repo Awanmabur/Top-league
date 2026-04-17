@@ -64,7 +64,7 @@ module.exports = {
 
   updateGeneralSettings: async (req, res) => {
     try {
-      await upsertSetting("platform_name", "general", req.body.platform_name || "Classic Campus", req.user?._id);
+      await upsertSetting("platform_name", "general", req.body.platform_name || "Classic Academy", req.user?._id);
       await upsertSetting("base_domain", "general", req.body.base_domain || "", req.user?._id);
       await upsertSetting("default_timezone", "general", req.body.default_timezone || "Africa/Kampala", req.user?._id);
       await upsertSetting("default_currency", "general", req.body.default_currency || "USD", req.user?._id);

@@ -1,6 +1,5 @@
 const ROLES = [
   "admin",
-  "lecturer",
   "staff",
   "finance",
   "librarian",

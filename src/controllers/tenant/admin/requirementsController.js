@@ -16,6 +16,20 @@ function normalizeCode(v) {
     .slice(0, 80);
 }
 
+async function buildRequirementCode(AdmissionRequirement, title, excludeId = null) {
+  const stem = normalizeCode(title).replace(/-/g, "").slice(0, 5) || 'REQ';
+  let n = 1;
+  while (n < 10000) {
+    const code = `${stem}${String(n).padStart(2, '0')}`;
+    const query = { code, isDeleted: { $ne: true } };
+    if (excludeId) query._id = { $ne: excludeId };
+    const exists = await AdmissionRequirement.findOne(query).select('_id').lean();
+    if (!exists) return code;
+    n += 1;
+  }
+  return `${stem}${Date.now().toString().slice(-4)}`;
+}
+
 function toBool(v, def = false) {
   if (v === undefined || v === null || v === "") return def;
   const x = String(v).toLowerCase();
@@ -36,17 +50,23 @@ function validCategory(v) {
   return ["document", "fee", "exam", "medical", "other"].includes(v) ? v : "document";
 }
 
+function validCurrency(v) {
+  const cur = s(v).toUpperCase();
+  return /^[A-Z]{3,10}$/.test(cur) ? cur : 'UGX';
+}
+
 function parseIds(input) {
   return arr(input).map(objId).filter(Boolean);
 }
 
 const requirementRules = [
   body("title").trim().isLength({ min: 3, max: 160 }).withMessage("Title is required (3-160 chars)."),
-  body("code").trim().isLength({ min: 2, max: 80 }).withMessage("Code is required (2-80 chars).")
+  body("code").optional({ checkFalsy: true }).trim().isLength({ min: 0, max: 80 })
     .customSanitizer((v) => normalizeCode(v)),
   body("category").optional({ checkFalsy: true }).custom((v) => ["document", "fee", "exam", "medical", "other"].includes(v))
     .withMessage("Invalid category."),
   body("description").optional({ checkFalsy: true }).trim().isLength({ max: 1200 }).withMessage("Description is too long."),
+  body("currency").optional({ checkFalsy: true }).trim().isLength({ min: 3, max: 10 }).withMessage("Currency must be 3-10 letters."),
   body("sortOrder").optional({ checkFalsy: true }).isInt({ min: 0, max: 99999 }).toInt(),
   body("isMandatory").optional({ checkFalsy: true }),
   body("isActive").optional({ checkFalsy: true }),
@@ -59,12 +79,12 @@ module.exports = {
 
   index: async (req, res) => {
     try {
-      const { AdmissionRequirement, Program, Intake } = req.models;
+      const { AdmissionRequirement, Section, Intake } = req.models;
 
       const q = s(req.query.q);
       const category = s(req.query.category);
       const isActive = s(req.query.isActive);
-      const program = s(req.query.program);
+      const program = s(req.query.section || req.query.program);
       const intake = s(req.query.intake);
       const page = Math.max(parseInt(req.query.page || "1", 10), 1);
       const perPage = 10;
@@ -113,8 +133,8 @@ module.exports = {
           .skip((safePage - 1) * perPage)
           .limit(perPage)
           .lean(),
-        Program.find({ isDeleted: { $ne: true } }).select("name title").sort({ name: 1, title: 1 }).lean(),
-        Intake.find({ isDeleted: { $ne: true } }).select("name title isActive").sort({ isActive: -1, createdAt: -1 }).lean()
+        Section.find({ status: { $ne: "archived" } }).select("code name classLevel classStream").sort({ classLevel: 1, classStream: 1, name: 1 }).lean(),
+        Intake.find({ isDeleted: { $ne: true } }).select("name title term isActive").sort({ isActive: -1, createdAt: -1 }).lean()
       ]);
 
       const counts = await AdmissionRequirement.aggregate([
@@ -141,7 +161,7 @@ module.exports = {
         intakes,
         csrfToken: res.locals.csrfToken || (typeof req.csrfToken === "function" ? req.csrfToken() : ""),
         counts: counts[0] || { total: 0, active: 0, mandatory: 0, document: 0, fee: 0, exam: 0, medical: 0, other: 0 },
-        query: { q, category, isActive, program, intake, page: safePage, total, totalPages, perPage },
+        query: { q, category, isActive, section: program, program, intake, page: safePage, total, totalPages, perPage },
         messages: {
           success: req.flash ? req.flash("success") : [],
           error: req.flash ? req.flash("error") : []
@@ -164,9 +184,11 @@ module.exports = {
       const { AdmissionRequirement } = req.models;
 
       const title = s(req.body.title);
-      const code = normalizeCode(req.body.code);
       const category = validCategory(s(req.body.category) || "document");
+      const code = await buildRequirementCode(AdmissionRequirement, title);
       const description = s(req.body.description).slice(0, 1200);
+      const feeAmount = Math.max(0, Number(req.body.feeAmount || 0));
+      const currency = validCurrency(req.body.currency || 'UGX');
       const sortOrder = Math.max(0, Math.min(Number(req.body.sortOrder || 0), 99999));
 
       const appliesToAllPrograms = toBool(req.body.appliesToAllPrograms, false);
@@ -187,6 +209,8 @@ module.exports = {
         code,
         category,
         description,
+        feeAmount,
+        currency,
         sortOrder,
         appliesToAllPrograms,
         programs,
@@ -230,9 +254,11 @@ module.exports = {
       }
 
       const title = s(req.body.title);
-      const code = normalizeCode(req.body.code);
       const category = validCategory(s(req.body.category) || item.category);
+      const code = await buildRequirementCode(AdmissionRequirement, title, id);
       const description = s(req.body.description).slice(0, 1200);
+      const feeAmount = Math.max(0, Number(req.body.feeAmount || 0));
+      const currency = validCurrency(req.body.currency || item.currency || 'UGX');
       const sortOrder = Math.max(0, Math.min(Number(req.body.sortOrder || item.sortOrder || 0), 99999));
 
       const appliesToAllPrograms = toBool(req.body.appliesToAllPrograms, false);
@@ -252,6 +278,8 @@ module.exports = {
       item.code = code;
       item.category = category;
       item.description = description;
+      item.feeAmount = feeAmount;
+      item.currency = currency;
       item.sortOrder = sortOrder;
       item.appliesToAllPrograms = appliesToAllPrograms;
       item.programs = programs;

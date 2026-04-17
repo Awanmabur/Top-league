@@ -9,17 +9,20 @@ const resolveTenantAccess = require("../../../middleware/tenant/resolveTenantAcc
 const requireTenantModule = require("../../../middleware/tenant/requireTenantModule");
 const requireTenantFeature = require("../../../middleware/tenant/requireTenantFeature");
 
-router.use(adminBellNotifications);
-router.use(setLocals);
-
 // Resolve tenant + plan access first
 router.use(resolveTenantAccess);
 
 // Protect ALL admin routes
 router.use(requireTenantAuth("admin"));
+router.use(setLocals);
+router.use(adminBellNotifications);
 
 // Default admin landing
 router.get("/", (req, res) => res.redirect("/admin/dashboard"));
+router.get("/applicants", (req, res) => res.redirect("/admin/admissions/applicants"));
+router.get("/intakes", (req, res) => res.redirect("/admin/admissions/intakes"));
+router.get("/requirements", (req, res) => res.redirect("/admin/admissions/requirements"));
+router.get("/offer-letters", (req, res) => res.redirect("/admin/admissions/offer-letters"));
 
 // Dashboard
 router.use("/", require("./dashboard"));
@@ -33,12 +36,9 @@ router.use("/parents", requireTenantModule("Parent"), require("./parents"));
 router.use("/enrollments", requireTenantModule("Enrollment"), require("./enrollments"));
 router.use("/promotions", requireTenantModule("PromotionLog"), require("./promotions"));
 
-router.use("/faculties", requireTenantModule("Faculty"), require("./faculties"));
-router.use("/departments", requireTenantModule("Department"), require("./departments"));
-router.use("/programs", requireTenantModule("Program"), require("./programs"));
-router.use("/subjects", requireTenantModule("Course"), require("./subjects"));
+router.use("/subjects", requireTenantModule("Subject"), require("./subjects"));
 router.use("/classes", requireTenantModule("Class"), require("./classes"));
-router.use("/sections", requireTenantModule("Class"), require("./sections")); 
+router.use("/sections", requireTenantModule("Section"), require("./sections")); 
 
 router.use("/exams", requireTenantModule("Exam"), require("./exams"));
 router.use("/results", requireTenantModule("Result"), require("./results"));
@@ -91,6 +91,7 @@ router.use("/announcements", requireTenantModule("Announcement"), require("./ann
 ========================================================= */
 router.use("/library", requireTenantModule("LibraryBook"), require("./library"));
 router.use("/hostels", requireTenantModule("Hostel"), require("./hostels"));
+router.use("/transport", requireTenantModule("Transport"), require("./transport"));
 router.use("/assets", requireTenantModule("Asset"), require("./assets"));
 router.use("/events", requireTenantModule("Event"), require("./events"));
 

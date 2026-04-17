@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Create Announcement — Classic Campus</title>
+  <title>Create Announcement — Classic Academy</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <link rel="stylesheet" href="/css/navbar.css" />
   <style>
@@ -31,7 +31,7 @@
   <main class="main">
     <div>
       <div class="title">Create Announcement</div>
-      <div class="subtitle">Send platform-wide messages to all or selected universities.</div>
+      <div class="subtitle">Send platform-wide messages to all or selected schools.</div>
     </div>
 
     <div class="card">
@@ -86,7 +86,7 @@
         </div>
 
         <div class="form-group full">
-          <label>Target Universities (for custom audience)</label>
+          <label>Target Schools (for custom audience)</label>
           <select name="tenantIds" multiple size="8">
             <% (tenants || []).forEach(function(tenant){ %>
               <option value="<%= tenant._id %>"><%= tenant.name %></option>

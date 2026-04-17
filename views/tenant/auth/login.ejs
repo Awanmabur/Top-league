@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
+<% const viewTenant = typeof tenant !== "undefined" ? tenant : null; %>
 <head>
   <meta charset="utf-8"/>
-  <title>Login — CampusSaaS</title>
+  <title>Login - <%= viewTenant?.name || "Classic Academy" %></title>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
 
   <link rel="stylesheet"
@@ -94,13 +95,13 @@
         <div class="brand">
           <div class="logo">CS</div>
           <div>
-            <h1>CampusSaaS</h1>
-            <p>University Management Platform</p>
+            <h1><%= viewTenant?.name || "Classic Academy" %></h1>
+            <p>School Management Platform</p>
           </div>
         </div>
 
-        <h2>Welcome back 👋</h2>
-        <p class="desc">Login to manage admissions, students, finance, LMS and more — depending on your role.</p>
+        <h2>Welcome back</h2>
+        <p class="desc">Login to manage learners, finance, classes, communication, and school operations.</p>
 
         <ul class="bullets">
           <li><i class="fa-solid fa-shield-halved"></i><span>Secure access with role-based permissions</span></li>
@@ -109,7 +110,7 @@
         </ul>
       </div>
 
-      <div class="badge"><i class="fa-solid fa-lock"></i> Multi-tenant • One platform for all universities</div>
+      <div class="badge"><i class="fa-solid fa-lock"></i> Secure school portal</div>
     </section>
 
     <section class="panel form">
@@ -124,6 +125,9 @@
       <% } %>
 
       <form method="post" action="/login" id="loginForm" class="grid" novalidate>
+        <% if (typeof csrfToken !== "undefined" && csrfToken) { %>
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <% } %>
         <div class="field">
           <label>Email</label>
           <div class="input">
@@ -137,7 +141,7 @@
           <label>Password</label>
           <div class="input">
             <i class="fa-solid fa-key icon"></i>
-            <input id="password" type="password" name="password" placeholder="••••••••" autocomplete="current-password" required/>
+            <input id="password" type="password" name="password" placeholder="Password" autocomplete="current-password" required/>
             <button type="button" class="btn light" id="togglePw" style="padding:8px 10px;border-radius:12px">
               <i class="fa-regular fa-eye"></i>
             </button>
@@ -150,7 +154,6 @@
             <input type="checkbox" name="remember" value="1"/> <span class="tiny">Remember me</span>
           </label>
 
-          <!-- ✅ point to a real route (build later) -->
           <div class="help"><a href="/forgot-password">Forgot password?</a></div>
         </div>
 
@@ -158,7 +161,6 @@
 
         <div class="row" style="margin-top:8px">
           <div class="tiny">No account?</div>
-          <!-- ✅ in SaaS you usually invite users; this can be “Apply / Request access” -->
           <div class="help"><a href="/apply">Apply / Request access</a></div>
         </div>
       </form>

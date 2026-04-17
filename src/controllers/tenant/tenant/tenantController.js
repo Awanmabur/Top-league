@@ -5,7 +5,7 @@ module.exports = {
     const tenant = req.tenant;
 
     if (!tenant) {
-      return res.status(404).send("University not found (tenant missing)");
+      return res.status(404).send("School not found (tenant missing)");
     }
 
     console.log("controller before render ms:", Date.now() - started);

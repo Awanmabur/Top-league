@@ -22,7 +22,7 @@ module.exports = function PaymentModel(conn) {
 
       programId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Program",
+        ref: "Subject",
         default: null,
       },
 

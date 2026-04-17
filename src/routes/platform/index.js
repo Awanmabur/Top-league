@@ -1,9 +1,11 @@
  
-// src/routes/superadmin/index.js
+// src/routes/platform/index.js
 const express = require("express");
 const router = express.Router();
+const { platformOnly } = require("../../middleware/platform/guards");
 
 router.use("/", require("./auth"));
+router.use(["/platform", "/super-admin"], platformOnly);
 router.use("/", require("./dashboard"));
 router.use("/", require("./tenants"));
 router.use("/", require("./plans"));

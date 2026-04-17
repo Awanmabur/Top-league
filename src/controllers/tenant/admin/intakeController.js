@@ -22,6 +22,29 @@ function safeObjId(v) {
   return (v && String(v).match(/^[a-f0-9]{24}$/i)) ? String(v) : null;
 }
 
+function slugPart(v) {
+  return cleanStr(v)
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "")
+    .slice(0, 4);
+}
+
+async function buildUniqueTermCode(Intake, { name = "", term = "", year = null, excludeId = null } = {}) {
+  const base = [slugPart(term || name) || "TERM", String(year || new Date().getFullYear()).slice(-2)].filter(Boolean).join("");
+  let counter = 1;
+  while (counter < 10000) {
+    const code = `${base}${String(counter).padStart(2, "0")}`;
+    const exists = await Intake.findOne({
+      _id: excludeId ? { $ne: excludeId } : { $exists: true },
+      code,
+      isDeleted: { $ne: true },
+    }).select("_id").lean();
+    if (!exists) return code;
+    counter += 1;
+  }
+  return `${base}${Date.now().toString().slice(-4)}`;
+}
+
 function buildProgramsFromBody(body) {
   // Supports either JSON string in programsJson OR form arrays programsProgram[] etc.
   const out = [];
@@ -75,7 +98,7 @@ module.exports = {
   // GET /admin/admissions/intakes
   async index(req, res) {
     try {
-      const { Intake, Program, Applicant } = req.models;
+      const { Intake, Section, Applicant } = req.models;
 
       const q = cleanStr(req.query.q);
       const status = cleanStr(req.query.status);
@@ -91,7 +114,7 @@ module.exports = {
       if (status) filter.status = status;
 
       const items = await Intake.find(filter).sort({ isActive: -1, createdAt: -1 }).lean();
-      const programs = await Program.find({ isDeleted: { $ne: true } }).sort({ createdAt: -1 }).lean();
+      const programs = await Section.find({ status: { $ne: "archived" } }).sort({ levelType: 1, classLevel: 1, classStream: 1, name: 1 }).lean();
 
       // Simple counts (optional). If Applicant uses string intake, we can count by intake code or name.
       // Recommended: add intakeId to Applicant later. For now: intake string field.
@@ -123,8 +146,8 @@ module.exports = {
   // GET /admin/admissions/intakes/new
   async newPage(req, res) {
     try {
-      const { Program } = req.models;
-      const programs = await Program.find({ isDeleted: { $ne: true } }).sort({ createdAt: -1 }).lean();
+      const { Section } = req.models;
+      const programs = await Section.find({ status: { $ne: "archived" } }).sort({ levelType: 1, classLevel: 1, classStream: 1, name: 1 }).lean();
       const csrfToken = (typeof req.csrfToken === "function") ? req.csrfToken() : "";
 
       return res.render("tenant/admin/intakes/new", {
@@ -145,10 +168,10 @@ module.exports = {
     try {
       const { Intake } = req.models;
 
-      const name = cleanStr(req.body.name);
-      const code = cleanUpper(req.body.code);
+      const name = cleanStr(req.body.name || req.body.termName || req.body.title);
       const year = req.body.year ? toInt(req.body.year, null) : null;
-      const term = cleanStr(req.body.term);
+      const term = cleanStr(req.body.term || req.body.termName || name);
+      const code = await buildUniqueTermCode(Intake, { name, term, year });
       const status = cleanStr(req.body.status) || "draft";
 
       const applicationOpenDate = parseDate(req.body.applicationOpenDate);
@@ -159,8 +182,7 @@ module.exports = {
       const notes = cleanStr(req.body.notes);
       const programs = buildProgramsFromBody(req.body);
 
-      if (!name || name.length < 3) return res.status(400).send("Intake name is required.");
-      if (!code || code.length < 3) return res.status(400).send("Intake code is required.");
+      if (!name || name.length < 2) return res.status(400).send("Term name is required.");
 
       const doc = await Intake.create({
         name,
@@ -168,7 +190,7 @@ module.exports = {
         year,
         term,
         status: ["draft", "open", "closed", "archived"].includes(status) ? status : "draft",
-        isActive: false,
+        isActive: String(req.body.isActive) === "1" || String(req.body.isActive).toLowerCase() === "true",
         applicationOpenDate,
         applicationCloseDate,
         startDate,
@@ -179,25 +201,25 @@ module.exports = {
         updatedBy: req.user ? req.user._id : null,
       });
 
-      return res.redirect("/admin/intakes");
+      return res.redirect("/admin/admissions/intakes");
     } catch (err) {
       console.error("[INTAKES:create]", err);
       // handle duplicate code
-      if (String(err && err.code) === "11000") return res.status(400).send("Intake code already exists. Use a unique code.");
-      return res.status(500).send("Failed to create intake.");
+      if (String(err && err.code) === "11000") return res.status(400).send("Term code already exists. Retry.");
+      return res.status(500).send("Failed to create term.");
     }
   },
 
   // GET /admin/admissions/intakes/:id/edit
   async editPage(req, res) {
     try {
-      const { Intake, Program } = req.models;
+      const { Intake, Section } = req.models;
       const id = req.params.id;
 
       const item = await Intake.findOne({ _id: id, isDeleted: { $ne: true } }).lean();
       if (!item) return res.status(404).send("Intake not found.");
 
-      const programs = await Program.find({ isDeleted: { $ne: true } }).sort({ createdAt: -1 }).lean();
+      const programs = await Section.find({ status: { $ne: "archived" } }).sort({ levelType: 1, classLevel: 1, classStream: 1, name: 1 }).lean();
       const csrfToken = (typeof req.csrfToken === "function") ? req.csrfToken() : "";
 
       return res.render("tenant/admin/intakes/edit", {
@@ -222,10 +244,9 @@ module.exports = {
       const item = await Intake.findOne({ _id: id, isDeleted: { $ne: true } });
       if (!item) return res.status(404).send("Intake not found.");
 
-      const name = cleanStr(req.body.name);
-      const code = cleanUpper(req.body.code);
+      const name = cleanStr(req.body.name || req.body.termName || req.body.title);
       const year = req.body.year ? toInt(req.body.year, null) : null;
-      const term = cleanStr(req.body.term);
+      const term = cleanStr(req.body.term || req.body.termName || name);
       const status = cleanStr(req.body.status) || item.status;
 
       const applicationOpenDate = parseDate(req.body.applicationOpenDate);
@@ -236,11 +257,10 @@ module.exports = {
       const notes = cleanStr(req.body.notes);
       const programs = buildProgramsFromBody(req.body);
 
-      if (!name || name.length < 3) return res.status(400).send("Intake name is required.");
-      if (!code || code.length < 3) return res.status(400).send("Intake code is required.");
+      if (!name || name.length < 2) return res.status(400).send("Term name is required.");
 
       item.name = name;
-      item.code = code;
+      item.code = item.code || await buildUniqueTermCode(Intake, { name, term, year, excludeId: item._id });
       item.year = year;
       item.term = term;
       item.status = ["draft", "open", "closed", "archived"].includes(status) ? status : item.status;
@@ -256,11 +276,11 @@ module.exports = {
 
       await item.save();
 
-      return res.redirect("/admin/intakes");
+      return res.redirect("/admin/admissions/intakes");
     } catch (err) {
       console.error("[INTAKES:update]", err);
-      if (String(err && err.code) === "11000") return res.status(400).send("Intake code already exists. Use a unique code.");
-      return res.status(500).send("Failed to update intake.");
+      if (String(err && err.code) === "11000") return res.status(400).send("Term code already exists. Retry.");
+      return res.status(500).send("Failed to update term.");
     }
   },
 
@@ -279,7 +299,7 @@ module.exports = {
       item.updatedBy = req.user ? req.user._id : null;
       await item.save();
 
-      return res.redirect("/admin/intakes");
+      return res.redirect("/admin/admissions/intakes");
     } catch (err) {
       console.error("[INTAKES:setActive]", err);
       return res.status(500).send("Failed to set active intake.");
@@ -302,7 +322,7 @@ module.exports = {
       item.updatedBy = req.user ? req.user._id : null;
       await item.save();
 
-      return res.redirect("/admin/intakes");
+      return res.redirect("/admin/admissions/intakes");
     } catch (err) {
       console.error("[INTAKES:setStatus]", err);
       return res.status(500).send("Failed to change intake status.");
@@ -324,10 +344,91 @@ module.exports = {
       item.updatedBy = req.user ? req.user._id : null;
       await item.save();
 
-      return res.redirect("/admin/intakes");
+      return res.redirect("/admin/admissions/intakes");
     } catch (err) {
       console.error("[INTAKES:remove]", err);
       return res.status(500).send("Failed to delete intake.");
+    }
+  },
+
+  async importCsv(req, res) {
+    try {
+      const { Intake } = req.models;
+      if (!req.file || !req.file.buffer) {
+        req.flash?.("error", "Please choose a CSV file.");
+        return res.redirect("/admin/admissions/intakes");
+      }
+
+      const text = req.file.buffer.toString("utf8");
+      const lines = text.split(/\r?\n/).filter((line) => line.trim());
+      if (lines.length < 2) {
+        req.flash?.("error", "CSV file is empty.");
+        return res.redirect("/admin/admissions/intakes");
+      }
+
+      const headers = lines.shift().split(",").map((h) => cleanStr(h).toLowerCase());
+      const idx = (name) => headers.indexOf(name.toLowerCase());
+      let added = 0;
+      let skipped = 0;
+
+      for (const line of lines.slice(0, 500)) {
+        const cols = line.split(",");
+        const name = cleanStr(cols[idx("name")]);
+        const code = cleanUpper(cols[idx("code")]);
+        if (!name || !code) {
+          skipped += 1;
+          continue;
+        }
+
+        const exists = await Intake.findOne({ code, isDeleted: { $ne: true } }).select("_id").lean();
+        if (exists) {
+          skipped += 1;
+          continue;
+        }
+
+        await Intake.create({
+          name,
+          code,
+          status: cleanStr(cols[idx("status")]) || "draft",
+          applicationOpenDate: parseDate(cols[idx("applicationopendate")]),
+          applicationCloseDate: parseDate(cols[idx("applicationclosedate")]),
+          startDate: parseDate(cols[idx("startdate")]),
+          endDate: parseDate(cols[idx("enddate")]),
+          isActive: ["1", "true", "yes"].includes(cleanStr(cols[idx("isactive")]).toLowerCase()),
+          programs: [],
+          createdBy: req.user ? req.user._id : null,
+          updatedBy: req.user ? req.user._id : null,
+        });
+        added += 1;
+      }
+
+      req.flash?.("success", `Import completed. Added ${added} term(s).`);
+      if (skipped) req.flash?.("error", `${skipped} row(s) skipped.`);
+      return res.redirect("/admin/admissions/intakes");
+    } catch (err) {
+      console.error("[INTAKES:importCsv]", err);
+      req.flash?.("error", "Failed to import terms.");
+      return res.redirect("/admin/admissions/intakes");
+    }
+  },
+
+  async bulkStatus(req, res) {
+    try {
+      const { Intake } = req.models;
+      const ids = cleanStr(req.body.ids).split(",").map(safeObjId).filter(Boolean);
+      const status = cleanStr(req.body.status);
+      if (!ids.length || !["draft", "open", "closed", "archived"].includes(status)) {
+        req.flash?.("error", "Select intakes and a valid status.");
+        return res.redirect("/admin/admissions/intakes");
+      }
+
+      await Intake.updateMany({ _id: { $in: ids }, isDeleted: { $ne: true } }, { $set: { status, updatedBy: req.user ? req.user._id : null } });
+      req.flash?.("success", "Selected intakes updated.");
+      return res.redirect("/admin/admissions/intakes");
+    } catch (err) {
+      console.error("[INTAKES:bulkStatus]", err);
+      req.flash?.("error", "Bulk status update failed.");
+      return res.redirect("/admin/admissions/intakes");
     }
   },
 };

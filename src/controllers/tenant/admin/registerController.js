@@ -3,8 +3,8 @@ const bcrypt = require("bcrypt");
 module.exports = {
   // ===== STUDENT REGISTER PAGE =====
   studentRegisterPage: async (req, res) => {
-    const { Program } = req.models;
-    const programs = await Program.find().sort("name");
+    const { Subject } = req.models;
+    const programs = Subject ? await Subject.find({ status: { $ne: "archived" } }).sort("title").lean() : [];
 
     res.render("tenant/register/student", { programs, error: null });
   },
@@ -19,8 +19,8 @@ module.exports = {
       // Prevent duplicate emails
       const exists = await User.findOne({ email });
       if (exists) {
-        const { Program } = req.models;
-        const programs = await Program.find();
+        const { Subject } = req.models;
+        const programs = Subject ? await Subject.find({ status: { $ne: "archived" } }).sort("title").lean() : [];
         return res.render("tenant/register/student", {
           programs,
           error: "Email already registered",
@@ -56,8 +56,8 @@ module.exports = {
 
   // ===== STAFF REGISTER PAGE =====
   staffRegisterPage: async (req, res) => {
-    const { Department } = req.models;
-    const departments = await Department.find().sort("name");
+    const { StaffRole } = req.models;
+    const departments = StaffRole ? await StaffRole.find({ status: { $ne: "archived" } }).sort("name").lean() : [];
 
     res.render("tenant/register/staff", { departments, error: null });
   },
@@ -70,8 +70,8 @@ module.exports = {
 
       const exists = await User.findOne({ email });
       if (exists) {
-        const { Department } = req.models;
-        const departments = await Department.find();
+        const { StaffRole } = req.models;
+        const departments = StaffRole ? await StaffRole.find({ status: { $ne: "archived" } }).sort("name").lean() : [];
         return res.render("tenant/register/staff", {
           departments,
           error: "Email already registered",

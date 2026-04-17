@@ -759,7 +759,7 @@ module.exports = {
         return res.status(400).json({ ok: false, message: "No file uploaded." });
       }
 
-      const folder = `classic-campus/${tenantDoc.code}/logo`;
+      const folder = `classic-academy/${tenantDoc.code}/logo`;
       const result = await uploadBuffer(req.file, folder, {
         resource_type: "image",
       });
@@ -801,7 +801,7 @@ module.exports = {
         return res.status(400).json({ ok: false, message: "No file uploaded." });
       }
 
-      const folder = `classic-campus/${tenantDoc.code}/favicon`;
+      const folder = `classic-academy/${tenantDoc.code}/favicon`;
       const result = await uploadBuffer(req.file, folder, {
         resource_type: "image",
       });
@@ -843,7 +843,7 @@ module.exports = {
         return res.status(400).json({ ok: false, message: "No file uploaded." });
       }
 
-      const folder = `classic-campus/${tenantDoc.code}/cover`;
+      const folder = `classic-academy/${tenantDoc.code}/cover`;
       const result = await uploadBuffer(req.file, folder, {
         resource_type: "image",
       });
@@ -898,7 +898,7 @@ module.exports = {
       const p = tenantDoc.settings.profile;
       normalizeGallery(p);
 
-      const folder = `classic-campus/${tenantDoc.code}/gallery`;
+      const folder = `classic-academy/${tenantDoc.code}/gallery`;
 
       for (const f of files) {
         if (!f || !f.buffer) {

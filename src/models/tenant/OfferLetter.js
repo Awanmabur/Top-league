@@ -10,7 +10,7 @@ module.exports = (conn) => {
       letterNo: { type: String, required: true, trim: true, maxlength: 40 },
 
       applicant: { type: Schema.Types.ObjectId, ref: "Applicant", required: true, index: true },
-      program: { type: Schema.Types.ObjectId, ref: "Program", default: null, index: true },
+      program: { type: Schema.Types.ObjectId, ref: "Section", default: null, index: true },
       intakeId: { type: Schema.Types.ObjectId, ref: "Intake", default: null, index: true },
 
       template: { type: Schema.Types.ObjectId, ref: "OfferLetterTemplate", default: null, index: true },

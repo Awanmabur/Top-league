@@ -2,7 +2,7 @@
 
 function setupPasswordEmail({ appName, firstName, inviteLink }) {
   const name = String(firstName || "").trim() || "there";
-  const title = String(appName || "Classic Campus");
+  const title = String(appName || "Classic Academy");
 
   return `
   <div style="font-family:Arial,sans-serif;line-height:1.55;color:#111">

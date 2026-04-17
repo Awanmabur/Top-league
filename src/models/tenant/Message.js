@@ -36,7 +36,7 @@ module.exports = function MessageModel(conn) {
       },
       audienceType: {
         type: String,
-        enum: ["All Students", "All Staff", "Specific Department", "Specific Program", "Year/Cohort"],
+        enum: ["All Students", "All Staff", "Specific Department", "Specific Subject", "Year/Cohort"],
         default: "All Students",
       },
       audienceValue: { type: String, trim: true, default: "—" },

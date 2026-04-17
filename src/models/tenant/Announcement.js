@@ -22,7 +22,7 @@ module.exports = function AnnouncementModel(conn) {
           "All Students",
           "All Staff",
           "Specific Department",
-          "Specific Program",
+          "Specific Subject",
           "Year/Cohort",
           "Hostel Residents",
         ],

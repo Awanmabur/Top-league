@@ -493,7 +493,7 @@ module.exports = {
         createdBy: actorUserId(req),
       });
 
-      const appName = process.env.APP_NAME || "Classic Campus";
+      const appName = process.env.APP_NAME || "Classic Academy";
 
       await sendMail({
         to: user.email,
@@ -562,7 +562,7 @@ module.exports = {
             createdBy: actorUserId(req),
           });
 
-          const appName = process.env.APP_NAME || "Classic Campus";
+          const appName = process.env.APP_NAME || "Classic Academy";
           await sendMail({
             to: user.email,
             subject: `${appName}: Set your password (Parent account)`,

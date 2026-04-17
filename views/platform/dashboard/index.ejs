@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Super Admin Dashboard — CampusSaaS</title>
+  <title>Super Admin Dashboard — Classic Academy</title>
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
     integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
@@ -532,15 +532,15 @@
       <div class="topbar">
         <div class="topbar-left">
           <div class="title">Super Admin Dashboard</div>
-          <div class="subtitle">Monitor all subscribed universities and drill down into each campus.</div>
+          <div class="subtitle">Monitor all subscribed schools and drill down into each campus.</div>
 
           <div class="tenant-row">
-            <label for="tenantSelect"><i class="fa-solid fa-building-columns"></i> Active university view:</label>
+            <label for="tenantSelect"><i class="fa-solid fa-building-columns"></i> Active school view:</label>
             <select id="tenantSelect" class="tenant-select">
-              <option value="juba">University of Juba</option>
-              <option value="nile">Nile International University</option>
+              <option value="juba">School of Juba</option>
+              <option value="nile">Nile International School</option>
               <option value="kci">Kampala City Institute</option>
-              <option value="all">All Universities (aggregate)</option>
+              <option value="all">All Schools (aggregate)</option>
             </select>
           </div>
 
@@ -549,7 +549,7 @@
               <i class="fa-solid fa-building-columns"></i>
               <span><strong>
                   <%= stats?.tenantCount || 0 %>
-                </strong> subscribed universities</span>
+                </strong> subscribed schools</span>
             </div>
             <div class="uni-pill">
               <i class="fa-solid fa-circle-check"></i>
@@ -577,8 +577,8 @@
 
         <div class="top-actions">
           <button class="btn light" type="button"><i class="fa-solid fa-bell"></i> Notifications</button>
-          <a href="/super-admin/universities/create" class="btn light"><i
-              class="fa-solid fa-building-circle-arrow-right"></i> Add University</a>
+          <a href="/super-admin/schools/create" class="btn light"><i
+              class="fa-solid fa-building-circle-arrow-right"></i> Add School</a>
         </div>
       </div>
 
@@ -586,7 +586,7 @@
         <div class="kpi-card">
           <div class="kpi-top">
             <div>
-              <div class="kpi-label">Universities</div>
+              <div class="kpi-label">Schools</div>
               <div class="kpi-value">
                 <%= stats?.tenantCount || 0 %>
               </div>
@@ -658,12 +658,12 @@
           </div>
 
           <div class="modules-grid">
-            <a href="/super-admin/universities" class="module-card">
+            <a href="/super-admin/schools" class="module-card">
               <div class="module-top">
                 <div style="display:flex;gap:8px;min-width:0;">
                   <div class="module-icon"><i class="fa-solid fa-building-columns"></i></div>
                   <div>
-                    <div class="module-title">Universities</div>
+                    <div class="module-title">Schools</div>
                     <div class="module-desc">Manage subscriptions, status, branding and provisioning per institution.
                     </div>
                   </div>
@@ -735,12 +735,12 @@
 
         <aside class="card">
           <div>
-            <div class="section-title">Recent Universities</div>
+            <div class="section-title">Recent Schools</div>
             <div class="section-sub">Latest tenant additions to the platform.</div>
           </div>
 
           <% if (!recentTenants || recentTenants.length===0) { %>
-            <div class="small-muted" style="margin-top:12px;">No universities found yet.</div>
+            <div class="small-muted" style="margin-top:12px;">No schools found yet.</div>
             <% } else { %>
               <div class="activity-list">
                 <% recentTenants.forEach(function(tenant) { %>
@@ -762,9 +762,9 @@
                 <div style="margin-top:16px;">
                   <div class="section-title">Quick Shortcuts</div>
                   <div class="shortcut-list">
-                    <a href="/super-admin/universities/create" class="shortcut-btn">
+                    <a href="/super-admin/schools/create" class="shortcut-btn">
                       <i class="fa-solid fa-building-circle-plus"></i>
-                      <span>Onboard a new university</span>
+                      <span>Onboard a new school</span>
                     </a>
                     <a href="/super-admin/billing/payments/create" class="shortcut-btn">
                       <i class="fa-solid fa-receipt"></i>

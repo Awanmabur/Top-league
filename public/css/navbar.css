@@ -203,7 +203,7 @@ button{ font:inherit; }
   display:none;
   position:fixed;
   inset:0;
-  background:transparent;  /* keep like old */
+  background:rgba(15,23,42,.18);
   z-index:1050;
   opacity:0;
   pointer-events:none;     /* ✅ IMPORTANT */
@@ -309,7 +309,7 @@ button{ font:inherit; }
   .sidebar-backdrop{ display:block; }
   .sidebar-backdrop.show{
     opacity:1;
-    pointer-events:none; /* ✅ keep none so right side can scroll */
+    pointer-events:auto;
   }
 }
 

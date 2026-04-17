@@ -151,8 +151,8 @@
 
           <div class="soft-actions">
             <a class="btn secondary" href="/admin/students"><%= ui.learners %></a>
-            <a class="btn secondary" href="<%= isHigh ? '/admin/streams' : '/admin/classes' %>"><%= ui.groupLabelPlural %></a>
-            <a class="btn" href="/admin/courses"><%= ui.subjects %></a>
+            <a class="btn secondary" href="<%= isHigh ? '/admin/sections' : '/admin/classes' %>"><%= ui.groupLabelPlural %></a>
+            <a class="btn" href="/admin/subjects"><%= ui.subjects %></a>
           </div>
         </div>
       </div>
@@ -283,7 +283,7 @@
           </div>
           <div class="card-actions">
             <a class="btn" href="/admin/applications">View All</a>
-            <a class="btn secondary" href="/admin/intakes">Intakes</a>
+            <a class="btn secondary" href="/admin/admissions/intakes">Intakes</a>
           </div>
         </div>
 
@@ -377,8 +377,8 @@
       <div class="shortcuts">
         <a class="btn" href="/admin/students/new"><%= ui.addLearner %></a>
         <a class="btn" href="/admin/staff/new">➕ Add Staff</a>
-        <a class="btn" href="<%= isHigh ? '/admin/streams/new' : '/admin/classes/new' %>"><%= ui.addGroup %></a>
-        <a class="btn" href="/admin/courses/new"><%= ui.addSubject %></a>
+        <a class="btn" href="<%= isHigh ? '/admin/sections' : '/admin/classes' %>"><%= ui.addGroup %></a>
+        <a class="btn" href="/admin/subjects"><%= ui.addSubject %></a>
         <a class="btn secondary" href="/admin/settings">⚙️ Settings</a>
         <a class="btn secondary" href="/admin/billing">🧾 Billing</a>
         <a class="btn secondary" href="/admin/storage">📁 Storage</a>

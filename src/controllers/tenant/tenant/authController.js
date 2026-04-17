@@ -69,18 +69,32 @@ function clearTenantTokenCookies(req, res, tenantCode) {
   if (tenantCode) res.clearCookie(`tenant_token.${tenantCode}`, opts);
 }
 
+function flashLocals(req) {
+  return {
+    success: req.flash?.("success") || [],
+    error: req.flash?.("error") || [],
+    warning: req.flash?.("warning") || [],
+    info: req.flash?.("info") || [],
+  };
+}
+
+function renderLogin(req, res, statusCode = 200, locals = {}) {
+  return res.status(statusCode).render("tenant/auth/login", {
+    tenant: req.tenant || null,
+    user: req.user || null,
+    tenantAccess: req.tenantAccess || null,
+    currentPath: req.path || "",
+    originalUrl: req.originalUrl || req.url || "",
+    csrfToken: res.locals.csrfToken || "",
+    flash: flashLocals(req),
+    error: null,
+    ...locals,
+  });
+}
+
 module.exports = {
   loginPage(req, res) {
-    // show flashes on the login page
-    return res.render("tenant/auth/login", {
-      error: null,
-      flash: {
-        success: req.flash?.("success") || [],
-        error: req.flash?.("error") || [],
-        warning: req.flash?.("warning") || [],
-        info: req.flash?.("info") || [],
-      },
-    });
+    return renderLogin(req, res);
   },
 
   async login(req, res) {
@@ -97,28 +111,24 @@ module.exports = {
 
       if (!req.tenant?.code) {
         req.flash?.("error", "Tenant not detected");
-        return res
-          .status(400)
-          .render("tenant/auth/login", { error: "Tenant not detected" });
+        return renderLogin(req, res, 400, { error: "Tenant not detected" });
       }
 
       if (!req.models?.User) {
         req.flash?.("error", "Tenant models not loaded");
-        return res
-          .status(500)
-          .render("tenant/auth/login", { error: "Tenant models not loaded" });
+        return renderLogin(req, res, 500, { error: "Tenant models not loaded" });
       }
 
       if (!process.env.JWT_SECRET) {
         req.flash?.("error", "Server misconfigured (JWT_SECRET missing)");
-        return res.status(500).render("tenant/auth/login", {
+        return renderLogin(req, res, 500, {
           error: "Server misconfigured (JWT_SECRET missing)",
         });
       }
 
       if (req.tenantConnection && req.tenantConnection.readyState !== 1) {
         req.flash?.("warning", "Tenant DB not ready. Retry.");
-        return res.status(503).render("tenant/auth/login", {
+        return renderLogin(req, res, 503, {
           error: "Tenant DB not ready. Retry.",
         });
       }
@@ -128,7 +138,7 @@ module.exports = {
       const password = String(req.body?.password || "");
       if (!emailIn || !password) {
         req.flash?.("error", "Email and password are required");
-        return res.status(400).render("tenant/auth/login", {
+        return renderLogin(req, res, 400, {
           error: "Email and password are required",
         });
       }
@@ -139,21 +149,17 @@ module.exports = {
 
       if (!user) {
         req.flash?.("error", "Invalid credentials");
-        return res
-          .status(401)
-          .render("tenant/auth/login", { error: "Invalid credentials" });
+        return renderLogin(req, res, 401, { error: "Invalid credentials" });
       }
 
       if (user.status !== "active") {
         req.flash?.("error", "Account inactive");
-        return res
-          .status(403)
-          .render("tenant/auth/login", { error: "Account inactive" });
+        return renderLogin(req, res, 403, { error: "Account inactive" });
       }
 
       if (!user.passwordHash) {
         req.flash?.("error", "Password not set for this account");
-        return res.status(403).render("tenant/auth/login", {
+        return renderLogin(req, res, 403, {
           error: "Password not set for this account",
         });
       }
@@ -161,9 +167,7 @@ module.exports = {
       const ok = await bcrypt.compare(password, user.passwordHash);
       if (!ok) {
         req.flash?.("error", "Invalid credentials");
-        return res
-          .status(401)
-          .render("tenant/auth/login", { error: "Invalid credentials" });
+        return renderLogin(req, res, 401, { error: "Invalid credentials" });
       }
 
       // clear previous cookies (with SAME cookie options)
@@ -182,7 +186,7 @@ module.exports = {
         {
           algorithm: "HS256",
           expiresIn: "7d",
-          issuer: "classic-campus",
+          issuer: "classic-academy",
           audience: "tenant",
         },
       );
@@ -199,7 +203,7 @@ module.exports = {
       let redirectTo = "/";
       if (roles.includes("admin")) redirectTo = "/admin/dashboard";
       else if (roles.includes("parent")) redirectTo = "/parent/dashboard";
-      else if (roles.includes("lecturer")) redirectTo = "/lecturer/dashboard";
+      else if (roles.includes("staff") || roles.includes("registrar")) redirectTo = "/staff/dashboard";
       else if (roles.includes("finance")) redirectTo = "/finance/dashboard";
       else if (roles.includes("librarian")) redirectTo = "/library/dashboard";
       else if (roles.includes("hostel")) redirectTo = "/hostel/dashboard";
@@ -211,9 +215,7 @@ module.exports = {
       return res.redirect(redirectTo);
     } catch (err) {
       req.flash?.("error", err?.message || "Login failed");
-      return res
-        .status(500)
-        .render("tenant/auth/login", { error: err?.message || "Login failed" });
+      return renderLogin(req, res, 500, { error: err?.message || "Login failed" });
     }
   },
 

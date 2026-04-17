@@ -95,24 +95,8 @@ function isValidClassLevel(v) {
   return getClassLevels().includes(normUpper(v));
 }
 
-function normalizeSubjectChoices(body) {
-  const raw = body && body.subjects !== undefined ? body.subjects : [];
-  const arr = Array.isArray(raw) ? raw : raw ? [raw] : [];
-  const seen = {};
-  const out = [];
-
-  for (let i = 0; i < arr.length; i++) {
-    const id = norm(arr[i]);
-    if (!id) continue;
-    if (seen[id]) continue;
-    seen[id] = true;
-    out.push({
-      subject: id,
-      order: i + 1,
-    });
-  }
-
-  return out;
+function getSectionId(body, key) {
+  return norm(body && (body[key] || body[`${key}Id`]));
 }
 
 function buildErrors(body, files) {
@@ -162,8 +146,7 @@ function buildErrors(body, files) {
   if (!ycRaw) e.yearCompleted = "Year completed is required";
   else if (Number.isNaN(yc) || yc < 1900 || yc > nowY + 1) e.yearCompleted = "Year completed is invalid";
 
-  const subjectChoices = normalizeSubjectChoices(body);
-  if (!subjectChoices.length) e.subjects = "Select at least one subject";
+  if (!getSectionId(body, "section1")) e.section1 = "Select a section";
 
   if (!pickFirst(files, "passportPhoto")) e.passportPhoto = "Passport photo is required";
   if (!pickFirst(files, "idDocument")) e.idDocument = "ID document is required";
@@ -172,12 +155,12 @@ function buildErrors(body, files) {
   return e;
 }
 
-function buildViewData(req, subjects, formData, errors, applicationId) {
+function buildViewData(req, sections, formData, errors, applicationId) {
   const csrfToken = typeof req.csrfToken === "function" ? req.csrfToken() : null;
 
   return {
     tenant: req.tenant,
-    subjects: Array.isArray(subjects) ? subjects : [],
+    sections: Array.isArray(sections) ? sections : [],
     academicYears: getDefaultAcademicYears(),
     schoolLevels: getSchoolLevels(),
     classLevels: getClassLevels(),
@@ -195,19 +178,19 @@ module.exports = {
    * GET /admissions/apply
    */
   applyPage: async (req, res) => {
-    const Subject = req.models ? req.models.Subject : null;
+    const Section = req.models ? req.models.Section : null;
 
     try {
-      const subjects = Subject
-        ? await Subject.find({ status: { $ne: "archived" } })
-            .select("_id code title shortTitle schoolLevel classLevels term")
-            .sort({ title: 1, code: 1 })
+      const sections = Section
+        ? await Section.find({ status: { $ne: "archived" } })
+            .select("_id code name levelType classLevel classStream className classCode campusName schoolUnitName")
+            .sort({ levelType: 1, classLevel: 1, classStream: 1, name: 1 })
             .lean()
         : [];
 
       return res.render(
         "tenant/public/admissions/apply",
-        buildViewData(req, subjects, null, null, null)
+        buildViewData(req, sections, null, null, null)
       );
     } catch (err) {
       console.error("Apply page error:", err);
@@ -221,12 +204,12 @@ module.exports = {
    */
   submitApplication: async (req, res) => {
     const Applicant = req.models ? req.models.Applicant : null;
-    const Subject = req.models ? req.models.Subject : null;
+    const Section = req.models ? req.models.Section : null;
 
-    const subjects = Subject
-      ? await Subject.find({ status: { $ne: "archived" } })
-          .select("_id code title shortTitle schoolLevel classLevels term")
-          .sort({ title: 1, code: 1 })
+    const sections = Section
+      ? await Section.find({ status: { $ne: "archived" } })
+          .select("_id code name levelType classLevel classStream className classCode campusName schoolUnitName")
+          .sort({ levelType: 1, classLevel: 1, classStream: 1, name: 1 })
           .lean()
       : [];
 
@@ -237,7 +220,7 @@ module.exports = {
         .status(422)
         .render(
           "tenant/public/admissions/apply",
-          buildViewData(req, subjects, req.body, errors, null)
+          buildViewData(req, sections, req.body, errors, null)
         );
     }
 
@@ -294,7 +277,8 @@ module.exports = {
         applicationId = makeApplicationId();
       }
 
-      const subjectChoices = normalizeSubjectChoices(req.body);
+      const section1 = getSectionId(req.body, "section1");
+      const section2 = getSectionId(req.body, "section2");
 
       const doc = await Applicant.create({
         applicationId: applicationId,
@@ -321,7 +305,10 @@ module.exports = {
         term: Number(req.body.term || 1),
         intake: norm(req.body.intake),
 
-        subjectChoices: subjectChoices,
+        section1: section1 || null,
+        section2: section2 || null,
+        program1: section1 || null,
+        program2: section2 || null,
 
         qualification: norm(req.body.qualification),
         school: norm(req.body.school),
@@ -337,7 +324,7 @@ module.exports = {
 
       return res.render(
         "tenant/public/admissions/apply",
-        buildViewData(req, subjects, null, null, doc.applicationId)
+        buildViewData(req, sections, null, null, doc.applicationId)
       );
     } catch (err) {
       for (let i = 0; i < uploaded.length; i++) {
@@ -351,7 +338,7 @@ module.exports = {
         .status(500)
         .render(
           "tenant/public/admissions/apply",
-          buildViewData(req, subjects, req.body, { general: err.message || "Failed to submit application" }, null)
+          buildViewData(req, sections, req.body, { general: err.message || "Failed to submit application" }, null)
         );
     }
   },
@@ -402,7 +389,8 @@ module.exports = {
       applicationId: q,
       isDeleted: { $ne: true },
     })
-      .populate("subjectChoices.subject", "code title shortTitle schoolLevel classLevels term")
+      .populate("section1", "code name levelType classLevel classStream className")
+      .populate("section2", "code name levelType classLevel classStream className")
       .lean();
 
     if (!result) {
@@ -411,7 +399,8 @@ module.exports = {
         $or: [{ email: q.toLowerCase() }, { phone: q }],
       })
         .sort({ createdAt: -1 })
-        .populate("subjectChoices.subject", "code title shortTitle schoolLevel classLevels term")
+        .populate("section1", "code name levelType classLevel classStream className")
+        .populate("section2", "code name levelType classLevel classStream className")
         .lean();
     }
 

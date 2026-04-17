@@ -13,7 +13,21 @@
   const planName = tenantAccess.planName || "School Profile";
   const tenantStatus = tenantAccess.status || "trial";
   const schoolLevel = tenantAccess.schoolLevel || "high";
-  const ui = locals.ui || {};
+  const ui = {
+    subtitle: "Classic Academy",
+    learners: "Students",
+    guardians: "Parents",
+    records: "Student Docs",
+    subjects: "Subjects",
+    assignments: "Assignments",
+    exams: "Exams",
+    results: "Results",
+    reports: "Reports",
+    statements: "Statements",
+    bursaries: "Scholarships",
+    studentNavCat: "STUDENTS",
+    ...(locals.ui || {}),
+  };
 
   function isActive(path, exact = false) {
     if (!currentPath) return false;
@@ -66,8 +80,8 @@
 
   const academicItems = visibleItems([
     { label: "Classes", icon: "fa-layer-group", href: "/admin/classes", hidden: !hasModule("Class") },
-    { label: "Streams", icon: "fa-code-branch", href: "/admin/streams", hidden: !hasModule("Stream") || !isHigh },
-    { label: ui.subjects, icon: "fa-book-open", href: "/admin/courses", hidden: !hasModule("Course") && !hasModule("Subject") },
+    { label: "Sections", icon: "fa-code-branch", href: "/admin/sections", hidden: !hasModule("Section") },
+    { label: ui.subjects, icon: "fa-book-open", href: "/admin/subjects", hidden: !hasModule("Subject") },
     { label: "Timetable", icon: "fa-clock", href: "/admin/timetable", hidden: !hasModule("TimetableEntry") },
     { label: "Attendance", icon: "fa-user-clock", href: "/admin/attendance", hidden: !hasModule("Attendance") },
     { label: ui.assignments, icon: "fa-file-pen", href: "/admin/assignments", hidden: !hasModule("Assignment") && !isNursery },
@@ -127,7 +141,7 @@
     <a class="mglass-home" href="/admin/dashboard" aria-label="Home">
       <i class="fa fa-house"></i>
     </a>
-    <div class="mglass-title"><%= tenant?.name || "Classic Campus" %></div>
+    <div class="mglass-title"><%= tenant?.name || "Classic Academy" %></div>
   </div>
 
   <button class="mglass-menu" id="mobileMenuBtn" type="button" aria-label="Open menu">
@@ -146,7 +160,7 @@
     <div class="brand">
       <div class="brand-logo">CS</div>
       <div class="brand-meta">
-        <h1 class="brand-title"><%= tenant?.name || "Classic Campus" %></h1>
+        <h1 class="brand-title"><%= tenant?.name || "Classic Academy" %></h1>
         <div class="brand-sub"><%= ui.subtitle %></div>
       </div>
     </div>
@@ -260,6 +274,6 @@
         </div>
       <% } %>
 
-      <div class="navfoot">Plan: <strong><%= planName %></strong> • Status: <strong><%= tenantStatus %></strong></div>
+      <div class="navfoot">Plan: <strong><%= planName %></strong> - Status: <strong><%= tenantStatus %></strong></div>
     </nav>
   </aside>

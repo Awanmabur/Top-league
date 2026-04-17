@@ -84,7 +84,7 @@ async function softDeleteDoc(doc, userId) {
 module.exports = {
   async index(req, res) {
     try {
-      const { Enrollment, Student, Program, Class } = req.models;
+      const { Enrollment, Student, Subject, Class } = req.models;
 
       const q = safeStr(req.query.q, 120);
       const academicYear = safeStr(req.query.academicYear, 40);
@@ -136,9 +136,9 @@ module.exports = {
         .lean();
 
       const [programs, classes, students] = await Promise.all([
-        Program.find({ isDeleted: { $ne: true } })
-          .select("name title code")
-          .sort({ code: 1, name: 1 })
+        Subject.find({ status: { $ne: "archived" } })
+          .select("title shortTitle name code")
+          .sort({ code: 1, title: 1 })
           .limit(1000)
           .lean(),
 
@@ -214,7 +214,7 @@ module.exports = {
       const note = safeStr(req.body.note, 1200);
 
       if (!isOid(student) || !academicYear || !isOid(program) || !isOid(classGroup)) {
-        req.flash?.("error", "Student, Academic Year, Program and Class are required.");
+        req.flash?.("error", "Student, Academic Year, Subject and Class are required.");
         return res.redirect("/admin/enrollments");
       }
 
@@ -296,7 +296,7 @@ module.exports = {
       const note = safeStr(req.body.note, 1200);
 
       if (!isOid(student) || !academicYear || !isOid(program) || !isOid(classGroup)) {
-        req.flash?.("error", "Student, Academic Year, Program and Class are required.");
+        req.flash?.("error", "Student, Academic Year, Subject and Class are required.");
         return res.redirect("/admin/enrollments");
       }
 
@@ -438,7 +438,7 @@ module.exports = {
           "Email",
           "AcademicYear",
           "Semester",
-          "Program",
+          "Subject",
           "Class",
           "Intake",
           "Status",

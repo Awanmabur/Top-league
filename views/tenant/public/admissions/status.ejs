@@ -175,13 +175,14 @@
     return map[String(v || "").toLowerCase()] || "—";
   };
 
-  const subjectLabels = app && Array.isArray(app.subjectChoices)
-    ? app.subjectChoices.map(function (x) {
-        const subj = x && x.subject ? x.subject : null;
-        if (!subj) return "";
-        return ((subj.code ? subj.code + " — " : "") + (subj.title || subj.shortTitle || "Subject")).trim();
-      }).filter(Boolean)
-    : [];
+  const formatSection = (sec) => {
+    if (!sec) return "";
+    const name = sec.name || sec.className || "Section";
+    const extra = [sec.classLevel, sec.classStream].filter(Boolean).join(" ");
+    return ((sec.code ? sec.code + " — " : "") + name + (extra ? " (" + extra + ")" : "")).trim();
+  };
+
+  const sectionLabels = [formatSection(app && app.section1), formatSection(app && app.section2)].filter(Boolean);
 %>
 
 <div class="wrap">
@@ -344,8 +345,8 @@
             </div>
 
             <div class="field" style="margin-top:12px">
-              <label>Subject Choices</label>
-              <textarea class="textarea" disabled><%= subjectLabels.length ? subjectLabels.join(", ") : "—" %></textarea>
+              <label>Section Choices</label>
+              <textarea class="textarea" disabled><%= sectionLabels.length ? sectionLabels.join(", ") : "—" %></textarea>
             </div>
 
             <div class="row" style="gap:12px;margin-top:12px">
@@ -512,8 +513,8 @@
           <div class="strong"><%= app.term ? ("Term " + app.term) : "—" %></div>
 
           <div class="divider"></div>
-          <div class="muted">Subject Choices</div>
-          <div class="strong"><%= subjectLabels.length ? subjectLabels.join(", ") : "—" %></div>
+          <div class="muted">Section Choices</div>
+          <div class="strong"><%= sectionLabels.length ? sectionLabels.join(", ") : "—" %></div>
         </div>
       </aside>
     </div>

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <title>Admin • Scholarships — CampusSaaS</title>
+  <title>Admin • Scholarships — Classic Academy</title>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <link rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
@@ -103,7 +103,7 @@
   <aside class="sidebar">
     <div class="brand">
       <div class="logo">CS</div>
-      <div><h1>CampusSaaS</h1><div class="sub">Admin Portal</div></div>
+      <div><h1>Classic Academy</h1><div class="sub">Admin Portal</div></div>
     </div>
     <nav class="nav">
       <div class="nav-section-title">Admin</div>
@@ -174,7 +174,7 @@
             <option value="all">All Sponsors</option>
             <option>Government Fund</option>
             <option>Donor Program</option>
-            <option>University Fund</option>
+            <option>School Fund</option>
             <option>Private Sponsor</option>
           </select>
         </div>
@@ -330,7 +330,7 @@
         </div>
         <div class="field"><label>Sponsor</label>
           <select class="select" id="sSponsor">
-            <option>Government Fund</option><option>Donor Program</option><option>University Fund</option><option>Private Sponsor</option>
+            <option>Government Fund</option><option>Donor Program</option><option>School Fund</option><option>Private Sponsor</option>
           </select>
         </div>
 
@@ -479,7 +479,7 @@
   const SCH = [
     {id:'S001', name:'Government Merit Scholarship', type:'Merit', sponsor:'Government Fund', cycle:'2025/2026 - Sem 1', quota:120, amount:'Full tuition', status:'Published', elig:'GPA>=3.5; All programs', minGpa:'3.5', target:'All Programs', apps:84, awarded:40},
     {id:'S002', name:'Donor Need Support', type:'Need-based', sponsor:'Donor Program', cycle:'2025/2026 - Sem 1', quota:60, amount:'UGX 2,000,000', status:'Published', elig:'Low income; GPA>=2.5', minGpa:'2.5', target:'All Programs', apps:51, awarded:20},
-    {id:'S003', name:'Research Excellence Fund', type:'Research', sponsor:'University Fund', cycle:'2024/2025 - Sem 2', quota:20, amount:'UGX 3,500,000', status:'Closed', elig:'Research proposal; GPA>=3.2', minGpa:'3.2', target:'Computing', apps:17, awarded:10},
+    {id:'S003', name:'Research Excellence Fund', type:'Research', sponsor:'School Fund', cycle:'2024/2025 - Sem 2', quota:20, amount:'UGX 3,500,000', status:'Closed', elig:'Research proposal; GPA>=3.2', minGpa:'3.2', target:'Computing', apps:17, awarded:10},
     {id:'S004', name:'Private Sponsor Partial', type:'Partial', sponsor:'Private Sponsor', cycle:'2025/2026 - Sem 1', quota:30, amount:'50% tuition', status:'Draft', elig:'GPA>=3.0; Year 2+', minGpa:'3.0', target:'Business', apps:0, awarded:0},
   ];
 
@@ -496,7 +496,7 @@
   const BUD = [
     {sponsor:'Government Fund', allocated:300000000, spent:180000000},
     {sponsor:'Donor Program', allocated:120000000, spent:60000000},
-    {sponsor:'University Fund', allocated:80000000, spent:50000000},
+    {sponsor:'School Fund', allocated:80000000, spent:50000000},
     {sponsor:'Private Sponsor', allocated:50000000, spent:0},
   ];
 

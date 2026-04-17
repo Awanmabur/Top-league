@@ -19,7 +19,8 @@
 
       const state = {
         selected: new Set(),
-        currentViewId: null
+        currentViewId: null,
+        isEditing: false
       };
 
       function escapeHtml(v) {
@@ -88,10 +89,10 @@
 
       function programSummary(intake) {
         const arr = Array.isArray(intake.programs) ? intake.programs : [];
-        if (!arr.length || intake.allowAllPrograms) return "All programs";
+        if (!arr.length || intake.allowAllPrograms) return "All sections";
         const names = arr.slice(0, 2).map((x) => {
           const label = [x.code, x.name].filter(Boolean).join(" — ");
-          return label || "Program";
+          return label || "Section";
         });
         return names.join(", ") + (arr.length > 2 ? ` +${arr.length - 2}` : "");
       }
@@ -177,11 +178,11 @@
 
       function programOptionHtml(selectedValue) {
         return [
-          '<option value="">Select program…</option>',
+          '<option value="">Select section...</option>',
           ...PROGRAMS.map((p) => {
             const selected = String(selectedValue || "") === String(p._id) ? "selected" : "";
             const label = [p.code, p.name].filter(Boolean).join(" — ");
-            return `<option value="${escapeHtml(p._id)}" ${selected}>${escapeHtml(label || "Program")}</option>`;
+            return `<option value="${escapeHtml(p._id)}" ${selected}>${escapeHtml(label || "Section")}</option>`;
           })
         ].join("");
       }
@@ -195,7 +196,7 @@
         row.setAttribute("data-prog-row", "1");
         row.innerHTML = `
           <div class="field">
-            <label>Program</label>
+            <label>Section</label>
             <select class="select" data-program>
               ${programOptionHtml(init?.program || "")}
             </select>
@@ -236,12 +237,15 @@
       }
 
       function resetEditor() {
-        $("mTitle").textContent = "Add Intake";
+        state.isEditing = false;
+        $("mTitle").textContent = "Add Term";
         $("intakeForm").action = "/admin/admissions/intakes/new";
 
         $("mName").value = "";
         $("mCode").value = "";
         $("mStatus").value = "draft";
+        if ($("mYear")) $("mYear").value = "";
+        if ($("mTerm")) $("mTerm").value = "";
         $("mApplicationOpenDate").value = "";
         $("mApplicationCloseDate").value = "";
         $("mStartDate").value = "";
@@ -254,14 +258,27 @@
         syncProgramsJson();
       }
 
+      function buildTermCodePreview() {
+        if (state.isEditing) return;
+        const name = ($("mName") && $("mName").value || "").trim();
+        const term = ($("mTerm") && $("mTerm").value || name).trim();
+        const year = ($("mYear") && $("mYear").value || "").trim();
+        const stem = String(term || name || "TERM").toUpperCase().replace(/[^A-Z0-9]+/g, "").slice(0, 4) || "TERM";
+        const yy = year ? String(year).slice(-2) : String(new Date().getFullYear()).slice(-2);
+        if ($("mCode")) $("mCode").value = `${stem}${yy}..`;
+      }
+
       function openEditor(prefill) {
         resetEditor();
 
         if (prefill) {
-          $("mTitle").textContent = "Edit Intake";
-          $("intakeForm").action = `/admin/admissions/intakes/${encodeURIComponent(prefill.id)}/edit`;
+          state.isEditing = true;
+          $("mTitle").textContent = "Edit Term";
+          $("intakeForm").action = `/admin/admissions/intakes/${encodeURIComponent(prefill.id)}`;
           $("mName").value = prefill.name || "";
           $("mCode").value = prefill.code || "";
+          if ($("mYear")) $("mYear").value = prefill.year || "";
+          if ($("mTerm")) $("mTerm").value = prefill.term || prefill.name || "";
           $("mStatus").value = prefill.status || "draft";
           $("mApplicationOpenDate").value = prefill.applicationOpenDate || "";
           $("mApplicationCloseDate").value = prefill.applicationCloseDate || "";
@@ -277,6 +294,7 @@
           }
         }
 
+        if (!state.isEditing) buildTermCodePreview();
         openModal("mEdit");
       }
 
@@ -287,6 +305,8 @@
 
         $("vName").textContent = intake.name || "—";
         $("vCode").textContent = intake.code || "—";
+        if ($("vYear")) $("vYear").textContent = intake.year || "—";
+        if ($("vTerm")) $("vTerm").textContent = intake.term || intake.name || "—";
         $("vStatus").innerHTML = statusPill(intake.status || "draft");
         $("vApplicationOpenDate").textContent = formatDate(intake.applicationOpenDate);
         $("vApplicationCloseDate").textContent = formatDate(intake.applicationCloseDate);
@@ -299,7 +319,7 @@
         host.innerHTML = "";
 
         if (intake.allowAllPrograms || !Array.isArray(intake.programs) || !intake.programs.length) {
-          host.innerHTML = '<span class="tag"><i class="fa-solid fa-layer-group"></i> All programs</span>';
+          host.innerHTML = '<span class="tag"><i class="fa-solid fa-layer-group"></i> All sections</span>';
         } else {
           intake.programs.forEach((p) => {
             const span = document.createElement("span");
@@ -314,17 +334,17 @@
 
       function validateForm() {
         const name = $("mName").value.trim();
-        const code = $("mCode").value.trim();
+        const year = $("mYear") ? Number($("mYear").value || 0) : 0;
         const status = $("mStatus").value;
         const allowedStatuses = new Set(["draft", "open", "closed", "archived"]);
 
-        if (!name || name.length < 3) {
-          alert("Intake name is required.");
+        if (!name || name.length < 2) {
+          alert("Term name is required.");
           return false;
         }
 
-        if (!code || code.length < 3) {
-          alert("Intake code is required.");
+                if (!year || year < 2000 || year > 2100) {
+          alert("Academic year is required.");
           return false;
         }
 
@@ -355,7 +375,7 @@
 
           for (const row of rows) {
             if (seen.has(row.program)) {
-              alert("Duplicate program rows are not allowed.");
+              alert("Duplicate section rows are not allowed.");
               return false;
             }
             seen.add(row.program);
@@ -398,7 +418,7 @@
 
       function exportIntakes() {
         const rows = [
-          ["Name", "Code", "Status", "ApplicationOpenDate", "ApplicationCloseDate", "StartDate", "EndDate", "IsActive", "Applicants", "Programs", "Capacity"],
+          ["Name", "Code", "Status", "ApplicationOpenDate", "ApplicationCloseDate", "StartDate", "EndDate", "IsActive", "Applicants", "Sections", "Capacity"],
           ...INTAKES.map((it) => [
             it.name || "",
             it.code || "",
@@ -409,7 +429,7 @@
             it.endDate || "",
             it.isActive ? "Yes" : "No",
             it.applicants || 0,
-            it.allowAllPrograms ? "All programs" : (it.programs || []).map((p) => [p.code, p.name].filter(Boolean).join(" — ")).join(" | "),
+            it.allowAllPrograms ? "All sections" : (it.programs || []).map((p) => [p.code, p.name].filter(Boolean).join(" — ")).join(" | "),
             it.totalCapacity || 0
           ])
         ];
@@ -424,6 +444,8 @@
       $("quickDraft").addEventListener("click", function () {
         openEditor();
         $("mStatus").value = "draft";
+        if ($("mYear")) $("mYear").value = "";
+        if ($("mTerm")) $("mTerm").value = "";
       });
 
       $("quickOpen").addEventListener("click", function () {

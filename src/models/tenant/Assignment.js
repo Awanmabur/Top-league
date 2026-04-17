@@ -7,9 +7,9 @@ module.exports = (connection) => {
     {
       title: { type: String, required: true, trim: true, maxlength: 200 },
 
-      // Course link
-      course: { type: Schema.Types.ObjectId, ref: "Course", required: true, index: true },
-      // optional denormalized display (useful if course gets renamed later)
+      // Subject link
+      course: { type: Schema.Types.ObjectId, ref: "Subject", required: true, index: true },
+      // optional denormalized display (useful if subject gets renamed later)
       courseName: { type: String, trim: true, maxlength: 160 },
 
       // Dates & grading

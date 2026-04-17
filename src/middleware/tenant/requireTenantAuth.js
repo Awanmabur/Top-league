@@ -125,7 +125,7 @@ module.exports = function requireTenantAuth(requiredRole = null) {
       const verifyStartedAt = Date.now();
       const payload = jwt.verify(token, process.env.JWT_SECRET, {
         algorithms: ["HS256"],
-        issuer: "classic-campus",
+        issuer: "classic-academy",
         audience: "tenant",
       });
       perf("jwt verify", verifyStartedAt);
@@ -199,7 +199,13 @@ module.exports = function requireTenantAuth(requiredRole = null) {
 
       const roleStartedAt = Date.now();
       const roles = Array.isArray(user.roles) ? user.roles : [];
-      if (requiredRole && !roles.includes(requiredRole)) {
+      const allowedRoles = Array.isArray(requiredRole)
+        ? requiredRole
+        : requiredRole
+        ? [requiredRole]
+        : [];
+
+      if (allowedRoles.length && !allowedRoles.some((role) => roles.includes(role))) {
         if (wantsJson(req)) {
           return res.status(403).json({ message: "Forbidden" });
         }

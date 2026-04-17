@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Reports — Classic Campus</title>
+  <title>Reports — Classic Academy</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <link rel="stylesheet" href="/css/navbar.css" />
   <style>
@@ -31,7 +31,7 @@
   <main class="main">
     <div>
       <div class="title">Reports</div>
-      <div class="subtitle">Cross-tenant reporting for universities, plans, payments, and platform performance.</div>
+      <div class="subtitle">Cross-tenant reporting for schools, plans, payments, and platform performance.</div>
     </div>
 
     <% if (error) { %>
@@ -40,7 +40,7 @@
 
     <div class="kpi-row">
       <div class="kpi-card">
-        <div class="kpi-label">Universities</div>
+        <div class="kpi-label">Schools</div>
         <div class="kpi-value"><%= summary?.tenantCount || 0 %></div>
       </div>
       <div class="kpi-card">
@@ -61,7 +61,7 @@
       <div class="grid">
         <a href="/super-admin/reports/tenants" class="report-card" style="text-decoration:none;color:inherit;">
           <div class="report-title">Tenant Report</div>
-          <div class="meta">See all universities, their plans, ownership, status, and platform setup.</div>
+          <div class="meta">See all schools, their plans, ownership, status, and platform setup.</div>
           <span class="btn">Open Report</span>
         </a>
 

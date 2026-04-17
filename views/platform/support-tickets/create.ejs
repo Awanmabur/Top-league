@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Create Support Ticket — Classic Campus</title>
+  <title>Create Support Ticket — Classic Academy</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <link rel="stylesheet" href="/css/navbar.css" />
   <style>
@@ -31,7 +31,7 @@
   <main class="main">
     <div>
       <div class="title">Create Support Ticket</div>
-      <div class="subtitle">Create a new support issue on behalf of a university or internal platform request.</div>
+      <div class="subtitle">Create a new support issue on behalf of a school or internal platform request.</div>
     </div>
 
     <div class="card">
@@ -46,9 +46,9 @@
         </div>
 
         <div class="form-group">
-          <label>University</label>
+          <label>School</label>
           <select name="tenantId" required>
-            <option value="">Select university</option>
+            <option value="">Select school</option>
             <% (tenants || []).forEach(function(tenant){ %>
               <option value="<%= tenant._id %>" <%= String(old?.tenantId || '') === String(tenant._id) ? 'selected' : '' %>><%= tenant.name %></option>
             <% }) %>

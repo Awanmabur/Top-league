@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Transport - <%= tenant?.name || "Classic Academy" %></title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/navbar.css" />
+  <link rel="stylesheet" href="/css/student-portal.css" />
+  <style>
+    .table-wrap{overflow:auto;border:1px solid rgba(13,64,96,.10);border-radius:12px}
+    table{width:100%;border-collapse:collapse;min-width:980px;background:#fff}
+    th,td{padding:10px 12px;border-bottom:1px solid rgba(13,64,96,.08);text-align:left;font-size:13px}
+    th{font-size:12px;color:#6b7280;text-transform:uppercase;background:rgba(13,64,96,.03)}
+    .form-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+    .field{display:grid;gap:5px}.field label{font-size:12px;color:#6b7280;font-weight:800}
+    .field input,.field select,.field textarea{width:100%;padding:10px 12px;border:1px solid rgba(13,64,96,.16);border-radius:10px}
+    .field.full{grid-column:1/-1}.actions{display:flex;gap:8px;flex-wrap:wrap}
+    @media(max-width:900px){.form-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<%- include("../../partials/flash") %>
+<%- include("../../partials/navbar") %>
+
+<main class="main">
+  <div class="topbar">
+    <div>
+      <div class="title">Transport</div>
+      <div class="subtitle">Manage school transport routes, vehicles, drivers, pickup points, and capacity.</div>
+    </div>
+  </div>
+
+  <div class="kpi-row">
+    <div class="card"><div class="section-title">Routes</div><div class="kpi-value"><%= kpis.routes %></div></div>
+    <div class="card"><div class="section-title">Active</div><div class="kpi-value"><%= kpis.active %></div></div>
+    <div class="card"><div class="section-title">Learners</div><div class="kpi-value"><%= kpis.learners %></div></div>
+    <div class="card"><div class="section-title">Capacity</div><div class="kpi-value"><%= kpis.capacity %></div></div>
+  </div>
+
+  <section class="card">
+    <div class="section-title">Add Route</div>
+    <form method="POST" action="/admin/transport" class="form-grid" style="margin-top:10px">
+      <div class="field"><label>Route Name</label><input name="routeName" required /></div>
+      <div class="field"><label>Route Code</label><input name="routeCode" required /></div>
+      <div class="field"><label>Vehicle</label><input name="vehicleName" /></div>
+      <div class="field"><label>Registration No.</label><input name="vehicleRegNo" /></div>
+      <div class="field"><label>Driver</label><input name="driverName" /></div>
+      <div class="field"><label>Driver Phone</label><input name="driverPhone" /></div>
+      <div class="field"><label>Capacity</label><input name="capacity" type="number" min="0" /></div>
+      <div class="field"><label>Fee Amount</label><input name="feeAmount" type="number" min="0" step="0.01" /></div>
+      <div class="field"><label>Status</label><select name="status"><option value="active">Active</option><option value="inactive">Inactive</option><option value="maintenance">Maintenance</option></select></div>
+      <div class="field"><label>Assigned Learners</label><input name="assignedLearners" type="number" min="0" /></div>
+      <div class="field full"><label>Pickup Points</label><textarea name="pickupPoints" placeholder="One pickup point per line"></textarea></div>
+      <div class="field full"><label>Notes</label><textarea name="notes"></textarea></div>
+      <div class="field full"><button class="btn primary" type="submit"><i class="fa-solid fa-plus"></i> Add Route</button></div>
+    </form>
+  </section>
+
+  <section class="card">
+    <form method="GET" action="/admin/transport" class="actions">
+      <input class="input" name="q" value="<%= query.q || '' %>" placeholder="Search route, vehicle, driver..." />
+      <select class="select" name="status">
+        <option value="">All Statuses</option>
+        <option value="active" <%= query.status === "active" ? "selected" : "" %>>Active</option>
+        <option value="inactive" <%= query.status === "inactive" ? "selected" : "" %>>Inactive</option>
+        <option value="maintenance" <%= query.status === "maintenance" ? "selected" : "" %>>Maintenance</option>
+      </select>
+      <button class="btn light" type="submit">Filter</button>
+      <a class="btn light" href="/admin/transport">Reset</a>
+    </form>
+
+    <div class="table-wrap" style="margin-top:12px">
+      <table>
+        <thead><tr><th>Route</th><th>Vehicle</th><th>Driver</th><th>Pickup Points</th><th>Capacity</th><th>Fee</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+          <% if (!routes.length) { %>
+            <tr><td colspan="8">No transport routes found.</td></tr>
+          <% } %>
+          <% routes.forEach(function(route){ %>
+            <tr>
+              <td><strong><%= route.routeName %></strong><br><span class="muted"><%= route.routeCode %></span></td>
+              <td><%= route.vehicleName || "-" %><br><span class="muted"><%= route.vehicleRegNo || "" %></span></td>
+              <td><%= route.driverName || "-" %><br><span class="muted"><%= route.driverPhone || "" %></span></td>
+              <td><%= (route.pickupPoints || []).join(", ") || "-" %></td>
+              <td><%= route.assignedLearners || 0 %> / <%= route.capacity || 0 %></td>
+              <td><%= Number(route.feeAmount || 0).toLocaleString() %></td>
+              <td><%= route.status %></td>
+              <td>
+                <form method="POST" action="/admin/transport/<%= route._id %>/delete" onsubmit="return confirm('Remove this transport route?')">
+                  <button class="btn-xs" type="submit">Remove</button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+</div>
+<script src="/js/navbar.js"></script>
+</body>
+</html>

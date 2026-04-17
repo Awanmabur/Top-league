@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title><%= (tenant?.name || "Classic Campus") %> • Applicants</title>
+  <title><%= (tenant?.name || "Classic Academy") %> • Applicants</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
 
   <% if (csrfToken) { %>
@@ -448,11 +448,11 @@
           <div class="left">
             <input class="input" name="q" value="<%= query?.q || '' %>" placeholder="Search name, app ID, email, phone..." />
 
-            <select class="select" name="program">
-              <option value="">All Programs</option>
+            <select class="select" name="section">
+              <option value="">All Sections</option>
               <% (programs || []).forEach(function(p){ %>
-                <option value="<%= String(p._id) %>" <%= String(query?.program || '') === String(p._id) ? 'selected' : '' %>>
-                  <%= (p.code ? p.code + ' — ' : '') + (p.name || p.title || 'Program') %>
+                <option value="<%= String(p._id) %>" <%= String(query?.section || query?.program || '') === String(p._id) ? 'selected' : '' %>>
+                  <%= (p.code ? p.code + ' — ' : '') + (p.name || p.className || 'Section') %>
                 </option>
               <% }) %>
             </select>
@@ -508,7 +508,7 @@
                     <th class="col-check no-print"><input type="checkbox" id="checkAll" /></th>
                     <th class="col-applicant">Applicant</th>
                     <th class="col-application">Application</th>
-                    <th class="col-program">Program</th>
+                    <th class="col-program">Section</th>
                     <th class="col-stage">Stage</th>
                     <th class="col-docs">Docs</th>
                     <th class="col-payment">Payment</th>
@@ -534,7 +534,7 @@
                 function buildPageUrl(targetPage) {
                   const params = new URLSearchParams();
                   if (query?.q) params.set("q", query.q);
-                  if (query?.program) params.set("program", query.program);
+                  if (query?.section || query?.program) params.set("section", query.section || query.program);
                   if (query?.status) params.set("status", query.status);
                   params.set("page", String(targetPage));
                   return "/admin/admissions/applicants?" + params.toString();
@@ -606,7 +606,7 @@
           <div class="field"><label>Email</label><div class="view-input" id="vEmail">—</div></div>
           <div class="field"><label>Phone</label><div class="view-input" id="vPhone">—</div></div>
           <div class="field"><label>Submitted</label><div class="view-input" id="vSubmitted">—</div></div>
-          <div class="field"><label>Program</label><div class="view-input" id="vProgram">—</div></div>
+          <div class="field"><label>Section</label><div class="view-input" id="vProgram">—</div></div>
           <div class="field"><label>Intake</label><div class="view-input" id="vIntake">—</div></div>
           <div class="field"><label>Payment</label><div class="view-input" id="vPayment">—</div></div>
         </div>
@@ -648,7 +648,7 @@
         <div class="modal-body">
           <div class="note">
             Required headers:
-            <strong>firstName,lastName,email,phone,programCode,intake,status</strong>
+            <strong>firstName,lastName,email,phone,sectionCode,intake,status</strong>
           </div>
 
           <div class="field" style="margin-top:12px;">
@@ -688,7 +688,7 @@
       applicationId: a.applicationId || '',
       intake: a.intake || '',
       status: a.status || 'submitted',
-      programLabel: a.program1 ? ((a.program1.code ? a.program1.code + ' — ' : '') + (a.program1.name || a.program1.title || 'Program')) : '—',
+      programLabel: (a.section1 || a.program1) ? ((((a.section1 || a.program1).code ? (a.section1 || a.program1).code + ' — ' : '') + ((a.section1 || a.program1).name || (a.section1 || a.program1).className || 'Section'))) : '—',
       paymentLabel: 'N/A',
       submittedAt: a.createdAt || null,
       docs: docs,

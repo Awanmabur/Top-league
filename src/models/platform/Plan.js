@@ -105,6 +105,9 @@ module.exports = (connection) => {
         prioritySupport: { type: Boolean, default: false },
         whiteLabel: { type: Boolean, default: false },
         advancedReports: { type: Boolean, default: false },
+        helpdesk: { type: Boolean, default: true },
+        backups: { type: Boolean, default: true },
+        systemHealth: { type: Boolean, default: true },
       },
 
       sortOrder: {

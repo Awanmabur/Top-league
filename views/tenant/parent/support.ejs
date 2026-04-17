@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title><%= (tenant && tenant.name) ? tenant.name : "CampusSaaS" %> — Support</title>
+  <title><%= (tenant && tenant.name) ? tenant.name : "Classic Academy" %> — Support</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
 
   <link rel="stylesheet"
@@ -241,7 +241,7 @@
     const kids = Array.isArray(children) ? children : [];
     const s = stats || { total: 0, open: 0, pending: 0, resolved: 0 };
     const form = formData || {};
-    const tenantName = t.name || "CampusSaaS";
+    const tenantName = t.name || "Classic Academy";
     const tenantCode = (t.code || "CC").toString();
 
     function fullNameOfStudent(c) {

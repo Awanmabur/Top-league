@@ -26,6 +26,28 @@ const tenantRouter = require("./routes/tenant/tenant");
 
 const app = express();
 const isProd = process.env.NODE_ENV === "production";
+const PLATFORM_PATHS = ["/platform", "/super-admin"];
+
+function requireEnv(name, options = {}) {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${name}`);
+  }
+
+  if (options.minLength && String(value).length < options.minLength) {
+    throw new Error(`${name} must be at least ${options.minLength} characters.`);
+  }
+
+  return value;
+}
+
+function validateCoreEnv() {
+  requireEnv("SESSION_SECRET", { minLength: isProd ? 32 : 12 });
+  requireEnv("JWT_SECRET", { minLength: isProd ? 32 : 12 });
+}
+
+validateCoreEnv();
+app.disable("x-powered-by");
 
 // ======================================
 // VIEW ENGINE
@@ -51,8 +73,8 @@ app.use(
 // ======================================
 // GLOBAL MIDDLEWARES
 // ======================================
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 app.use(cookieParser());
 
 app.use((req, res, next) => {
@@ -146,7 +168,7 @@ if (isProd) {
    PLATFORM SESSION + FLASH (ONLY /platform)
 ======================================================= */
 app.use(
-  "/platform",
+  PLATFORM_PATHS,
   session({
     name: "platform.sid",
     secret: process.env.SESSION_SECRET,
@@ -157,7 +179,7 @@ app.use(
       ttl: 7 * 24 * 60 * 60,
     }),
     cookie: {
-      path: "/platform",
+      path: "/",
       secure: isProd,
       httpOnly: true,
       sameSite: "lax",
@@ -166,9 +188,9 @@ app.use(
   }),
 );
 
-app.use("/platform", flash());
+app.use(PLATFORM_PATHS, flash());
 
-app.use("/platform", (req, res, next) => {
+app.use(PLATFORM_PATHS, (req, res, next) => {
   const f = typeof req.flash === "function" ? req.flash.bind(req) : null;
   res.locals.flash = {
     success: f ? f("success") : [],
@@ -249,11 +271,11 @@ app.use(errorHandler);
 
     app.listen(port, () => {
       console.log(
-        `🚀 Classic Campus running on port ${port} in ${process.env.NODE_ENV} mode`,
+        `Classic Academy running on port ${port} in ${process.env.NODE_ENV || "development"} mode`,
       );
     });
   } catch (err) {
-    console.error("❌ Failed to start server:", err);
+    console.error("Failed to start server:", err);
     process.exit(1);
   }
 })();

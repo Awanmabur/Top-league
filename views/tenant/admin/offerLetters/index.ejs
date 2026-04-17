@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title><%= (tenant?.name || "Classic Campus") %> • Offer Letters</title>
+  <title><%= (tenant?.name || "Classic Academy") %> • Offer Letters</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
 
   <% if (csrfToken) { %>
@@ -390,11 +390,11 @@
           <div class="left">
             <input class="input" name="q" value="<%= query?.q || '' %>" placeholder="Search name, app ID, email, phone..." />
 
-            <select class="select" name="programId">
-              <option value="">All Programs</option>
+            <select class="select" name="sectionId">
+              <option value="">All Sections</option>
               <% (programs || []).forEach(function(p){ %>
-                <option value="<%= String(p._id) %>" <%= String(query?.programId || '') === String(p._id) ? 'selected' : '' %>>
-                  <%= (p.code ? p.code + ' — ' : '') + (p.name || p.title || 'Program') %>
+                <option value="<%= String(p._id) %>" <%= String(query?.sectionId || query?.programId || '') === String(p._id) ? 'selected' : '' %>>
+                  <%= (p.code ? p.code + ' — ' : '') + (p.name || p.className || 'Section') %>
                 </option>
               <% }) %>
             </select>
@@ -439,7 +439,7 @@
                 <thead>
                   <tr>
                     <th class="col-candidate">Applicant</th>
-                    <th class="col-program">Program</th>
+                    <th class="col-program">Section</th>
                     <th class="col-intake">Intake</th>
                     <th class="col-latest">Latest Letter</th>
                     <th class="col-actions" style="text-align:right;">Actions</th>
@@ -497,7 +497,7 @@
                 <tr>
                   <th style="width:160px;">Letter No</th>
                   <th style="width:280px;">Applicant</th>
-                  <th style="width:240px;">Program</th>
+                  <th style="width:240px;">Section</th>
                   <th style="width:160px;">Intake</th>
                   <th style="width:140px;">Status</th>
                   <th style="width:230px;text-align:right;">Actions</th>
@@ -620,7 +620,7 @@
             <span class="token">{{fullName}}</span>
             <span class="token">{{email}}</span>
             <span class="token">{{phone}}</span>
-            <span class="token">{{program}}</span>
+            <span class="token">{{section}}</span>
             <span class="token">{{intake}}</span>
             <span class="token">{{studyMode}}</span>
             <span class="token">{{academicYear}}</span>
@@ -649,7 +649,7 @@
           <span class="token">{{fullName}}</span>
           <span class="token">{{email}}</span>
           <span class="token">{{phone}}</span>
-          <span class="token">{{program}}</span>
+          <span class="token">{{section}}</span>
           <span class="token">{{intake}}</span>
           <span class="token">{{studyMode}}</span>
           <span class="token">{{academicYear}}</span>
@@ -677,7 +677,7 @@
       email: a.email || '',
       phone: a.phone || '',
       intake: a.intakeCode || a.intakeName || a.intake || '',
-      programLabel: a.program1 ? ((a.program1.code ? a.program1.code + ' — ' : '') + (a.program1.name || a.program1.title || 'Program')) : 'Program',
+      programLabel: (a.section1 || a.program1) ? ((((a.section1 || a.program1).name || (a.section1 || a.program1).className || (a.section1 || a.program1).code || 'Section'))) : 'Section',
       latestLetterId: latest ? String(latest._id || '') : '',
       latestLetterNo: latest ? (latest.letterNo || '') : '',
       latestLetterStatus: latest ? (latest.status || 'draft') : '',
@@ -699,8 +699,8 @@
       sentAt: l.sentAt || null,
       applicantName: applicantName || '—',
       applicantEmail: applicant.email || '',
-      programLabel: l.program ? ((l.program.code ? l.program.code + ' — ' : '') + (l.program.name || l.program.title || 'Program')) : '—',
-      intakeLabel: l.intakeId ? ((l.intakeId.code ? l.intakeId.code + ' — ' : '') + (l.intakeId.name || 'Intake')) : '—'
+      programLabel: l.program ? (l.program.name || l.program.className || l.program.code || '—') : '—',
+      intakeLabel: l.intakeId ? (l.intakeId.name || l.intakeId.term || l.intakeId.code || '—') : '—'
     };
   })) %></textarea>
 

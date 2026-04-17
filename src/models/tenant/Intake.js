@@ -7,7 +7,7 @@ module.exports = (conn) => {
 
   const IntakeProgramSchema = new mongoose.Schema(
     {
-      program: { type: mongoose.Schema.Types.ObjectId, ref: "Program", required: true, index: true },
+      program: { type: mongoose.Schema.Types.ObjectId, ref: "Section", required: true, index: true },
       capacity: { type: Number, default: 0 },
       isOpen: { type: Boolean, default: true },
       notes: { type: String, default: "" },

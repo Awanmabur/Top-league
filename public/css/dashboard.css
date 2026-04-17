@@ -223,7 +223,7 @@ body{
 .pill.blue{background:#e0f2fe;color:#0369a1;}
 .pill.amber{background:#fffbeb;color:#f59e0b;}
 
-/* Multi-university summary strip */
+/* Multi-school summary strip */
 .uni-strip{
   display:grid;
   grid-template-columns:repeat(4,minmax(0,1fr));

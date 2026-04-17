@@ -1,7 +1,7 @@
 const { uploadBuffer, safeDestroy } = require("../../utils/cloudinaryUpload"); // <- adjust path
 
 function folderFor(tenantCode) {
-  return `classic-campus/tenants/${tenantCode}/school-profile`;
+  return `classic-academy/tenants/${tenantCode}/school-profile`;
 }
 
 async function uploadLogo(file, tenantCode) {

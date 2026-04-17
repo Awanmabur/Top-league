@@ -20,8 +20,6 @@ module.exports = {
         Payment,
         Announcement,
         Notification,
-        Program,
-        Department,
         User,
         AuditLog,
       } = models;
@@ -55,31 +53,24 @@ module.exports = {
       };
 
       // KPIs
-      const totalStudents = await safeCount(Student);
-
-      const newStudentsThisMonth = await safeCount(Student, {
-        createdAt: { $gte: startOfMonth },
-      });
-
-      const pendingApps = await safeCount(Applicant, {
-        status: { $in: ["pending", "submitted", "under_review"] },
-      });
-
-      const submittedApps = await safeCount(Applicant, {
-        createdAt: { $gte: startOfMonth },
-      });
-
-      const verifiedApps = await safeCount(Applicant, {
-        status: "verified",
-        createdAt: { $gte: startOfMonth },
-      });
-
-      const acceptedApps = await safeCount(Applicant, {
-        status: "accepted",
-        createdAt: { $gte: startOfMonth },
-      });
-
-      const outstandingFeesAgg = await safeAggregate(Invoice, [
+      const [
+        totalStudents,
+        newStudentsThisMonth,
+        pendingApps,
+        submittedApps,
+        verifiedApps,
+        acceptedApps,
+        outstandingFeesAgg,
+        studentsOwing,
+        activeUsers,
+      ] = await Promise.all([
+        safeCount(Student),
+        safeCount(Student, { createdAt: { $gte: startOfMonth } }),
+        safeCount(Applicant, { status: { $in: ["pending", "submitted", "under_review"] } }),
+        safeCount(Applicant, { createdAt: { $gte: startOfMonth } }),
+        safeCount(Applicant, { status: "verified", createdAt: { $gte: startOfMonth } }),
+        safeCount(Applicant, { status: "accepted", createdAt: { $gte: startOfMonth } }),
+        safeAggregate(Invoice, [
         {
           $match: {
             status: { $in: ["pending", "partial", "overdue"] },
@@ -91,17 +82,12 @@ module.exports = {
             total: { $sum: { $ifNull: ["$balance", "$amount"] } },
           },
         },
+        ]),
+        safeCount(Invoice, { status: { $in: ["pending", "partial", "overdue"] } }),
+        safeCount(User, { isActive: true }),
       ]);
 
       const outstandingFees = outstandingFeesAgg[0]?.total || 0;
-
-      const studentsOwing = await safeCount(Invoice, {
-        status: { $in: ["pending", "partial", "overdue"] },
-      });
-
-      const activeUsers = await safeCount(User, {
-        isActive: true,
-      });
 
       const portalUptime = 98;
       const avgReviewTime = "48 hrs";
@@ -143,16 +129,16 @@ module.exports = {
       // Distribution data
       let departments = [];
 
-      if (Department && Student) {
-        const deptAgg = await safeAggregate(Student, [
+      if (Student) {
+        const classAgg = await safeAggregate(Student, [
           {
             $match: {
-              department: { $exists: true, $ne: null },
+              classLevel: { $exists: true, $ne: null, $ne: "" },
             },
           },
           {
             $group: {
-              _id: "$department",
+              _id: "$classLevel",
               val: { $sum: 1 },
             },
           },
@@ -160,51 +146,8 @@ module.exports = {
           { $limit: 6 },
         ]);
 
-        const deptIds = deptAgg.map((d) => d._id).filter(Boolean);
-        const deptDocs = deptIds.length
-          ? await Department.find({ _id: { $in: deptIds } }).select("name").lean()
-          : [];
-
-        const deptMap = {};
-        deptDocs.forEach((d) => {
-          deptMap[String(d._id)] = d.name;
-        });
-
-        departments = deptAgg.map((d) => ({
-          name: deptMap[String(d._id)] || "Unknown",
-          val: d.val,
-        }));
-      }
-
-      if (!departments.length && Program && Student) {
-        const progAgg = await safeAggregate(Student, [
-          {
-            $match: {
-              program: { $exists: true, $ne: null },
-            },
-          },
-          {
-            $group: {
-              _id: "$program",
-              val: { $sum: 1 },
-            },
-          },
-          { $sort: { val: -1 } },
-          { $limit: 6 },
-        ]);
-
-        const progIds = progAgg.map((d) => d._id).filter(Boolean);
-        const progDocs = progIds.length
-          ? await Program.find({ _id: { $in: progIds } }).select("name title").lean()
-          : [];
-
-        const progMap = {};
-        progDocs.forEach((p) => {
-          progMap[String(p._id)] = p.name || p.title || "Program";
-        });
-
-        departments = progAgg.map((d) => ({
-          name: progMap[String(d._id)] || "Unknown",
+        departments = classAgg.map((d) => ({
+          name: d._id || "Unknown",
           val: d.val,
         }));
       }
@@ -265,7 +208,6 @@ module.exports = {
         const rows = await Student.find({})
           .sort({ createdAt: -1 })
           .limit(5)
-          .populate("program", "name title")
           .lean();
 
         recentStudents = rows.map((s) => ({
@@ -274,7 +216,7 @@ module.exports = {
             s.name ||
             `${s.firstName || ""} ${s.lastName || ""}`.trim() ||
             "Student",
-          program: s.program?.name || s.program?.title || s.programName || "—",
+          program: [s.classLevel, s.section || s.stream].filter(Boolean).join(" ") || s.className || "—",
           status: s.status || "Active",
           balance: formatMoney(s.balance || 0, tenant?.currency || "USD"),
         }));
@@ -289,7 +231,8 @@ module.exports = {
         })
           .sort({ createdAt: -1 })
           .limit(5)
-          .populate("program", "name title")
+          .populate("section1", "code name classLevel classStream")
+          .populate("program1", "code name classLevel classStream")
           .lean();
 
         pendingApplicationsTable = rows.map((a) => ({
@@ -299,13 +242,16 @@ module.exports = {
             a.name ||
             `${a.firstName || ""} ${a.lastName || ""}`.trim() ||
             "Applicant",
-          program: a.program?.name || a.program?.title || a.programName || "—",
-          country: a.country || "—",
+          program: a.section1
+            ? ((a.section1.code ? `${a.section1.code} — ` : "") + (a.section1.name || a.section1.className || "Section"))
+            : (a.program1 ? ((a.program1.code ? `${a.program1.code} — ` : "") + (a.program1.name || a.program1.className || "Section")) : "—"),
+          country: a.nationality || "—",
         }));
       }
 
       // Finance snapshot
-      const collectedAgg = await safeAggregate(Payment, [
+      const [collectedAgg, refundsAgg, offlineAgg, monthlyRevenueAgg] = await Promise.all([
+        safeAggregate(Payment, [
         {
           $match: {
             createdAt: { $gte: startOfMonth },
@@ -318,9 +264,9 @@ module.exports = {
             total: { $sum: "$amount" },
           },
         },
-      ]);
+        ]),
 
-      const refundsAgg = await safeAggregate(Payment, [
+        safeAggregate(Payment, [
         {
           $match: {
             createdAt: { $gte: startOfMonth },
@@ -333,9 +279,9 @@ module.exports = {
             total: { $sum: "$amount" },
           },
         },
-      ]);
+        ]),
 
-      const offlineAgg = await safeAggregate(Payment, [
+        safeAggregate(Payment, [
         {
           $match: {
             createdAt: { $gte: startOfMonth },
@@ -349,17 +295,8 @@ module.exports = {
             total: { $sum: "$amount" },
           },
         },
-      ]);
-
-      const finance = {
-        collected: collectedAgg[0]?.total || 0,
-        pending: outstandingFees,
-        refunds: refundsAgg[0]?.total || 0,
-        offlinePayments: offlineAgg[0]?.total || 0,
-      };
-
-      // Revenue trend
-      const monthlyRevenueAgg = await safeAggregate(Payment, [
+        ]),
+        safeAggregate(Payment, [
         {
           $match: {
             status: { $in: ["paid", "completed", "success"] },
@@ -378,7 +315,17 @@ module.exports = {
           },
         },
         { $sort: { "_id.year": 1, "_id.month": 1 } },
+        ]),
       ]);
+
+      const finance = {
+        collected: collectedAgg[0]?.total || 0,
+        pending: outstandingFees,
+        refunds: refundsAgg[0]?.total || 0,
+        offlinePayments: offlineAgg[0]?.total || 0,
+      };
+
+      // Revenue trend
 
       const revenue = buildMonthlySeries(monthlyRevenueAgg, now);
 

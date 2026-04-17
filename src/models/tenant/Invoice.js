@@ -16,7 +16,7 @@ module.exports = function InvoiceModel(conn) {
 
       programId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Program",
+        ref: "Subject",
         default: null,
       },
 

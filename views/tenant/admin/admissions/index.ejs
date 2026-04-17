@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <title>Admin • Admissions — <%= (tenant && tenant.name) ? tenant.name : "CampusSaaS" %></title>
+  <title>Admin • Admissions — <%= (tenant && tenant.name) ? tenant.name : "Classic Academy" %></title>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
 
   <!-- Font Awesome -->
@@ -87,7 +87,7 @@
     const P = arr(programs);
 
     const q = safe(query && query.q);
-    const qProgram = safe(query && query.program);
+    const qSection = safe(query && (query.section || query.program));
     const qStatus = safe(query && query.status);
 
     const page = (pagination && Number(pagination.page)) || 1;
@@ -101,10 +101,10 @@
       return x.toLocaleDateString(undefined, {year:"numeric", month:"short", day:"2-digit"});
     };
 
-    const programLabel = (prog)=>{
-      if(!prog) return "—";
-      if(typeof prog === "string") return prog;
-      return prog.title || prog.name || prog.code || "—";
+    const sectionLabel = (sec)=>{
+      if(!sec) return "—";
+      if(typeof sec === "string") return sec;
+      return sec.name || sec.className || sec.code || "—";
     };
 
     const statusToPill = (s)=>{
@@ -144,7 +144,7 @@
     const buildQS = (overrides={})=>{
       const params = {
         q: q || "",
-        program: qProgram || "",
+        section: qSection || "",
         status: qStatus || "",
         page: String(page || 1),
         ...overrides
@@ -202,11 +202,11 @@
         <div class="left">
           <input class="input" name="q" value="<%= q %>" placeholder="Search applicationId, name, email, phone..." />
 
-          <select class="select" name="program">
-            <option value="">All Programs</option>
+          <select class="select" name="section">
+            <option value="">All Sections</option>
             <% P.forEach((pr)=> { %>
-              <option value="<%= pr._id %>" <%= String(pr._id)===String(qProgram) ? "selected" : "" %>>
-                <%= safe(pr.title || pr.name || pr.code) %>
+              <option value="<%= pr._id %>" <%= String(pr._id)===String(qSection) ? "selected" : "" %>>
+                <%= safe(pr.name || pr.className || pr.code) %>
               </option>
             <% }) %>
           </select>
@@ -274,7 +274,7 @@
                 <tr>
                   <th style="width:42px;"><input type="checkbox" id="checkAll"/></th>
                   <th>Applicant</th>
-                  <th>Program</th>
+                  <th>Section</th>
                   <th>Intake</th>
                   <th>Documents</th>
                   <th>Status</th>
@@ -294,8 +294,8 @@
 
               <% A.forEach((a)=> {
                   const name = safe(a.fullName || [a.firstName,a.middleName,a.lastName].filter(Boolean).join(" "));
-                  const pid = a.program1;
-                  const prog = programLabel(pid);
+                  const pid = a.section1 || a.program1;
+                  const prog = sectionLabel(pid);
                   const sm = statusToPill(a.status);
                   const dm = docsMeta(a);
                   const docsText = `${dm.ok}/${dm.total} required` + (dm.other ? ` • ${dm.other} other` : "");
@@ -423,7 +423,7 @@
 
                   <% items.slice(0, 25).forEach((a)=> {
                       const name = safe(a.fullName || [a.firstName,a.middleName,a.lastName].filter(Boolean).join(" "));
-                      const prog = programLabel(a.program1);
+                      const prog = sectionLabel(a.section1 || a.program1);
                       const dm = docsMeta(a);
                   %>
                     <div class="cardlet">
@@ -478,7 +478,7 @@
             <button class="btn-xs" type="button" id="qReports"><i class="fa-solid fa-chart-column"></i></button>
           </div>
           <div class="mini-item">
-            <div class="left"><div class="strong">Intake Management</div><div class="muted">Configure programs & dates (next)</div></div>
+            <div class="left"><div class="strong">Intake Management</div><div class="muted">Configure sections and dates</div></div>
             <button class="btn-xs" type="button" id="qIntake"><i class="fa-solid fa-calendar-check"></i></button>
           </div>
         </div>

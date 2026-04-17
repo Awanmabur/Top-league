@@ -755,7 +755,7 @@ module.exports = {
         },
       });
 
-      return res.redirect(`/super-admin/universities/${tenant._id}`);
+      return res.redirect(`/super-admin/schools/${tenant._id}`);
     } catch (err) {
       console.error("updateTenant error:", err);
       return res.status(500).render("platform/tenants/edit", {
@@ -778,7 +778,7 @@ module.exports = {
       tenant.updatedBy = req.user?._id || null;
       await tenant.save();
       await writeAudit(req, { action: "Update Tenant Status", entityId: tenant._id, tenantId: tenant._id, description: `Changed ${tenant.name} status to ${tenant.status}`, meta: { status: tenant.status } });
-      return res.redirect(`/super-admin/universities/${tenant._id}`);
+      return res.redirect(`/super-admin/schools/${tenant._id}`);
     } catch (err) {
       console.error("updateTenantStatus error:", err);
       return res.status(500).send("Failed to update tenant status.");
@@ -795,7 +795,7 @@ module.exports = {
       tenant.updatedBy = req.user?._id || null;
       await tenant.save();
       await writeAudit(req, { action: "Resend Tenant Invite", entityId: tenant._id, tenantId: tenant._id, description: `Resent tenant admin invite for ${tenant.name}`, meta: { ownerEmail: tenant.ownerEmail, adminUserId: String(result.adminUser._id || "") } });
-      return res.redirect(`/super-admin/universities/${tenant._id}?inviteResent=1`);
+      return res.redirect(`/super-admin/schools/${tenant._id}?inviteResent=1`);
     } catch (err) {
       console.error("resendTenantInvite error:", err);
       return res.status(500).send(err.message || "Failed to resend tenant invite.");
@@ -812,7 +812,7 @@ module.exports = {
       tenant.updatedBy = req.user?._id || null;
       await tenant.save();
       await writeAudit(req, { action: "Delete Tenant", entityId: tenant._id, tenantId: tenant._id, description: `Deleted tenant ${tenant.name}` });
-      return res.redirect("/super-admin/universities");
+      return res.redirect("/super-admin/schools");
     } catch (err) {
       console.error("deleteTenant error:", err);
       return res.status(500).send("Failed to delete tenant.");

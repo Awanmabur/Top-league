@@ -3,6 +3,16 @@
 
   const $ = (id) => document.getElementById(id);
 
+  function syncFeeField() {
+    const wrap = $("mFeeWrap");
+    const input = $("mFeeAmount");
+    const category = $("mCategory") ? $("mCategory").value : "document";
+    if (!wrap || !input) return;
+    const show = category === "fee";
+    wrap.style.display = show ? "block" : "none";
+    if (!show) input.value = input.value || "0";
+  }
+
   function readJsonTextArea(id, fallback) {
     const el = $(id);
     if (!el) return fallback;
@@ -119,7 +129,7 @@
             <td class="col-title">
               <div class="req-main">
                 <div class="req-title" title="${escapeHtml(r.title)}">${escapeHtml(r.title)}</div>
-                <div class="req-sub" title="${escapeHtml(r.code || "—")}">${escapeHtml(r.code || "—")} • ${escapeHtml(r.description || "No description")}</div>
+                <div class="req-sub" title="${escapeHtml(r.code || "—")}">${escapeHtml(r.code || "—")} • ${escapeHtml(r.description || "No description")}${r.category === "fee" ? ` • ${escapeHtml((r.currency || "UGX") + " " + Number(r.feeAmount || 0).toLocaleString())}` : ""}</div>
               </div>
             </td>
             <td class="col-category">${categoryPill(r.category)}</td>
@@ -194,6 +204,12 @@
     $("mIntakes").disabled = allIntakes;
   }
 
+  function buildRequirementCodePreview() {
+    const title = ($("mReqTitleInput") && $("mReqTitleInput").value || "").trim();
+    const stem = String(title || "REQ").toUpperCase().replace(/[^A-Z0-9]+/g, "").slice(0, 6) || "REQ";
+    if ($("mCode")) $("mCode").value = `${stem}..`;
+  }
+
   function openEditor(prefill) {
     const r = prefill || null;
 
@@ -207,11 +223,14 @@
     $("mStatus").value = r ? String(!!r.isActive) : "true";
     $("mMandatory").value = r ? String(!!r.isMandatory) : "true";
     $("mDescription").value = r ? r.description || "" : "";
+    $("mFeeAmount").value = r ? String(r.feeAmount || 0) : "0";
+    if ($("mCurrency")) $("mCurrency").value = r ? String(r.currency || "UGX") : "UGX";
     $("mAllPrograms").checked = r ? !!r.appliesToAllPrograms : true;
     $("mAllIntakes").checked = r ? !!r.appliesToAllIntakes : true;
 
     fillSelect($("mPrograms"), LOOKUPS.programs || []);
     fillSelect($("mIntakes"), LOOKUPS.intakes || []);
+  syncFeeField();
     setMultiSelect($("mPrograms"), r ? r.programs || [] : []);
     setMultiSelect($("mIntakes"), r ? r.intakes || [] : []);
 
@@ -220,6 +239,8 @@
 
     syncScopeUI();
     updateDescriptionCounter();
+    syncFeeField();
+    buildRequirementCodePreview();
     openModal("mEdit");
   }
 
@@ -234,6 +255,11 @@
     $("vMandatory").innerHTML = mandatoryPill(!!r.isMandatory);
     $("vSort").textContent = String(r.sortOrder || 0);
     $("vDescription").textContent = r.description || "—";
+    const feeVisible = (r.category || "document") === "fee";
+    if ($("vFeeWrap")) $("vFeeWrap").style.display = feeVisible ? "block" : "none";
+    if ($("vCurrencyWrap")) $("vCurrencyWrap").style.display = feeVisible ? "block" : "none";
+    if ($("vFeeAmount")) $("vFeeAmount").textContent = feeVisible ? String(Number(r.feeAmount || 0).toLocaleString()) : "—";
+    if ($("vCurrency")) $("vCurrency").textContent = feeVisible ? (r.currency || "UGX") : "—";
 
     const programHost = $("vPrograms");
     const intakeHost = $("vIntakes");
@@ -271,12 +297,10 @@
 
   function saveRequirement() {
     const title = $("mReqTitleInput").value.trim();
-    const code = normalizeCode($("mCode").value);
 
     if (!title) return alert("Title is required.");
-    if (!code) return alert("Code is required.");
 
-    $("mCode").value = code;
+    buildRequirementCodePreview();
 
     const allPrograms = $("mAllPrograms").checked;
     const allIntakes = $("mAllIntakes").checked;
@@ -350,7 +374,7 @@
 
   $("btnCreate").addEventListener("click", function () { openEditor(); });
   $("quickDocument").addEventListener("click", function () { openEditor(); $("mCategory").value = "document"; });
-  $("quickFee").addEventListener("click", function () { openEditor(); $("mCategory").value = "fee"; });
+  $("quickFee").addEventListener("click", function () { openEditor(); $("mCategory").value = "fee"; syncFeeField(); });
   $("quickExam").addEventListener("click", function () { openEditor(); $("mCategory").value = "exam"; });
 
   $("btnImport").addEventListener("click", function () { openModal("mImport"); });
@@ -421,6 +445,7 @@
   $("saveBtn").addEventListener("click", saveRequirement);
   $("mDescription").addEventListener("input", updateDescriptionCounter);
   $("mCode").addEventListener("blur", function () { this.value = normalizeCode(this.value); });
+  $("mCategory").addEventListener("change", syncFeeField);
   $("mAllPrograms").addEventListener("change", syncScopeUI);
   $("mAllIntakes").addEventListener("change", syncScopeUI);
 
@@ -449,7 +474,9 @@
 
   fillSelect($("mPrograms"), LOOKUPS.programs || []);
   fillSelect($("mIntakes"), LOOKUPS.intakes || []);
+  syncFeeField();
   syncScopeUI();
   updateDescriptionCounter();
   renderTable();
 })();
+

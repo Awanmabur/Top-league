@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <title>
-    <%= (tenant && tenant.name) ? tenant.name : "CampusSaaS" %> — Parent Portal
+    <%= (tenant && tenant.name) ? tenant.name : "Classic Academy" %> — Parent Portal
   </title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
 
@@ -18,7 +18,7 @@
 <body>
   <% const t=tenant || {}; const u=user || {}; const p=parent || null; const kids=Array.isArray(children) ? children :
     []; const anns=Array.isArray(announcements) ? announcements : []; const s=stats || {}; const tenantName=t.name
-    || "CampusSaaS" ; const tenantCode=(t.code || "CC" ).toString(); const unread=Number(s.unread || 0); const
+    || "Classic Academy" ; const tenantCode=(t.code || "CC" ).toString(); const unread=Number(s.unread || 0); const
     kidCount=Number(s.children || kids.length || 0); function fullNameOfStudent(c) { const name=(c && c.fullName) ?
     String(c.fullName).trim() : "" ; if (name) return name; const parts=[]; if (c && c.firstName)
     parts.push(String(c.firstName).trim()); if (c && c.middleName) parts.push(String(c.middleName).trim()); if (c &&

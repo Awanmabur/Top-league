@@ -13,6 +13,8 @@ const applicantUploads = upload.fields([
 ]);
 
 router.get("/apply", admissionsCtrl.applyPage);
+router.get("/admissions/apply", admissionsCtrl.applyPage);
+router.post("/apply", applicantUploads, admissionsCtrl.submitApplication);
 router.post("/admissions/apply", applicantUploads, admissionsCtrl.submitApplication);
 
 router.get("/admissions/status", admissionsCtrl.statusPage);

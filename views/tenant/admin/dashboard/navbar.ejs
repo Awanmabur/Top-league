@@ -6,7 +6,7 @@
     <a class="mglass-home" href="/admin/dashboard" aria-label="Home">
       <i class="fa fa-house"></i>
     </a>
-    <div class="mglass-title">CAMPUS</div>
+    <div class="mglass-title"><%= tenant?.name || "Classic Academy" %></div>
   </div>
 
   <button class="mglass-menu" id="mobileMenuBtn" type="button" aria-label="Open menu">
@@ -30,7 +30,7 @@
       <div class="brand-logo">CS</div>
       <div class="brand-meta">
         <h1 class="brand-title"><%= tenant.name %></h1>
-        <div class="brand-sub">Classic Campus SaaS</div>
+        <div class="brand-sub">Classic Academy</div>
       </div>
     </div>
 
@@ -48,8 +48,8 @@
         <a class="navbutton" href="/admin/admissions" data-label="Admissions"><i class="fa fa-file-signature"></i><span>Admissions</span></a>
         <a class="navbutton" href="/admin/admissions/applicants" data-label="Applicants"><i class="fa fa-user-check"></i><span>Applicants</span></a>
         <a class="navbutton" href="/admin/admissions/intakes" data-label="Intakes"><i class="fa fa-calendar-plus"></i><span>Intakes</span></a>
-        <a class="navbutton" href="/admin/admissions/admission-requirements" data-label="Requirements"><i class="fa fa-file-lines"></i><span>Requirements</span></a>
-        <a class="navbutton" href="/admin/admissions/offers" data-label="Offer Letters"><i class="fa fa-envelope-open-text"></i><span>Offer Letters</span></a>
+        <a class="navbutton" href="/admin/admissions/requirements" data-label="Requirements"><i class="fa fa-file-lines"></i><span>Requirements</span></a>
+        <a class="navbutton" href="/admin/admissions/offer-letters" data-label="Offer Letters"><i class="fa fa-envelope-open-text"></i><span>Offer Letters</span></a>
       </div>
 
       <div class="navcat">STUDENTS</div>
@@ -63,11 +63,9 @@
 
       <div class="navcat">ACADEMICS</div>
       <div class="group">
-        <a class="navbutton" href="/admin/departments" data-label="Departments"><i class="fa fa-sitemap"></i><span>Departments</span></a>
-        <a class="navbutton" href="/admin/faculties" data-label="Faculties"><i class="fa fa-sitemap"></i><span>Faculties</span></a>
         <a class="navbutton" href="/admin/classes" data-label="Classes"><i class="fa fa-layer-group"></i><span>Classes</span></a>
-        <a class="navbutton" href="/admin/programs" data-label="Programs"><i class="fa fa-book"></i><span>Programs</span></a>
-        <a class="navbutton" href="/admin/courses" data-label="Courses"><i class="fa fa-book-open"></i><span>Courses</span></a>
+        <a class="navbutton" href="/admin/sections" data-label="Sections"><i class="fa fa-table-cells-large"></i><span>Sections</span></a>
+        <a class="navbutton" href="/admin/subjects" data-label="Subjects"><i class="fa fa-book-open"></i><span>Subjects</span></a>
         <a class="navbutton" href="/admin/timetable" data-label="Timetable"><i class="fa fa-clock"></i><span>Timetable</span></a>
         <a class="navbutton" href="/admin/attendance" data-label="Attendance"><i class="fa fa-user-clock"></i><span>Attendance</span></a>
         <a class="navbutton" href="/admin/assignments" data-label="Assignments"><i class="fa fa-file-pen"></i><span>Assignments</span></a>
@@ -82,13 +80,13 @@
         <a class="navbutton" href="/admin/staff" data-label="Staff"><i class="fa fa-users"></i><span>Staff</span></a>
         <a class="navbutton" href="/admin/users" data-label="Users"><i class="fa fa-user-shield"></i><span>Users</span></a>
         <a class="navbutton" href="/admin/roles" data-label="Roles"><i class="fa fa-key"></i><span>Roles</span></a>
-        <a class="navbutton" href="/admin/leave" data-label="Leave"><i class="fa fa-person-walking-arrow-right"></i><span>Leave</span></a>
+        <a class="navbutton" href="/admin/staff-leave" data-label="Leave"><i class="fa fa-person-walking-arrow-right"></i><span>Leave</span></a>
         <a class="navbutton" href="/admin/payroll" data-label="Payroll"><i class="fa fa-money-check-dollar"></i><span>Payroll</span></a>
       </div>
 
       <div class="navcat">FACILITIES</div>
       <div class="group">
-        <a class="navbutton" href="/admin/hostel" data-label="Hostels"><i class="fa fa-building"></i><span>Hostels</span></a>
+        <a class="navbutton" href="/admin/hostels" data-label="Hostels"><i class="fa fa-building"></i><span>Hostels</span></a>
         <a class="navbutton" href="/admin/library" data-label="Library"><i class="fa fa-book-reader"></i><span>Library</span></a>
         <a class="navbutton" href="/admin/assets" data-label="Assets"><i class="fa fa-boxes-stacked"></i><span>Assets</span></a>
       </div>
@@ -115,7 +113,7 @@
       <div class="group">
         <a class="navbutton" href="/admin/settings" data-label="Settings"><i class="fa fa-gear"></i><span>Settings</span></a>
         <a class="navbutton" href="/admin/integrations" data-label="Integrations"><i class="fa fa-plug"></i><span>Integrations</span></a>
-        <a class="navbutton" href="/admin/audit-logs" data-label="Audit Logs"><i class="fa fa-clipboard-list"></i><span>Audit Logs</span></a>
+        <a class="navbutton" href="/admin/auditlogs" data-label="Audit Logs"><i class="fa fa-clipboard-list"></i><span>Audit Logs</span></a>
         <a class="navbutton" href="/admin/backups" data-label="Backups"><i class="fa fa-database"></i><span>Backups</span></a>
         <a class="navbutton" href="/admin/system" data-label="System Health"><i class="fa fa-server"></i><span>System Health</span></a>
       </div>

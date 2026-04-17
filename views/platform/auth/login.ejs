@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <title>Login — CampusSaaS</title>
+  <title>Login - Classic Academy</title>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
 
   <link rel="stylesheet"
@@ -81,13 +81,13 @@
         <div class="brand">
           <div class="logo">CS</div>
           <div>
-            <h1>CampusSaaS</h1>
-            <p>University Management Platform</p>
+            <h1>Classic Academy</h1>
+            <p>Platform Administration</p>
           </div>
         </div>
 
-        <h2>Welcome back 👋</h2>
-        <p class="desc">Login to manage admissions, students, finance, LMS and more — depending on your role.</p>
+        <h2>Welcome back</h2>
+        <p class="desc">Login to manage schools, plans, billing, support, and platform operations.</p>
 
         <ul class="bullets">
           <li><i class="fa-solid fa-shield-halved"></i><span>Secure access with role-based permissions</span></li>
@@ -96,31 +96,34 @@
         </ul>
       </div>
 
-      <div class="badge"><i class="fa-solid fa-lock"></i> Multi-tenant • One platform for all universities</div>
+      <div class="badge"><i class="fa-solid fa-lock"></i> Secure platform access</div>
     </section>
 
     <section class="panel form">
       <h3>Login</h3>
-      <div class="muted">Use your email/phone and password. If you forgot your password, reset it below.</div>
+      <div class="muted">Use your email and password. If you forgot your password, reset it below.</div>
       <% if (error) { %>
         <p style="color:red;"><%= error %></p>
       <% } %>
 
       <form method="post" action="/super-admin/login" id="loginForm" class="grid" novalidate>
+        <% if (typeof csrfToken !== "undefined" && csrfToken) { %>
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <% } %>
         <div class="field">
-          <label>Email or Phone</label>
+          <label>Email</label>
           <div class="input">
             <i class="fa-solid fa-user icon"></i>
-            <input id="loginId" type="text" name="email" placeholder="email@example.com or +256..." required/>
+            <input id="loginId" type="text" name="email" placeholder="email@example.com" autocomplete="username" required/>
           </div>
-          <div class="err" id="errId">Please enter your email or phone.</div>
+          <div class="err" id="errId">Please enter your email.</div>
         </div>
 
         <div class="field">
           <label>Password</label>
           <div class="input">
             <i class="fa-solid fa-key icon"></i>
-            <input id="password" type="password" name="password" placeholder="••••••••" required/>
+            <input id="password" type="password" name="password" placeholder="Password" autocomplete="current-password" required/>
             <button type="button" class="btn light" id="togglePw" style="padding:8px 10px;border-radius:12px">
               <i class="fa-regular fa-eye"></i>
             </button>
@@ -132,16 +135,10 @@
           <label style="display:flex;gap:8px;align-items:center;margin:0">
             <input type="checkbox" id="remember"/> <span class="tiny">Remember me</span>
           </label>
-          <div class="help"><a href="forgot-password.html">Forgot password?</a></div>
+          <div class="help"><a href="/super-admin/forgot-password">Forgot password?</a></div>
         </div>
 
         <button class="btn primary" type="submit"><i class="fa-solid fa-right-to-bracket"></i> Login</button>
-        <div class="ok" id="okMsg">Login successful (UI). Backend will redirect.</div>
-
-        <div class="row" style="margin-top:8px">
-          <div class="tiny">No account?</div>
-          <div class="help"><a href="signup.html">Create an account</a></div>
-        </div>
       </form>
     </section>
   </div>
@@ -159,20 +156,13 @@
   });
 
   $('loginForm').addEventListener('submit',(e)=>{
-    e.preventDefault();
-    $('okMsg').style.display='none';
-
     const id=$('loginId').value.trim();
     const pw=$('password').value.trim();
 
     $('errId').style.display = id ? 'none' : 'block';
     $('errPw').style.display = pw ? 'none' : 'block';
 
-    if(!id || !pw) return;
-
-    // UI-only: later POST to /auth/login
-    $('okMsg').style.display='block';
-    // window.location.href="/admin/dashboard";
+    if(!id || !pw) e.preventDefault();
   });
 </script>
 </body>

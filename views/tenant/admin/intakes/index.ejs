@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title><%= (tenant?.name || "Classic Campus") %> • Intakes</title>
+  <title><%= (tenant?.name || "Classic Academy") %> • Terms</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
 
   <% if (csrfToken) { %>
@@ -479,6 +479,8 @@
       id: String(it?._id || ""),
       name: safe(it?.name),
       code: safe(it?.code),
+      year: it?.year || "",
+      term: safe(it?.term || it?.name),
       status: safe(it?.status, "draft"),
       isActive: !!it?.isActive,
       applicationOpenDate: fmtInputDate(it?.applicationOpenDate),
@@ -502,7 +504,7 @@
         return {
           program: pid,
           capacity: Number(x?.capacity || 0),
-          name: safe(pobj?.name || pobj?.title || "Program"),
+          name: safe(pobj?.name || pobj?.className || "Section"),
           code: safe(pobj?.code)
         };
       })
@@ -511,7 +513,7 @@
 
   const programsJson = programsArr.map((p) => ({
     _id: String(p?._id || ""),
-    name: safe(p?.name || p?.title || "Program"),
+    name: safe(p?.name || p?.className || "Section"),
     code: safe(p?.code)
   }));
 %>
@@ -622,11 +624,11 @@
                 <thead>
                   <tr>
                     <th class="col-check"><input type="checkbox" id="checkAll" /></th>
-                    <th class="col-intake">Intake</th>
+                    <th class="col-intake">Term</th>
                     <th class="col-code">Code</th>
                     <th class="col-apply">Application Window</th>
                     <th class="col-study">Study Period</th>
-                    <th class="col-programs">Programs</th>
+                    <th class="col-programs">Sections</th>
                     <th class="col-capacity">Capacity</th>
                     <th class="col-applicants">Applicants</th>
                     <th class="col-status">Status</th>
@@ -667,7 +669,7 @@
           <div class="mini-list">
             <div class="mini-item">
               <div class="left">
-                <div class="strong">Create Draft Intake</div>
+                <div class="strong">Create Draft Term</div>
                 <div class="muted">Pre-fill status as draft</div>
               </div>
               <button class="btn-xs" id="quickDraft" type="button"><i class="fa-solid fa-pen"></i></button>
@@ -675,7 +677,7 @@
 
             <div class="mini-item">
               <div class="left">
-                <div class="strong">Create Open Intake</div>
+                <div class="strong">Create Open Term</div>
                 <div class="muted">Pre-fill status as open</div>
               </div>
               <button class="btn-xs" id="quickOpen" type="button"><i class="fa-solid fa-door-open"></i></button>
@@ -683,7 +685,7 @@
 
             <div class="mini-item">
               <div class="left">
-                <div class="strong">Current Active Intake</div>
+                <div class="strong">Current Active Term</div>
                 <div class="muted"><%= counts.activeName %></div>
               </div>
               <span class="pill info"><i class="fa-solid fa-bolt"></i> Active</span>
@@ -698,7 +700,7 @@
   <div class="modal-backdrop" id="mEdit">
     <div class="modal lg">
       <div class="modal-header">
-        <div class="modal-title" id="mTitle">Add Intake</div>
+        <div class="modal-title" id="mTitle">Add Term</div>
         <button class="btn-xs" type="button" data-close-modal="mEdit"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
@@ -708,13 +710,23 @@
         <div class="modal-body">
           <div class="form-grid">
             <div class="field">
-              <label>Intake Name</label>
-              <input class="input" id="mName" name="name" required maxlength="160" />
+              <label>Term Name</label>
+              <input class="input" id="mName" name="name" required maxlength="160" placeholder="e.g. Term 1" />
             </div>
 
             <div class="field">
-              <label>Intake Code</label>
-              <input class="input" id="mCode" name="code" required maxlength="40" />
+              <label>Academic Year</label>
+              <input class="input" id="mYear" name="year" type="number" min="2000" max="2100" required />
+            </div>
+
+            <div class="field">
+              <label>Term Label</label>
+              <input class="input" id="mTerm" name="term" maxlength="120" placeholder="e.g. Term 1" />
+            </div>
+
+            <div class="field">
+              <label>Term Code</label>
+              <input class="input" id="mCode" name="code" maxlength="40" readonly placeholder="Auto-generated" />
             </div>
 
             <div class="field">
@@ -756,7 +768,7 @@
             </div>
 
             <div class="field">
-              <label>Allow All Programs</label>
+              <label>Allow All Sections</label>
               <select class="select" id="mAllowAllPrograms">
                 <option value="1">Yes</option>
                 <option value="0">No</option>
@@ -767,7 +779,7 @@
           <div class="divider"></div>
 
           <div class="sticky-tools" style="margin-bottom:10px;">
-            <button class="btn-xs" type="button" id="btnAddProgramRow"><i class="fa-solid fa-plus"></i> Add Program Row</button>
+            <button class="btn-xs" type="button" id="btnAddProgramRow"><i class="fa-solid fa-plus"></i> Add Section Row</button>
             <span class="muted">Total capacity: <strong id="mCapTotal">0</strong></span>
           </div>
 
@@ -783,7 +795,7 @@
 
         <div class="modal-footer">
           <button class="btn light" type="button" data-close-modal="mEdit">Cancel</button>
-          <button class="btn primary" id="saveBtn" type="button"><i class="fa-solid fa-floppy-disk"></i> Save Intake</button>
+          <button class="btn primary" id="saveBtn" type="button"><i class="fa-solid fa-floppy-disk"></i> Save Term</button>
         </div>
       </form>
     </div>
@@ -793,7 +805,7 @@
   <div class="modal-backdrop" id="mView">
     <div class="modal md">
       <div class="modal-header">
-        <div class="modal-title">Intake Details</div>
+        <div class="modal-title">Term Details</div>
         <button class="btn-xs" type="button" data-close-modal="mView"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
@@ -807,6 +819,16 @@
           <div class="field">
             <label>Code</label>
             <div class="view-input" id="vCode">—</div>
+          </div>
+
+          <div class="field">
+            <label>Academic Year</label>
+            <div class="view-input" id="vYear">—</div>
+          </div>
+
+          <div class="field">
+            <label>Term Label</label>
+            <div class="view-input" id="vTerm">—</div>
           </div>
 
           <div class="field">
@@ -848,7 +870,7 @@
         <div class="divider"></div>
 
         <div class="field">
-          <label>Programs</label>
+          <label>Sections</label>
           <div class="view-input multiline">
             <div class="tag-list" id="vPrograms"></div>
           </div>

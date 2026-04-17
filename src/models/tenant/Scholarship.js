@@ -16,7 +16,7 @@ module.exports = function ScholarshipModel(conn) {
 
       programId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Program",
+        ref: "Subject",
         default: null,
       },
 

@@ -35,7 +35,7 @@ module.exports = function EventModel(conn) {
       },
       audienceType: {
         type: String,
-        enum: ["All Students", "All Staff", "Specific Department", "Specific Program", "Year/Cohort", "Open Event"],
+        enum: ["All Students", "All Staff", "Specific Department", "Specific Subject", "Year/Cohort", "Open Event"],
         default: "Open Event",
       },
       audienceValue: { type: String, trim: true, default: "—" },

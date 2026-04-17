@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title><%= (tenant && tenant.name) ? tenant.name : "CampusSaaS" %> — Fees & Payments</title>
+  <title><%= (tenant && tenant.name) ? tenant.name : "Classic Academy" %> — Fees & Payments</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
 
   <link rel="stylesheet"
@@ -310,7 +310,7 @@
     const u = user || {};
     const p = parent || null;
     const kids = Array.isArray(children) ? children : [];
-    const tenantName = t.name || "CampusSaaS";
+    const tenantName = t.name || "Classic Academy";
     const tenantCode = (t.code || "CC").toString();
     const invoiceRows = Array.isArray(invoices) ? invoices : [];
     const paymentRows = Array.isArray(payments) ? payments : [];

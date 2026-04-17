@@ -1,4 +1,4 @@
-// Classic Campus — shared JS (marketing site)
+// Classic Academy — shared JS (marketing site)
 (() => {
   const root = document.documentElement;
 

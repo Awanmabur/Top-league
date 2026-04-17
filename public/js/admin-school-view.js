@@ -41,7 +41,7 @@
         <circle cx="980" cy="180" r="120" fill="rgba(255,255,255,0.12)"/>
         <circle cx="280" cy="610" r="160" fill="rgba(255,255,255,0.10)"/>
         <text x="60" y="120" fill="rgba(255,255,255,0.92)" font-size="64" font-family="Arial" font-weight="700">${label}</text>
-        <text x="60" y="190" fill="rgba(255,255,255,0.70)" font-size="28" font-family="Arial">Classic Campus • School Gallery</text>
+        <text x="60" y="190" fill="rgba(255,255,255,0.70)" font-size="28" font-family="Arial">Classic Academy • School Gallery</text>
       </svg>
     `;
     return "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg.trim());

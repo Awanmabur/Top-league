@@ -16,7 +16,7 @@ function isOid(id) {
 module.exports = {
   async index(req, res) {
     try {
-      const { Student, Program, Class, PromotionLog } = req.models;
+      const { Student, Subject, Class, PromotionLog } = req.models;
 
       const q = safeStr(req.query.q);
       const program = safeStr(req.query.program);
@@ -62,9 +62,9 @@ module.exports = {
           .skip(skip)
           .limit(limit)
           .lean(),
-        Program.find({ isDeleted: { $ne: true } })
-          .select("code name title")
-          .sort({ code: 1, name: 1 })
+        Subject.find({ status: { $ne: "archived" } })
+          .select("code title shortTitle name")
+          .sort({ code: 1, title: 1 })
           .limit(1000)
           .lean(),
         Class.find({ isDeleted: { $ne: true } })

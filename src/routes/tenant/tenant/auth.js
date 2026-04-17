@@ -3,6 +3,8 @@ const express = require("express");
 const router = express.Router();
 
 const AuthController = require("../../../controllers/tenant/tenant/authController");
+const { csrfProtection, attachCsrfToken } = require("../../../middleware/tenant/csrf");
+const { authLimiter } = require("../../../middleware/tenant/rateLimiters");
 
 /* ==========================================
    TENANT AUTH ROUTES
@@ -10,10 +12,10 @@ const AuthController = require("../../../controllers/tenant/tenant/authControlle
 ========================================== */
 
 // Login page
-router.get("/login", AuthController.loginPage);
+router.get("/login", csrfProtection, attachCsrfToken, AuthController.loginPage);
 
 // Login submit
-router.post("/login", AuthController.login);
+router.post("/login", authLimiter, csrfProtection, attachCsrfToken, AuthController.login);
 
 // Logout
 router.get("/logout", AuthController.logout);

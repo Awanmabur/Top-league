@@ -612,7 +612,7 @@ module.exports = {
       const csv = lines.join("\n");
       const csvBuf = Buffer.from(csv, "utf8");
 
-      const folderBase = process.env.CLOUDINARY_FOLDER || "classic-campus";
+      const folderBase = process.env.CLOUDINARY_FOLDER || "classic-academy";
       const folder = `${folderBase}/${req.tenant?.code || req.tenant?._id || "tenant"}/reports`;
       const fileName = `report-${filters.type}-${Date.now()}.csv`;
 
@@ -680,7 +680,7 @@ module.exports = {
         return res.redirect("/admin/reports");
       }
 
-      const folderBase = process.env.CLOUDINARY_FOLDER || "classic-campus";
+      const folderBase = process.env.CLOUDINARY_FOLDER || "classic-academy";
       const folder = `${folderBase}/${req.tenant?.code || req.tenant?._id || "tenant"}/reports/imports`;
 
       let upload = null;

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title><%= (tenant?.name || "Classic Campus") %> • Admissions Requirements</title>
+  <title><%= (tenant?.name || "Classic Academy") %> • Admissions Requirements</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
 
   <% if (csrfToken) { %>
@@ -328,7 +328,7 @@
       if (qObj?.q) params.set("q", qObj.q);
       if (qObj?.category) params.set("category", qObj.category);
       if (qObj?.isActive) params.set("isActive", qObj.isActive);
-      if (qObj?.program) params.set("program", qObj.program);
+      if (qObj?.section || qObj?.program) params.set("section", qObj.section || qObj.program);
       if (qObj?.intake) params.set("intake", qObj.intake);
       params.set("page", String(targetPage));
       return "/admin/admissions/requirements?" + params.toString();
@@ -356,7 +356,7 @@
       <div class="topbar">
         <div>
           <div class="title">Admissions Requirements</div>
-          <div class="subtitle">Create, edit, export, print and manage admission requirements by category, program and intake.</div>
+          <div class="subtitle">Create, edit, export, print and manage admission requirements by category, section and term.</div>
         </div>
 
         <div class="top-actions">
@@ -411,10 +411,10 @@
               <option value="false" <%= qObj?.isActive === 'false' ? 'selected' : '' %>>Inactive</option>
             </select>
 
-            <select class="select" name="program">
-              <option value="">All Programs</option>
+            <select class="select" name="section">
+              <option value="">All Sections</option>
               <% (programsArr || []).forEach(function(p){ %>
-                <option value="<%= p._id %>" <%= String(qObj?.program || '') === String(p._id) ? 'selected' : '' %>><%= p.name || p.title || 'Program' %></option>
+                <option value="<%= p._id %>" <%= String(qObj?.section || qObj?.program || '') === String(p._id) ? 'selected' : '' %>><%= p.name || p.className || 'Section' %></option>
               <% }) %>
             </select>
 
@@ -465,7 +465,7 @@
                     <th class="col-check"><input type="checkbox" id="checkAll" /></th>
                     <th class="col-title">Requirement</th>
                     <th class="col-category">Category</th>
-                    <th class="col-programs">Programs</th>
+                    <th class="col-programs">Sections</th>
                     <th class="col-intakes">Intakes</th>
                     <th class="col-mandatory">Mandatory</th>
                     <th class="col-active">Status</th>
@@ -548,7 +548,7 @@
 
             <div class="field">
               <label>Code</label>
-              <input class="input" id="mCode" name="code" required maxlength="80" placeholder="Auto-normalized" />
+              <input class="input" id="mCode" name="code" readonly maxlength="80" placeholder="Auto-normalized" />
             </div>
 
             <div class="field">
@@ -560,6 +560,16 @@
                 <option value="medical">Medical</option>
                 <option value="other">Other</option>
               </select>
+            </div>
+
+            <div class="field" id="mFeeWrap" style="display:none;">
+              <label>Fee Amount</label>
+              <input class="input" id="mFeeAmount" name="feeAmount" type="number" min="0" step="0.01" placeholder="0.00" />
+            </div>
+
+            <div class="field" id="mCurrencyWrap" style="display:none;">
+              <label>Currency</label>
+              <input class="input" id="mCurrency" name="currency" type="text" maxlength="10" placeholder="UGX" value="UGX" />
             </div>
 
             <div class="field">
@@ -598,7 +608,7 @@
             <div class="field">
               <label style="display:flex;align-items:center;gap:8px;">
                 <input type="checkbox" id="mAllPrograms" name="appliesToAllPrograms" value="true" checked />
-                Applies to all programs
+                Applies to all sections
               </label>
               <select class="select" id="mPrograms" multiple size="8"></select>
               <div id="mProgramsWrap"></div>
@@ -616,7 +626,7 @@
             <div class="field">
               <label>Scope Preview</label>
               <div class="note">
-                <div class="muted">Use “all” toggles for global rules, or pick specific programs and intakes for targeted rules.</div>
+                <div class="muted">Use “all” toggles for global rules, or pick specific sections and intakes for targeted rules.</div>
               </div>
             </div>
           </div>
@@ -645,6 +655,8 @@
           <div class="field"><label>Status</label><div class="view-input" id="vStatus">—</div></div>
           <div class="field"><label>Mandatory</label><div class="view-input" id="vMandatory">—</div></div>
           <div class="field"><label>Sort Order</label><div class="view-input" id="vSort">—</div></div>
+          <div class="field" id="vFeeWrap" style="display:none;"><label>Fee Amount</label><div class="view-input" id="vFeeAmount">—</div></div>
+          <div class="field" id="vCurrencyWrap" style="display:none;"><label>Currency</label><div class="view-input" id="vCurrency">—</div></div>
         </div>
 
         <div class="divider"></div>
@@ -655,7 +667,7 @@
         </div>
 
         <div class="field" style="margin-top:12px;">
-          <label>Programs</label>
+          <label>Sections</label>
           <div class="view-input multiline"><div class="tag-list" id="vPrograms"></div></div>
         </div>
 
@@ -686,7 +698,7 @@
             <input class="input" type="file" name="file" accept=".csv,text/csv" required />
           </div>
           <div class="note" style="margin-top:12px;">
-            Expected columns: title, code, category, description, sortOrder, isMandatory, isActive, appliesToAllPrograms, appliesToAllIntakes, programs, intakes
+            Expected columns: title, code, category, description, sortOrder, isMandatory, isActive, appliesToAllSections, appliesToAllIntakes, sections, intakes
           </div>
         </div>
         <div class="modal-footer">
@@ -714,6 +726,8 @@
       code: r.code || '',
       category: r.category || 'document',
       description: r.description || '',
+      feeAmount: Number(r.feeAmount || 0),
+      currency: r.currency || 'UGX',
       sortOrder: Number(r.sortOrder || 0),
       isMandatory: !!r.isMandatory,
       isActive: !!r.isActive,
@@ -725,8 +739,8 @@
   })) %></textarea>
 
   <textarea id="lookupData" class="json-data" aria-hidden="true"><%- JSON.stringify({
-    programs: (programsArr || []).map(function(p){ return { id: String(p._id || ''), name: p.name || p.title || 'Program' }; }),
-    intakes: (intakesArr || []).map(function(i){ return { id: String(i._id || ''), name: i.name || i.title || 'Intake' }; })
+    programs: (programsArr || []).map(function(p){ return { id: String(p._id || ''), name: p.name || p.className || 'Section' }; }),
+    intakes: (intakesArr || []).map(function(i){ return { id: String(i._id || ''), name: i.name || i.term || i.title || 'Term' }; })
   }) %></textarea>
 
   <script src="/js/navbar.js"></script>

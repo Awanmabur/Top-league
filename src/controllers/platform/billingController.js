@@ -136,7 +136,7 @@ module.exports = {
           tenants,
           plans,
           old: req.body,
-          error: "Selected university is invalid.",
+          error: "Selected school is invalid.",
         });
       }
 

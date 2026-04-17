@@ -350,7 +350,7 @@ module.exports = {
         return res.redirect("/admin/discipline");
       }
 
-      const folder = `classic-campus/${req.tenant?.slug || "tenant"}/discipline/statements`;
+      const folder = `classic-academy/${req.tenant?.slug || "tenant"}/discipline/statements`;
       const up = await uploadBuffer(req.file, folder);
 
       if (row.studentStatement?.publicId) {
@@ -401,7 +401,7 @@ module.exports = {
         return res.redirect("/admin/discipline");
       }
 
-      const folder = `classic-campus/${req.tenant?.slug || "tenant"}/discipline/attachments`;
+      const folder = `classic-academy/${req.tenant?.slug || "tenant"}/discipline/attachments`;
 
       for (const f of files) {
         if (!f?.buffer) continue;

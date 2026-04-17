@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Receipt — <%= (tenant && tenant.name) ? tenant.name : "Classic Campus" %></title>
+  <title>Receipt — <%= (tenant && tenant.name) ? tenant.name : "Classic Academy" %></title>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
 
   <link rel="stylesheet"
@@ -87,7 +87,7 @@
   <section class="card">
     <div class="card-head">
       <div>
-        <div class="card-title"><%= (_tenant && _tenant.name) ? _tenant.name : "CampusSaaS University Finance Office" %></div>
+        <div class="card-title"><%= (_tenant && _tenant.name) ? _tenant.name : "Classic Academy School Finance Office" %></div>
         <div class="card-sub">Official Payment Receipt • Keep this for your records</div>
       </div>
       <div>
@@ -100,8 +100,8 @@
       <div class="grid">
         <div class="stamp">
           <div class="strong" style="margin-bottom:6px"><i class="fa-solid fa-building-columns"></i> Institution Details</div>
-          <div class="muted">University / Tenant: <span class="strong"><%= (_tenant && _tenant.name) ? _tenant.name : "Demo University" %></span></div>
-          <div class="muted">Email: <span class="strong"><%= (_tenant && _tenant.email) ? _tenant.email : "finance@university.edu" %></span></div>
+          <div class="muted">School / Tenant: <span class="strong"><%= (_tenant && _tenant.name) ? _tenant.name : "Demo School" %></span></div>
+          <div class="muted">Email: <span class="strong"><%= (_tenant && _tenant.email) ? _tenant.email : "finance@school.edu" %></span></div>
         </div>
 
         <div class="stamp">
@@ -190,7 +190,7 @@
       <div class="footer-note">
         <div class="mini">
           <div class="strong">Terms</div>
-          <div>1) This receipt is valid only when recorded in CampusSaaS Finance.</div>
+          <div>1) This receipt is valid only when recorded in Classic Academy Finance.</div>
           <div>2) For disputes, contact finance within 7 days.</div>
         </div>
         <div class="mini" style="text-align:right">

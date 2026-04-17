@@ -119,10 +119,9 @@ function academicMeta(student) {
       "N/A",
     program:
       student?.programName ||
-      student?.programmeName ||
       student?.program ||
-      student?.programme ||
-      "Programme not set",
+      student?.className ||
+      "Class not set",
     level:
       student?.levelName ||
       student?.yearName ||
@@ -162,7 +161,7 @@ function courseTitleFromAny(item) {
     item?.courseId?.title ||
     item?.subject ||
     item?.name ||
-    "Untitled Course"
+      "Untitled Subject"
   );
 }
 

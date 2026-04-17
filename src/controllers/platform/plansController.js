@@ -347,7 +347,7 @@ module.exports = {
       });
 
       if (tenantsUsingPlan > 0) {
-        return res.status(400).send("Cannot delete a plan currently assigned to universities.");
+        return res.status(400).send("Cannot delete a plan currently assigned to schools.");
       }
 
       plan.isDeleted = true;

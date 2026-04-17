@@ -155,7 +155,7 @@
     .file{ flex-wrap:wrap; gap:8px; }
     .file .badge{ white-space:nowrap; }
     .hidden{display:none !important;}
-    .subject-multi{min-height:220px}
+    .section-select{min-height:44px}
   </style>
 </head>
 
@@ -164,7 +164,7 @@
   const _tenant = (typeof tenant !== "undefined" && tenant) ? tenant : null;
   const _errors = (typeof errors !== "undefined" && errors) ? errors : null;
   const _formData = (typeof formData !== "undefined" && formData) ? formData : null;
-  const subjectsArr = (typeof subjects !== "undefined" && Array.isArray(subjects)) ? subjects : [];
+  const sectionsArr = (typeof sections !== "undefined" && Array.isArray(sections)) ? sections : [];
   const yearsArr = (typeof academicYears !== "undefined" && Array.isArray(academicYears) && academicYears.length)
     ? academicYears
     : (() => {
@@ -200,8 +200,8 @@
     return "";
   };
 
-  const selectedSubjectsRaw = _formData && _formData.subjects !== undefined ? _formData.subjects : [];
-  const selectedSubjects = Array.isArray(selectedSubjectsRaw) ? selectedSubjectsRaw.map(String) : (selectedSubjectsRaw ? [String(selectedSubjectsRaw)] : []);
+  const selectedSection1 = _formData && (_formData.section1 || _formData.section1Id) ? String(_formData.section1 || _formData.section1Id) : "";
+  const selectedSection2 = _formData && (_formData.section2 || _formData.section2Id) ? String(_formData.section2 || _formData.section2Id) : "";
 
   const labelSchoolLevel = (v) => {
     const map = { nursery: "Nursery", primary: "Primary", secondary: "Secondary" };
@@ -390,22 +390,41 @@
               </div>
             </div>
 
-            <div class="field" style="margin-top:12px">
-              <label>Subjects <span class="req">*</span></label>
-              <select class="select subject-multi" name="subjects" multiple>
-                <% subjectsArr.forEach(s => { 
-                  const label = ((s.code ? s.code + " — " : "") + (s.title || s.shortTitle || "Subject")).trim();
-                  const levelText = labelSchoolLevel(s.schoolLevel);
-                  const classText = Array.isArray(s.classLevels) ? s.classLevels.join(", ") : "";
-                  const extra = [levelText, classText, s.term ? ("Term " + s.term) : ""].filter(Boolean).join(" • ");
+            <div class="grid-2" style="margin-top:12px">
+              <div class="field">
+                <label>Section <span class="req">*</span></label>
+                <select class="select section-select" name="section1" required>
+                  <option value="">Select section</option>
+                <% sectionsArr.forEach(sec => { 
+                  const label = ((sec.code ? sec.code + " — " : "") + (sec.name || sec.className || "Section")).trim();
+                  const levelText = labelSchoolLevel(sec.levelType);
+                  const extra = [levelText, sec.classLevel, sec.classStream, sec.campusName].filter(Boolean).join(" • ");
                 %>
-                  <option value="<%= s._id %>" <%= selectedSubjects.indexOf(String(s._id)) >= 0 ? "selected" : "" %>>
+                  <option value="<%= sec._id %>" <%= selectedSection1 === String(sec._id) ? "selected" : "" %>>
                     <%= label %><%= extra ? " (" + extra + ")" : "" %>
                   </option>
                 <% }) %>
-              </select>
-              <div class="hint">Use Ctrl/Cmd to select multiple subjects.</div>
-              <% if (err('subjects')) { %><div class="error" style="display:block"><%= err('subjects') %></div><% } %>
+                </select>
+                <div class="hint">Choose the class section you are applying to join.</div>
+                <% if (err('section1')) { %><div class="error" style="display:block"><%= err('section1') %></div><% } %>
+              </div>
+
+              <div class="field">
+                <label>Second Choice Section</label>
+                <select class="select section-select" name="section2">
+                  <option value="">No second choice</option>
+                  <% sectionsArr.forEach(sec => {
+                    const label = ((sec.code ? sec.code + " — " : "") + (sec.name || sec.className || "Section")).trim();
+                    const levelText = labelSchoolLevel(sec.levelType);
+                    const extra = [levelText, sec.classLevel, sec.classStream, sec.campusName].filter(Boolean).join(" • ");
+                  %>
+                    <option value="<%= sec._id %>" <%= selectedSection2 === String(sec._id) ? "selected" : "" %>>
+                      <%= label %><%= extra ? " (" + extra + ")" : "" %>
+                    </option>
+                  <% }) %>
+                </select>
+                <div class="hint">Optional backup if the first section is full.</div>
+              </div>
             </div>
           </div>
 

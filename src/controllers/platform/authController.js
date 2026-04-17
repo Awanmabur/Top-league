@@ -22,6 +22,16 @@ function fullName(user = {}) {
   return `${safeTrim(user.firstName)} ${safeTrim(user.lastName)}`.trim();
 }
 
+function regenerateSession(req) {
+  return new Promise((resolve, reject) => {
+    if (!req.session) return resolve();
+    req.session.regenerate((err) => {
+      if (err) return reject(err);
+      return resolve();
+    });
+  });
+}
+
 async function writeAudit(req, payload) {
   try {
     await AuditLog.create({
@@ -98,12 +108,11 @@ module.exports = {
         }
       );
 
-      if (req.session) {
-        req.session.platformUserId = String(user._id);
-        req.session.platformRole = user.role;
-        req.session.platformEmail = user.email;
-        req.session.platformName = fullName(user);
-      }
+      await regenerateSession(req);
+      req.session.platformUserId = String(user._id);
+      req.session.platformRole = user.role;
+      req.session.platformEmail = user.email;
+      req.session.platformName = fullName(user);
 
       await writeAudit(req, {
         actorId: user._id,

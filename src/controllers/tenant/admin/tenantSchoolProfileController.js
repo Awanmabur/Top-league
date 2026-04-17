@@ -252,7 +252,7 @@ module.exports = {
       if (!req.file)
         return res.status(400).json({ ok: false, message: "No file." });
 
-      const folder = `classic-campus/${tenantDoc.code}/logo`;
+      const folder = `classic-academy/${tenantDoc.code}/logo`;
       const result = await uploadBuffer(req.file, folder, {
         resource_type: "image",
       });
@@ -281,7 +281,7 @@ module.exports = {
       if (!req.file)
         return res.status(400).json({ ok: false, message: "No file." });
 
-      const folder = `classic-campus/${tenantDoc.code}/cover`;
+      const folder = `classic-academy/${tenantDoc.code}/cover`;
       const result = await uploadBuffer(req.file, folder, {
         resource_type: "image",
       });
@@ -332,7 +332,7 @@ module.exports = {
       if (!Array.isArray(p.gallery)) p.gallery = [];
       normalizeGallery(p);
 
-      const folder = `classic-campus/${tenantDoc.code}/gallery`;
+      const folder = `classic-academy/${tenantDoc.code}/gallery`;
 
       for (let i = 0; i < files.length; i++) {
         const f = files[i];

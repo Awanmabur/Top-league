@@ -11,7 +11,7 @@ async function seedTenant(tenant, platformConnection) {
   // Initialize models on tenant connection
   const User = UserModelFactory(tenantConn);
 
-  // 1. Create initial UniversityAdmin user if not exists
+  // 1. Create initial school admin user if not exists
   const adminEmail = tenant.ownerEmail || `admin@${tenant.code}.edu`;
 
   const existingAdmin = await User.findOne({ email: adminEmail });
@@ -23,11 +23,11 @@ async function seedTenant(tenant, platformConnection) {
       name: tenant.ownerName || `${tenant.name} Admin`,
       email: adminEmail,
       passwordHash,
-      roles: ['UniversityAdmin']
+      roles: ['admin']
     });
 
     console.log(
-      `Seeded UniversityAdmin for ${tenant.name}: ${adminEmail} / ${password}`
+      `Seeded school admin for ${tenant.name}: ${adminEmail} / ${password}`
     );
   } else {
     console.log(`Admin already exists for ${tenant.name}`);

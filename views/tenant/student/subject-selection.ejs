@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title><%= pageTitle %> — <%= tenant?.name || "Classic Academy" %></title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/navbar.css"/>
+  <link rel="stylesheet" href="/css/student-portal.css" />
+  <style>
+    .reg-status-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:999px;font-size:12px;background:#ecfdf3;color:#15803d}
+    .reg-status-pill.warn{background:#fef9c3;color:#92400e}
+    .reg-status-pill.danger{background:#fee2e2;color:#b91c1c}
+    .reg-change-banner{margin-top:8px;padding:8px 10px;border-radius:10px;background:#fef9c3;border:1px dashed #facc15;font-size:12px;color:#92400e;display:flex;gap:8px;align-items:flex-start}
+    .reg-btn-disabled{opacity:.6;cursor:not-allowed}
+  </style>
+</head>
+<body>
+
+<%- include("./navbar") %>
+
+<main class="main">
+  <div class="topbar">
+    <div>
+      <div class="title">Subject Selection</div>
+      <div class="subtitle">
+        Browse the active subject list assigned to your class.
+      </div>
+    </div>
+    <div class="top-actions reg-actions-top">
+      <a class="btn light" href="/student/dashboard">
+        <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+      </a>
+      <button class="btn primary" type="button" disabled>
+        <i class="fa-solid fa-check-double"></i> Submit Changes
+      </button>
+    </div>
+  </div>
+
+  <%-include("./.././partials/flash") %>
+
+  <section class="card">
+    <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start;">
+      <div>
+        <div class="section-title">Registration status</div>
+        <div class="section-sub"><%= meta.academicYear %> • <%= meta.semester %> • <%= meta.program %> • <%= meta.level %></div>
+
+        <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;">
+          <span class="reg-status-pill">
+            <i class="fa-solid fa-circle-check"></i>
+            <%= windowInfo?.status === "open" || windowInfo?.isActive ? "Window open" : "Window status not configured" %>
+          </span>
+
+          <% if (holds?.length) { %>
+            <span class="reg-status-pill danger">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+              <%= holds.length %> hold(s) on account
+            </span>
+          <% } else { %>
+            <span class="reg-status-pill warn">
+              <i class="fa-solid fa-user-check"></i>
+              Ready for advisor review
+            </span>
+          <% } %>
+        </div>
+
+        <div class="reg-change-banner">
+          <i class="fa-solid fa-circle-info"></i>
+          <div>
+            This page is wired to live subject data. Selection actions can be connected next to your school write endpoints.
+          </div>
+        </div>
+      </div>
+
+      <div class="kpi-row" style="grid-template-columns:repeat(3,minmax(0,1fr));flex:1;min-width:260px;">
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <div>
+              <div class="kpi-label">Assigned periods</div>
+              <div class="kpi-value"><%= totals.registeredCredits %></div>
+            </div>
+            <i class="fa-solid fa-layer-group"></i>
+          </div>
+          <div class="kpi-footer">Min: <%= totals.minCredits %> • Max: <%= totals.maxCredits %></div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <div>
+              <div class="kpi-label">Active subjects</div>
+              <div class="kpi-value"><%= totals.registeredSubjects %></div>
+            </div>
+            <i class="fa-solid fa-list-ul"></i>
+          </div>
+          <div class="kpi-footer">Current subject records</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <div>
+              <div class="kpi-label">Holds / blocks</div>
+              <div class="kpi-value"><%= totals.holds %></div>
+            </div>
+            <i class="fa-solid fa-lock-open"></i>
+          </div>
+          <div class="kpi-footer"><%= totals.holds ? "Resolve holds to continue" : "Ready for class subjects" %></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="section-title">Current subjects</div>
+    <div class="section-sub">Your active class subjects.</div>
+
+    <div style="margin-top:10px;overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead>
+          <tr style="border-bottom:1px solid #e5edff;">
+            <th style="text-align:left;padding:6px 4px;">Code</th>
+            <th style="text-align:left;padding:6px 4px;">Title</th>
+            <th style="text-align:left;padding:6px 4px;">Credits</th>
+            <th style="text-align:left;padding:6px 4px;">Status</th>
+            <th style="text-align:left;padding:6px 4px;">Semester</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (registeredSubjects?.length) { %>
+            <% registeredSubjects.forEach(function(c) { %>
+              <tr>
+                <td><%= c.subjectCode %></td>
+                <td><%= c.subjectTitle %></td>
+                <td><%= c.credits %></td>
+                <td><%= c.status %></td>
+                <td><%= c.semester %></td>
+              </tr>
+            <% }) %>
+          <% } else { %>
+            <tr><td colspan="5">No subject records found.</td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="section-title">Subject catalogue</div>
+    <div class="section-sub">Available subjects for browsing.</div>
+
+    <div style="margin-top:10px;overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;" id="catalogTable">
+        <thead>
+          <tr style="border-bottom:1px solid #e5edff;">
+            <th style="text-align:left;padding:6px 4px;">Code</th>
+            <th style="text-align:left;padding:6px 4px;">Title</th>
+            <th style="text-align:left;padding:6px 4px;">Credits</th>
+            <th style="text-align:left;padding:6px 4px;">Schedule</th>
+            <th style="text-align:left;padding:6px 4px;">Type</th>
+            <th style="text-align:left;padding:6px 4px;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (catalogue?.length) { %>
+            <% catalogue.forEach(function(c) { %>
+              <tr>
+                <td><%= c.subjectCode %></td>
+                <td>
+                  <%= c.subjectTitle %>
+                  <% if (c.prereq) { %>
+                    <div class="small-muted">Prereq: <%= c.prereq %></div>
+                  <% } %>
+                </td>
+                <td><%= c.credits %></td>
+                <td><%= c.schedule %></td>
+                <td><%= c.type %></td>
+                <td>
+                  <% if (c.isRegistered) { %>
+                    <button class="btn-xs reg-btn-disabled" disabled>
+                      <i class="fa-solid fa-check"></i> <%= c.regStatus %>
+                    </button>
+                  <% } else { %>
+                    <button class="btn-xs" disabled>
+                      <i class="fa-solid fa-plus"></i> Add
+                    </button>
+                  <% } %>
+                </td>
+              </tr>
+            <% }) %>
+          <% } else { %>
+            <tr><td colspan="6">No subjects available.</td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+</div>
+
+<script src="/js/navbar.js"></script>
+</body>
+</html>

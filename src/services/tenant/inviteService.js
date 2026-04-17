@@ -39,7 +39,7 @@ function buildInviteLink(req, rawToken) {
 function emailHtml({ name, inviteLink, tenantName }) {
   return `
   <div style="font-family:Arial,sans-serif;line-height:1.5">
-    <h2>${tenantName || "Classic Campus"} – Set your password</h2>
+    <h2>${tenantName || "Classic Academy"} – Set your password</h2>
     <p>Hello ${name || ""},</p>
     <p>Your account has been created. Click the button below to set your password:</p>
     <p>
@@ -99,7 +99,7 @@ async function sendPasswordInviteEmail({ req, toEmail, toName, userId }) {
     req.tenant?.name ||
     req.tenant?.title ||
     req.tenant?.code ||
-    "Classic Campus";
+    "Classic Academy";
 
   await sendMail({
     to: toEmail,

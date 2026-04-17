@@ -2,9 +2,13 @@ const express = require("express");
 const router = express.Router();
 
 const tenantAuth = require("../../../middleware/tenant/requireTenantAuth");
+const resolveTenantAccess = require("../../../middleware/tenant/resolveTenantAccess");
+const setLocals = require("../../../middleware/tenant/setLocals");
 
 // ✅ Protect ALL parent routes
+router.use(resolveTenantAccess);
 router.use(tenantAuth("parent"));
+router.use(setLocals);
 
 // Core pages
 router.use("/", require("./dashboard"));

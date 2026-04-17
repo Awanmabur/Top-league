@@ -203,7 +203,7 @@ const BookingSchema = z.object({
   time: z.string().regex(/^\d{2}:\d{2}$/),
   durationMin: z.coerce.number().int().min(15).max(180),
 
-  product: z.enum(["Classic Academy", "Classic Campus", "Both"]),
+  product: z.enum(["Classic Academy"]),
   purpose: z.enum(["Demo", "Onboarding", "Support"]),
 
   company: z.string().max(200).optional().default(""),

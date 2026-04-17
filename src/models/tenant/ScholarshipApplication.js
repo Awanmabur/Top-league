@@ -29,7 +29,7 @@ module.exports = (connection) => {
       email: { type: String, trim: true, lowercase: true, maxlength: 120, default: "" },
       phone: { type: String, trim: true, maxlength: 40, default: "" },
 
-      program: { type: Schema.Types.ObjectId, ref: "Program", default: null, index: true },
+      program: { type: Schema.Types.ObjectId, ref: "Subject", default: null, index: true },
       yearLevel: { type: String, trim: true, maxlength: 30, default: "" },
       academicYear: { type: String, trim: true, maxlength: 20, default: "" },
 

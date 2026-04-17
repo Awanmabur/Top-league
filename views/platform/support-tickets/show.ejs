@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Support Ticket Details — Classic Campus</title>
+  <title>Support Ticket Details — Classic Academy</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <link rel="stylesheet" href="/css/navbar.css" />
   <style>
@@ -44,7 +44,7 @@
       <div class="card">
         <div class="title"><%= ticket.ticketNo %> — <%= ticket.subject %></div>
         <div class="meta">
-          University: <%= ticket.tenantId?.name || '—' %> • Category: <%= ticket.category %> •
+          School: <%= ticket.tenantId?.name || '—' %> • Category: <%= ticket.category %> •
           Priority: <%= ticket.priority %> • Status: <%= ticket.status %>
         </div>
       </div>

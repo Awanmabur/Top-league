@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Announcement Details — Classic Campus</title>
+  <title>Announcement Details — Classic Academy</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <link rel="stylesheet" href="/css/navbar.css" />
   <style>
@@ -51,7 +51,7 @@
 
         <% if (announcement.tenantIds && announcement.tenantIds.length) { %>
           <div style="margin-top:16px;">
-            <div class="meta" style="margin-bottom:8px;">Target Universities</div>
+            <div class="meta" style="margin-bottom:8px;">Target Schools</div>
             <div class="chips">
               <% announcement.tenantIds.forEach(function(t){ %>
                 <span class="chip"><%= t.name || t._id %></span>

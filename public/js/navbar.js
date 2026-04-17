@@ -6,72 +6,86 @@
 
   if (!sidebar) return;
 
-  // ----- Mobile open/close -----
-  function openMobile(){
+  const firstPath = window.location.pathname.split("/").filter(Boolean)[0] || "tenant";
+  const portal = document.body?.dataset?.portal || firstPath;
+  const storageKey = `classic_academy_sidebar_${portal}`;
+  const isMobile = () => window.matchMedia("(max-width:1100px)").matches;
+
+  function openMobile() {
     sidebar.classList.add("open");
-    backdrop && backdrop.classList.add("show");
-  }
-  function closeMobile(){
-    sidebar.classList.remove("open");
-    backdrop && backdrop.classList.remove("show");
+    backdrop?.classList.add("show");
+    mobileBtn?.setAttribute("aria-expanded", "true");
   }
 
-  mobileBtn && mobileBtn.addEventListener("click", () => {
+  function closeMobile() {
+    sidebar.classList.remove("open");
+    backdrop?.classList.remove("show");
+    mobileBtn?.setAttribute("aria-expanded", "false");
+  }
+
+  mobileBtn?.setAttribute("aria-expanded", "false");
+  mobileBtn?.addEventListener("click", () => {
     sidebar.classList.contains("open") ? closeMobile() : openMobile();
   });
 
-  // ✅ IMPORTANT: don't use backdrop click close because it requires pointer-events:auto
-  // backdrop && backdrop.addEventListener("click", closeMobile);
+  backdrop?.addEventListener("click", closeMobile);
 
-  sidebar.addEventListener("click", (e) => {
-    const a = e.target.closest("a[href]");
-    if (!a) return;
-    if (window.matchMedia("(max-width:1100px)").matches) closeMobile();
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeMobile();
   });
 
-  // ----- Desktop collapse < / > -----
-  if (collapseBtn){
+  window.addEventListener("resize", () => {
+    if (!isMobile()) closeMobile();
+  });
+
+  sidebar.addEventListener("click", (event) => {
+    const link = event.target.closest("a[href]");
+    if (link && isMobile()) closeMobile();
+  });
+
+  if (collapseBtn) {
     const icon = collapseBtn.querySelector("i");
 
-    function syncIcon(){
+    function syncIcon() {
       if (!icon) return;
       icon.className = sidebar.classList.contains("collapsed")
         ? "fa fa-angle-right"
         : "fa fa-angle-left";
     }
 
-    if (localStorage.getItem("cc_sidebar_collapsed") === "1") {
+    if (localStorage.getItem(storageKey) === "1") {
       sidebar.classList.add("collapsed");
     }
     syncIcon();
 
     collapseBtn.addEventListener("click", () => {
       sidebar.classList.toggle("collapsed");
-      localStorage.setItem("cc_sidebar_collapsed", sidebar.classList.contains("collapsed") ? "1" : "0");
+      localStorage.setItem(storageKey, sidebar.classList.contains("collapsed") ? "1" : "0");
       syncIcon();
     });
   }
 
-  // ----- Active link highlight (by URL) -----
   (() => {
     const links = document.querySelectorAll(".navbutton[href]");
     const path = window.location.pathname;
-
-    links.forEach(a => a.classList.remove("active"));
-
     let best = null;
-    links.forEach(a => {
-      const href = a.getAttribute("href");
-      if (!href) return;
-      if (path === href || path.startsWith(href + "/")) {
-        if (!best || href.length > best.getAttribute("href").length) best = a;
+
+    links.forEach((link) => link.classList.remove("active"));
+
+    links.forEach((link) => {
+      const href = link.getAttribute("href");
+      if (!href || href === "/" || href === "/logout") return;
+
+      if (path === href || path.startsWith(`${href}/`)) {
+        if (!best || href.length > best.getAttribute("href").length) {
+          best = link;
+        }
       }
     });
 
-    if (best) best.classList.add("active");
+    best?.classList.add("active");
   })();
 
-  // ----- Tooltip when collapsed -----
   (() => {
     let tip = document.querySelector(".cc-tooltip");
     if (!tip) {
@@ -80,29 +94,33 @@
       document.body.appendChild(tip);
     }
 
-    function showTip(text, x, y){
+    function showTip(text, x, y) {
       tip.textContent = text || "";
-      tip.style.left = (x + 12) + "px";
-      tip.style.top = y + "px";
+      tip.style.left = `${x + 12}px`;
+      tip.style.top = `${y}px`;
       tip.style.opacity = "1";
     }
-    function hideTip(){ tip.style.opacity = "0"; }
 
-    const items = sidebar.querySelectorAll(".navbutton[data-label]");
-    items.forEach(el => {
-      el.addEventListener("mouseenter", () => {
+    function hideTip() {
+      tip.style.opacity = "0";
+    }
+
+    sidebar.querySelectorAll(".navbutton[data-label]").forEach((item) => {
+      item.addEventListener("mouseenter", () => {
         if (!sidebar.classList.contains("collapsed")) return;
-        const label = el.dataset.label || el.textContent.trim();
-        const r = el.getBoundingClientRect();
-        showTip(label, r.right, r.top + r.height / 2);
+        const label = item.dataset.label || item.textContent.trim();
+        const rect = item.getBoundingClientRect();
+        showTip(label, rect.right, rect.top + rect.height / 2);
       });
-      el.addEventListener("mousemove", () => {
+
+      item.addEventListener("mousemove", () => {
         if (!sidebar.classList.contains("collapsed")) return;
-        const label = el.dataset.label || el.textContent.trim();
-        const r = el.getBoundingClientRect();
-        showTip(label, r.right, r.top + r.height / 2);
+        const label = item.dataset.label || item.textContent.trim();
+        const rect = item.getBoundingClientRect();
+        showTip(label, rect.right, rect.top + rect.height / 2);
       });
-      el.addEventListener("mouseleave", hideTip);
+
+      item.addEventListener("mouseleave", hideTip);
     });
 
     window.addEventListener("scroll", hideTip, true);

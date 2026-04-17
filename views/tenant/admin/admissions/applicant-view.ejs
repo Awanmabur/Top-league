@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <title>Admin • Admissions — Application Detail | <%= (tenant && tenant.name) ? tenant.name : "Classic Campus" %></title>
+  <title>Admin • Admissions — Application Detail | <%= (tenant && tenant.name) ? tenant.name : "Classic Academy" %></title>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
 
   <!-- Optional external icons CSS (works with style-src https:) -->
@@ -128,11 +128,11 @@
 
 <body>
 <%
-  const tenantName = (tenant && tenant.name) ? String(tenant.name) : "Classic Campus";
+  const tenantName = (tenant && tenant.name) ? String(tenant.name) : "Classic Academy";
   const csrf = (typeof csrfToken !== "undefined" && csrfToken) ? csrfToken : null;
 
   const a = (typeof applicant !== "undefined" && applicant) ? applicant : null;
-  const cls = (typeof classes !== "undefined" && Array.isArray(classes)) ? classes : [];
+  const cls = (typeof sections !== "undefined" && Array.isArray(sections)) ? sections : [];
 
   const s = (v, d="") => (v === null || v === undefined) ? d : String(v);
 
@@ -142,10 +142,11 @@
   const email = a ? s(a.email,"—") : "—";
   const phone = a ? s(a.phone,"—") : "—";
 
+  const selectedSection = a ? (a.section1 || a.program1 || null) : null;
   const program1 =
-    a && a.program1
-      ? ((a.program1.code ? s(a.program1.code) + " — " : "") + s(a.program1.name || a.program1.title,""))
-      : s(a.programName,"—");
+    selectedSection
+      ? ((selectedSection.code ? s(selectedSection.code) + " — " : "") + s(selectedSection.name || selectedSection.className,""))
+      : s(a && a.programName,"—");
 
   const statusRaw = a ? s(a.status,"submitted") : "submitted";
   const statusLabel =
@@ -208,7 +209,7 @@
     (a && Array.isArray(a.timeline)) ? a.timeline :
     [];
 
-  const preferredClassId = a && a.preferredClassGroup && a.preferredClassGroup._id ? s(a.preferredClassGroup._id) : "";
+  const preferredClassId = selectedSection && selectedSection._id ? s(selectedSection._id) : "";
 
   const encodedMissing = encodeURIComponent(JSON.stringify(missingDocs));
 
@@ -334,9 +335,9 @@
                     <div class="strong"><i class="fa-solid fa-graduation-cap"></i> Application Info</div>
                     <div class="divider"></div>
                     <div class="muted">Application ID: <span class="strong"><%= applicantId %></span></div>
-                    <div class="muted">Program: <span class="strong"><%= program1 || "—" %></span></div>
+                    <div class="muted">Section: <span class="strong"><%= program1 || "—" %></span></div>
                     <div class="muted">Intake/Year: <span class="strong"><%= s(a.academicYear,"—") %></span></div>
-                    <div class="muted">Mode: <span class="strong"><%= s(a.studyMode, s(a.mode,"—")) %></span></div>
+                    <div class="muted">Term: <span class="strong"><%= s(a.term,"—") %></span></div>
                     <div class="muted">Entry Type: <span class="strong"><%= s(a.entryType,"—") %></span></div>
                   </div>
 
@@ -584,8 +585,8 @@
                       <input class="input" id="decIntake" value="<%= s(a.academicYear,'') %>" placeholder="e.g. 2026/2027">
                     </div>
                     <div class="field">
-                      <label>Program (final)</label>
-                      <input class="input" id="decProgram" value="<%= program1 %>" placeholder="Final program">
+                      <label>Section (final)</label>
+                      <input class="input" id="decProgram" value="<%= program1 %>" placeholder="Final section">
                     </div>
                   </div>
 
@@ -603,13 +604,13 @@
                     <% if (csrf) { %><input type="hidden" name="_csrf" value="<%= csrf %>"><% } %>
 
                     <div class="field">
-                      <label>Assign Class (required for acceptance)</label>
-                      <select class="select" name="classGroup" id="classGroup" required>
-                        <option value="">Select class</option>
+                      <label>Assign Section (required for acceptance)</label>
+                      <select class="select" name="section" id="classGroup" required>
+                        <option value="">Select section</option>
                         <% cls.forEach(c => { %>
                           <% const cid = c && c._id ? s(c._id) : ""; %>
                           <option value="<%= cid %>" <%= (preferredClassId && preferredClassId === cid) ? "selected" : "" %>>
-                            <%= (c.code ? s(c.code) + " — " : "") + s(c.name || c.title,"Class") %>
+                            <%= (c.code ? s(c.code) + " — " : "") + s(c.name || c.className,"Section") %>
                           </option>
                         <% }) %>
                       </select>

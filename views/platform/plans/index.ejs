@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Plans — Classic Campus</title>
+  <title>Plans — Classic Academy</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <link rel="stylesheet" href="/css/navbar.css" />
   <style>
@@ -67,7 +67,7 @@
               <div class="meta">Per Student: <strong>$<%= Number(plan.pricePerStudent || 0).toLocaleString() %></strong></div>
               <div class="meta">Revenue Share: <strong><%= Number(plan.platformSharePercent || 0) %>%</strong></div>
               <div class="meta">Max Students: <strong><%= Number(plan.maxStudents || 0).toLocaleString() %></strong></div>
-              <div class="meta">Universities Using Plan: <strong><%= plan.totalTenants || 0 %></strong></div>
+              <div class="meta">Schools Using Plan: <strong><%= plan.totalTenants || 0 %></strong></div>
 
               <div class="meta">
                 Modules:

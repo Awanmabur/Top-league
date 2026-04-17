@@ -1,7 +1,8 @@
 module.exports = {
   form(req, res) {
-    const { Program } = req.models;
-    Program.find().then(programs =>
+    const { Subject } = req.models;
+    const query = Subject ? Subject.find({ status: { $ne: "archived" } }).sort({ title: 1 }) : Promise.resolve([]);
+    query.then(programs =>
       res.render("tenant/auth/register-student", { programs, error: null })
     );
   },

@@ -57,9 +57,9 @@ function getSchoolUi(schoolLevel = "high") {
       ? "Children by Class"
       : "Pupils by Class",
 
-    addLearner: isNursery ? "➕ Add Child" : isPrimary ? "➕ Add Pupil" : "➕ Add Student",
-    addGroup: isHigh ? "➕ Add Stream" : "➕ Add Class",
-    addSubject: isNursery ? "➕ Add Learning Area" : "➕ Add Subject",
+    addLearner: isNursery ? "+ Add Child" : isPrimary ? "+ Add Pupil" : "+ Add Student",
+    addGroup: isHigh ? "+ Add Stream" : "+ Add Class",
+    addSubject: isNursery ? "+ Add Learning Area" : "+ Add Subject",
   };
 }
 

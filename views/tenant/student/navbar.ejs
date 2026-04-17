@@ -3,10 +3,10 @@
 ======================= -->
 <header class="mglass-nav" id="mglassNav">
   <div class="mglass-left">
-    <a class="mglass-home" href="/parent/dashboard" aria-label="Home">
+    <a class="mglass-home" href="/student/dashboard" aria-label="Home">
       <i class="fa fa-house"></i>
     </a>
-    <div class="mglass-title"><%= tenant?.name || "Classic Campus" %></div>
+    <div class="mglass-title"><%= tenant?.name || "Classic Academy" %></div>
   </div>
 
   <button class="mglass-menu" id="mobileMenuBtn" type="button" aria-label="Open menu">
@@ -30,21 +30,21 @@
       <div class="brand-logo">CS</div>
       <div class="brand-meta">
         <h1 class="brand-title">
-          <%= tenant?.name || "Classic Campus" %>
+          <%= tenant?.name || "Classic Academy" %>
         </h1>
-        <div class="brand-sub">Classic Campus SaaS</div>
+        <div class="brand-sub">Classic Academy</div>
       </div>
     </div>
 
     <nav class="nav">
       <div class="navcat">MAIN</div>
       <div class="group">
-        <a class="navbutton active" href="/student/dashboard" data-label="Dashboard"><i
+        <a class="navbutton" href="/student/dashboard" data-label="Dashboard"><i
             class="fa fa-house"></i><span>Dashboard</span></a>
-        <a class="navbutton" href="/student/course-registration" data-label="Course Registration"><i
-            class="fa fa-list-check"></i><span>Course Registration</span></a>
-        <a class="navbutton" href="/student/courses" data-label="My Courses"><i class="fa fa-book-open-reader"></i><span>My
-            Courses</span></a>
+        <a class="navbutton" href="/student/subject-selection" data-label="Subject Selection"><i
+            class="fa fa-list-check"></i><span>Subject Selection</span></a>
+        <a class="navbutton" href="/student/subjects" data-label="My Subjects"><i class="fa fa-book-open-reader"></i><span>My
+            Subjects</span></a>
         <a class="navbutton" href="/student/timetable" data-label="My Timetable"><i class="fa fa-calendar-week"></i><span>My
             Timetable</span></a>
         <a class="navbutton" href="/student/assignments" data-label="Assignments"><i

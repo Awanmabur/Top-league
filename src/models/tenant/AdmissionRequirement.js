@@ -19,9 +19,11 @@ module.exports = (conn) => {
       },
 
       description: { type: String, trim: true, maxlength: 700, default: "" },
+      feeAmount: { type: Number, default: 0, min: 0 },
+      currency: { type: String, trim: true, uppercase: true, default: 'UGX', maxlength: 10 },
 
       appliesToAllPrograms: { type: Boolean, default: true, index: true },
-      programs: { type: [Schema.Types.ObjectId], ref: "Program", default: [], index: true },
+      programs: { type: [Schema.Types.ObjectId], ref: "Section", default: [], index: true },
 
       appliesToAllIntakes: { type: Boolean, default: true, index: true },
       intakes: { type: [Schema.Types.ObjectId], ref: "Intake", default: [], index: true },

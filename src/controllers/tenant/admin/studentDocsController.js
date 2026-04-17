@@ -159,7 +159,7 @@ module.exports = {
         return res.redirect("/admin/student-docs");
       }
 
-      const folder = `classic-campus/${req.tenant?.slug || "tenant"}/student-docs`;
+      const folder = `classic-academy/${req.tenant?.slug || "tenant"}/student-docs`;
       const up = await uploadBuffer(req.file, folder);
 
       await StudentDoc.create({
@@ -231,7 +231,7 @@ module.exports = {
       row.title = title;
 
       if (req.file?.buffer) {
-        const folder = `classic-campus/${req.tenant?.slug || "tenant"}/student-docs`;
+        const folder = `classic-academy/${req.tenant?.slug || "tenant"}/student-docs`;
         const up = await uploadBuffer(req.file, folder);
 
         if (row.doc?.publicId) {

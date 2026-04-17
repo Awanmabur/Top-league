@@ -16,10 +16,9 @@ router.use("/schools", require("../public/schoolsProfiles")); // e.g. /schools
 router.use("/admin", require("../admin"));
 router.use("/student", require("../students"));
 router.use("/parent", require("../parents"));
-router.use("/lecturer", require("../lecturers"));
 router.use("/staff", require("../staff"));
 
-// 5) Public university landing pages LAST (root /)
+// 5) Public school landing pages LAST (root /)
 router.use("/", require("./tenant"));
 
 module.exports = router;

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title><%= (tenant && tenant.name) ? tenant.name : "CampusSaaS" %> — Announcements</title>
+  <title><%= (tenant && tenant.name) ? tenant.name : "Classic Academy" %> — Announcements</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
 
   <link rel="stylesheet"
@@ -318,7 +318,7 @@
     const u = user || {};
     const p = parent || null;
     const rows = Array.isArray(announcements) ? announcements : [];
-    const tenantName = t.name || "CampusSaaS";
+    const tenantName = t.name || "Classic Academy";
     const tenantCode = (t.code || "CC").toString();
     const opts = options || { categories: [], priorities: [] };
 

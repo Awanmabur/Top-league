@@ -55,7 +55,7 @@ module.exports = {
   },
 
   async viewPublic(req, res) {
-    const { Scholarship, Program } = req.models;
+    const { Scholarship } = req.models;
 
     if (!isObjectId(req.params.id)) return res.status(404).send("Invalid ID");
 
@@ -73,7 +73,7 @@ module.exports = {
   },
 
   async applyPage(req, res) {
-    const { Scholarship, Program } = req.models;
+    const { Scholarship, Subject } = req.models;
 
     if (!isObjectId(req.params.id)) return res.status(404).send("Invalid ID");
 
@@ -83,7 +83,9 @@ module.exports = {
 
     if (!scholarship) return res.status(404).send("Scholarship not found");
 
-    const programs = await Program.find({ isDeleted: { $ne: true } }).sort({ name: 1 }).lean();
+    const programs = Subject
+      ? await Subject.find({ status: { $ne: "archived" } }).sort({ title: 1, code: 1 }).lean()
+      : [];
 
     return res.render("tenant/public/scholarships/apply", {
       tenant: req.tenant,
@@ -97,14 +99,16 @@ module.exports = {
   },
 
   async submitApplication(req, res) {
-    const { Scholarship, ScholarshipApplication, Program } = req.models;
+    const { Scholarship, ScholarshipApplication, Subject } = req.models;
 
     if (!isObjectId(req.params.id)) return res.status(404).send("Invalid ID");
 
     const scholarship = await Scholarship.findOne({ _id: req.params.id, isDeleted: { $ne: true } }).lean();
     if (!scholarship) return res.status(404).send("Scholarship not found");
 
-    const programs = await Program.find({ isDeleted: { $ne: true } }).sort({ name: 1 }).lean();
+    const programs = Subject
+      ? await Subject.find({ status: { $ne: "archived" } }).sort({ title: 1, code: 1 }).lean()
+      : [];
 
     const errors = buildErrors(req.body, req.files);
     if (Object.keys(errors).length) {
@@ -120,7 +124,7 @@ module.exports = {
     }
 
     const uploaded = [];
-    const folderBase = process.env.CLOUDINARY_FOLDER || "classic-campus";
+    const folderBase = process.env.CLOUDINARY_FOLDER || "classic-academy";
     const folder = `${folderBase}/${req.tenant?.code || req.tenant?._id || "tenant"}/scholarships`;
 
     const mkDoc = (file, up) => ({

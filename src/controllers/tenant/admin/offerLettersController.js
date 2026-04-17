@@ -39,7 +39,7 @@ async function ensureDefaultTemplate(req) {
 
   if (existing) return existing;
 
-  const tenantName = (req.tenant && req.tenant.name) ? req.tenant.name : "Classic Campus";
+  const tenantName = (req.tenant && req.tenant.name) ? req.tenant.name : "Classic Academy";
 
   const bodyHtml = `
   <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;color:#0f172a;line-height:1.5">
@@ -64,10 +64,10 @@ async function ensureDefaultTemplate(req) {
 
       <p>Congratulations {{fullName}}!</p>
 
-      <p>We are pleased to offer you admission to <b>{{program}}</b> for the <b>{{intake}}</b> intake.</p>
+      <p>We are pleased to offer you admission to <b>{{section}}</b> in the <b>{{intake}}</b> intake.</p>
 
       <div style="background:#f8fbff;border:1px solid rgba(13,64,96,.12);border-radius:14px;padding:12px;margin:10px 0">
-        <div><b>Program:</b> {{program}}</div>
+        <div><b>Section:</b> {{section}}</div>
         <div><b>Intake:</b> {{intake}}</div>
         <div><b>Study Mode:</b> {{studyMode}}</div>
         <div><b>Academic Year:</b> {{academicYear}}</div>
@@ -91,7 +91,7 @@ async function ensureDefaultTemplate(req) {
   const created = await OfferLetterTemplate.create({
     name: "Default Offer Letter",
     isActive: true,
-    subject: "Offer of Admission — {{program}} ({{intake}})",
+    subject: "Offer of Admission — {{section}} ({{intake}})",
     bodyHtml,
     createdBy: req.user ? req.user._id : null,
     updatedBy: req.user ? req.user._id : null,
@@ -125,26 +125,29 @@ async function nextLetterNo(req) {
 module.exports = {
   async index(req, res) {
     try {
-      const { Applicant, OfferLetter, Program, Intake } = req.models;
+      const { Applicant, OfferLetter, Section, Intake } = req.models || {};
+      if (!Applicant || !OfferLetter || !Section || !Intake) {
+        throw new Error("Admissions models are not fully loaded for offer letters.");
+      }
 
       const q = s(req.query.q);
       const intakeId = s(req.query.intakeId);
-      const programId = s(req.query.programId);
+      const programId = s(req.query.sectionId || req.query.programId);
       const status = s(req.query.status);
 
       const intakes = await Intake.find({ isDeleted: { $ne: true } })
         .sort({ isActive: -1, createdAt: -1 })
         .lean();
 
-      const programs = await Program.find({ isDeleted: { $ne: true } })
-        .sort({ createdAt: -1 })
+      const programs = await Section.find({ status: { $ne: "archived" } })
+        .sort({ levelType: 1, classLevel: 1, classStream: 1, name: 1 })
         .lean();
 
       const template = await ensureDefaultTemplate(req);
 
       const acceptedFilter = {
         isDeleted: { $ne: true },
-        status: "accepted",
+        status: { $in: ["accepted", "converted"] },
       };
 
       if (q) {
@@ -159,11 +162,12 @@ module.exports = {
         ];
       }
 
-      if (programId && objId(programId)) acceptedFilter.program1 = objId(programId);
+      if (programId && objId(programId)) acceptedFilter.$and = [{ $or: [{ section1: objId(programId) }, { program1: objId(programId) }] }];
       if (intakeId && objId(intakeId)) acceptedFilter.intakeId = objId(intakeId);
 
       const accepted = await Applicant.find(acceptedFilter)
         .sort({ createdAt: -1, _id: -1 })
+        .populate("section1")
         .populate("program1")
         .lean();
 
@@ -263,14 +267,14 @@ module.exports = {
       const applicant = await Applicant.findOne({
         _id: applicantId,
         isDeleted: { $ne: true }
-      }).populate("program1").lean();
+      }).populate("section1").populate("program1").lean();
 
       if (!applicant) {
         req.flash?.("error", "Applicant not found.");
         return res.redirect("/admin/admissions/offer-letters");
       }
 
-      if (String(applicant.status) !== "accepted") {
+      if (!["accepted", "converted"].includes(String(applicant.status))) {
         req.flash?.("error", "Applicant must be accepted first.");
         return res.redirect("/admin/admissions/offer-letters");
       }
@@ -281,15 +285,17 @@ module.exports = {
       let intakeLabel = s(applicant.intakeCode || applicant.intakeName || applicant.intake);
       if (!intakeLabel && applicant.intakeId) {
         const it = await Intake.findById(applicant.intakeId).lean();
-        if (it) intakeLabel = s(it.code || it.name);
+        if (it) intakeLabel = s(it.name || it.term || it.code);
       }
 
-      const programLabel = (applicant.program1 && (applicant.program1.code || applicant.program1.name || applicant.program1.title))
-        ? ((applicant.program1.code ? applicant.program1.code + " — " : "") + (applicant.program1.name || applicant.program1.title))
-        : "Program";
+      const section = applicant.section1 || applicant.program1 || null;
+      const programLabel = (section && (section.name || section.className || section.code))
+        ? (section.name || section.className || section.code)
+        : "Section";
 
       const subjectLine = renderTemplate(template.subject, {
         program: programLabel,
+        section: programLabel,
         intake: intakeLabel
       });
 
@@ -300,6 +306,7 @@ module.exports = {
         email: s(applicant.email),
         phone: s(applicant.phone),
         program: programLabel,
+        section: programLabel,
         intake: intakeLabel,
         studyMode: s(applicant.studyMode),
         academicYear: s(applicant.academicYear),
@@ -309,7 +316,7 @@ module.exports = {
       await OfferLetter.create({
         letterNo,
         applicant: applicant._id,
-        program: applicant.program1 ? applicant.program1._id : null,
+        program: section ? section._id : null,
         intakeId: applicant.intakeId || null,
         template: template._id,
         subject: subjectLine,

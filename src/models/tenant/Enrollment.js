@@ -10,7 +10,7 @@ module.exports = (connection) => {
       academicYear: { type: String, required: true, trim: true, maxlength: 20, index: true }, // 2025/2026
       semester: { type: Number, min: 1, max: 6, default: 1, index: true },
 
-      program: { type: Schema.Types.ObjectId, ref: "Program", required: true, index: true },
+      program: { type: Schema.Types.ObjectId, ref: "Subject", required: true, index: true },
       classGroup: { type: Schema.Types.ObjectId, ref: "Class", required: true, index: true },
 
       intake: { type: String, trim: true, maxlength: 40, index: true },
