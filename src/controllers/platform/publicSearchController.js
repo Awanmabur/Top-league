@@ -179,7 +179,7 @@ module.exports = {
         andConditions.push({
           $or: [
             { "settings.profile.curriculum": rx },
-            { "settings.profile.programs": rx },
+            { "settings.academics.extraSubjects": rx },
             { "settings.profile.highlights": rx },
           ],
         });

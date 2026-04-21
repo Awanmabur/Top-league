@@ -7,7 +7,7 @@
   <title>Schools — Classic Academy</title>
 
   <meta
-    content="Search schools, compare profiles, view programs and performance, then apply online with Classic Academy."
+    content="Search schools, compare profiles, view subjects and performance, then apply online with Classic Academy."
     name="description" />
   <meta
     content="school search, school admissions, school profiles, online application, Classic Academy"
@@ -900,7 +900,7 @@
         <h1>Find a School <span>Powered by Classic Academy</span></h1>
 
         <p class="schools-sub">
-          Search schools, compare programs and performance, view galleries, see awards, then apply directly online.
+          Search schools, compare subjects and performance, view galleries, see awards, then apply directly online.
         </p>
 
         <div class="schools-stats">
@@ -927,7 +927,7 @@
               autocomplete="off"
               id="schoolsQ"
               name="q"
-              placeholder="Search school name, city, program (e.g. Science, ICT)..."
+              placeholder="Search school name, city, subject (e.g. Science, ICT)..."
               type="search"
               value="<%= q || '' %>" />
           </label>
@@ -957,7 +957,7 @@
             <select id="schoolsSort" name="sort">
               <option value="rank" <%= sort === 'rank' ? 'selected' : '' %>>Sort: Recommended</option>
               <option value="students" <%= sort === 'students' ? 'selected' : '' %>>Students (high → low)</option>
-              <option value="programs" <%= sort === 'programs' ? 'selected' : '' %>>Programs (high → low)</option>
+              <option value="subjects" <%= (sort === 'subjects' || sort === 'programs') ? 'selected' : '' %>>Subjects high to low</option>
               <option value="name" <%= sort === 'name' ? 'selected' : '' %>>Name (A → Z)</option>
             </select>
           </label>
@@ -994,7 +994,7 @@
         <div aria-live="polite" class="schools-empty">
           <div class="schools-empty-icon"><i class="fa-solid fa-face-frown"></i></div>
           <b>No schools match your search</b>
-          <p>Try changing filters, remove chips, or search a different city/program.</p>
+          <p>Try changing filters, remove chips, or search a different city/subject.</p>
         </div>
       <% } else { %>
         <div aria-label="School results" class="schools-grid">
@@ -1084,8 +1084,8 @@
                     <div class="l">Students</div>
                   </div>
                   <div class="school-kpi">
-                    <div class="v"><%= Number(stats.programs || 0).toLocaleString() %></div>
-                    <div class="l">Programs</div>
+                    <div class="v"><%= Number(stats.subjects ?? stats.programs ?? 0).toLocaleString() %></div>
+                    <div class="l">Subjects</div>
                   </div>
                   <div class="school-kpi">
                     <div class="v"><%= Number(awards.length || 0).toLocaleString() %></div>

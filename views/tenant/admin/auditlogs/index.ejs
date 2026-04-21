@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Admin • Audit Logs — Classic Academy</title>
+  <title>Admin - Audit Logs - Classic Academy</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
         crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -187,6 +187,11 @@
               <option value="Warning" <%= query?.status === 'Warning' ? 'selected' : '' %>>Warning</option>
               <option value="Critical" <%= query?.status === 'Critical' ? 'selected' : '' %>>Critical</option>
             </select>
+            <select class="select" name="reviewed">
+              <option value="all" <%= query?.reviewed === 'all' ? 'selected' : '' %>>All Review State</option>
+              <option value="no" <%= query?.reviewed === 'no' ? 'selected' : '' %>>Needs Review</option>
+              <option value="yes" <%= query?.reviewed === 'yes' ? 'selected' : '' %>>Reviewed</option>
+            </select>
             <input class="input" type="date" name="from" value="<%= query?.from || '' %>" />
             <input class="input" type="date" name="to" value="<%= query?.to || '' %>" />
           </div>
@@ -223,7 +228,7 @@
               <div class="section-title" id="panelTitle">Audit Logs</div>
               <div class="section-sub" id="panelSub">Inspect system activity, changes, actors and metadata.</div>
             </div>
-            <div class="muted" id="resultMeta">—</div>
+            <div class="muted" id="resultMeta">-</div>
           </div>
 
           <div id="view-list" style="margin-top:10px;">
@@ -237,6 +242,7 @@
                     <th>Module</th>
                     <th>Entity</th>
                     <th>Severity</th>
+                    <th>Review</th>
                     <th>When</th>
                     <th>IP / Source</th>
                     <th style="text-align:right;width:180px;">Actions</th>
@@ -329,21 +335,21 @@
 
       <div class="modal-body">
         <div class="view-grid">
-          <div class="view-card"><div class="view-label">Actor</div><div class="view-value" id="vActor">—</div></div>
-          <div class="view-card"><div class="view-label">Action</div><div class="view-value" id="vAction">—</div></div>
-          <div class="view-card"><div class="view-label">Module</div><div class="view-value" id="vModule">—</div></div>
-          <div class="view-card"><div class="view-label">Entity</div><div class="view-value" id="vEntity">—</div></div>
-          <div class="view-card"><div class="view-label">Severity</div><div class="view-value" id="vSeverity">—</div></div>
-          <div class="view-card"><div class="view-label">When</div><div class="view-value" id="vWhen">—</div></div>
-          <div class="view-card"><div class="view-label">IP Address</div><div class="view-value" id="vIp">—</div></div>
-          <div class="view-card"><div class="view-label">Source</div><div class="view-value" id="vSource">—</div></div>
+          <div class="view-card"><div class="view-label">Actor</div><div class="view-value" id="vActor">-</div></div>
+          <div class="view-card"><div class="view-label">Action</div><div class="view-value" id="vAction">-</div></div>
+          <div class="view-card"><div class="view-label">Module</div><div class="view-value" id="vModule">-</div></div>
+          <div class="view-card"><div class="view-label">Entity</div><div class="view-value" id="vEntity">-</div></div>
+          <div class="view-card"><div class="view-label">Severity</div><div class="view-value" id="vSeverity">-</div></div>
+          <div class="view-card"><div class="view-label">When</div><div class="view-value" id="vWhen">-</div></div>
+          <div class="view-card"><div class="view-label">IP Address</div><div class="view-value" id="vIp">-</div></div>
+          <div class="view-card"><div class="view-label">Source</div><div class="view-value" id="vSource">-</div></div>
         </div>
 
         <div class="view-section-title">Metadata</div>
-        <div class="view-message" id="vMeta">—</div>
+        <div class="view-message" id="vMeta">-</div>
 
         <div class="view-section-title" style="margin-top:12px;">Before / After</div>
-        <div class="view-message" id="vDiff">—</div>
+        <div class="view-message" id="vDiff">-</div>
       </div>
 
       <div class="modal-footer">
@@ -352,8 +358,8 @@
     </div>
   </div>
 
-  <textarea id="logsData" class="json-data" aria-hidden="true"><%- JSON.stringify(logs || []) %></textarea>
-  <textarea id="analyticsData" class="json-data" aria-hidden="true"><%- JSON.stringify(analytics || []) %></textarea>
+  <textarea id="logsData" class="json-data" aria-hidden="true"><%- JSON.stringify(logs || []).replace(/</g, "\\u003c") %></textarea>
+  <textarea id="analyticsData" class="json-data" aria-hidden="true"><%- JSON.stringify(analytics || []).replace(/</g, "\\u003c") %></textarea>
 
   <script src="/js/navbar.js"></script>
   <script src="/js/auditlogs.js"></script>

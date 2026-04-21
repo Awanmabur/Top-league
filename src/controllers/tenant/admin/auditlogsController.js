@@ -8,6 +8,15 @@ const asDate = (v) => {
   return Number.isNaN(d.getTime()) ? null : d;
 };
 
+const escapeRegExp = (value) => String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const actorObjectId = (req) => {
+  const raw = req.user?.userId || req.user?._id || req.session?.tenantUser?.id || null;
+  return raw && mongoose.Types.ObjectId.isValid(String(raw))
+    ? new mongoose.Types.ObjectId(String(raw))
+    : null;
+};
+
 function pretty(obj) {
   try {
     return JSON.stringify(obj || {}, null, 2);
@@ -17,9 +26,9 @@ function pretty(obj) {
 }
 
 function formatDateTime(v) {
-  if (!v) return "—";
+  if (!v) return "-";
   const d = new Date(v);
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return "-";
   return d.toISOString().slice(0, 16).replace("T", " ");
 }
 
@@ -37,6 +46,8 @@ function serializeLog(doc) {
     ipAddress: doc.ipAddress || "",
     source: doc.source || "",
     createdAt: formatDateTime(doc.createdAt),
+    reviewed: !!doc.reviewed,
+    reviewedAt: formatDateTime(doc.reviewedAt),
     metadataPretty: pretty(doc.metadata),
     diffPretty: pretty({
       before: doc.before || null,
@@ -80,7 +91,7 @@ function buildAnalytics(logs) {
         critical: 0,
         warnings: 0,
         actors: new Set(),
-        latest: "—",
+        latest: "-",
         latestDate: null,
       });
     }
@@ -91,7 +102,7 @@ function buildAnalytics(logs) {
     if (log.severity === "Warning") row.warnings += 1;
     if (log.actor) row.actors.add(log.actor);
 
-    const d = log.createdAt && log.createdAt !== "—" ? new Date(log.createdAt.replace(" ", "T")) : null;
+    const d = log.createdAt && log.createdAt !== "-" ? new Date(log.createdAt.replace(" ", "T")) : null;
     if (d && !Number.isNaN(d.getTime()) && (!row.latestDate || d > row.latestDate)) {
       row.latestDate = d;
       row.latest = log.createdAt;
@@ -108,48 +119,127 @@ function buildAnalytics(logs) {
   }));
 }
 
+function buildQuery(req) {
+  const q = str(req.query.q);
+  const action = str(req.query.action || "all");
+  const moduleName = str(req.query.module || "all");
+  const status = str(req.query.status || "all");
+  const reviewed = str(req.query.reviewed || "all");
+  const from = str(req.query.from || "");
+  const to = str(req.query.to || "");
+
+  const query = { isDeleted: { $ne: true } };
+
+  if (q) {
+    const rx = new RegExp(escapeRegExp(q), "i");
+    query.$or = [
+      { actorName: rx },
+      { actorEmail: rx },
+      { action: rx },
+      { module: rx },
+      { entityType: rx },
+      { entityLabel: rx },
+      { source: rx },
+    ];
+  }
+
+  if (action !== "all") query.action = action;
+  if (moduleName !== "all") query.module = moduleName;
+  if (status !== "all") query.severity = status;
+  if (reviewed === "yes") query.reviewed = true;
+  if (reviewed === "no") query.reviewed = { $ne: true };
+
+  const fromDate = asDate(from);
+  const toDate = asDate(to);
+  if (fromDate || toDate) {
+    query.createdAt = {};
+    if (fromDate) query.createdAt.$gte = fromDate;
+    if (toDate) {
+      const end = new Date(toDate);
+      end.setHours(23, 59, 59, 999);
+      query.createdAt.$lte = end;
+    }
+  }
+
+  return {
+    mongo: query,
+    clean: {
+      q,
+      action,
+      module: moduleName,
+      status,
+      reviewed,
+      from,
+      to,
+    },
+  };
+}
+
+function parseIds(value) {
+  const raw = Array.isArray(value) ? value.join(",") : String(value || "");
+  return raw
+    .split(",")
+    .map((x) => x.trim())
+    .filter((x) => mongoose.Types.ObjectId.isValid(x))
+    .map((x) => new mongoose.Types.ObjectId(x));
+}
+
+function csvCell(value) {
+  const text = String(value ?? "");
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
+function toCsv(rows) {
+  const header = [
+    "When",
+    "Actor",
+    "Actor Email",
+    "Action",
+    "Module",
+    "Entity Type",
+    "Entity Label",
+    "Severity",
+    "Reviewed",
+    "IP Address",
+    "Source",
+  ];
+
+  const lines = rows.map((row) => [
+    row.createdAt,
+    row.actor,
+    row.actorEmail,
+    row.action,
+    row.module,
+    row.entityType,
+    row.entityLabel,
+    row.severity,
+    row.reviewed ? "Yes" : "No",
+    row.ipAddress,
+    row.source,
+  ].map(csvCell).join(","));
+
+  return [header.map(csvCell).join(","), ...lines].join("\n");
+}
+
 module.exports = {
   index: async (req, res) => {
     const { AuditLog } = req.models;
 
-    const q = str(req.query.q);
-    const action = str(req.query.action || "all");
-    const moduleName = str(req.query.module || "all");
-    const status = str(req.query.status || "all");
-    const from = str(req.query.from || "");
-    const to = str(req.query.to || "");
-
-    const query = { isDeleted: { $ne: true } };
-
-    if (q) {
-      query.$or = [
-        { actorName: new RegExp(q, "i") },
-        { actorEmail: new RegExp(q, "i") },
-        { action: new RegExp(q, "i") },
-        { module: new RegExp(q, "i") },
-        { entityType: new RegExp(q, "i") },
-        { entityLabel: new RegExp(q, "i") },
-        { source: new RegExp(q, "i") },
-      ];
+    if (!AuditLog) {
+      return res.render("tenant/admin/auditlogs/index", {
+        tenant: req.tenant,
+        csrfToken: req.csrfToken?.(),
+        logs: [],
+        analytics: [],
+        stats: { today: 0, critical: 0, actors: 0, modules: 0 },
+        filters: { actions: [], modules: [] },
+        query: { q: "", action: "all", module: "all", status: "all", reviewed: "all", from: "", to: "" },
+      });
     }
 
-    if (action !== "all") query.action = action;
-    if (moduleName !== "all") query.module = moduleName;
-    if (status !== "all") query.severity = status;
+    const { mongo: query, clean } = buildQuery(req);
 
-    const fromDate = asDate(from);
-    const toDate = asDate(to);
-    if (fromDate || toDate) {
-      query.createdAt = {};
-      if (fromDate) query.createdAt.$gte = fromDate;
-      if (toDate) {
-        const end = new Date(toDate);
-        end.setHours(23, 59, 59, 999);
-        query.createdAt.$lte = end;
-      }
-    }
-
-    const docs = await AuditLog.find(query).sort({ createdAt: -1 }).lean();
+    const docs = await AuditLog.find(query).sort({ createdAt: -1 }).limit(500).lean();
     const logs = docs.map(serializeLog);
 
     const allDocs = await AuditLog.find({ isDeleted: { $ne: true } })
@@ -169,13 +259,47 @@ module.exports = {
       stats: buildStats(logs),
       filters,
       query: {
-        q,
-        action,
-        module: moduleName,
-        status,
-        from,
-        to,
+        ...clean,
       },
+    });
+  },
+
+  exportCsv: async (req, res) => {
+    const { AuditLog } = req.models;
+    if (!AuditLog) return res.status(404).send("Audit log model is not available.");
+
+    const { mongo } = buildQuery(req);
+    const ids = parseIds(req.query.ids);
+    if (ids.length) mongo._id = { $in: ids };
+
+    const docs = await AuditLog.find(mongo).sort({ createdAt: -1 }).limit(5000).lean();
+    const csv = toCsv(docs.map(serializeLog));
+
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="audit-logs-${Date.now()}.csv"`);
+    return res.send(csv);
+  },
+
+  markReviewed: async (req, res) => {
+    const { AuditLog } = req.models;
+    if (!AuditLog) return res.status(404).json({ ok: false, message: "Audit log model is not available." });
+
+    const ids = parseIds(req.body.ids);
+    const { mongo } = buildQuery(req);
+    const filter = ids.length ? { _id: { $in: ids }, isDeleted: { $ne: true } } : mongo;
+
+    const result = await AuditLog.updateMany(filter, {
+      $set: {
+        reviewed: true,
+        reviewedAt: new Date(),
+        reviewedBy: actorObjectId(req),
+      },
+    });
+
+    return res.json({
+      ok: true,
+      matched: result.matchedCount || result.n || 0,
+      modified: result.modifiedCount || result.nModified || 0,
     });
   },
 };

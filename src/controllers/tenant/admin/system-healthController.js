@@ -4,6 +4,7 @@ const actorUserId = (req) =>
   req.user?.userId || req.user?._id || req.session?.tenantUser?.id || null;
 
 const str = (v) => String(v ?? "").trim();
+const escapeRegExp = (value) => String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 function pretty(obj) {
   try {
@@ -14,9 +15,9 @@ function pretty(obj) {
 }
 
 function formatDateTime(v) {
-  if (!v) return "—";
+  if (!v) return "-";
   const d = new Date(v);
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return "-";
   return d.toISOString().slice(0, 16).replace("T", " ");
 }
 
@@ -28,12 +29,12 @@ function serializeService(doc) {
     region: doc.region || "",
     host: doc.host || "",
     status: doc.status || "Healthy",
-    uptime: doc.metrics?.uptime || "—",
-    latency: doc.metrics?.latency || "—",
-    load: doc.metrics?.load || "—",
+    uptime: doc.metrics?.uptime || "-",
+    latency: doc.metrics?.latency || "-",
+    load: doc.metrics?.load || "-",
     errorRate: doc.metrics?.errorRate || "0%",
-    cpu: doc.metrics?.cpu || "—",
-    memory: doc.metrics?.memory || "—",
+    cpu: doc.metrics?.cpu || "-",
+    memory: doc.metrics?.memory || "-",
     lastCheckedAt: formatDateTime(doc.lastCheckedAt),
     metaPretty: pretty({
       host: doc.host || "",
@@ -98,12 +99,13 @@ module.exports = {
     const query = { isDeleted: { $ne: true } };
 
     if (q) {
+      const rx = new RegExp(escapeRegExp(q), "i");
       query.$or = [
-        { serviceName: new RegExp(q, "i") },
-        { host: new RegExp(q, "i") },
-        { type: new RegExp(q, "i") },
-        { region: new RegExp(q, "i") },
-        { status: new RegExp(q, "i") },
+        { serviceName: rx },
+        { host: rx },
+        { type: rx },
+        { region: rx },
+        { status: rx },
       ];
     }
 
@@ -136,7 +138,7 @@ module.exports = {
     const serviceName = str(req.body.serviceName);
     if (!serviceName) {
       req.flash?.("error", "Service name is required.");
-      return res.redirect("/admin/system-health");
+      return res.redirect("/admin/system");
     }
 
     await SystemHealth.create({
@@ -150,11 +152,11 @@ module.exports = {
       lastCheckedAt: new Date(),
       metrics: {
         uptime: str(req.body.uptime || "0%"),
-        latency: str(req.body.latency || "—"),
-        load: "—",
+        latency: str(req.body.latency || "-"),
+        load: "-",
         errorRate: "0%",
-        cpu: "—",
-        memory: "—",
+        cpu: "-",
+        memory: "-",
       },
       incidents: [
         {
@@ -171,31 +173,31 @@ module.exports = {
     });
 
     req.flash?.("success", "System health item saved successfully.");
-    return res.redirect("/admin/system-health");
+    return res.redirect("/admin/system");
   },
 
   markHealthy: async (req, res) => {
     const { SystemHealth } = req.models;
-    if (!mongoose.Types.ObjectId.isValid(String(req.params.id || ""))) return res.redirect("/admin/system-health");
+    if (!mongoose.Types.ObjectId.isValid(String(req.params.id || ""))) return res.redirect("/admin/system");
 
     await SystemHealth.updateOne(
       { _id: req.params.id, isDeleted: { $ne: true } },
       { $set: { status: "Healthy", lastCheckedAt: new Date(), updatedBy: actorUserId(req) } }
     );
 
-    return res.redirect("/admin/system-health");
+    return res.redirect("/admin/system");
   },
 
   markMaintenance: async (req, res) => {
     const { SystemHealth } = req.models;
-    if (!mongoose.Types.ObjectId.isValid(String(req.params.id || ""))) return res.redirect("/admin/system-health");
+    if (!mongoose.Types.ObjectId.isValid(String(req.params.id || ""))) return res.redirect("/admin/system");
 
     await SystemHealth.updateOne(
       { _id: req.params.id, isDeleted: { $ne: true } },
       { $set: { status: "Maintenance", lastCheckedAt: new Date(), updatedBy: actorUserId(req) } }
     );
 
-    return res.redirect("/admin/system-health");
+    return res.redirect("/admin/system");
   },
 
   bulkAction: async (req, res) => {
@@ -207,7 +209,7 @@ module.exports = {
       .filter((x) => mongoose.Types.ObjectId.isValid(x));
 
     const action = str(req.body.action);
-    if (!ids.length || !action) return res.redirect("/admin/system-health");
+    if (!ids.length || !action) return res.redirect("/admin/system");
 
     const patch = { updatedBy: actorUserId(req), lastCheckedAt: new Date() };
 
@@ -216,7 +218,7 @@ module.exports = {
     } else if (action === "maintenance") {
       patch.status = "Maintenance";
     } else {
-      return res.redirect("/admin/system-health");
+      return res.redirect("/admin/system");
     }
 
     await SystemHealth.updateMany(
@@ -224,6 +226,6 @@ module.exports = {
       { $set: patch }
     );
 
-    return res.redirect("/admin/system-health");
+    return res.redirect("/admin/system");
   },
 };

@@ -22,6 +22,7 @@ module.exports = {
         Notification,
         User,
         AuditLog,
+        SystemHealth,
       } = models;
 
       const now = new Date();
@@ -53,63 +54,92 @@ module.exports = {
       };
 
       // KPIs
+      const activeStudentFilter = { isDeleted: { $ne: true } };
+      const activeInvoiceFilter = { isDeleted: { $ne: true } };
+      const activePaymentFilter = { isDeleted: { $ne: true } };
+      const pendingApplicantStatuses = ["submitted", "under_review"];
+      const acceptedApplicantStatuses = ["accepted", "converted"];
+      const unpaidInvoiceStatuses = ["Unpaid", "Partially Paid", "Overdue"];
+
       const [
         totalStudents,
         newStudentsThisMonth,
         pendingApps,
         submittedApps,
-        verifiedApps,
+        inReviewApps,
         acceptedApps,
         outstandingFeesAgg,
-        studentsOwing,
+        studentsOwingAgg,
         activeUsers,
+        notificationsCount,
       ] = await Promise.all([
-        safeCount(Student),
-        safeCount(Student, { createdAt: { $gte: startOfMonth } }),
-        safeCount(Applicant, { status: { $in: ["pending", "submitted", "under_review"] } }),
-        safeCount(Applicant, { createdAt: { $gte: startOfMonth } }),
-        safeCount(Applicant, { status: "verified", createdAt: { $gte: startOfMonth } }),
-        safeCount(Applicant, { status: "accepted", createdAt: { $gte: startOfMonth } }),
+        safeCount(Student, activeStudentFilter),
+        safeCount(Student, { ...activeStudentFilter, createdAt: { $gte: startOfMonth } }),
+        safeCount(Applicant, { isDeleted: { $ne: true }, status: { $in: pendingApplicantStatuses } }),
+        safeCount(Applicant, { isDeleted: { $ne: true }, status: "submitted", createdAt: { $gte: startOfMonth } }),
+        safeCount(Applicant, { isDeleted: { $ne: true }, status: "under_review", createdAt: { $gte: startOfMonth } }),
+        safeCount(Applicant, { isDeleted: { $ne: true }, status: { $in: acceptedApplicantStatuses }, createdAt: { $gte: startOfMonth } }),
         safeAggregate(Invoice, [
         {
           $match: {
-            status: { $in: ["pending", "partial", "overdue"] },
+            ...activeInvoiceFilter,
+            status: { $in: unpaidInvoiceStatuses },
           },
         },
         {
           $group: {
             _id: null,
-            total: { $sum: { $ifNull: ["$balance", "$amount"] } },
+            total: { $sum: "$balance" },
           },
         },
         ]),
-        safeCount(Invoice, { status: { $in: ["pending", "partial", "overdue"] } }),
-        safeCount(User, { isActive: true }),
+        safeAggregate(Invoice, [
+          {
+            $match: {
+              ...activeInvoiceFilter,
+              status: { $in: unpaidInvoiceStatuses },
+              balance: { $gt: 0 },
+            },
+          },
+          {
+            $group: {
+              _id: "$studentId",
+            },
+          },
+          { $count: "total" },
+        ]),
+        safeCount(User, { status: "active", deletedAt: null }),
+        safeCount(Notification, {
+          isDeleted: { $ne: true },
+          isRead: { $ne: true },
+          audience: { $in: ["admin", "all"] },
+        }),
       ]);
 
       const outstandingFees = outstandingFeesAgg[0]?.total || 0;
+      const studentsOwing = studentsOwingAgg[0]?.total || 0;
 
-      const portalUptime = 98;
-      const avgReviewTime = "48 hrs";
+      const avgReviewTime = await computeAverageReviewTime(Applicant, startOfMonth);
 
       // Admissions snapshot
       const admissionsTotal =
-        submittedApps > 0 ? submittedApps : Math.max(pendingApps + verifiedApps + acceptedApps, 1);
+        submittedApps + inReviewApps + acceptedApps || Math.max(pendingApps, 1);
 
       const submittedPct = admissionsTotal ? Math.round((submittedApps / admissionsTotal) * 100) : 0;
-      const verifiedPct = admissionsTotal ? Math.round((verifiedApps / admissionsTotal) * 100) : 0;
+      const verifiedPct = admissionsTotal ? Math.round((inReviewApps / admissionsTotal) * 100) : 0;
       const acceptedPct = admissionsTotal ? Math.round((acceptedApps / admissionsTotal) * 100) : 0;
 
       const countriesAgg = await safeAggregate(Applicant, [
         {
           $match: {
+            isDeleted: { $ne: true },
             createdAt: { $gte: thirtyDaysAgo },
-            country: { $exists: true, $ne: null, $ne: "" },
+            nationality: { $exists: true, $ne: null, $ne: "" },
           },
         },
         {
           $group: {
-            _id: "$country",
+            _id: "$nationality",
             count: { $sum: 1 },
           },
         },
@@ -126,6 +156,8 @@ module.exports = {
         color: countryColors[index] || "#94a3b8",
       }));
 
+      const portalUptime = await computePortalUptime(SystemHealth);
+
       // Distribution data
       let departments = [];
 
@@ -133,6 +165,7 @@ module.exports = {
         const classAgg = await safeAggregate(Student, [
           {
             $match: {
+              isDeleted: { $ne: true },
               classLevel: { $exists: true, $ne: null, $ne: "" },
             },
           },
@@ -158,16 +191,20 @@ module.exports = {
       if (AuditLog) {
         const logs = await safeFind(
           AuditLog,
-          {},
-          "action actorName createdAt meta",
+          { isDeleted: { $ne: true } },
+          "action actorName actorEmail module entityLabel createdAt",
           {
             sort: { createdAt: -1 },
-            limit: 6,
+            limit: 10,
           }
         );
 
         recentActivity = logs.map((log) => ({
-          text: log.action || "Activity recorded",
+          text: [
+            log.action || "Activity recorded",
+            log.module ? `in ${log.module}` : "",
+            log.entityLabel ? `(${log.entityLabel})` : "",
+          ].filter(Boolean).join(" "),
           time: formatTimeAgo(log.createdAt),
         }));
       }
@@ -187,7 +224,7 @@ module.exports = {
       if (Announcement) {
         const rows = await safeFind(
           Announcement,
-          {},
+          { isDeleted: { $ne: true } },
           "title status createdAt",
           {
             sort: { createdAt: -1 },
@@ -205,7 +242,7 @@ module.exports = {
       let recentStudents = [];
 
       if (Student) {
-        const rows = await Student.find({})
+        const rows = await Student.find({ isDeleted: { $ne: true } })
           .sort({ createdAt: -1 })
           .limit(5)
           .lean();
@@ -216,9 +253,9 @@ module.exports = {
             s.name ||
             `${s.firstName || ""} ${s.lastName || ""}`.trim() ||
             "Student",
-          program: [s.classLevel, s.section || s.stream].filter(Boolean).join(" ") || s.className || "—",
-          status: s.status || "Active",
-          balance: formatMoney(s.balance || 0, tenant?.currency || "USD"),
+          group: [s.classLevel, s.section || s.stream].filter(Boolean).join(" ") || s.className || "-",
+          status: capitalize(String(s.status || "active").replace(/_/g, " ")),
+          balance: formatMoney(s.financeBalance || 0, tenant?.currency || "USD"),
         }));
       }
 
@@ -227,7 +264,8 @@ module.exports = {
 
       if (Applicant) {
         const rows = await Applicant.find({
-          status: { $in: ["pending", "submitted", "under_review"] },
+          isDeleted: { $ne: true },
+          status: { $in: pendingApplicantStatuses },
         })
           .sort({ createdAt: -1 })
           .limit(5)
@@ -242,10 +280,10 @@ module.exports = {
             a.name ||
             `${a.firstName || ""} ${a.lastName || ""}`.trim() ||
             "Applicant",
-          program: a.section1
-            ? ((a.section1.code ? `${a.section1.code} — ` : "") + (a.section1.name || a.section1.className || "Section"))
-            : (a.program1 ? ((a.program1.code ? `${a.program1.code} — ` : "") + (a.program1.name || a.program1.className || "Section")) : "—"),
-          country: a.nationality || "—",
+          group: a.section1
+            ? ((a.section1.code ? `${a.section1.code} - ` : "") + (a.section1.name || a.section1.className || "Section"))
+            : (a.program1 ? ((a.program1.code ? `${a.program1.code} - ` : "") + (a.program1.name || a.program1.className || "Section")) : "-"),
+          country: a.nationality || "-",
         }));
       }
 
@@ -254,8 +292,9 @@ module.exports = {
         safeAggregate(Payment, [
         {
           $match: {
-            createdAt: { $gte: startOfMonth },
-            status: { $in: ["paid", "completed", "success"] },
+            ...activePaymentFilter,
+            paymentDate: { $gte: startOfMonth },
+            status: "Completed",
           },
         },
         {
@@ -269,8 +308,9 @@ module.exports = {
         safeAggregate(Payment, [
         {
           $match: {
-            createdAt: { $gte: startOfMonth },
-            status: "refunded",
+            ...activePaymentFilter,
+            paymentDate: { $gte: startOfMonth },
+            status: "Refunded",
           },
         },
         {
@@ -284,9 +324,10 @@ module.exports = {
         safeAggregate(Payment, [
         {
           $match: {
-            createdAt: { $gte: startOfMonth },
-            channel: { $in: ["cash", "bank", "offline"] },
-            status: { $in: ["paid", "completed", "success"] },
+            ...activePaymentFilter,
+            paymentDate: { $gte: startOfMonth },
+            method: { $in: ["Cash", "Bank", "Cheque", "Transfer"] },
+            status: "Completed",
           },
         },
         {
@@ -299,8 +340,9 @@ module.exports = {
         safeAggregate(Payment, [
         {
           $match: {
-            status: { $in: ["paid", "completed", "success"] },
-            createdAt: {
+            ...activePaymentFilter,
+            status: "Completed",
+            paymentDate: {
               $gte: new Date(now.getFullYear(), now.getMonth() - 11, 1),
             },
           },
@@ -308,8 +350,8 @@ module.exports = {
         {
           $group: {
             _id: {
-              month: { $month: "$createdAt" },
-              year: { $year: "$createdAt" },
+              month: { $month: "$paymentDate" },
+              year: { $year: "$paymentDate" },
             },
             total: { $sum: "$amount" },
           },
@@ -328,12 +370,14 @@ module.exports = {
       // Revenue trend
 
       const revenue = buildMonthlySeries(monthlyRevenueAgg, now);
+      const systemStatus = await buildSystemStatus(SystemHealth, portalUptime);
 
       const dashboardData = {
         studentsTrend: buildSoftTrend(totalStudents, newStudentsThisMonth, 15),
         appsTrend: buildSoftTrend(pendingApps, submittedApps, 15),
         feesTrend: buildSoftTrend(outstandingFees, studentsOwing, 15),
-        uptimeTrend: [99, 99, 98.9, 99.1, 98.7, 98.9, 99.2, 98.8, 99, 98.6, 98.9, 99.1, 98.9, 98.8, 98],
+        uptimeTrend: buildFlatTrend(portalUptime, 15),
+        notificationsCount,
         countries,
         departments,
         recentStudents,
@@ -341,15 +385,10 @@ module.exports = {
         revenue,
         recentActivity,
         announcements,
-        systemStatus: {
-          uptime: 99.2,
-          errors24h: 13,
-          dbLag: "0s",
-          storage: 64,
-        },
+        systemStatus,
         admissions: {
           submitted: submittedApps,
-          verified: verifiedApps,
+          verified: inReviewApps,
           accepted: acceptedApps,
           submittedPct,
           verifiedPct,
@@ -467,6 +506,87 @@ function formatTimeAgo(date) {
   return new Date(date).toLocaleDateString();
 }
 
+function parsePercent(value, fallback = 0) {
+  const num = Number(String(value ?? "").replace("%", "").trim());
+  return Number.isFinite(num) ? num : fallback;
+}
+
+async function computeAverageReviewTime(Applicant, startOfMonth) {
+  if (!Applicant) return "N/A";
+
+  const rows = await Applicant.aggregate([
+    {
+      $match: {
+        isDeleted: { $ne: true },
+        decidedAt: { $ne: null, $gte: startOfMonth },
+        createdAt: { $ne: null },
+      },
+    },
+    {
+      $project: {
+        hours: {
+          $divide: [{ $subtract: ["$decidedAt", "$createdAt"] }, 1000 * 60 * 60],
+        },
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        avg: { $avg: "$hours" },
+      },
+    },
+  ]);
+
+  const hours = rows[0]?.avg;
+  if (!Number.isFinite(hours)) return "N/A";
+  if (hours < 24) return `${Math.max(1, Math.round(hours))} hrs`;
+  return `${Math.round(hours / 24)} days`;
+}
+
+async function computePortalUptime(SystemHealth) {
+  if (!SystemHealth) return 100;
+
+  const rows = await SystemHealth.find({ isDeleted: { $ne: true } })
+    .select("metrics.uptime")
+    .lean();
+
+  const values = rows
+    .map((row) => parsePercent(row.metrics?.uptime, NaN))
+    .filter((value) => Number.isFinite(value));
+
+  if (!values.length) return 100;
+  const avg = values.reduce((sum, value) => sum + value, 0) / values.length;
+  return Math.round(avg * 10) / 10;
+}
+
+async function buildSystemStatus(SystemHealth, uptime) {
+  if (!SystemHealth) {
+    return { uptime, errors24h: 0, dbLag: "0s", storage: 0 };
+  }
+
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const services = await SystemHealth.find({ isDeleted: { $ne: true } })
+    .select("type status metrics lastCheckedAt updatedAt incidents")
+    .lean();
+
+  const errors24h = services.filter((service) => {
+    const changedAt = service.lastCheckedAt || service.updatedAt;
+    return ["Critical", "Warning"].includes(service.status) && changedAt && new Date(changedAt) >= since;
+  }).length;
+
+  const storage = services.find((service) => service.type === "Storage");
+  const storageValue = storage
+    ? parsePercent(storage.metrics?.memory || storage.metrics?.load || storage.metrics?.uptime, 0)
+    : 0;
+
+  return {
+    uptime,
+    errors24h,
+    dbLag: "0s",
+    storage: storageValue,
+  };
+}
+
 function buildSoftTrend(primaryValue = 0, secondaryValue = 0, length = 15) {
   const base = Number(primaryValue || 0);
   const delta = Number(secondaryValue || 0);
@@ -474,6 +594,11 @@ function buildSoftTrend(primaryValue = 0, secondaryValue = 0, length = 15) {
   const step = Math.max(1, Math.round((base - start) / Math.max(1, length - 1)));
 
   return Array.from({ length }, (_, i) => start + step * i);
+}
+
+function buildFlatTrend(value = 0, length = 15) {
+  const base = Number(value || 0);
+  return Array.from({ length }, () => base);
 }
 
 function buildMonthlySeries(agg = [], now = new Date()) {

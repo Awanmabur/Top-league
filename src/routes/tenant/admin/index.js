@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const adminBellNotifications = require("../../../middleware/tenant/adminBellNotifications");
+const auditAdminActions = require("../../../middleware/tenant/auditAdminActions");
 const requireTenantAuth = require("../../../middleware/tenant/requireTenantAuth");
 const setLocals = require("../../../middleware/tenant/setLocals");
 
@@ -16,9 +17,19 @@ router.use(resolveTenantAccess);
 router.use(requireTenantAuth("admin"));
 router.use(setLocals);
 router.use(adminBellNotifications);
+router.use(auditAdminActions);
 
 // Default admin landing
 router.get("/", (req, res) => res.redirect("/admin/dashboard"));
+router.get("/audit-log", (req, res) => res.redirect("/admin/auditlogs"));
+router.get("/applications", (req, res) => res.redirect("/admin/admissions/applicants"));
+router.get("/applications/export/csv", (req, res) => res.redirect("/admin/admissions/applicants/export"));
+router.get("/applications/:id", (req, res) => res.redirect(`/admin/admissions/applicants/${req.params.id}`));
+router.get("/system-health", (req, res) => res.redirect("/admin/system"));
+router.get("/search", (req, res) => {
+  const q = String(req.query.q || "").trim();
+  return res.redirect(q ? `/admin/students?q=${encodeURIComponent(q)}` : "/admin/students");
+});
 router.get("/applicants", (req, res) => res.redirect("/admin/admissions/applicants"));
 router.get("/intakes", (req, res) => res.redirect("/admin/admissions/intakes"));
 router.get("/requirements", (req, res) => res.redirect("/admin/admissions/requirements"));

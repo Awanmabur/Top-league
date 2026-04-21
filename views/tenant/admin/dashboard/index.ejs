@@ -14,7 +14,7 @@
       <div class="topbar-left">
         <div class="page-title">
           <h2>Dashboard Overview</h2>
-          <p>Welcome back, <%= user?.name || user?.fullName || "Admin" %> — here's what's happening across your <%= ui.schoolWord %></p>
+          <p>Welcome back, <%= user?.name || user?.fullName || "Admin" %> - here's what's happening across your <%= ui.schoolWord %></p>
         </div>
 
         <div class="topbar-right">
@@ -94,7 +94,7 @@
         <div class="stat-head">
           <div>
             <div class="label">Portal Health</div>
-            <div class="value" id="portalUptime"><%= stats?.portalUptime || 98 %>%</div>
+            <div class="value" id="portalUptime"><%= stats?.portalUptime ?? 98 %>%</div>
           </div>
           <div class="stat-meta">
             <span>Active users</span>
@@ -109,11 +109,11 @@
       <div class="card-head">
         <div>
           <h3>Admissions Snapshot</h3>
-          <p>Intake: Live • Current Month</p>
+          <p>Intake: Live - Current Month</p>
         </div>
         <div class="card-actions">
-          <a class="btn" href="/admin/applications">View Applications</a>
-          <a class="btn secondary" href="/admin/applications/export/csv">Export CSV</a>
+          <a class="btn" href="/admin/admissions/applicants">View Applications</a>
+          <a class="btn secondary" href="/admin/admissions/applicants/export">Export CSV</a>
         </div>
       </div>
 
@@ -122,7 +122,7 @@
           <div class="kpi"><span>Submitted</span><strong><%= dashboardData?.admissions?.submitted || 0 %></strong></div>
           <div class="bar"><div class="barfill" style="width:<%= dashboardData?.admissions?.submittedPct || 0 %>%"></div></div>
 
-          <div class="kpi"><span>Verified</span><strong><%= dashboardData?.admissions?.verified || 0 %></strong></div>
+          <div class="kpi"><span>In Review</span><strong><%= dashboardData?.admissions?.verified || 0 %></strong></div>
           <div class="bar"><div class="barfill" style="width:<%= dashboardData?.admissions?.verifiedPct || 0 %>%"></div></div>
 
           <div class="kpi"><span>Accepted</span><strong><%= dashboardData?.admissions?.accepted || 0 %></strong></div>
@@ -131,7 +131,7 @@
 
         <div class="softbox">
           <div class="softhead">
-            <h4>Top Areas</h4>
+            <h4>Top Nationalities</h4>
             <span>last 30 days</span>
           </div>
 
@@ -167,7 +167,7 @@
           </div>
           <div class="card-actions">
             <a class="btn secondary" href="/admin/helpdesk">Helpdesk</a>
-            <a class="btn" href="/admin/audit-log">Audit Log</a>
+            <a class="btn" href="/admin/auditlogs">Audit Logs</a>
           </div>
         </div>
 
@@ -192,7 +192,7 @@
             <p>Internal updates</p>
           </div>
           <div class="card-actions">
-            <a class="btn" href="/admin/announcements/new">New</a>
+            <a class="btn" href="/admin/announcements">New</a>
             <a class="btn secondary" href="/admin/announcements">Manage</a>
           </div>
         </div>
@@ -201,7 +201,7 @@
           <% if (dashboardData?.announcements?.length) { %>
             <% dashboardData.announcements.forEach(item => { %>
               <div class="list-item">
-                📣 <%= item.title %>
+                <i class="fa-solid fa-bullhorn"></i> <%= item.title %>
                 <span class="muted"><%= item.status %></span>
               </div>
             <% }) %>
@@ -218,30 +218,30 @@
             <p>Last 24 hours</p>
           </div>
           <div class="card-actions">
-            <a class="btn secondary" href="/admin/system/monitoring">Monitoring</a>
-            <a class="btn" href="/admin/system/diagnostics">Diagnostics</a>
+            <a class="btn secondary" href="/admin/system">Monitoring</a>
+            <a class="btn" href="/admin/system">Diagnostics</a>
           </div>
         </div>
 
         <div class="sys">
           <div class="sys-row">
-            <div class="kpi"><span>Uptime</span><strong class="ok"><%= dashboardData?.systemStatus?.uptime || 99.2 %>%</strong></div>
-            <div class="bar"><div class="barfill" style="width:<%= dashboardData?.systemStatus?.uptime || 99.2 %>%"></div></div>
+            <div class="kpi"><span>Uptime</span><strong class="ok"><%= dashboardData?.systemStatus?.uptime ?? 99.2 %>%</strong></div>
+            <div class="bar"><div class="barfill" style="width:<%= dashboardData?.systemStatus?.uptime ?? 99.2 %>%"></div></div>
           </div>
 
           <div class="sys-row">
-            <div class="kpi"><span>Errors (24h)</span><strong class="danger"><%= dashboardData?.systemStatus?.errors24h || 13 %></strong></div>
-            <div class="bar dangerbar"><div class="barfill" style="width:<%= Math.min((dashboardData?.systemStatus?.errors24h || 13) * 2, 100) %>%"></div></div>
+            <div class="kpi"><span>Alerts (24h)</span><strong class="danger"><%= dashboardData?.systemStatus?.errors24h ?? 0 %></strong></div>
+            <div class="bar dangerbar"><div class="barfill" style="width:<%= Math.min((dashboardData?.systemStatus?.errors24h ?? 0) * 2, 100) %>%"></div></div>
           </div>
 
           <div class="sys-row">
-            <div class="kpi"><span>DB lag</span><strong><%= dashboardData?.systemStatus?.dbLag || "0s" %></strong></div>
+            <div class="kpi"><span>DB lag</span><strong><%= dashboardData?.systemStatus?.dbLag ?? "0s" %></strong></div>
             <div class="bar okbar"><div class="barfill" style="width:2%"></div></div>
           </div>
 
           <div class="sys-row">
-            <div class="kpi"><span>Storage</span><strong><%= dashboardData?.systemStatus?.storage || 64 %>%</strong></div>
-            <div class="bar"><div class="barfill" style="width:<%= dashboardData?.systemStatus?.storage || 64 %>%"></div></div>
+            <div class="kpi"><span>Storage</span><strong><%= dashboardData?.systemStatus?.storage ?? 0 %>%</strong></div>
+            <div class="bar"><div class="barfill" style="width:<%= dashboardData?.systemStatus?.storage ?? 0 %>%"></div></div>
           </div>
         </div>
       </section>
@@ -282,7 +282,7 @@
             <p>Action required</p>
           </div>
           <div class="card-actions">
-            <a class="btn" href="/admin/applications">View All</a>
+            <a class="btn" href="/admin/admissions/applicants">View All</a>
             <a class="btn secondary" href="/admin/admissions/intakes">Intakes</a>
           </div>
         </div>
@@ -310,7 +310,7 @@
           </div>
           <div class="card-actions">
             <a class="btn" href="/admin/finance">Open</a>
-            <a class="btn secondary" href="/admin/finance/export">Export</a>
+            <a class="btn secondary" href="/admin/finance-reports">Reports</a>
           </div>
         </div>
 
@@ -375,19 +375,19 @@
       </div>
 
       <div class="shortcuts">
-        <a class="btn" href="/admin/students/new"><%= ui.addLearner %></a>
-        <a class="btn" href="/admin/staff/new">➕ Add Staff</a>
+        <a class="btn" href="/admin/students"><%= ui.addLearner %></a>
+        <a class="btn" href="/admin/staff">+ Add Staff</a>
         <a class="btn" href="<%= isHigh ? '/admin/sections' : '/admin/classes' %>"><%= ui.addGroup %></a>
         <a class="btn" href="/admin/subjects"><%= ui.addSubject %></a>
-        <a class="btn secondary" href="/admin/settings">⚙️ Settings</a>
-        <a class="btn secondary" href="/admin/billing">🧾 Billing</a>
-        <a class="btn secondary" href="/admin/storage">📁 Storage</a>
-        <a class="btn" href="/admin/announcements/new">📣 New Announcement</a>
+        <a class="btn secondary" href="/admin/settings">Settings</a>
+        <a class="btn secondary" href="/admin/invoices">Billing</a>
+        <a class="btn secondary" href="/admin/student-docs">Storage</a>
+        <a class="btn" href="/admin/announcements">New Announcement</a>
       </div>
     </section>
   </section>
 </main>
 
-<script id="dashboard-json" type="application/json"><%- JSON.stringify(dashboardData || {}) %></script>
+<script id="dashboard-json" type="application/json"><%- JSON.stringify(dashboardData || {}).replace(/</g, "\\u003c") %></script>
 
 <%- include("../.././partials/footer") %>

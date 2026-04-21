@@ -888,4 +888,8 @@
   syncAcademicYear("");
   updateHoldCounter();
   refreshDocumentUi();
+
+  if (new URLSearchParams(window.location.search).get("import") === "1") {
+    openModal("mImport");
+  }
 })();

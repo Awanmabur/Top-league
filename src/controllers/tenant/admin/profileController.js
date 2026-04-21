@@ -284,8 +284,8 @@ function ensureTenantShape(tenantDoc) {
   profile.admissions.isOpen = profile.admissions.isOpen !== false;
 
   profile.stats.students = Number(profile.stats.students || 0);
-  profile.stats.subjects = Number(profile.stats.subjects || profile.stats.subjects || 0);
-  delete profile.stats.subjects;
+  profile.stats.subjects = Number(profile.stats.subjects || profile.stats.programs || 0);
+  delete profile.stats.programs;
   profile.stats.staff = Number(profile.stats.staff || 0);
   profile.stats.campuses = Number(profile.stats.campuses || 0);
   profile.stats.alumni = Number(profile.stats.alumni || 0);
@@ -432,7 +432,7 @@ function syncTenantSettingsBackToSchoolUnit(tenantDoc, schoolUnit) {
     ...(tenantDoc.settings.branding || {}),
   };
 
-  delete schoolUnit.profile?.stats?.subjects;
+  delete schoolUnit.profile?.stats?.programs;
   tenantDoc.markModified("settings.academics.schoolUnits");
 }
 
@@ -452,7 +452,7 @@ async function getStatsFromTenantDB(tenantDoc) {
         ? models.Student.countDocuments({ isDeleted: { $ne: true } })
         : 0,
       models.Subject
-        ? models.Subject.countDocuments({ isDeleted: { $ne: true } })
+        ? models.Subject.countDocuments({ status: { $ne: "archived" } })
         : 0,
       models.Staff
         ? models.Staff.countDocuments({ isDeleted: { $ne: true } })
@@ -469,7 +469,7 @@ async function getStatsFromTenantDB(tenantDoc) {
   } catch (_) {
     return {
       students: tenantDoc.settings?.profile?.stats?.students || 0,
-      subjects: tenantDoc.settings?.profile?.stats?.subjects || tenantDoc.settings?.profile?.stats?.subjects || 0,
+      subjects: tenantDoc.settings?.profile?.stats?.subjects || tenantDoc.settings?.profile?.stats?.programs || 0,
       staff: tenantDoc.settings?.profile?.stats?.staff || 0,
       campuses: tenantDoc.settings?.profile?.stats?.campuses || 0,
       alumni: tenantDoc.settings?.profile?.stats?.alumni || 0,
@@ -483,9 +483,9 @@ function buildProfileStats(tenantDoc) {
 
   return {
     completion: Number(tenantDoc.meta?.profileCompletion || 0),
-    plan: tenantDoc.planName || "—",
+    plan: tenantDoc.planName || "-",
     students: Number(p.stats?.students || 0),
-    subjects: Number(p.stats?.subjects || p.stats?.subjects || 0),
+    subjects: Number(p.stats?.subjects || p.stats?.programs || 0),
     staff: Number(p.stats?.staff || 0),
     campuses: Number(p.stats?.campuses || 0),
     alumni: Number(p.stats?.alumni || 0),

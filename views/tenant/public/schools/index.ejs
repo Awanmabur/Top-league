@@ -318,7 +318,7 @@
 
         <h1>Find a School <span>Powered by Classic Academy</span></h1>
         <p class="sub">
-          Search schools, compare programs and performance, view awards and public profiles, then apply directly online.
+          Search schools, compare subjects and performance, view awards and public profiles, then apply directly online.
         </p>
 
         <div class="stats">
@@ -335,7 +335,7 @@
             type="search"
             name="q"
             value="<%= q || '' %>"
-            placeholder="Search school name, city, program..."
+            placeholder="Search school name, city, subject..."
             autocomplete="off"
           />
         </label>
@@ -365,7 +365,7 @@
           <select name="sort">
             <option value="rank" <%= sort === 'rank' ? 'selected' : '' %>>Recommended</option>
             <option value="students" <%= sort === 'students' ? 'selected' : '' %>>Students high to low</option>
-            <option value="programs" <%= sort === 'programs' ? 'selected' : '' %>>Programs high to low</option>
+            <option value="subjects" <%= (sort === 'subjects' || sort === 'programs') ? 'selected' : '' %>>Subjects high to low</option>
             <option value="name" <%= sort === 'name' ? 'selected' : '' %>>Name A to Z</option>
           </select>
         </label>
@@ -453,8 +453,8 @@
                     <div class="l">Students</div>
                   </div>
                   <div class="kpi">
-                    <div class="v"><%= Number(stats.programs || 0).toLocaleString() %></div>
-                    <div class="l">Programs</div>
+                    <div class="v"><%= Number(stats.subjects ?? stats.programs ?? 0).toLocaleString() %></div>
+                    <div class="l">Subjects</div>
                   </div>
                   <div class="kpi">
                     <div class="v"><%= Number(awards.length || 0).toLocaleString() %></div>

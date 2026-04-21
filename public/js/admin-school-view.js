@@ -16,9 +16,9 @@
   }
   tabs.forEach(t => t.addEventListener("click", () => activate(t.dataset.tab)));
 
-  // Program search
-  const ps = document.getElementById("programSearch");
-  const programRows = document.querySelectorAll(".program-row");
+  // Subject search
+  const ps = document.getElementById("subjectSearch") || document.getElementById("programSearch");
+  const programRows = document.querySelectorAll(".subject-row, .program-row");
   ps?.addEventListener("input", () => {
     const q = (ps.value || "").trim().toLowerCase();
     programRows.forEach(r => {

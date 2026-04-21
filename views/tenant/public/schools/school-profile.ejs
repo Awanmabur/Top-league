@@ -353,7 +353,7 @@
   const c = p.contact || {};
   const s = p.socials || {};
   const stats = p.stats || {};
-  const programs = Array.isArray(p.programs) ? p.programs : [];
+  const subjects = Array.isArray(p.subjects) ? p.subjects : [];
   const gallery = Array.isArray(p.gallery) ? p.gallery : [];
   const awards = Array.isArray(p.awards) ? p.awards : [];
   const news = Array.isArray(p.announcements) ? p.announcements : [];
@@ -398,7 +398,7 @@
 
     <nav class="topnav" id="topnav">
       <a href="/schools">Schools</a>
-      <a href="#programs" data-go-tab="programs">Programs</a>
+      <a href="#subjects" data-go-tab="subjects">Subjects</a>
       <a href="#admissions" data-go-tab="admissions">Admissions</a>
       <a href="/login" class="btn btn-soft"><i class="fa fa-right-to-bracket"></i> Login</a>
     </nav>
@@ -411,7 +411,7 @@
 
 <div class="mobile-menu" id="mobileMenu">
   <a href="/schools"><i class="fa fa-school"></i> Schools</a>
-  <a href="#programs" data-go-tab="programs"><i class="fa fa-book"></i> Programs</a>
+  <a href="#subjects" data-go-tab="subjects"><i class="fa fa-book"></i> Subjects</a>
   <a href="#admissions" data-go-tab="admissions"><i class="fa fa-file-signature"></i> Admissions</a>
   <a href="/login"><i class="fa fa-right-to-bracket"></i> Login</a>
 </div>
@@ -471,7 +471,7 @@
 
       <div class="stats">
         <div class="stat"><div class="stat-val"><%= stats.students || 0 %></div><div class="stat-lbl">Students</div></div>
-        <div class="stat"><div class="stat-val"><%= stats.programs || 0 %></div><div class="stat-lbl">Programs</div></div>
+        <div class="stat"><div class="stat-val"><%= stats.subjects || 0 %></div><div class="stat-lbl">Subjects</div></div>
         <div class="stat"><div class="stat-val"><%= stats.staff || 0 %></div><div class="stat-lbl">Staff</div></div>
         <div class="stat"><div class="stat-val"><%= stats.campuses || 0 %></div><div class="stat-lbl">Campuses</div></div>
       </div>
@@ -482,7 +482,7 @@
 <main class="container main">
   <div class="tabs" role="tablist">
     <button class="tab active" data-tab="overview"><i class="fa fa-circle-info"></i> Overview</button>
-    <button class="tab" data-tab="programs"><i class="fa fa-graduation-cap"></i> Programs</button>
+    <button class="tab" data-tab="subjects"><i class="fa fa-graduation-cap"></i> Subjects</button>
     <button class="tab" data-tab="admissions"><i class="fa fa-file-signature"></i> Admissions</button>
     <button class="tab" data-tab="gallery"><i class="fa fa-images"></i> Gallery</button>
     <button class="tab" data-tab="awards"><i class="fa fa-award"></i> Awards</button>
@@ -548,21 +548,21 @@
     </div>
   </section>
 
-  <section class="panel" id="programs">
+  <section class="panel" id="subjects">
     <div class="card">
       <div class="card-h">
-        <h3>Programs & Levels</h3>
+        <h3>Subjects & Learning Areas</h3>
         <div class="search">
           <i class="fa fa-magnifying-glass"></i>
-          <input id="programSearch" placeholder="Search programs..." />
+          <input id="subjectSearch" placeholder="Search subjects..." />
         </div>
       </div>
 
-      <div class="list" id="programList">
-        <% programs.forEach(pr => { %>
-          <div class="row program-row" data-name="<%= pr.hay || '' %>">
+      <div class="list" id="subjectList">
+        <% subjects.forEach(pr => { %>
+          <div class="row subject-row" data-name="<%= pr.hay || '' %>">
             <div class="row-main">
-              <b><%= pr.title || 'Program' %></b>
+              <b><%= pr.title || 'Subject' %></b>
               <div class="row-sub muted"><%= pr.desc || '' %></div>
             </div>
             <div class="row-meta">
@@ -571,7 +571,7 @@
             </div>
           </div>
         <% }) %>
-        <% if (!programs.length) { %><div class="muted">No programs added yet.</div><% } %>
+        <% if (!subjects.length) { %><div class="muted">No subjects added yet.</div><% } %>
       </div>
     </div>
   </section>
@@ -656,7 +656,7 @@
 
         <div class="note muted">
           <i class="fa fa-circle-info"></i>
-          Fees vary by class and program. Contact the school for latest details.
+          Fees vary by class and subject. Contact the school for latest details.
         </div>
 
         <div class="cta-row">
@@ -881,7 +881,7 @@
 
           <div class="frow">
             <label>Message</label>
-            <textarea name="message" rows="5" placeholder="Ask about admissions, fees, programs..." required></textarea>
+            <textarea name="message" rows="5" placeholder="Ask about admissions, fees, subjects..." required></textarea>
           </div>
 
           <button class="btn btn-primary" type="submit">
@@ -902,6 +902,6 @@
   </div>
 </footer>
 
-<script defer src="/js/school-profile-public.js?v=20260122fix_gallery1"></script>
+<script defer src="/js/school-profile-public.js?v=20260421subjects1"></script>
 </body>
 </html>

@@ -204,7 +204,7 @@
     }
     .chip i{font-size:8px;color:var(--accent)}
 
-    /* Programs */
+    /* Subjects */
     .list{display:grid;gap:10px}
     .row{
       display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
@@ -376,8 +376,8 @@
     "Birth certificate / National ID",
   ];
 
-  // Programs (optional)
-  const programs = (p.programs && p.programs.length) ? p.programs : null;
+  // Subjects (optional)
+  const subjects = (p.subjects && p.subjects.length) ? p.subjects : null;
 
   // Gallery (uses your profile.gallery from admin settings)
   const gallery = p.gallery || [];
@@ -402,7 +402,7 @@
 
     <nav class="topnav" id="topnav">
       <a href="/schools">Schools</a>
-      <a href="/programs">Programs</a>
+      <a href="#subjects" data-go-tab="subjects">Subjects</a>
       <a href="/admissions">Admissions</a>
       <a href="/login" class="btn btn-soft"><i class="fa fa-right-to-bracket"></i> Login</a>
     </nav>
@@ -415,7 +415,7 @@
 
 <div class="mobile-menu" id="mobileMenu">
   <a href="/schools"><i class="fa fa-school"></i> Schools</a>
-  <a href="/programs"><i class="fa fa-book"></i> Programs</a>
+  <a href="#subjects" data-go-tab="subjects"><i class="fa fa-book"></i> Subjects</a>
   <a href="/admissions"><i class="fa fa-file-signature"></i> Admissions</a>
   <a href="/login"><i class="fa fa-right-to-bracket"></i> Login</a>
 </div>
@@ -480,7 +480,7 @@
 
       <div class="stats">
         <div class="stat"><div class="stat-val"><%= stats.students || 0 %></div><div class="stat-lbl">Students</div></div>
-        <div class="stat"><div class="stat-val"><%= stats.programs || 0 %></div><div class="stat-lbl">Programs</div></div>
+        <div class="stat"><div class="stat-val"><%= stats.subjects || 0 %></div><div class="stat-lbl">Subjects</div></div>
         <div class="stat"><div class="stat-val"><%= stats.staff || 0 %></div><div class="stat-lbl">Staff</div></div>
         <div class="stat"><div class="stat-val"><%= stats.campuses || 0 %></div><div class="stat-lbl">Campuses</div></div>
       </div>
@@ -491,7 +491,7 @@
 <main class="container main">
   <div class="tabs" role="tablist">
     <button class="tab active" data-tab="overview"><i class="fa fa-circle-info"></i> Overview</button>
-    <button class="tab" data-tab="programs"><i class="fa fa-graduation-cap"></i> Programs</button>
+    <button class="tab" data-tab="subjects"><i class="fa fa-graduation-cap"></i> Subjects</button>
     <button class="tab" data-tab="admissions"><i class="fa fa-file-signature"></i> Admissions</button>
     <button class="tab" data-tab="gallery"><i class="fa fa-images"></i> Gallery</button>
     <button class="tab" data-tab="awards"><i class="fa fa-award"></i> Awards</button>
@@ -540,7 +540,7 @@
           <% } else { %>
             <div class="feature"><i class="fa fa-check"></i> Modern learning environment & labs</div>
             <div class="feature"><i class="fa fa-check"></i> Strong discipline and mentoring</div>
-            <div class="feature"><i class="fa fa-check"></i> Clubs, sports, and leadership programs</div>
+            <div class="feature"><i class="fa fa-check"></i> Clubs, sports, and student leadership</div>
             <div class="feature"><i class="fa fa-check"></i> Affordable tuition with flexible payments</div>
           <% } %>
         </div>
@@ -576,23 +576,23 @@
     </div>
   </section>
 
-  <!-- Programs -->
-  <section class="panel" id="programs">
+  <!-- Subjects -->
+  <section class="panel" id="subjects">
     <div class="card">
       <div class="card-h">
-        <h3>Programs & Levels</h3>
+        <h3>Subjects & Learning Areas</h3>
         <div class="search">
           <i class="fa fa-magnifying-glass"></i>
-          <input id="programSearch" placeholder="Search programs (e.g. Science, Arts, ICT)..." />
+          <input id="subjectSearch" placeholder="Search subjects (e.g. Science, Arts, ICT)..." />
         </div>
       </div>
 
-      <div class="list" id="programList">
-        <% if (programs) { %>
-          <% programs.slice(0,40).forEach(pr => { %>
-            <div class="row program-row" data-name="<%= (pr.searchText || (pr.name||'') + ' ' + (pr.description||'')).toLowerCase() %>">
+      <div class="list" id="subjectList">
+        <% if (subjects) { %>
+          <% subjects.slice(0,40).forEach(pr => { %>
+            <div class="row subject-row" data-name="<%= (pr.hay || pr.searchText || (pr.title || pr.name || '') + ' ' + (pr.desc || pr.description || '')).toLowerCase() %>">
               <div class="row-main">
-                <b><%= pr.name || "Program" %></b>
+                <b><%= pr.title || pr.name || "Subject" %></b>
                 <div class="row-sub muted"><%= pr.description || "—" %></div>
               </div>
               <div class="row-meta">
@@ -603,9 +603,9 @@
           <% }) %>
         <% } else { %>
           <!-- fallback: your exact mock rows -->
-          <div class="row program-row" data-name="science track physics chemistry biology">
+          <div class="row subject-row" data-name="science physics chemistry biology">
             <div class="row-main">
-              <b>Science Track</b>
+              <b>Science Subjects</b>
               <div class="row-sub muted">Physics, Chemistry, Biology</div>
             </div>
             <div class="row-meta">
@@ -614,9 +614,9 @@
             </div>
           </div>
 
-          <div class="row program-row" data-name="arts track history literature economics">
+          <div class="row subject-row" data-name="arts history literature economics">
             <div class="row-main">
-              <b>Arts Track</b>
+              <b>Arts Subjects</b>
               <div class="row-sub muted">History, Literature, Economics</div>
             </div>
             <div class="row-meta">
@@ -625,7 +625,7 @@
             </div>
           </div>
 
-          <div class="row program-row" data-name="ict computing coding computer fundamentals">
+          <div class="row subject-row" data-name="ict computing coding computer fundamentals">
             <div class="row-main">
               <b>ICT & Computing</b>
               <div class="row-sub muted">Coding, Computer Fundamentals</div>
@@ -636,7 +636,7 @@
             </div>
           </div>
 
-          <div class="row program-row" data-name="business commerce accounting entrepreneurship">
+          <div class="row subject-row" data-name="business commerce accounting entrepreneurship">
             <div class="row-main">
               <b>Business & Commerce</b>
               <div class="row-sub muted">Accounting, Entrepreneurship</div>
@@ -695,7 +695,7 @@
 
         <div class="note muted">
           <i class="fa fa-circle-info"></i>
-          Fees vary by class and program. Contact the school for latest details.
+          Fees vary by class and subject. Contact the school for latest details.
         </div>
       </div>
     </div>
@@ -851,7 +851,7 @@
           </div>
           <div class="frow">
             <label>Message</label>
-            <textarea name="message" rows="5" placeholder="Ask about admissions, fees, programs..." required></textarea>
+            <textarea name="message" rows="5" placeholder="Ask about admissions, fees, subjects..." required></textarea>
           </div>
 
           <button class="btn btn-primary" type="submit"><i class="fa fa-paper-plane"></i> Submit</button>

@@ -29,6 +29,10 @@ module.exports = function AuditLogModel(conn) {
       before: { type: mongoose.Schema.Types.Mixed, default: null },
       after: { type: mongoose.Schema.Types.Mixed, default: null },
 
+      reviewed: { type: Boolean, default: false },
+      reviewedAt: { type: Date, default: null },
+      reviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+
       isDeleted: { type: Boolean, default: false },
       deletedAt: { type: Date, default: null },
     },
@@ -41,6 +45,7 @@ module.exports = function AuditLogModel(conn) {
   AuditLogSchema.index({ action: 1, module: 1, createdAt: -1 });
   AuditLogSchema.index({ module: 1, severity: 1, createdAt: -1 });
   AuditLogSchema.index({ entityType: 1, entityId: 1, createdAt: -1 });
+  AuditLogSchema.index({ reviewed: 1, createdAt: -1 });
 
   return conn.models.AuditLog || conn.model("AuditLog", AuditLogSchema);
 };

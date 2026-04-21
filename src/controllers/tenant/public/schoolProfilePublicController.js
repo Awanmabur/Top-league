@@ -1,6 +1,7 @@
 const crypto = require("crypto");
-const { platformConnection } = require("../../../config/db");
+const { platformConnection, getTenantConnection } = require("../../../config/db");
 const Tenant = require("../../../models/platform/Tenant")(platformConnection);
+const loadTenantModels = require("../../../models/tenant/loadModels");
 
 function safeInt(n, def = 0) {
   const x = Number(n);
@@ -29,38 +30,51 @@ function ipHash(ip) {
   return crypto.createHash("sha256").update(String(ip)).digest("hex");
 }
 
-async function computeCounts(req) {
-  const { Student, Staff, Program } = req.models || {};
+async function getTenantModels(req, tenantDoc) {
+  if (req.models) return req.models;
+  if (!tenantDoc?.dbName) return {};
 
-  const [students, staff, programs] = await Promise.all([
-    Student?.countDocuments?.({ isDeleted: { $ne: true } }) ?? 0,
-    Staff?.countDocuments?.({ isDeleted: { $ne: true } }) ?? 0,
-    Program?.countDocuments?.({ isDeleted: { $ne: true } }) ?? 0,
-  ]);
-
-  return { students, staff, programs };
+  const conn = await getTenantConnection(tenantDoc.dbName);
+  return loadTenantModels(conn);
 }
 
-// keep your working program loader
-async function loadPrograms(req, profile) {
-  const { Program } = req.models || {};
+async function computeCounts(models = {}) {
+  const { Student, Staff, Subject } = models || {};
 
-  if (!Program) {
-    const items = Array.isArray(profile.programs) ? profile.programs : [];
-    return items.map((p) => ({
-      title: p.title || p.name || "Program",
-      desc: p.desc || p.description || "",
-      level: p.level || p.category || "—",
-      duration: p.duration || (p.years ? `${p.years} Years` : "—"),
+  const [students, staff, subjects] = await Promise.all([
+    Student?.countDocuments?.({ isDeleted: { $ne: true } }) ?? 0,
+    Staff?.countDocuments?.({ isDeleted: { $ne: true } }) ?? 0,
+    Subject?.countDocuments?.({ status: { $ne: "archived" } }) ?? 0,
+  ]);
+
+  return { students, staff, subjects };
+}
+
+async function loadSubjects(models = {}, profile = {}) {
+  const { Subject } = models || {};
+
+  if (!Subject) {
+    const items = Array.isArray(profile.subjects)
+      ? profile.subjects
+      : Array.isArray(profile.extraSubjects)
+        ? profile.extraSubjects
+        : [];
+
+    return items.map((subject) => ({
+      title: subject.title || subject.name || String(subject || "Subject"),
+      desc: subject.desc || subject.description || "",
+      level: subject.level || subject.className || subject.category || "-",
+      duration: subject.duration || subject.academicYear || "-",
       hay: [
-        p.title,
-        p.name,
-        p.desc,
-        p.description,
-        p.level,
-        p.category,
-        p.duration,
-        p.stream,
+        typeof subject === "string" ? subject : "",
+        subject.title,
+        subject.name,
+        subject.desc,
+        subject.description,
+        subject.level,
+        subject.className,
+        subject.category,
+        subject.academicYear,
       ]
         .filter(Boolean)
         .join(" ")
@@ -68,18 +82,33 @@ async function loadPrograms(req, profile) {
     }));
   }
 
-  const rows = await Program.find({ isDeleted: { $ne: true } })
-    .sort({ createdAt: -1 })
+  const rows = await Subject.find({ status: { $ne: "archived" } })
+    .sort({ title: 1, code: 1 })
     .limit(80)
-    .select("name title description level duration years category stream")
+    .select("title code shortTitle description objectives schoolUnitName campusName className classLevel category weeklyPeriods academicYear term")
     .lean();
 
-  return rows.map((p) => ({
-    title: p.name || p.title || "Program",
-    desc: p.description || "",
-    level: p.level || p.category || "—",
-    duration: p.duration || (p.years ? `${p.years} Years` : "—"),
-    hay: [p.name, p.title, p.description, p.level, p.category, p.stream]
+  return rows.map((subject) => ({
+    title: subject.title || subject.code || "Subject",
+    desc: subject.description || subject.objectives || "",
+    level: [subject.classLevel, subject.className].filter(Boolean).join(" - ") || subject.category || "-",
+    duration: [
+      subject.academicYear,
+      subject.term ? `Term ${subject.term}` : "",
+      subject.weeklyPeriods ? `${subject.weeklyPeriods} periods/week` : "",
+    ].filter(Boolean).join(" - ") || "-",
+    hay: [
+      subject.title,
+      subject.code,
+      subject.shortTitle,
+      subject.description,
+      subject.objectives,
+      subject.schoolUnitName,
+      subject.campusName,
+      subject.className,
+      subject.classLevel,
+      subject.category,
+    ]
       .filter(Boolean)
       .join(" ")
       .toLowerCase(),
@@ -179,8 +208,12 @@ module.exports = {
         return res.status(404).render("errors/404");
       }
 
-      const counts = await computeCounts(req);
-      const programs = await loadPrograms(req, profile);
+      const tenantModels = await getTenantModels(req, tenantDoc);
+      const counts = await computeCounts(tenantModels);
+      const subjects = await loadSubjects(tenantModels, {
+        ...profile,
+        extraSubjects: tenantDoc.settings?.academics?.extraSubjects,
+      });
       const faqs = loadFaqFromProfile(profile);
       const announcements = loadNewsFromProfile(profile);
       const reviews = loadApprovedReviewsFromProfile(profile);
@@ -188,7 +221,7 @@ module.exports = {
 
       const stats = {
         students: safeInt(profile.stats?.students, counts.students),
-        programs: safeInt(profile.stats?.programs, counts.programs),
+        subjects: safeInt(profile.stats?.subjects ?? profile.stats?.programs, counts.subjects),
         staff: safeInt(profile.stats?.staff, counts.staff),
         campuses: safeInt(profile.stats?.campuses, 0),
       };
@@ -245,7 +278,7 @@ module.exports = {
               ratingAvg: reviews.avg,
               ratingCount: reviews.count,
 
-              programs,
+              subjects,
               websiteSafe: parseWebsiteUrl(normalizedContact.website || ""),
               addressSafe: clean(
                 profile.address ||

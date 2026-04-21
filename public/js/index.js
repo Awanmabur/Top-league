@@ -3,6 +3,15 @@
     return document.getElementById(id);
   }
 
+  function esc(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
   function getDashboardData() {
     const node = el("dashboard-json");
     if (!node) return {};
@@ -112,7 +121,7 @@
         "beforeend",
         `<rect x="${x}" y="${y}" width="${bw}" height="${barH}" rx="6" fill="#0a6fbf"></rect>
          <text x="${x + bw / 2}" y="${h - 12}" font-size="11" text-anchor="middle" fill="#6b7280">
-           ${((d.name || "").split(" ")[0] || "Dept")}
+           ${esc((d.name || "").split(" ")[0] || "Dept")}
          </text>`
       );
     });
@@ -171,8 +180,8 @@
       row.innerHTML = `
         <div style="display:flex;gap:8px;align-items:center">
           <span style="width:12px;height:12px;background:${c.color || "#0a6fbf"};display:inline-block;border-radius:3px"></span>
-          <strong style="width:120px">${c.country || "Unknown"}</strong>
-          <span style="color:var(--muted);font-size:12px">${c.val || 0}%</span>
+          <strong style="width:120px">${esc(c.country || "Unknown")}</strong>
+          <span style="color:var(--muted);font-size:12px">${Number(c.val || 0)}%</span>
         </div>
       `;
       legend.appendChild(row);
@@ -188,10 +197,10 @@
     (DASHBOARD.recentStudents || []).forEach((s) => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td><strong>${s.name || "—"}</strong></td>
-        <td>${s.program || "—"}</td>
-        <td>${s.status || "—"}</td>
-        <td class="right">${s.balance || "0"}</td>
+        <td><strong>${esc(s.name || "-")}</strong></td>
+        <td>${esc(s.group || s.program || "-")}</td>
+        <td>${esc(s.status || "-")}</td>
+        <td class="right">${esc(s.balance || "0")}</td>
       `;
       rs.appendChild(tr);
     });
@@ -210,11 +219,11 @@
     (DASHBOARD.pendingApps || []).forEach((p) => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td>${p.name || "—"}</td>
-        <td>${p.program || "—"}</td>
-        <td>${p.country || "—"}</td>
+        <td>${esc(p.name || "-")}</td>
+        <td>${esc(p.group || p.program || "-")}</td>
+        <td>${esc(p.country || "-")}</td>
         <td class="right">
-          <a href="/admin/applications/${p.id || ""}" class="btn secondary" style="padding:6px 8px;font-size:13px">Review</a>
+          <a href="/admin/admissions/applicants/${encodeURIComponent(p.id || "")}" class="btn secondary" style="padding:6px 8px;font-size:13px">Review</a>
         </td>
       `;
       pa.appendChild(tr);

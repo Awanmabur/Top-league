@@ -27,13 +27,14 @@ const studentUploads = uploadDocs.fields([
 ]);
 
 router.get("/", ctrl.list);
+router.get("/import", (req, res) => res.redirect("/admin/students?import=1"));
 router.post("/", studentUploads, ctrl.studentRules, ctrl.create);
+router.post("/bulk", ctrl.bulk);
+router.post("/import", upload.single("file"), ctrl.importCsv);
 router.post("/:id", studentUploads, ctrl.studentRules, ctrl.update);
 router.post("/:id/archive", ctrl.archive);
 router.post("/:id/delete", ctrl.remove);
 router.post("/:id/resend-setup", ctrl.resendSetupLink);
-router.post("/bulk", ctrl.bulk);
-router.post("/import", upload.single("file"), ctrl.importCsv);
 // router.get("/export", ctrl.exportCsv);
 
 module.exports = router;

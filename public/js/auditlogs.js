@@ -12,7 +12,7 @@
     }
   }
 
-  const LOGS = parseJson("logsData", []);
+  let LOGS = parseJson("logsData", []);
   const ANALYTICS = parseJson("analyticsData", []);
 
   if (!$("tbody")) return;
@@ -20,8 +20,85 @@
   const state = {
     view: "list",
     selected: new Set(),
-    actorSource: LOGS[0]?.actor || ""
+    actorSource: LOGS[0]?.actor || "",
   };
+
+  function esc(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function csvCell(value) {
+    return `"${String(value ?? "").replace(/"/g, '""')}"`;
+  }
+
+  function downloadCsv(rows, filename) {
+    const header = [
+      "When",
+      "Actor",
+      "Actor Email",
+      "Action",
+      "Module",
+      "Entity Type",
+      "Entity Label",
+      "Severity",
+      "Reviewed",
+      "IP Address",
+      "Source",
+    ];
+    const lines = rows.map((row) => [
+      row.createdAt,
+      row.actor,
+      row.actorEmail,
+      row.action,
+      row.module,
+      row.entityType,
+      row.entityLabel,
+      row.severity,
+      row.reviewed ? "Yes" : "No",
+      row.ipAddress,
+      row.source,
+    ].map(csvCell).join(","));
+
+    const blob = new Blob([[header.map(csvCell).join(","), ...lines].join("\n")], {
+      type: "text/csv;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename || `audit-logs-${Date.now()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  async function markReviewed(ids) {
+    const body = new URLSearchParams();
+    if (ids && ids.length) body.set("ids", ids.join(","));
+
+    const res = await fetch("/admin/auditlogs/reviewed" + window.location.search, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "X-Requested-With": "XMLHttpRequest",
+      },
+      body: body.toString(),
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) throw new Error(data.message || "Could not mark logs reviewed.");
+
+    const selected = new Set(ids && ids.length ? ids : LOGS.map((x) => x.id));
+    LOGS = LOGS.map((log) => selected.has(log.id) ? { ...log, reviewed: true } : log);
+    state.selected.clear();
+    render();
+    alert(`Marked ${data.modified || selected.size} log(s) reviewed.`);
+  }
 
   function openModal(id) {
     const el = $(id);
@@ -39,6 +116,11 @@
     if (log.severity === "Critical") return '<span class="pill bad"><i class="fa-solid fa-shield-halved"></i> Critical</span>';
     if (log.severity === "Warning") return '<span class="pill warn"><i class="fa-solid fa-triangle-exclamation"></i> Warning</span>';
     return '<span class="pill info"><i class="fa-solid fa-circle-info"></i> Info</span>';
+  }
+
+  function pillReviewed(log) {
+    if (log.reviewed) return '<span class="pill ok"><i class="fa-solid fa-check-double"></i> Reviewed</span>';
+    return '<span class="pill warn"><i class="fa-solid fa-hourglass-half"></i> Needs review</span>';
   }
 
   function syncBulkbar() {
@@ -59,7 +141,7 @@
     const titles = {
       list: ["Audit Logs", "Inspect system activity, changes, actors and metadata."],
       analytics: ["Analytics", "Module activity, severity distribution and latest actions."],
-      actors: ["Actors", "Review a selected actor's activity timeline."]
+      actors: ["Actors", "Review a selected actor's activity timeline."],
     };
 
     $("panelTitle").textContent = titles[v][0];
@@ -76,23 +158,24 @@
     $("tbody").innerHTML = LOGS.map((log) => {
       const checked = state.selected.has(log.id) ? "checked" : "";
       return `
-        <tr data-id="${log.id}">
-          <td><input type="checkbox" class="rowCheck" data-id="${log.id}" ${checked}></td>
+        <tr data-id="${esc(log.id)}">
+          <td><input type="checkbox" class="rowCheck" data-id="${esc(log.id)}" ${checked}></td>
           <td>
-            <div class="strong">${log.actor || "System"}</div>
-            <div class="muted">${log.actorEmail || "—"}</div>
+            <div class="strong">${esc(log.actor || "System")}</div>
+            <div class="muted">${esc(log.actorEmail || "-")}</div>
           </td>
-          <td><span class="pill info"><i class="fa-solid fa-bolt"></i> ${log.action || "—"}</span></td>
-          <td>${log.module || "—"}</td>
+          <td><span class="pill info"><i class="fa-solid fa-bolt"></i> ${esc(log.action || "-")}</span></td>
+          <td>${esc(log.module || "-")}</td>
           <td>
-            <div class="strong">${log.entityType || "—"}</div>
-            <div class="muted">${log.entityLabel || "—"}</div>
+            <div class="strong">${esc(log.entityType || "-")}</div>
+            <div class="muted">${esc(log.entityLabel || "-")}</div>
           </td>
           <td>${pillSeverity(log)}</td>
-          <td class="muted">${log.createdAt || "—"}</td>
+          <td>${pillReviewed(log)}</td>
+          <td class="muted">${esc(log.createdAt || "-")}</td>
           <td>
-            <div class="strong">${log.ipAddress || "—"}</div>
-            <div class="muted">${log.source || "—"}</div>
+            <div class="strong">${esc(log.ipAddress || "-")}</div>
+            <div class="muted">${esc(log.source || "-")}</div>
           </td>
           <td>
             <div class="actions">
@@ -102,19 +185,19 @@
           </td>
         </tr>
       `;
-    }).join("") || '<tr><td colspan="9" style="padding:18px;"><div class="muted">No audit logs found.</div></td></tr>';
+    }).join("") || '<tr><td colspan="10" style="padding:18px;"><div class="muted">No audit logs found.</div></td></tr>';
   }
 
   function renderAnalytics() {
     $("resultMeta").textContent = `${ANALYTICS.length} module row(s)`;
     $("tbodyEng").innerHTML = ANALYTICS.map((item) => `
       <tr>
-        <td><div class="strong">${item.module || "—"}</div></td>
-        <td><span class="pill info"><i class="fa-solid fa-list"></i> ${item.total || 0}</span></td>
-        <td><span class="pill bad"><i class="fa-solid fa-shield-halved"></i> ${item.critical || 0}</span></td>
-        <td><span class="pill warn"><i class="fa-solid fa-triangle-exclamation"></i> ${item.warnings || 0}</span></td>
-        <td><span class="pill info"><i class="fa-solid fa-users"></i> ${item.actors || 0}</span></td>
-        <td class="muted">${item.latest || "—"}</td>
+        <td><div class="strong">${esc(item.module || "-")}</div></td>
+        <td><span class="pill info"><i class="fa-solid fa-list"></i> ${Number(item.total || 0)}</span></td>
+        <td><span class="pill bad"><i class="fa-solid fa-shield-halved"></i> ${Number(item.critical || 0)}</span></td>
+        <td><span class="pill warn"><i class="fa-solid fa-triangle-exclamation"></i> ${Number(item.warnings || 0)}</span></td>
+        <td><span class="pill info"><i class="fa-solid fa-users"></i> ${Number(item.actors || 0)}</span></td>
+        <td class="muted">${esc(item.latest || "-")}</td>
       </tr>
     `).join("") || '<tr><td colspan="6" style="padding:18px;"><div class="muted">No analytics found.</div></td></tr>';
   }
@@ -138,14 +221,15 @@
     $("timelineList").innerHTML = list.map((log) => `
       <div class="timeline-item">
         <div class="timeline-head">
-          <div class="strong">${log.action || "—"} • ${log.module || "—"}</div>
-          <div class="muted">${log.createdAt || "—"}</div>
+          <div class="strong">${esc(log.action || "-")} - ${esc(log.module || "-")}</div>
+          <div class="muted">${esc(log.createdAt || "-")}</div>
         </div>
         <div class="timeline-body">
-          <div><strong>Actor:</strong> ${log.actor || "System"}</div>
-          <div><strong>Entity:</strong> ${log.entityType || "—"} ${log.entityLabel ? `• ${log.entityLabel}` : ""}</div>
-          <div><strong>Severity:</strong> ${log.severity || "Info"}</div>
-          <div><strong>Source:</strong> ${log.source || "—"} • ${log.ipAddress || "—"}</div>
+          <div><strong>Actor:</strong> ${esc(log.actor || "System")}</div>
+          <div><strong>Entity:</strong> ${esc(log.entityType || "-")} ${log.entityLabel ? `- ${esc(log.entityLabel)}` : ""}</div>
+          <div><strong>Severity:</strong> ${esc(log.severity || "Info")}</div>
+          <div><strong>Source:</strong> ${esc(log.source || "-")} - ${esc(log.ipAddress || "-")}</div>
+          <div><strong>Review:</strong> ${log.reviewed ? "Reviewed" : "Needs review"}</div>
         </div>
       </div>
     `).join("") || '<div class="note">No actor activity found.</div>';
@@ -161,13 +245,13 @@
   function openViewModal(log) {
     if (!log) return;
     $("vActor").textContent = log.actor || "System";
-    $("vAction").textContent = log.action || "—";
-    $("vModule").textContent = log.module || "—";
-    $("vEntity").textContent = `${log.entityType || "—"}${log.entityLabel ? " • " + log.entityLabel : ""}`;
-    $("vSeverity").textContent = log.severity || "Info";
-    $("vWhen").textContent = log.createdAt || "—";
-    $("vIp").textContent = log.ipAddress || "—";
-    $("vSource").textContent = log.source || "—";
+    $("vAction").textContent = log.action || "-";
+    $("vModule").textContent = log.module || "-";
+    $("vEntity").textContent = `${log.entityType || "-"}${log.entityLabel ? " - " + log.entityLabel : ""}`;
+    $("vSeverity").textContent = `${log.severity || "Info"}${log.reviewed ? " (Reviewed)" : " (Needs review)"}`;
+    $("vWhen").textContent = log.createdAt || "-";
+    $("vIp").textContent = log.ipAddress || "-";
+    $("vSource").textContent = log.source || "-";
     $("vMeta").textContent = log.metadataPretty || "{}";
     $("vDiff").textContent = log.diffPretty || "{}";
     openModal("mView");
@@ -188,7 +272,8 @@
   $("tbody").addEventListener("change", function (e) {
     if (!e.target.classList.contains("rowCheck")) return;
     const id = e.target.dataset.id;
-    if (e.target.checked) state.selected.add(id); else state.selected.delete(id);
+    if (e.target.checked) state.selected.add(id);
+    else state.selected.delete(id);
     render();
   });
 
@@ -234,11 +319,22 @@
     render();
   });
 
-  $("btnExport").addEventListener("click", function () { alert("Hook audit log export later."); });
-  $("btnReviewed").addEventListener("click", function () { alert("Hook mark reviewed later."); });
-  $("bulkExport").addEventListener("click", function () { alert("Hook bulk export later."); });
-  $("bulkReview").addEventListener("click", function () { alert("Hook bulk review later."); });
-  $("btnActorExport").addEventListener("click", function () { alert("Hook actor export later."); });
+  $("btnExport").addEventListener("click", function () {
+    window.location.href = "/admin/auditlogs/export.csv" + window.location.search;
+  });
+  $("btnReviewed").addEventListener("click", function () {
+    markReviewed(LOGS.map((x) => x.id)).catch((err) => alert(err.message || "Could not mark reviewed."));
+  });
+  $("bulkExport").addEventListener("click", function () {
+    const ids = [...state.selected];
+    downloadCsv(LOGS.filter((x) => ids.includes(x.id)), "selected-audit-logs.csv");
+  });
+  $("bulkReview").addEventListener("click", function () {
+    markReviewed([...state.selected]).catch((err) => alert(err.message || "Could not mark reviewed."));
+  });
+  $("btnActorExport").addEventListener("click", function () {
+    downloadCsv(getActorLogs(), "actor-audit-logs.csv");
+  });
 
   $("rSearch").addEventListener("input", render);
   $("rFilter").addEventListener("change", render);

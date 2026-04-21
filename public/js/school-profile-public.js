@@ -132,9 +132,9 @@ function initCover() {
   cover.style.setProperty("--cover-url", `url("${safe}")`);
 }
 
-function initProgramSearch() {
-  const ps = $("programSearch");
-  const rows = document.querySelectorAll(".program-row");
+function initSubjectSearch() {
+  const ps = $("subjectSearch") || $("programSearch");
+  const rows = document.querySelectorAll(".subject-row, .program-row");
   ps?.addEventListener("input", () => {
     const q = (ps.value || "").trim().toLowerCase();
     rows.forEach((r) => {
@@ -292,7 +292,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initTabs();
   initGoTabLinks();
   initCover();
-  initProgramSearch();
+  initSubjectSearch();
   initLightbox();
   initForms();
   console.log("[SchoolProfile] Init complete ✅");

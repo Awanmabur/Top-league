@@ -111,12 +111,12 @@ async function getStatsFromTenantDB(tenant) {
     const conn = await getTenantConnection(tenant.dbName);
     const models = loadTenantModels(conn);
 
-    const [students, programs, staff] = await Promise.all([
+    const [students, subjects, staff] = await Promise.all([
       models.Student
         ? models.Student.countDocuments({ isDeleted: { $ne: true } })
         : 0,
-      models.Program
-        ? models.Program.countDocuments({ isDeleted: { $ne: true } })
+      models.Subject
+        ? models.Subject.countDocuments({ status: { $ne: "archived" } })
         : 0,
       models.Staff
         ? models.Staff.countDocuments({ isDeleted: { $ne: true } })
@@ -125,12 +125,12 @@ async function getStatsFromTenantDB(tenant) {
 
     return {
       students,
-      programs,
+      subjects,
       staff,
       campuses: tenant?.settings?.profile?.stats?.campuses || 0,
     };
   } catch (_) {
-    return { students: 0, programs: 0, staff: 0, campuses: 0 };
+    return { students: 0, subjects: 0, staff: 0, campuses: 0 };
   }
 }
 
