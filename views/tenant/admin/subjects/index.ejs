@@ -22,11 +22,11 @@
     .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:900;white-space:nowrap}
     .ok{background:#ecfdf3;color:#15803d}.warn{background:#fef9c3;color:#92400e}.bad{background:#fee2e2;color:#b91c1c}
     .table-wrap{overflow-x:auto;overflow-y:hidden;border:1px solid rgba(13,64,96,.10);border-radius:12px;max-width:100%;-webkit-overflow-scrolling:touch}
-    table{width:100%;min-width:1620px;border-collapse:separate;border-spacing:0;background:#fff;table-layout:fixed}
+    table{width:100%;min-width:1780px;border-collapse:separate;border-spacing:0;background:#fff;table-layout:fixed}
     th,td{padding:10px 12px;border-bottom:1px solid rgba(13,64,96,.08);vertical-align:middle}
     th{font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;text-align:left;background:rgba(13,64,96,.03);position:sticky;top:0;z-index:1;white-space:nowrap}
     tr:hover td{background:rgba(10,111,191,.04)} tr.row-clickable{cursor:pointer}
-    .col-check{width:48px}.col-subject{width:280px}.col-level{width:130px}.col-class{width:220px}.col-section{width:170px}.col-term{width:110px}.col-category{width:140px}.col-teacher{width:180px}.col-status{width:140px}.col-actions{width:230px}
+    .col-check{width:48px}.col-subject{width:280px}.col-level{width:130px}.col-class{width:220px}.col-section{width:170px}.col-stream{width:160px}.col-term{width:110px}.col-category{width:140px}.col-teacher{width:180px}.col-status{width:140px}.col-actions{width:230px}
     .cell-ellipsis{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
     .subject-main{min-width:0}.subject-title{font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.subject-sub{font-size:12px;color:#6b7280;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:nowrap;overflow:hidden}
@@ -51,7 +51,7 @@
     @media (max-width:1100px){.grid-2{grid-template-columns:1fr}}
     @media (max-width:900px){.form-grid{grid-template-columns:1fr}.topbar{flex-wrap:wrap}.top-actions{width:100%;justify-content:flex-start}}
     @media (max-width:680px){.grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}.input{min-width:160px}}
-    @media (max-width:520px){.toolbar .left,.toolbar .right{width:100%}.toolbar .left>*,.toolbar .right>*{max-width:100%}table{min-width:1620px}}
+    @media (max-width:520px){.toolbar .left,.toolbar .right{width:100%}.toolbar .left>*,.toolbar .right>*{max-width:100%}table{min-width:1780px}}
     @media print{body *{visibility:hidden !important}#printArea, #printArea *{visibility:visible !important}#printArea{position:absolute;inset:0;background:#fff;padding:20px}}
   </style>
 </head>
@@ -87,13 +87,15 @@
       </div>
 
       <section class="card" style="margin-top:12px;">
-        <form class="toolbar" method="GET" action="/admin/subjects">
+        <form class="toolbar" method="GET" action="/admin/subjects" data-academic-selector>
           <div class="left">
             <input class="input" name="q" value="<%= query?.q || '' %>" placeholder="Search subject, code, class..." />
             <select class="select" name="schoolUnitId"><option value="">All School Units</option><% (structure || []).forEach(function(su){ %><option value="<%= su.id %>" <%= query?.schoolUnitId===su.id?'selected':'' %>><%= su.name %></option><% }) %></select>
             <select class="select" name="campusId"><option value="">All Campuses</option><% (structure || []).forEach(function(su){ (su.campuses || []).forEach(function(c){ %><option value="<%= c.id %>" <%= query?.campusId===c.id?'selected':'' %>><%= su.name %> • <%= c.name %></option><% }) }) %></select>
             <select class="select" name="levelType"><option value="">All Levels</option><option value="nursery" <%= query?.levelType==='nursery'?'selected':'' %>>Nursery</option><option value="primary" <%= query?.levelType==='primary'?'selected':'' %>>Primary</option><option value="secondary" <%= query?.levelType==='secondary'?'selected':'' %>>Secondary</option></select>
-            <select class="select" name="classId"><option value="">All Classes</option><% (classes || []).forEach(function(c){ %><option value="<%= String(c._id) %>" <%= query?.classId===String(c._id)?'selected':'' %>><%= c.name %> • <%= c.stream || 'A' %> • <%= c.academicYear || '' %></option><% }) %></select>
+            <select class="select" name="classId" data-role="class" data-placeholder="All Classes"><option value="">All Classes</option><% (classes || []).forEach(function(c){ %><option value="<%= String(c._id) %>" <%= query?.classId===String(c._id)?'selected':'' %>><%= c.name %> • <%= c.stream || 'A' %> • <%= c.academicYear || '' %></option><% }) %></select>
+            <select class="select" name="sectionId" data-role="section" data-placeholder="All Sections" data-selected="<%= query?.sectionId || '' %>"><option value="">All Sections</option><% (sections || []).forEach(function(s){ %><option value="<%= String(s._id || s.id) %>" <%= String(query?.sectionId||'')===String(s._id || s.id)?'selected':'' %>><%= s.name || s.label || 'Section' %></option><% }) %></select>
+            <select class="select" name="streamId" data-role="stream" data-placeholder="All Streams" data-selected="<%= query?.streamId || '' %>"><option value="">All Streams</option><% (streams || []).forEach(function(s){ %><option value="<%= String(s._id || s.id) %>" <%= String(query?.streamId||'')===String(s._id || s.id)?'selected':'' %>><%= s.name || s.label || 'Stream' %></option><% }) %></select>
             <select class="select" name="academicYear"><option value="">All Years</option><% (academicYears || []).forEach(function(y){ %><option value="<%= y %>" <%= query?.academicYear===y?'selected':'' %>><%= y %></option><% }) %></select>
             <select class="select" name="term"><option value="">All Terms</option><option value="1" <%= String(query?.term||'')==='1'?'selected':'' %>>Term 1</option><option value="2" <%= String(query?.term||'')==='2'?'selected':'' %>>Term 2</option><option value="3" <%= String(query?.term||'')==='3'?'selected':'' %>>Term 3</option></select>
             <select class="select" name="category"><option value="">All Categories</option><option value="core" <%= query?.category==='core'?'selected':'' %>>Core</option><option value="practical" <%= query?.category==='practical'?'selected':'' %>>Practical</option><option value="language" <%= query?.category==='language'?'selected':'' %>>Language</option><option value="religious" <%= query?.category==='religious'?'selected':'' %>>Religious</option><option value="co-curricular" <%= query?.category==='co-curricular'?'selected':'' %>>Co-curricular</option><option value="general" <%= query?.category==='general'?'selected':'' %>>General</option></select>
@@ -134,6 +136,7 @@
                     <th class="col-level">Level</th>
                     <th class="col-class">Class</th>
                     <th class="col-section">Section</th>
+                    <th class="col-stream">Stream</th>
                     <th class="col-term">Term</th>
                     <th class="col-category">Category</th>
                     <th class="col-teacher">Teacher</th>
@@ -146,7 +149,7 @@
             </div>
           </div>
 
-          <% const currentPage = Number(query?.page || 1); const totalPages = Number(query?.totalPages || 1); function pageUrl(p){ const params = new URLSearchParams(); if (query?.q) params.set('q', query.q); if (query?.status) params.set('status', query.status); if (query?.category) params.set('category', query.category); if (query?.levelType) params.set('levelType', query.levelType); if (query?.classId) params.set('classId', query.classId); if (query?.term) params.set('term', query.term); if (query?.schoolUnitId) params.set('schoolUnitId', query.schoolUnitId); if (query?.campusId) params.set('campusId', query.campusId); if (query?.academicYear) params.set('academicYear', query.academicYear); params.set('page', String(p)); return '/admin/subjects?' + params.toString(); } %>
+          <% const currentPage = Number(query?.page || 1); const totalPages = Number(query?.totalPages || 1); function pageUrl(p){ const params = new URLSearchParams(); if (query?.q) params.set('q', query.q); if (query?.status) params.set('status', query.status); if (query?.category) params.set('category', query.category); if (query?.levelType) params.set('levelType', query.levelType); if (query?.classId) params.set('classId', query.classId); if (query?.sectionId) params.set('sectionId', query.sectionId); if (query?.streamId) params.set('streamId', query.streamId); if (query?.term) params.set('term', query.term); if (query?.schoolUnitId) params.set('schoolUnitId', query.schoolUnitId); if (query?.campusId) params.set('campusId', query.campusId); if (query?.academicYear) params.set('academicYear', query.academicYear); params.set('page', String(p)); return '/admin/subjects?' + params.toString(); } %>
           <div class="pagination">
             <div class="muted">Total records: <%= query?.total || 0 %></div>
             <div class="pagination-links">
@@ -194,7 +197,8 @@
             <div class="field"><label>Campus</label><select class="select" id="mCampusId" name="campusId" required><option value="">— Select Campus —</option></select></div>
             <div class="field"><label>School Level</label><select class="select" id="mLevelType" name="levelType" required><option value="">— Select Level —</option></select></div>
             <div class="field"><label>Class</label><select class="select" id="mClassId" name="classId" required><option value="">— Select Class —</option></select></div>
-            <div class="field"><label>Section / Stream</label><select class="select" id="mSectionId" name="sectionId"><option value="">— Whole Class —</option></select></div>
+            <div class="field"><label>Section</label><select class="select" id="mSectionId" name="sectionId"><option value="">— Whole Class —</option></select></div>
+            <div class="field"><label>Stream</label><select class="select" id="mStreamId" name="streamId"><option value="">— All Streams —</option></select></div>
             <div class="field"><label>Term</label><select class="select" id="mTerm" name="term"><option value="1">Term 1</option><option value="2">Term 2</option><option value="3">Term 3</option></select></div>
             <div class="field"><label>Academic Year</label><input class="input" id="mAcademicYear" name="academicYear" placeholder="2026" /></div>
             <div class="field"><label>Category</label><select class="select" id="mCategory" name="category"><option value="core">Core</option><option value="practical">Practical</option><option value="language">Language</option><option value="religious">Religious</option><option value="co-curricular">Co-curricular</option><option value="general">General</option></select></div>
@@ -231,6 +235,7 @@
           <div class="field"><label>Class</label><div class="view-input" id="vClass">—</div></div>
           <div class="field"><label>School Level</label><div class="view-input" id="vLevel">—</div></div>
           <div class="field"><label>Section</label><div class="view-input" id="vSection">—</div></div>
+          <div class="field"><label>Stream</label><div class="view-input" id="vStream">—</div></div>
           <div class="field"><label>Term</label><div class="view-input" id="vTerm">—</div></div>
           <div class="field"><label>Category / Type</label><div class="view-input" id="vCategoryType">—</div></div>
           <div class="field"><label>Periods / Pass Mark</label><div class="view-input" id="vPeriodsPass">—</div></div>
@@ -276,8 +281,10 @@
       classId: s.classId?._id ? String(s.classId._id) : String(s.classId || ''),
       className: s.className || s.classId?.name || '',
       classLevel: s.classLevel || s.classId?.classLevel || '',
-      sectionId: s.sectionId || '',
+      sectionId: s.sectionId?._id ? String(s.sectionId._id) : String(s.sectionId || ''),
       sectionName: s.sectionName || '',
+      streamId: s.streamId?._id ? String(s.streamId._id) : String(s.streamId || ''),
+      streamName: s.streamName || s.streamId?.name || '',
       term: Number(s.term ?? 1),
       academicYear: s.academicYear || '',
       category: s.category || 'core',
@@ -311,8 +318,11 @@
 
   <textarea id="structureData" class="json-data" aria-hidden="true"><%- JSON.stringify(structure || []) %></textarea>
   <textarea id="sectionsMap" class="json-data" aria-hidden="true"><%- JSON.stringify(sectionsMap || {}) %></textarea>
+  <textarea id="sectionsData" class="json-data" aria-hidden="true"><%- JSON.stringify(sections || []) %></textarea>
+  <textarea id="streamsData" class="json-data" aria-hidden="true"><%- JSON.stringify(streams || []) %></textarea>
 
   <script src="/js/navbar.js"></script>
+  <script src="/js/academic-selector.js"></script>
   <script src="/js/subjects.js"></script>
 </body>
 </html>

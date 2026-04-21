@@ -11,6 +11,7 @@ module.exports = (connection) => {
       originalName: { type: String, trim: true, maxlength: 200 },
       bytes: { type: Number, default: 0 },
       mimeType: { type: String, trim: true, maxlength: 80 },
+      uploadedAt: { type: Date, default: Date.now },
     },
     { _id: false }
   );

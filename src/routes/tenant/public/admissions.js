@@ -14,6 +14,7 @@ const applicantUploads = upload.fields([
 
 router.get("/apply", admissionsCtrl.applyPage);
 router.get("/admissions/apply", admissionsCtrl.applyPage);
+router.post("/admissions/upload-draft", applicantUploads, admissionsCtrl.uploadDraftFiles);
 router.post("/apply", applicantUploads, admissionsCtrl.submitApplication);
 router.post("/admissions/apply", applicantUploads, admissionsCtrl.submitApplication);
 

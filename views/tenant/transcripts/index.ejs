@@ -46,6 +46,8 @@
     .btn-xs:hover{background:rgba(10,111,191,.06)}
     .bulkbar{display:none;margin-top:10px;padding:10px 12px;border-radius:12px;background:rgba(10,111,191,.08);border:1px solid rgba(10,111,191,.18);justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
     .bulkbar.show{display:flex}
+    .bulk-generate-panel{display:none;margin-top:12px;padding:12px;border-radius:12px;border:1px solid rgba(13,64,96,.10);background:#fbfdff;gap:8px;align-items:center;flex-wrap:wrap}
+    .bulk-generate-panel.show{display:flex}
     .badge-count{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 8px;border-radius:999px;background:#0a6fbf;color:#fff;font-size:12px;font-weight:900}
     .note{padding:10px 12px;border-radius:12px;border:1px dashed rgba(13,64,96,.18);background:rgba(13,64,96,.03)}
     .divider{height:1px;background:rgba(13,64,96,.10);margin:12px 0}
@@ -96,19 +98,7 @@
         </div>
         <div class="top-actions">
           <button class="btn light" type="button" data-action="openCreate"><i class="fa-solid fa-plus"></i> Generate Single</button>
-          <form method="POST" action="/tenant/transcripts/bulk-generate" style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;">
-            <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
-            <select class="select" name="classGroup" required>
-              <option value="">Bulk Generate Class</option>
-              <% (classes || []).forEach(function(c){ %>
-                <option value="<%= c._id %>"><%= c.name || c.code || 'Class' %></option>
-              <% }) %>
-            </select>
-            <input class="input" name="academicYear" placeholder="Academic Year" style="min-width:140px;" />
-            <select class="select" name="termFrom"><option value="1">T1</option><option value="2">T2</option><option value="3">T3</option></select>
-            <select class="select" name="termTo"><option value="1">T1</option><option value="2">T2</option><option value="3" selected>T3</option></select>
-            <button class="btn primary" type="submit"><i class="fa-solid fa-gears"></i> Bulk Generate</button>
-          </form>
+          <button class="btn primary" type="button" data-action="toggleBulkGenerate"><i class="fa-solid fa-gears"></i> Bulk Generate</button>
         </div>
       </div>
 
@@ -120,13 +110,25 @@
       </div>
 
       <section class="card" style="margin-top:12px;">
-        <form class="toolbar" method="GET" action="/tenant/transcripts">
+        <form class="toolbar" method="GET" action="/admin/transcripts" data-academic-selector>
           <div class="left">
             <input class="input" name="q" value="<%= query?.q || '' %>" placeholder="Search learner name / reg no..." />
-            <select class="select" name="classGroup">
+            <select class="select" name="classGroup" data-role="class" data-placeholder="All Classes">
               <option value="">All Classes</option>
               <% (classes || []).forEach(function(c){ %>
                 <option value="<%= c._id %>" <%= String(query?.classGroup || '') === String(c._id) ? 'selected' : '' %>><%= c.name || c.code || 'Class' %></option>
+              <% }) %>
+            </select>
+            <select class="select" name="sectionId" data-role="section" data-placeholder="All Sections" data-selected="<%= query?.sectionId || '' %>">
+              <option value="">All Sections</option>
+              <% (sections || []).forEach(function(s){ %>
+                <option value="<%= s._id || s.id %>" <%= String(query?.sectionId || '') === String(s._id || s.id) ? 'selected' : '' %>><%= s.name || s.code || 'Section' %></option>
+              <% }) %>
+            </select>
+            <select class="select" name="streamId" data-role="stream" data-placeholder="All Streams" data-selected="<%= query?.streamId || '' %>">
+              <option value="">All Streams</option>
+              <% (streams || []).forEach(function(s){ %>
+                <option value="<%= s._id || s.id %>" <%= String(query?.streamId || '') === String(s._id || s.id) ? 'selected' : '' %>><%= s.name || s.code || 'Stream' %></option>
               <% }) %>
             </select>
             <select class="select" name="kind">
@@ -144,9 +146,25 @@
 
           <div class="right">
             <button class="btn light" id="btnBulk" type="button"><i class="fa-solid fa-layer-group"></i> Bulk</button>
-            <a class="btn light" href="/tenant/transcripts"><i class="fa-solid fa-rotate-left"></i> Reset</a>
+            <a class="btn light" href="/admin/transcripts"><i class="fa-solid fa-rotate-left"></i> Reset</a>
             <button class="btn primary" type="submit"><i class="fa-solid fa-magnifying-glass"></i> Filter</button>
           </div>
+        </form>
+
+        <form id="bulkGeneratePanel" class="bulk-generate-panel" method="POST" action="/admin/transcripts/bulk-generate" data-academic-selector>
+          <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
+          <select class="select" name="classGroup" required data-role="class" data-placeholder="Bulk Generate Class">
+            <option value="">Bulk Generate Class</option>
+            <% (classes || []).forEach(function(c){ %>
+              <option value="<%= c._id %>"><%= c.name || c.code || 'Class' %></option>
+            <% }) %>
+          </select>
+          <select class="select" name="sectionId" data-role="section" data-placeholder="All Sections"><option value="">All Sections</option></select>
+          <select class="select" name="streamId" data-role="stream" data-placeholder="All Streams"><option value="">All Streams</option></select>
+          <input class="input" name="academicYear" placeholder="Academic Year" style="min-width:140px;" />
+          <select class="select" name="termFrom"><option value="1">T1</option><option value="2">T2</option><option value="3">T3</option></select>
+          <select class="select" name="termTo"><option value="1">T1</option><option value="2">T2</option><option value="3" selected>T3</option></select>
+          <button class="btn primary" type="submit"><i class="fa-solid fa-gears"></i> Generate Bulk</button>
         </form>
 
         <div class="bulkbar" id="bulkbar">
@@ -184,6 +202,9 @@
                   <tr>
                     <th class="col-check"><input type="checkbox" id="selectAll" /></th>
                     <th class="col-student">Learner</th>
+                    <th class="col-kind">Class</th>
+                    <th class="col-kind">Section</th>
+                    <th class="col-kind">Stream</th>
                     <th class="col-kind">Type</th>
                     <th class="col-range">Range</th>
                     <th class="col-issue">Issue Number</th>
@@ -194,7 +215,7 @@
                 <tbody>
                   <% const items = Array.isArray(transcripts) ? transcripts : []; %>
                   <% if (!items.length) { %>
-                    <tr><td colspan="7" style="padding:18px;"><div class="muted">No transcripts found.</div></td></tr>
+                    <tr><td colspan="10" style="padding:18px;"><div class="muted">No transcripts found.</div></td></tr>
                   <% } %>
 
                   <% items.forEach(function(t){
@@ -202,6 +223,9 @@
                     const s = t.student || {};
                     const nm = s.fullName || [s.firstName,s.middleName,s.lastName].filter(Boolean).join(" ") || s.name || "Learner";
                     const reg = s.regNo || s.studentNo || s.indexNumber || "";
+                    const classLabel = t.classGroup?.name || t.classGroupName || s.className || "—";
+                    const sectionLabel = t.sectionName || t.sectionId?.name || s.section || "—";
+                    const streamLabel = t.streamName || t.streamId?.name || s.stream || "—";
                   %>
                     <tr>
                       <td class="col-check"><input type="checkbox" class="selChk" data-id="<%= t._id %>" /></td>
@@ -211,6 +235,9 @@
                           <div class="item-sub"><%= reg ? ("Reg: " + reg) : "Reg: —" %></div>
                         </div>
                       </td>
+                      <td class="col-kind"><span class="cell-ellipsis"><%= classLabel %></span></td>
+                      <td class="col-kind"><span class="cell-ellipsis"><%= sectionLabel %></span></td>
+                      <td class="col-kind"><span class="cell-ellipsis"><%= streamLabel %></span></td>
                       <td class="col-kind"><span class="cell-ellipsis"><%= t.kind || "official" %></span></td>
                       <td class="col-range">
                         <span class="cell-ellipsis">
@@ -227,7 +254,7 @@
                       </td>
                       <td class="col-actions">
                         <div class="actions">
-                          <a class="btn-xs" href="/tenant/transcripts?tid=<%= t._id %>"><i class="fa-solid fa-eye"></i></a>
+                          <a class="btn-xs" href="/admin/transcripts?tid=<%= t._id %>"><i class="fa-solid fa-eye"></i></a>
 
                           <button class="btn-xs"
                             type="button"
@@ -235,6 +262,8 @@
                             data-id="<%= t._id %>"
                             data-student="<%= (t.student?._id || t.student) %>"
                             data-classgroup="<%= (t.classGroup?._id || t.classGroup || '') %>"
+                            data-sectionid="<%= (t.sectionId?._id || t.sectionId || '') %>"
+                            data-streamid="<%= (t.streamId?._id || t.streamId || '') %>"
                             data-kind="<%= (t.kind || "official") %>"
                             data-rangemode="<%= (t.rangeMode || "auto") %>"
                             data-ayfrom="<%= (t.academicYearFrom || "") %>"
@@ -249,7 +278,7 @@
                             data-status="<%= st %>"
                           ><i class="fa-solid fa-pen"></i></button>
 
-                          <form method="POST" action="/tenant/transcripts/<%= t._id %>/clone" style="display:inline">
+                          <form method="POST" action="/admin/transcripts/<%= t._id %>/clone" style="display:inline">
                             <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
                             <button class="btn-xs" type="submit"><i class="fa-solid fa-copy"></i></button>
                           </form>
@@ -259,7 +288,7 @@
                           <% } %>
 
                           <% if (st === "issued") { %>
-                            <a class="btn-xs" href="/tenant/transcripts/<%= t._id %>/print" target="_blank"><i class="fa-solid fa-print"></i></a>
+                            <a class="btn-xs" href="/admin/transcripts/<%= t._id %>/print" target="_blank"><i class="fa-solid fa-print"></i></a>
                           <% } %>
 
                           <button class="btn-xs" type="button" data-action="revoke" data-id="<%= t._id %>"><i class="fa-solid fa-ban"></i></button>
@@ -285,8 +314,10 @@
                   if (query?.kind) params.set("kind", query.kind);
                   if (query?.status) params.set("status", query.status);
                   if (query?.classGroup) params.set("classGroup", query.classGroup);
+                  if (query?.sectionId) params.set("sectionId", query.sectionId);
+                  if (query?.streamId) params.set("streamId", query.streamId);
                   params.set("page", String(targetPage));
-                  return "/tenant/transcripts?" + params.toString();
+                  return "/admin/transcripts?" + params.toString();
                 }
                 const startPage = Math.max(1, currentPage - 2);
                 const endPage = Math.min(totalPages, currentPage + 2);
@@ -300,7 +331,7 @@
             </div>
           </div>
 
-          <form id="bulkForm" method="POST" action="/tenant/transcripts/bulk" style="display:none;">
+          <form id="bulkForm" method="POST" action="/admin/transcripts/bulk" style="display:none;">
             <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
             <input type="hidden" name="action" id="bulkActionVal" value="">
             <input type="hidden" name="ids" id="bulkIdsVal" value="">
@@ -333,7 +364,7 @@
                 </div>
               </div>
               <% if (preview.transcriptMeta.status === "issued") { %>
-                <a class="btn light" href="/tenant/transcripts/<%= preview.transcriptMeta._id %>/print" target="_blank">Print</a>
+                <a class="btn light" href="/admin/transcripts/<%= preview.transcriptMeta._id %>/print" target="_blank">Print</a>
               <% } %>
             </div>
 
@@ -343,6 +374,8 @@
             <div class="strong" style="margin-top:6px;"><%= preview.student.name %></div>
             <div class="muted">Reg: <strong><%= preview.student.reg || "—" %></strong></div>
             <div class="muted">Class: <strong><%= preview.student.classGroup || "—" %></strong></div>
+            <div class="muted">Section: <strong><%= preview.student.section || "—" %></strong></div>
+            <div class="muted">Stream: <strong><%= preview.student.stream || "—" %></strong></div>
 
             <div class="divider"></div>
 
@@ -432,14 +465,14 @@
         <button class="btn-xs" type="button" data-action="closeModal"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
-      <form id="trForm" method="POST" action="/tenant/transcripts">
+      <form id="trForm" method="POST" action="/admin/transcripts" data-academic-selector>
         <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
 
         <div class="modal-body">
           <div class="form-grid">
             <div class="field" style="grid-column:1/-1;">
               <label>Learner</label>
-              <select class="select" id="mStudent" name="student" required>
+              <select class="select" id="mStudent" name="student" required data-role="student" data-placeholder="Select Learner">
                 <option value="">— Select Learner —</option>
                 <% (studentsList || []).forEach(function(s){
                   const nm = s.fullName || [s.firstName,s.middleName,s.lastName].filter(Boolean).join(" ") || s.name || "Learner";
@@ -452,10 +485,30 @@
 
             <div class="field">
               <label>Class</label>
-              <select class="select" id="mClassGroup" name="classGroup">
+              <select class="select" id="mClassGroup" name="classGroup" data-role="class" data-placeholder="Select Class">
                 <option value="">— Select Class —</option>
                 <% (classes || []).forEach(function(c){ %>
                   <option value="<%= c._id %>"><%= c.name || c.code || 'Class' %></option>
+                <% }) %>
+              </select>
+            </div>
+
+            <div class="field">
+              <label>Section</label>
+              <select class="select" id="mSectionId" name="sectionId" data-role="section" data-placeholder="Select Section">
+                <option value="">— Select Section —</option>
+                <% (sections || []).forEach(function(s){ %>
+                  <option value="<%= s._id || s.id %>"><%= s.name || s.code || 'Section' %></option>
+                <% }) %>
+              </select>
+            </div>
+
+            <div class="field">
+              <label>Stream</label>
+              <select class="select" id="mStreamId" name="streamId" data-role="stream" data-placeholder="Select Stream">
+                <option value="">— Select Stream —</option>
+                <% (streams || []).forEach(function(s){ %>
+                  <option value="<%= s._id || s.id %>"><%= s.name || s.code || 'Stream' %></option>
                 <% }) %>
               </select>
             </div>
@@ -550,7 +603,12 @@
     </div>
   </div>
 
+  <textarea id="classesData" style="display:none" aria-hidden="true"><%- JSON.stringify(classes || []) %></textarea>
+  <textarea id="sectionsData" style="display:none" aria-hidden="true"><%- JSON.stringify(sections || []) %></textarea>
+  <textarea id="streamsData" style="display:none" aria-hidden="true"><%- JSON.stringify(streams || []) %></textarea>
+  <textarea id="studentsData" style="display:none" aria-hidden="true"><%- JSON.stringify(studentsData || studentsList || []) %></textarea>
   <script src="/js/navbar.js" defer></script>
+  <script src="/js/academic-selector.js" defer></script>
   <script src="/js/transcripts.js" defer></script>
 </body>
 </html>

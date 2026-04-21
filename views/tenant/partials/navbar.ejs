@@ -72,7 +72,6 @@
   const studentItems = visibleItems([
     { label: ui.learners, icon: "fa-user-graduate", href: "/admin/students", hidden: !hasModule("Student") },
     { label: ui.guardians, icon: "fa-people-roof", href: "/admin/parents", hidden: !hasModule("Parent") },
-    { label: "Enrollments", icon: "fa-clipboard-check", href: "/admin/enrollments", hidden: !hasModule("Enrollment") },
     { label: "Promotions", icon: "fa-arrow-up-right-dots", href: "/admin/promotions", hidden: !hasModule("PromotionLog") || isNursery },
     { label: ui.records, icon: "fa-folder-open", href: "/admin/student-docs", hidden: !hasModule("StudentDoc") },
     { label: "Discipline", icon: "fa-gavel", href: "/admin/discipline", hidden: !hasModule("DisciplineCase") || isNursery },
@@ -80,7 +79,8 @@
 
   const academicItems = visibleItems([
     { label: "Classes", icon: "fa-layer-group", href: "/admin/classes", hidden: !hasModule("Class") },
-    { label: "Sections", icon: "fa-code-branch", href: "/admin/sections", hidden: !hasModule("Section") },
+    { label: "Sections", icon: "fa-code-branch", href: "/admin/sections", hidden: !hasModule("Section") && !hasModule("Stream") },
+    { label: "Streams", icon: "fa-diagram-project", href: "/admin/streams", hidden: !hasModule("Stream") && !hasModule("Section") },
     { label: ui.subjects, icon: "fa-book-open", href: "/admin/subjects", hidden: !hasModule("Subject") },
     { label: "Timetable", icon: "fa-clock", href: "/admin/timetable", hidden: !hasModule("TimetableEntry") },
     { label: "Attendance", icon: "fa-user-clock", href: "/admin/attendance", hidden: !hasModule("Attendance") },

@@ -69,7 +69,11 @@ function buildStructure(req) {
   }));
 }
 
-function buildSmartCode(body, placement, sectionName) {
+function sameId(a, b) {
+  return String(a || "") === String(b || "");
+}
+
+function buildSmartCode(body, placement, sectionName, streamName) {
   const levelType = String(body.levelType || "").trim().toUpperCase();
   const classLevel = normalizeClassLevel(body.classLevel || "");
   const term = Math.max(1, Math.min(Number(body.term || 1), 3));
@@ -82,7 +86,8 @@ function buildSmartCode(body, placement, sectionName) {
     levelType === "SECONDARY" ? "SEC" : "SCH";
 
   const sectionCode = slugCode(sectionName || "GENERAL");
-  return slugCode(`${campusCode}-${shortLevel}-${classLevel}-${sectionCode}-T${term}-${year}`);
+  const streamCode = slugCode(streamName || "ALL");
+  return slugCode(`${campusCode}-${shortLevel}-${classLevel}-${sectionCode}-${streamCode}-T${term}-${year}`);
 }
 
 const classRules = [
@@ -92,6 +97,7 @@ const classRules = [
   body("levelType").trim().isIn(LEVEL_TYPES).withMessage("Invalid level."),
   body("classLevel").trim().isIn(CLASS_LEVELS).withMessage("Invalid class level."),
   body("sectionId").optional({ checkFalsy: true }).trim().custom((v) => !v || mongoose.Types.ObjectId.isValid(v)).withMessage("Select a valid section."),
+  body("streamId").optional({ checkFalsy: true }).trim().custom((v) => !v || mongoose.Types.ObjectId.isValid(v)).withMessage("Select a valid stream."),
   body("code").optional({ checkFalsy: true }).trim().isLength({ min: 2, max: 40 }).withMessage("Code must be 2-40 chars."),
   body("term").optional({ checkFalsy: true }).isInt({ min: 1, max: 3 }).toInt().withMessage("Term must be 1-3."),
   body("academicYear").optional({ checkFalsy: true }).trim().isLength({ max: 20 }),
@@ -109,7 +115,7 @@ module.exports = {
 
   list: async (req, res) => {
     try {
-      const { Class, Staff, Section } = req.models;
+      const { Class, Staff, Section, Stream } = req.models;
 
       const q = String(req.query.q || "").trim();
       const status = String(req.query.status || "").trim();
@@ -120,6 +126,7 @@ module.exports = {
       const schoolUnitId = String(req.query.schoolUnitId || "").trim();
       const campusId = String(req.query.campusId || "").trim();
       const sectionId = String(req.query.sectionId || "").trim();
+      const streamId = String(req.query.streamId || "").trim();
 
       const page = Math.max(parseInt(req.query.page || "1", 10), 1);
       const perPage = 10;
@@ -131,6 +138,9 @@ module.exports = {
           { code: { $regex: q, $options: "i" } },
           { classLevel: { $regex: q, $options: "i" } },
           { sectionName: { $regex: q, $options: "i" } },
+          { sectionCode: { $regex: q, $options: "i" } },
+          { streamName: { $regex: q, $options: "i" } },
+          { streamCode: { $regex: q, $options: "i" } },
           { stream: { $regex: q, $options: "i" } },
           { campusName: { $regex: q, $options: "i" } },
           { room: { $regex: q, $options: "i" } },
@@ -146,6 +156,7 @@ module.exports = {
       if (schoolUnitId) filter.schoolUnitId = schoolUnitId;
       if (campusId) filter.campusId = campusId;
       if (sectionId) filter.sectionId = sectionId;
+      if (streamId) filter.streamId = streamId;
 
       const total = await Class.countDocuments(filter);
       const totalPages = Math.max(Math.ceil(total / perPage), 1);
@@ -154,6 +165,7 @@ module.exports = {
       const classes = await Class.find(filter)
         .populate("classTeacher", "fullName name email role")
         .populate("sectionId", "name code classId className")
+        .populate("streamId", "name code classId className sectionId sectionName")
         .sort({ createdAt: -1 })
         .skip((safePage - 1) * perPage)
         .limit(perPage)
@@ -168,7 +180,14 @@ module.exports = {
 
       const sections = Section
         ? await Section.find({})
-            .select("name code schoolUnitId campusId levelType classId className classLevel classStream status")
+            .select("name code schoolUnitId campusId levelType classId className classLevel classStream streamId streamName streamCode status")
+            .sort({ name: 1, createdAt: -1 })
+            .lean()
+        : [];
+
+      const streams = Stream
+        ? await Stream.find({})
+            .select("name code schoolUnitId campusId levelType classId className classLevel classStream sectionId sectionName sectionCode status")
             .sort({ name: 1, createdAt: -1 })
             .lean()
         : [];
@@ -188,6 +207,7 @@ module.exports = {
         classes,
         staffList,
         sections,
+        streams,
         structure: buildStructure(req),
         academicYears,
         classLevels,
@@ -204,6 +224,7 @@ module.exports = {
           schoolUnitId,
           campusId,
           sectionId,
+          streamId,
           page: safePage,
           total,
           totalPages,
@@ -221,7 +242,7 @@ module.exports = {
   },
 
   create: async (req, res) => {
-    const { Class, Section } = req.models;
+    const { Class, Section, Stream } = req.models;
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -252,9 +273,27 @@ module.exports = {
         }
       }
 
+      let stream = null;
+      if (req.body.streamId) {
+        stream = Stream ? await Stream.findById(req.body.streamId).lean() : null;
+        if (!stream) {
+          req.flash?.("error", "Selected stream was not found.");
+          return res.redirect("/admin/classes");
+        }
+      }
+
+      if (section && stream) {
+        const classMismatch = section.classId && stream.classId && !sameId(section.classId, stream.classId);
+        const sectionMismatch = stream.sectionId && !sameId(stream.sectionId, section._id);
+        if (classMismatch || sectionMismatch) {
+          req.flash?.("error", "Selected section and stream are not connected.");
+          return res.redirect("/admin/classes");
+        }
+      }
+
       const name = String(req.body.name || "").trim();
       let code = String(req.body.code || "").trim().toUpperCase();
-      if (!code) code = buildSmartCode(req.body, placement, section?.name || "");
+      if (!code) code = buildSmartCode(req.body, placement, section?.name || "", stream?.name || "");
       code = slugCode(code);
 
       const exists = await Class.findOne({ code }).lean();
@@ -279,7 +318,11 @@ module.exports = {
 
         sectionId: section?._id || null,
         sectionName: section ? String(section.name || "").trim() : "",
-        stream: section ? String(section.name || "").trim() : "",
+        sectionCode: section ? String(section.code || "").trim() : "",
+        streamId: stream?._id || null,
+        streamName: stream ? String(stream.name || "").trim() : "",
+        streamCode: stream ? String(stream.code || "").trim() : "",
+        stream: stream ? String(stream.name || "").trim() : (section ? String(section.name || "").trim() : ""),
 
         term: Math.max(1, Math.min(Number(req.body.term || 1), 3)),
         academicYear: String(req.body.academicYear || "").trim().slice(0, 20),
@@ -309,7 +352,7 @@ module.exports = {
   },
 
   update: async (req, res) => {
-    const { Class, Section } = req.models;
+    const { Class, Section, Stream } = req.models;
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -346,9 +389,27 @@ module.exports = {
         }
       }
 
+      let stream = null;
+      if (req.body.streamId) {
+        stream = Stream ? await Stream.findById(req.body.streamId).lean() : null;
+        if (!stream) {
+          req.flash?.("error", "Selected stream was not found.");
+          return res.redirect("/admin/classes");
+        }
+      }
+
+      if (section && stream) {
+        const classMismatch = section.classId && stream.classId && !sameId(section.classId, stream.classId);
+        const sectionMismatch = stream.sectionId && !sameId(stream.sectionId, section._id);
+        if (classMismatch || sectionMismatch) {
+          req.flash?.("error", "Selected section and stream are not connected.");
+          return res.redirect("/admin/classes");
+        }
+      }
+
       const name = String(req.body.name || "").trim();
       let code = String(req.body.code || "").trim().toUpperCase();
-      if (!code) code = buildSmartCode(req.body, placement, section?.name || "");
+      if (!code) code = buildSmartCode(req.body, placement, section?.name || "", stream?.name || "");
       code = slugCode(code);
 
       const collision = await Class.findOne({ code, _id: { $ne: id } }).lean();
@@ -373,7 +434,11 @@ module.exports = {
 
         sectionId: section?._id || null,
         sectionName: section ? String(section.name || "").trim() : "",
-        stream: section ? String(section.name || "").trim() : "",
+        sectionCode: section ? String(section.code || "").trim() : "",
+        streamId: stream?._id || null,
+        streamName: stream ? String(stream.name || "").trim() : "",
+        streamCode: stream ? String(stream.code || "").trim() : "",
+        stream: stream ? String(stream.name || "").trim() : (section ? String(section.name || "").trim() : ""),
 
         term: Math.max(1, Math.min(Number(req.body.term || 1), 3)),
         academicYear: String(req.body.academicYear || "").trim().slice(0, 20),

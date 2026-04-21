@@ -15,22 +15,22 @@ router.use(tenantAuth("admin"));
 
 // List
 router.get("/", ctrl.list);
+router.get("/export", ctrl.exportCsv);
 
 // Create / Update
 router.post("/", ctrl.assignmentRules, ctrl.create);
-router.post("/:id", ctrl.assignmentRules, ctrl.update);
+
+// Bulk
+router.post("/bulk", ctrl.bulk);
+
+// Import
+router.post("/import", upload.single("file"), ctrl.importCsv);
 
 // Actions
 router.post("/:id/publish", ctrl.publish);
 router.post("/:id/unpublish", ctrl.unpublish);
 router.post("/:id/archive", ctrl.archive);
 router.post("/:id/delete", ctrl.remove);
-
-// Bulk
-router.post("/bulk", ctrl.bulk);
-
-// Import / Export
-router.post("/import", upload.single("file"), ctrl.importCsv);
-router.get("/export", ctrl.exportCsv);
+router.post("/:id", ctrl.assignmentRules, ctrl.update);
 
 module.exports = router;

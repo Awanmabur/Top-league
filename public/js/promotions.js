@@ -113,12 +113,11 @@
       }
 
       const toAcademicYear = qs('[name="toAcademicYear"]', promoForm)?.value?.trim();
-      const toYearLevel = qs('[name="toYearLevel"]', promoForm)?.value?.trim();
-      const toClassGroup = qs('[name="toClassGroup"]', promoForm)?.value?.trim();
+      const toClassId = qs('[name="toClassId"]', promoForm)?.value?.trim();
 
-      if (!toAcademicYear || !toYearLevel || !toClassGroup) {
+      if (!toAcademicYear || !toClassId) {
         e.preventDefault();
-        window.alert("To Academic Year, To Year Level and To Class are required.");
+        window.alert("Destination academic year and class are required.");
         return;
       }
 

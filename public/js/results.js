@@ -81,6 +81,8 @@
     $("pvExam").textContent = item?.examTitle || "—";
     $("pvMeta").textContent = item ? `${item.academicYear || "—"} • Term ${item.term || 1}` : "—";
     $("pvClass").textContent = item?.className || "—";
+    if ($("pvSection")) $("pvSection").textContent = item?.sectionName || "—";
+    if ($("pvStream")) $("pvStream").textContent = item?.streamName || "—";
     $("pvSubject").textContent = item?.subjectInfo || "—";
     $("pvScore").textContent = item ? `${item.score || 0}/${item.totalMarks || 100} (${item.percentage || 0}%)` : "—";
     $("pvGrade").textContent = item ? `Grade: ${item.grade || "—"}` : "—";
@@ -108,6 +110,8 @@
             <td class="col-reg"><span class="cell-ellipsis">${escapeHtml(r.regNo || "—")}</span></td>
             <td class="col-exam"><span class="cell-ellipsis">${escapeHtml(r.examTitle || "—")}</span></td>
             <td class="col-class"><span class="cell-ellipsis">${escapeHtml(r.className || "—")}</span></td>
+            <td class="col-section"><span class="cell-ellipsis">${escapeHtml(r.sectionName || "Whole Class")}</span></td>
+            <td class="col-stream"><span class="cell-ellipsis">${escapeHtml(r.streamName || "All Streams")}</span></td>
             <td class="col-subject"><span class="cell-ellipsis">${escapeHtml(r.subjectInfo || "—")}</span></td>
             <td class="col-score"><span class="cell-ellipsis">${escapeHtml(String(r.score || 0))}/${escapeHtml(String(r.totalMarks || 100))}</span></td>
             <td class="col-grade"><span class="cell-ellipsis">${escapeHtml(r.grade || "—")}</span></td>
@@ -123,7 +127,7 @@
           </tr>
         `;
       }).join("") ||
-      `<tr><td colspan="10" style="padding:18px;"><div class="muted">No results found.</div></td></tr>`;
+      `<tr><td colspan="12" style="padding:18px;"><div class="muted">No results found.</div></td></tr>`;
 
     $("checkAll").checked = RESULTS.length > 0 && RESULTS.every((r) => state.selected.has(r.id));
     syncBulkbar();
@@ -137,6 +141,9 @@
     if (!examId) {
       $("mStudent").innerHTML = '<option value="">— Select student —</option>';
       $("mTotal").value = "";
+      if ($("mClassScope")) $("mClassScope").textContent = "—";
+      if ($("mSectionScope")) $("mSectionScope").textContent = "—";
+      if ($("mStreamScope")) $("mStreamScope").textContent = "—";
       $("mExamMeta").textContent = "Select an exam to load class, subject, year and term.";
       state.currentExamMeta = null;
       return;
@@ -145,7 +152,7 @@
     $("mExamMeta").textContent = "Loading exam details...";
 
     try {
-      const res = await fetch(`/tenant/results/options?exam=${encodeURIComponent(examId)}`, {
+      const res = await fetch(`/admin/results/options?exam=${encodeURIComponent(examId)}`, {
         headers: { Accept: "application/json" },
         credentials: "same-origin",
       });
@@ -171,9 +178,14 @@
       });
 
       $("mTotal").value = String(data.exam?.totalMarks ?? 100);
+      if ($("mClassScope")) $("mClassScope").textContent = data.labels?.classGroup || "—";
+      if ($("mSectionScope")) $("mSectionScope").textContent = data.labels?.section || "—";
+      if ($("mStreamScope")) $("mStreamScope").textContent = data.labels?.stream || "—";
       $("mExamMeta").textContent = [
         data.exam?.title || "Exam",
         data.labels?.classGroup ? `Class: ${data.labels.classGroup}` : "",
+        data.labels?.section ? `Section: ${data.labels.section}` : "",
+        data.labels?.stream ? `Stream: ${data.labels.stream}` : "",
         data.labels?.subject ? `Subject: ${data.labels.subject}` : "",
         `Academic Year: ${data.exam?.academicYear || "—"}`,
         `Term: ${data.exam?.term || "—"}`,
@@ -212,7 +224,7 @@
     const p = item || null;
 
     $("mTitle").textContent = p ? "Edit Result" : "Enter Result";
-    $("resultForm").action = p ? `/tenant/results/${encodeURIComponent(p.id)}` : "/tenant/results";
+    $("resultForm").action = p ? `/admin/results/${encodeURIComponent(p.id)}` : "/admin/results";
 
     $("mExam").value = p?.examId || "";
     $("mStudent").innerHTML = '<option value="">— Select student —</option>';
@@ -224,6 +236,9 @@
     $("mRemark").value = p?.remark || "";
     $("mRemark").dataset.auto = p?.remark ? "0" : "1";
     $("mStatus").value = p?.status || "draft";
+    if ($("mClassScope")) $("mClassScope").textContent = p?.className || "—";
+    if ($("mSectionScope")) $("mSectionScope").textContent = p?.sectionName || "—";
+    if ($("mStreamScope")) $("mStreamScope").textContent = p?.streamName || "—";
     $("mExamMeta").textContent = "Select an exam to load class, subject, year and term.";
 
     openModal("mEdit");
@@ -243,6 +258,8 @@
     $("vStatus").innerHTML = statusPill(item.status || "draft");
     $("vExam").textContent = item.examTitle || "—";
     $("vClass").textContent = item.className || "—";
+    if ($("vSection")) $("vSection").textContent = item.sectionName || "—";
+    if ($("vStream")) $("vStream").textContent = item.streamName || "—";
     $("vSubject").textContent = item.subjectInfo || "—";
     $("vYear").textContent = item.academicYear || "—";
     $("vTerm").textContent = String(item.term || 1);
@@ -263,7 +280,7 @@
 
   function submitStatus(next) {
     if (!state.currentId) return alert("Select a result first.");
-    $("statusForm").action = `/tenant/results/${encodeURIComponent(state.currentId)}/status`;
+    $("statusForm").action = `/admin/results/${encodeURIComponent(state.currentId)}/status`;
     $("statusVal").value = next;
     $("statusForm").submit();
   }
@@ -271,7 +288,7 @@
   function submitDelete() {
     if (!state.currentId) return alert("Select a result first.");
     if (!window.confirm("Delete this result permanently?")) return;
-    $("deleteForm").action = `/tenant/results/${encodeURIComponent(state.currentId)}/delete`;
+    $("deleteForm").action = `/admin/results/${encodeURIComponent(state.currentId)}/delete`;
     $("deleteForm").submit();
   }
 

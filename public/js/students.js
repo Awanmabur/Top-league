@@ -12,17 +12,79 @@
     }
   }
 
-  const STUDENTS = readJson("studentsData", []);
-  const SUBJECTS = readJson("subjectsData", []);
-  const STRUCTURE = readJson("structureData", []);
-  const CLASSES = readJson("classesData", []);
-  const LEVEL_CLASS_MAP = readJson("classLevelMap", {});
   if (!$("tbodyStudents")) return;
+
+  const TERMS = readJson("termsData", []);
+  const STREAMS = readJson("streamsData", []);
+  const SECTIONS = readJson("sectionsData", []);
+  const QUALIFICATION_MAP = readJson("qualificationMapData", {});
+  const LEVEL_CLASS_MAP = readJson("classLevelMap", {});
+  const STUDENTS = readJson("studentsData", []).map((student) => ({
+    ...student,
+    intakeId: student.intakeId || guessTermId(student),
+    documents: cloneDocState(student.documents),
+  }));
 
   const state = {
     selected: new Set(),
     currentViewId: null,
+    currentDocs: emptyDocState(),
   };
+
+  const passportInput = $("mPassportPhoto");
+  const idInput = $("mIdDocument");
+  const transcriptInput = $("mTranscript");
+  const otherDocsInput = $("mOtherDocs");
+  const qualificationInput = $("mQualification");
+  const schoolInput = $("mSchool");
+  const yearCompletedInput = $("mYearCompleted");
+  const dropZone = $("dropZone");
+  const quickFiles = $("quickFiles");
+  const fileList = $("fileList");
+  const academicYearSelect = $("mAcademicYear");
+  const academicYearDefaults = readAcademicYearDefaults();
+
+  function emptyDocState() {
+    return {
+      passportPhoto: null,
+      idDocument: null,
+      transcript: null,
+      otherDocs: [],
+    };
+  }
+
+  function cloneDocState(docState) {
+    return {
+      passportPhoto: docState?.passportPhoto || null,
+      idDocument: docState?.idDocument || null,
+      transcript: docState?.transcript || null,
+      otherDocs: Array.isArray(docState?.otherDocs) ? docState.otherDocs.slice() : [],
+    };
+  }
+
+  function readAcademicYearDefaults() {
+    if (!academicYearSelect) return [];
+    try {
+      return JSON.parse(academicYearSelect.dataset.defaultOptions || "[]");
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function guessTermId(student) {
+    const termNo = String(student?.term || "").trim();
+    const year = String(student?.academicYear || "").trim();
+    const exact = TERMS.find((term) => termNumber(term) === termNo && String(term.year || "").trim() === year);
+    if (exact) return String(exact._id || "");
+    const fallback = TERMS.find((term) => termNumber(term) === termNo);
+    return fallback ? String(fallback._id || "") : "";
+  }
+
+  function termNumber(term) {
+    const raw = String(term?.term || term?.name || "");
+    const match = raw.match(/\d+/);
+    return match ? match[0] : "";
+  }
 
   function escapeHtml(v) {
     return String(v ?? "")
@@ -31,6 +93,29 @@
       .replaceAll(">", "&gt;")
       .replaceAll('"', "&quot;")
       .replaceAll("'", "&#39;");
+  }
+
+  function humanSize(bytes) {
+    const units = ["B", "KB", "MB", "GB"];
+    let index = 0;
+    let value = Number(bytes || 0);
+    while (value >= 1024 && index < units.length - 1) {
+      value /= 1024;
+      index += 1;
+    }
+    return `${value.toFixed(value < 10 && index > 0 ? 1 : 0)} ${units[index]}`;
+  }
+
+  function schoolLevelLabel(v) {
+    const map = { nursery: "Nursery", primary: "Primary", secondary: "Secondary" };
+    return map[String(v || "").toLowerCase()] || v || "-";
+  }
+
+  function formatDate(value) {
+    if (!value) return "-";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return date.toISOString().slice(0, 10);
   }
 
   function openModal(id) {
@@ -44,7 +129,9 @@
     const el = $(id);
     if (!el) return;
     el.classList.remove("show");
-    document.body.style.overflow = "";
+    if (!document.querySelector(".modal-backdrop.show")) {
+      document.body.style.overflow = "";
+    }
   }
 
   function submitRowAction(actionUrl, status) {
@@ -60,11 +147,6 @@
     $("bulkbar").classList.toggle("show", state.selected.size > 0);
   }
 
-  function schoolLevelLabel(v) {
-    const map = { nursery: "Nursery", primary: "Primary", secondary: "Secondary" };
-    return map[String(v || "").toLowerCase()] || v || "—";
-  }
-
   function statusPill(status) {
     if (status === "active") return '<span class="pill ok"><i class="fa-solid fa-circle-check"></i> Active</span>';
     if (status === "on_hold") return '<span class="pill warn"><i class="fa-solid fa-ban"></i> On Hold</span>';
@@ -73,202 +155,93 @@
     return '<span class="pill arch"><i class="fa-solid fa-box-archive"></i> Archived</span>';
   }
 
-  function subjectLabelList(subjects) {
-    if (!Array.isArray(subjects) || !subjects.length) return "—";
-    return subjects
-      .map((s) => {
-        const code = String(s?.code || "").trim();
-        const title = String(s?.title || s?.shortTitle || "").trim();
-        return code && title ? `${code} — ${title}` : (code || title || "");
-      })
-      .filter(Boolean)
-      .join(", ") || "—";
+  function docCount(docState) {
+    let count = 0;
+    if (docState?.passportPhoto) count += 1;
+    if (docState?.idDocument) count += 1;
+    if (docState?.transcript) count += 1;
+    return count;
   }
 
-  function selectedSubjectIds(student) {
-    return student && Array.isArray(student.subjects)
-      ? student.subjects.map((x) => String(x.id || x._id || x || ""))
-      : [];
+  function extraDocCount(docState) {
+    return Array.isArray(docState?.otherDocs) ? docState.otherDocs.length : 0;
   }
 
-  function campusesForUnit(unitId) {
-    const unit = STRUCTURE.find((x) => String(x.id) === String(unitId));
-    return unit ? (unit.campuses || []) : [];
-  }
-
-  function levelsForCampus(unitId, campusId) {
-    const campus = campusesForUnit(unitId).find((x) => String(x.id) === String(campusId));
-    return campus ? (campus.levels || []) : [];
-  }
-
-  function classLevelsForSchoolLevel(level) {
-    return LEVEL_CLASS_MAP[String(level || "").toLowerCase()] || [];
-  }
-
-  function classesForSelection(unitId, campusId, schoolLevel, classLevel) {
-    return CLASSES.filter((c) => {
-      if (unitId && String(c.schoolUnitId || "") !== String(unitId)) return false;
-      if (campusId && String(c.campusId || "") !== String(campusId)) return false;
-      if (schoolLevel && String(c.schoolLevel || "").toLowerCase() !== String(schoolLevel || "").toLowerCase()) return false;
-      if (classLevel && String(c.classLevel || "") !== String(classLevel || "")) return false;
-      return true;
-    });
-  }
-
-  function subjectMatches(studentLevel, studentClassLevel, studentTerm, subject) {
-    const schoolLevel = String(studentLevel || "").toLowerCase();
-    if (schoolLevel && String(subject.schoolLevel || "").toLowerCase() && String(subject.schoolLevel || "").toLowerCase() !== schoolLevel) return false;
-    if (studentTerm && Number(subject.term || 0) && Number(subject.term) !== Number(studentTerm)) return false;
-    const classLevels = Array.isArray(subject.classLevels) ? subject.classLevels : [];
-    if (studentClassLevel && classLevels.length && !classLevels.includes(studentClassLevel)) return false;
-    return true;
-  }
-
-  function fillCampusOptions(unitId, selected) {
-    const options = campusesForUnit(unitId)
-      .map((c) => `<option value="${escapeHtml(c.id)}" ${String(selected || "") === String(c.id) ? "selected" : ""}>${escapeHtml(c.name)}</option>`)
-      .join("");
-    $("mCampusId").innerHTML = `<option value="">— Select Campus —</option>${options}`;
-  }
-
-  function fillLevelOptions(unitId, campusId, selected) {
-    let levels = levelsForCampus(unitId, campusId);
-    if (!levels.length && selected) {
-      levels = [{ type: selected, name: schoolLevelLabel(selected) }];
+  function docPill(docState) {
+    const requiredCount = docCount(docState);
+    const extras = extraDocCount(docState);
+    if (requiredCount === 3) {
+      return `<span class="pill ok"><i class="fa-solid fa-folder-open"></i> Complete${extras ? ` +${extras}` : ""}</span>`;
     }
-    const options = levels
-      .map((l) => `<option value="${escapeHtml(l.type)}" ${String(selected || "") === String(l.type) ? "selected" : ""}>${escapeHtml(l.name || schoolLevelLabel(l.type))}</option>`)
-      .join("");
-    $("mSchoolLevel").innerHTML = `<option value="">— Select School Level —</option>${options}`;
-  }
-
-  function fillClassLevelOptions(levelType, selected) {
-    let levels = classLevelsForSchoolLevel(levelType);
-    if (!levels.length && selected) levels = [selected];
-    const options = levels
-      .map((item) => `<option value="${escapeHtml(item)}" ${String(selected || "") === String(item) ? "selected" : ""}>${escapeHtml(item)}</option>`)
-      .join("");
-    $("mClassLevel").innerHTML = `<option value="">— Select Class Level —</option>${options}`;
-  }
-
-  function fillClassOptions(unitId, campusId, schoolLevel, classLevel, selected) {
-    let classes = classesForSelection(unitId, campusId, schoolLevel, classLevel);
-    if (!classes.length && selected) {
-      const fallback = CLASSES.find((x) => String(x.id) === String(selected));
-      if (fallback) classes = [fallback];
+    if (requiredCount > 0) {
+      return `<span class="pill warn"><i class="fa-solid fa-folder-open"></i> ${requiredCount}/3 uploaded${extras ? ` +${extras}` : ""}</span>`;
     }
-    const options = classes
-      .map((c) => {
-        const section = c.section ? ` • ${c.section}` : "";
-        const label = `${c.name || c.code || c.classLevel}${section}`;
-        return `<option value="${escapeHtml(c.id)}" ${String(selected || "") === String(c.id) ? "selected" : ""}>${escapeHtml(label)}</option>`;
-      })
-      .join("");
-    $("mClassId").innerHTML = `<option value="">— Select Class —</option>${options}`;
+    return '<span class="pill bad"><i class="fa-solid fa-folder-open"></i> Missing</span>';
   }
 
-  function fillSectionOptions(unitId, campusId, schoolLevel, selectedClassId, selectedSection) {
-    const sections = new Set();
-    const matchedClasses = selectedClassId ? CLASSES.filter((c) => String(c.id) === String(selectedClassId)) : classesForSelection(unitId, campusId, schoolLevel, $("mClassLevel").value);
-
-    matchedClasses.forEach((c) => {
-      if (c.section) sections.add(c.section);
-    });
-
-    levelsForCampus(unitId, campusId)
-      .filter((level) => !schoolLevel || String(level.type || "").toLowerCase() === String(schoolLevel || "").toLowerCase())
-      .forEach((level) => {
-        (level.sections || []).forEach((section) => {
-          if (section.name) sections.add(section.name);
-        });
-      });
-
-    let values = Array.from(sections);
-    if (!values.length && selectedSection) values = [selectedSection];
-
-    const options = values
-      .map((section) => `<option value="${escapeHtml(section)}" ${String(selectedSection || "") === String(section) ? "selected" : ""}>${escapeHtml(section)}</option>`)
-      .join("");
-    $("mSection").innerHTML = `<option value="">— Select Section —</option>${options}`;
+  function documentSummaryText(docState) {
+    const parts = [];
+    if (docState?.passportPhoto) parts.push("Passport");
+    if (docState?.idDocument) parts.push("ID");
+    if (docState?.transcript) parts.push("Transcript");
+    if (Array.isArray(docState?.otherDocs) && docState.otherDocs.length) {
+      parts.push(`${docState.otherDocs.length} other`);
+    }
+    return parts.length ? parts.join(", ") : "No documents";
   }
 
-  function fillSubjectOptions(student) {
-    const level = $("mSchoolLevel").value;
-    const classLevel = $("mClassLevel").value;
-    const term = $("mTerm").value;
-    const selectedIds = new Set(selectedSubjectIds(student));
-    const selectedOptionIds = new Set(Array.from($("mSubjects").selectedOptions || []).map((o) => o.value));
-
-    $("mSubjects").innerHTML = SUBJECTS
-      .filter((subject) => subjectMatches(level, classLevel, term, subject))
-      .map((subject) => {
-        const id = String(subject._id || subject.id || "");
-        const label = [subject.code, subject.title || subject.shortTitle].filter(Boolean).join(" — ") || id;
-        const isSelected = selectedIds.has(id) || selectedOptionIds.has(id);
-        return `<option value="${escapeHtml(id)}" ${isSelected ? "selected" : ""}>${escapeHtml(label)}</option>`;
-      })
-      .join("");
+  function placementText(student) {
+    return [
+      termLabel(student),
+      student.academicYear,
+      schoolLevelLabel(student.schoolLevel),
+      student.classLevel,
+      student.stream,
+      student.section,
+    ].filter(Boolean).join(" / ") || "-";
   }
 
-  function syncSelectionWidgets(student) {
-    fillCampusOptions($("mSchoolUnitId").value, student?.campusId || $("mCampusId").value);
-    fillLevelOptions($("mSchoolUnitId").value, $("mCampusId").value, student?.schoolLevel || $("mSchoolLevel").value);
-    fillClassLevelOptions($("mSchoolLevel").value, student?.classLevel || $("mClassLevel").value);
-    fillClassOptions($("mSchoolUnitId").value, $("mCampusId").value, $("mSchoolLevel").value, $("mClassLevel").value, student?.classId || $("mClassId").value);
-    fillSectionOptions($("mSchoolUnitId").value, $("mCampusId").value, $("mSchoolLevel").value, student?.classId || $("mClassId").value, student?.section || $("mSection").value);
-    fillSubjectOptions(student || null);
+  function contactsText(student) {
+    return [student.email, student.phone, student.guardianPhone].filter(Boolean).join(" / ") || "-";
   }
 
-  function applySelectedClass(selectedClassId) {
-    const c = CLASSES.find((x) => String(x.id) === String(selectedClassId));
-    if (!c) return;
+  function termLabel(student) {
+    const term = TERMS.find((entry) => String(entry._id) === String(student.intakeId || ""));
+    if (term?.name) return term.name;
+    const num = String(student.term || "").trim();
+    return num ? `Term ${num}` : "-";
+  }
 
-    if (c.schoolUnitId) $("mSchoolUnitId").value = c.schoolUnitId;
-    fillCampusOptions($("mSchoolUnitId").value, c.campusId || "");
-    if (c.campusId) $("mCampusId").value = c.campusId;
-    fillLevelOptions($("mSchoolUnitId").value, $("mCampusId").value, c.schoolLevel || "");
-    if (c.schoolLevel) $("mSchoolLevel").value = c.schoolLevel;
-    fillClassLevelOptions($("mSchoolLevel").value, c.classLevel || "");
-    if (c.classLevel) $("mClassLevel").value = c.classLevel;
-    fillClassOptions($("mSchoolUnitId").value, $("mCampusId").value, $("mSchoolLevel").value, $("mClassLevel").value, c.id);
-    $("mClassId").value = c.id;
-    fillSectionOptions($("mSchoolUnitId").value, $("mCampusId").value, $("mSchoolLevel").value, c.id, c.section || "");
-    if (c.section) $("mSection").value = c.section;
-    if (!$("mAcademicYear").value && c.academicYear) $("mAcademicYear").value = c.academicYear;
-    if ((!$("mTerm").value || $("mTerm").value === "1") && c.term) $("mTerm").value = String(c.term);
-    fillSubjectOptions(null);
+  function holdText(student) {
+    return student.holdType ? `${student.holdType}${student.holdReason ? ` - ${student.holdReason}` : ""}` : "-";
   }
 
   function renderTable() {
     $("tbodyStudents").innerHTML =
-      STUDENTS.map((s) => {
-        const checked = state.selected.has(s.id) ? "checked" : "";
-        const holdText = s.holdType ? `${s.holdType}${s.holdReason ? " • " + s.holdReason : ""}` : "—";
-        const placement = [s.schoolUnitName, s.campusName, s.className || s.classLevel, s.section].filter(Boolean).join(" • ");
+      STUDENTS.map((student) => {
+        const checked = state.selected.has(student.id) ? "checked" : "";
+        const fullName = student.fullName || [student.firstName, student.middleName, student.lastName].filter(Boolean).join(" ");
+        const docs = cloneDocState(student.documents);
 
         return `
-          <tr class="row-clickable" data-id="${escapeHtml(s.id)}">
-            <td class="col-check"><input type="checkbox" class="rowCheck" data-id="${escapeHtml(s.id)}" ${checked}></td>
-
+          <tr class="row-clickable" data-id="${escapeHtml(student.id)}">
+            <td class="col-check"><input type="checkbox" class="rowCheck" data-id="${escapeHtml(student.id)}" ${checked}></td>
             <td class="col-student">
               <div class="student-main">
-                <div class="student-title" title="${escapeHtml(s.fullName || [s.firstName, s.middleName, s.lastName].filter(Boolean).join(" "))}">
-                  ${escapeHtml(s.fullName || [s.firstName, s.middleName, s.lastName].filter(Boolean).join(" ") || "—")}
-                </div>
-                <div class="student-sub" title="${escapeHtml(s.regNo || "—")}">${escapeHtml(s.regNo || "—")}</div>
+                <div class="student-title" title="${escapeHtml(fullName || "-")}">${escapeHtml(fullName || "-")}</div>
+                <div class="student-sub" title="${escapeHtml(student.regNo || "-")}">${escapeHtml(student.regNo || "-")}</div>
               </div>
             </td>
-
-            <td class="col-placement"><span class="cell-ellipsis" title="${escapeHtml(placement || "—")}">${escapeHtml(placement || "—")}</span></td>
-            <td class="col-level"><span class="cell-ellipsis">${escapeHtml(schoolLevelLabel(s.schoolLevel))}</span></td>
-            <td class="col-class"><span class="cell-ellipsis">${escapeHtml(s.classLevel || "—")}</span></td>
-            <td class="col-subjects"><span class="cell-ellipsis" title="${escapeHtml(subjectLabelList(s.subjects))}">${escapeHtml(subjectLabelList(s.subjects))}</span></td>
-            <td class="col-term"><span class="cell-ellipsis">${escapeHtml("Term " + Number(s.term || 1))}</span></td>
-            <td class="col-academic"><span class="cell-ellipsis">${escapeHtml(s.academicYear || "—")}</span></td>
-            <td class="col-contacts"><span class="cell-ellipsis" title="${escapeHtml([s.email, s.phone].filter(Boolean).join(" • ") || "—")}">${escapeHtml([s.email, s.phone].filter(Boolean).join(" • ") || "—")}</span></td>
-            <td class="col-status">${statusPill(s.status)}</td>
-            <td class="col-hold"><span class="cell-ellipsis" title="${escapeHtml(holdText)}">${escapeHtml(holdText)}</span></td>
-
+            <td class="col-placement"><span class="cell-ellipsis" title="${escapeHtml(placementText(student))}">${escapeHtml(placementText(student))}</span></td>
+            <td class="col-docs">
+              <div class="doc-summary">
+                <div>${docPill(docs)}</div>
+                <strong title="${escapeHtml(documentSummaryText(docs))}">${escapeHtml(documentSummaryText(docs))}</strong>
+              </div>
+            </td>
+            <td class="col-contacts"><span class="cell-ellipsis" title="${escapeHtml(contactsText(student))}">${escapeHtml(contactsText(student))}</span></td>
+            <td class="col-status">${statusPill(student.status)}</td>
+            <td class="col-hold"><span class="cell-ellipsis" title="${escapeHtml(holdText(student))}">${escapeHtml(holdText(student))}</span></td>
             <td class="col-actions">
               <div class="actions">
                 <button class="btn-xs actView" type="button" title="View"><i class="fa-solid fa-eye"></i></button>
@@ -281,94 +254,447 @@
           </tr>
         `;
       }).join("") ||
-      `<tr><td colspan="12" style="padding:18px;"><div class="muted">No students found.</div></td></tr>`;
+      `<tr><td colspan="8" style="padding:18px;"><div class="muted">No students found.</div></td></tr>`;
 
-    $("checkAll").checked = STUDENTS.length > 0 && STUDENTS.every((s) => state.selected.has(s.id));
+    $("checkAll").checked = STUDENTS.length > 0 && STUDENTS.every((student) => state.selected.has(student.id));
     syncBulkbar();
   }
 
-  function openEditor(prefill) {
-    const s = prefill || null;
+  function refillSelect(select, options, selectedValue, placeholder) {
+    if (!select) return;
+    const selected = String(selectedValue == null ? "" : selectedValue);
+    const seen = new Set();
+    const html = [`<option value="">${escapeHtml(placeholder || "Select")}</option>`];
 
-    $("mTitleBar").textContent = s ? "Edit Student" : "Add Student";
-    $("studentForm").action = s ? `/tenant/students/${encodeURIComponent(s.id)}` : "/tenant/students";
+    options.forEach((option) => {
+      const value = String(option.value ?? "");
+      if (seen.has(value)) return;
+      seen.add(value);
+      const attrs = Object.entries(option.data || {})
+        .map(([key, val]) => ` data-${escapeHtml(key)}="${escapeHtml(val)}"`)
+        .join("");
+      html.push(`<option value="${escapeHtml(value)}"${attrs} ${value === selected ? "selected" : ""}>${escapeHtml(option.label ?? value)}</option>`);
+    });
 
-    $("mRegNo").value = s ? s.regNo || "" : "";
-    $("mFullName").value = s ? s.fullName || "" : "";
-    $("mStatus").value = s ? s.status || "active" : "active";
-    $("mFirstName").value = s ? s.firstName || "" : "";
-    $("mMiddleName").value = s ? s.middleName || "" : "";
-    $("mLastName").value = s ? s.lastName || "" : "";
-    $("mGender").value = s ? s.gender || "" : "";
-    $("mNationality").value = s ? s.nationality || "" : "";
-    $("mAddress").value = s ? s.address || "" : "";
-    $("mSchoolUnitId").value = s ? s.schoolUnitId || "" : "";
-    $("mCampusId").innerHTML = "";
-    $("mSchoolLevel").innerHTML = "";
-    $("mClassLevel").innerHTML = "";
-    $("mClassId").innerHTML = "";
-    $("mSection").innerHTML = "";
-    $("mTerm").value = s ? String(s.term || 1) : "1";
-    $("mAcademicYear").value = s ? s.academicYear || "" : "";
-    $("mEmail").value = s ? s.email || "" : "";
-    $("mPhone").value = s ? s.phone || "" : "";
-    $("mGuardianName").value = s ? s.guardianName || "" : "";
-    $("mGuardianPhone").value = s ? s.guardianPhone || "" : "";
-    $("mGuardianEmail").value = s ? s.guardianEmail || "" : "";
-    $("mHoldType").value = s ? s.holdType || "" : "";
-    $("mHoldReason").value = s ? s.holdReason || "" : "";
+    select.innerHTML = html.join("");
+    select.value = selected && seen.has(selected) ? selected : "";
+  }
 
-    syncSelectionWidgets(s);
-    $("mCampusId").value = s ? s.campusId || "" : $("mCampusId").value;
-    $("mSchoolLevel").value = s ? s.schoolLevel || "" : $("mSchoolLevel").value;
-    $("mClassLevel").value = s ? s.classLevel || "" : $("mClassLevel").value;
-    fillClassOptions($("mSchoolUnitId").value, $("mCampusId").value, $("mSchoolLevel").value, $("mClassLevel").value, s ? s.classId || "" : "");
-    $("mClassId").value = s ? s.classId || "" : "";
-    fillSectionOptions($("mSchoolUnitId").value, $("mCampusId").value, $("mSchoolLevel").value, $("mClassId").value, s ? s.section || s.stream || "" : "");
-    $("mSection").value = s ? s.section || s.stream || "" : "";
-    fillSubjectOptions(s);
+  function syncAcademicYear(preferredYear) {
+    if (!academicYearSelect) return;
+    const selected = $("mTermId")?.selectedOptions?.[0] || null;
+    const termYear = selected ? String(selected.getAttribute("data-year") || "").trim() : "";
 
-    $("holdReasonCount").textContent = `${$("mHoldReason").value.length} / 200`;
+    if (termYear) {
+      refillSelect(
+        academicYearSelect,
+        [{ value: termYear, label: termYear }],
+        termYear,
+        "Select"
+      );
+      academicYearSelect.disabled = false;
+      return;
+    }
+
+    refillSelect(
+      academicYearSelect,
+      academicYearDefaults.map((year) => ({ value: year, label: year })),
+      preferredYear || academicYearSelect.value,
+      "Select"
+    );
+    academicYearSelect.disabled = false;
+  }
+
+  function syncClassLevels(preferredValue) {
+    const level = String($("mSchoolLevel")?.value || "").toLowerCase();
+    const options = (LEVEL_CLASS_MAP[level] || []).map((value) => ({ value, label: value }));
+    const selected = preferredValue || $("mClassLevel")?.value || "";
+    refillSelect($("mClassLevel"), options, selected, "Select");
+  }
+
+  function syncStreams(preferredValue) {
+    const level = String($("mSchoolLevel")?.value || "").toLowerCase();
+    const classLevel = String($("mClassLevel")?.value || "").toUpperCase();
+    let matching = STREAMS.filter((stream) => (!level || stream.levelType === level) && (!classLevel || stream.classLevel === classLevel));
+
+    if (!matching.length && preferredValue) {
+      const fallback = STREAMS.find((stream) => String(stream._id) === String(preferredValue));
+      if (fallback) matching = [fallback];
+    }
+
+    refillSelect(
+      $("mStreamId"),
+      matching.map((stream) => ({
+        value: stream._id,
+        label: stream.name,
+        data: {
+          level: stream.levelType,
+          classLevel: stream.classLevel,
+          classId: stream.classId,
+        },
+      })),
+      preferredValue || $("mStreamId")?.value || "",
+      "Select stream"
+    );
+  }
+
+  function syncSections(preferredValue) {
+    const level = String($("mSchoolLevel")?.value || "").toLowerCase();
+    const classLevel = String($("mClassLevel")?.value || "").toUpperCase();
+    const stream = STREAMS.find((entry) => String(entry._id) === String($("mStreamId")?.value || ""));
+    const classId = String(stream?.classId || "");
+
+    let matching = SECTIONS.filter((section) =>
+      (!level || section.levelType === level) &&
+      (!classLevel || section.classLevel === classLevel) &&
+      (!classId || String(section.classId || "") === classId)
+    );
+
+    if (!matching.length) {
+      matching = SECTIONS.filter((section) =>
+        (!level || section.levelType === level) &&
+        (!classLevel || section.classLevel === classLevel)
+      );
+    }
+
+    if (!matching.length && preferredValue) {
+      const fallback = SECTIONS.find((section) => String(section._id) === String(preferredValue));
+      if (fallback) matching = [fallback];
+    }
+
+    refillSelect(
+      $("mSection1"),
+      matching.map((section) => ({
+        value: section._id,
+        label: section.name,
+        data: {
+          level: section.levelType,
+          classLevel: section.classLevel,
+          classId: section.classId,
+        },
+      })),
+      preferredValue || $("mSection1")?.value || "",
+      "Select section"
+    );
+
+    $("mSection1").disabled = !matching.length;
+  }
+
+  function syncQualifications(preferredValue) {
+    const level = String($("mSchoolLevel")?.value || "").toLowerCase();
+    const values = Array.isArray(QUALIFICATION_MAP[level]) ? QUALIFICATION_MAP[level] : [];
+    let options = values.map((value) => ({ value, label: value }));
+    if (preferredValue && !values.includes(preferredValue)) {
+      options = [{ value: preferredValue, label: preferredValue }].concat(options);
+    }
+    refillSelect($("mQualification"), options, preferredValue || $("mQualification")?.value || "", "Select");
+    syncEducationFields();
+  }
+
+  function hasNoPreviousEducation() {
+    return String(qualificationInput?.value || "").trim().toLowerCase() === "no previous education";
+  }
+
+  function setHint(id, text, tone, url) {
+    const el = $(id);
+    if (!el) return;
+    if (!text) {
+      el.textContent = "";
+      return;
+    }
+    const color = tone === "error" ? "#b91c1c" : tone === "ok" ? "#15803d" : "#6b7280";
+    el.style.color = color;
+    if (url) {
+      el.innerHTML = `<a href="${escapeHtml(url)}" target="_blank" rel="noreferrer">${escapeHtml(text)}</a>`;
+    } else {
+      el.textContent = text;
+    }
+  }
+
+  function refreshDocumentUi() {
+    const docs = state.currentDocs || emptyDocState();
+    const noPreviousEducation = hasNoPreviousEducation();
+
+    passportInput.required = !docs.passportPhoto;
+    idInput.required = !docs.idDocument;
+    transcriptInput.required = !noPreviousEducation && !docs.transcript;
+
+    if (passportInput.files?.length) {
+      setHint("passportPhotoStatus", `Selected: ${passportInput.files[0].name}`, "ok");
+    } else if (docs.passportPhoto) {
+      setHint("passportPhotoStatus", `Saved: ${docs.passportPhoto.originalName || "Passport Photo"}`, "ok", docs.passportPhoto.url);
+    } else {
+      setHint("passportPhotoStatus", "Not uploaded yet", "");
+    }
+
+    if (idInput.files?.length) {
+      setHint("idDocumentStatus", `Selected: ${idInput.files[0].name}`, "ok");
+    } else if (docs.idDocument) {
+      setHint("idDocumentStatus", `Saved: ${docs.idDocument.originalName || "National ID / Passport"}`, "ok", docs.idDocument.url);
+    } else {
+      setHint("idDocumentStatus", "Not uploaded yet", "");
+    }
+
+    if (noPreviousEducation) {
+      setHint("transcriptStatus", "Not required for no previous education", "ok");
+    } else if (transcriptInput.files?.length) {
+      setHint("transcriptStatus", `Selected: ${transcriptInput.files[0].name}`, "ok");
+    } else if (docs.transcript) {
+      setHint("transcriptStatus", `Saved: ${docs.transcript.originalName || "Transcript"}`, "ok", docs.transcript.url);
+    } else {
+      setHint("transcriptStatus", "Not uploaded yet", "");
+    }
+
+    const extraCount = extraDocCount(docs);
+    if ((otherDocsInput.files?.length || 0) > 0) {
+      setHint("otherDocsStatus", `${otherDocsInput.files.length} file(s) selected`, "ok");
+    } else if (extraCount) {
+      setHint("otherDocsStatus", `${extraCount} extra document(s) saved`, "ok");
+    } else {
+      setHint("otherDocsStatus", "Optional", "");
+    }
+
+    renderOtherDocs();
+  }
+
+  function syncEducationFields() {
+    const noPreviousEducation = hasNoPreviousEducation();
+    if (schoolInput) {
+      schoolInput.disabled = noPreviousEducation;
+      schoolInput.required = !noPreviousEducation;
+      if (noPreviousEducation) schoolInput.value = "";
+    }
+    if (yearCompletedInput) {
+      yearCompletedInput.disabled = noPreviousEducation;
+      yearCompletedInput.required = !noPreviousEducation;
+      if (noPreviousEducation) yearCompletedInput.value = "";
+    }
+    refreshDocumentUi();
+  }
+
+  function renderOtherDocs() {
+    if (!fileList) return;
+    const savedDocs = Array.isArray(state.currentDocs?.otherDocs) ? state.currentDocs.otherDocs : [];
+    const pendingDocs = otherDocsInput.files ? Array.from(otherDocsInput.files) : [];
+    const blocks = [];
+
+    savedDocs.forEach((doc) => {
+      blocks.push(`
+        <div class="file-row">
+          <div style="min-width:0">
+            <div class="name">${escapeHtml(doc.originalName || "Saved document")}</div>
+            <div class="meta">${escapeHtml(humanSize(doc.bytes))}</div>
+          </div>
+          <a class="pill ok" href="${escapeHtml(doc.url || "#")}" target="_blank" rel="noreferrer"><i class="fa-solid fa-check"></i> Saved</a>
+        </div>
+      `);
+    });
+
+    pendingDocs.forEach((file) => {
+      blocks.push(`
+        <div class="file-row">
+          <div style="min-width:0">
+            <div class="name">${escapeHtml(file.name)}</div>
+            <div class="meta">${escapeHtml(humanSize(file.size))}</div>
+          </div>
+          <span class="pill warn"><i class="fa-solid fa-arrow-up"></i> Pending</span>
+        </div>
+      `);
+    });
+
+    fileList.innerHTML = blocks.length ? blocks.join("") : '<div class="muted">No extra files selected yet.</div>';
+  }
+
+  function mergeIntoOtherDocs(newFiles) {
+    const dt = new DataTransfer();
+    const existing = otherDocsInput.files ? Array.from(otherDocsInput.files) : [];
+    existing.concat(newFiles).forEach((file) => dt.items.add(file));
+    otherDocsInput.files = dt.files;
+    if (quickFiles) quickFiles.value = "";
+    refreshDocumentUi();
+  }
+
+  function resetTabs() {
+    document.querySelectorAll(".tab").forEach((tab, index) => {
+      tab.classList.toggle("active", index === 0);
+    });
+    document.querySelectorAll(".tab-pane").forEach((pane, index) => {
+      pane.classList.toggle("active", index === 0);
+    });
+  }
+
+  function openEditor(student) {
+    const form = $("studentForm");
+    const current = student
+      ? {
+          ...student,
+          intakeId: student.intakeId || guessTermId(student),
+          documents: cloneDocState(student.documents),
+        }
+      : null;
+
+    form.reset();
+    if (quickFiles) quickFiles.value = "";
+    state.currentDocs = cloneDocState(current?.documents);
+
+    $("mTitleBar").textContent = current ? "Edit Student" : "Add Student";
+    form.action = current ? `/admin/students/${encodeURIComponent(current.id)}` : "/admin/students";
+
+    $("mFirstName").value = current?.firstName || "";
+    $("mMiddleName").value = current?.middleName || "";
+    $("mLastName").value = current?.lastName || "";
+    $("mGender").value = current?.gender || "";
+    $("mDob").value = current?.dob ? formatDate(current.dob) : "";
+    $("mNationality").value = current?.nationality || "";
+    $("mPhone").value = current?.phone || "";
+    $("mEmail").value = current?.email || "";
+    $("mAddress").value = current?.address || "";
+    $("mRegNo").value = current?.regNo || "";
+    $("mStatus").value = current?.status || "active";
+    $("mHoldType").value = current?.holdType || "";
+    $("mHoldReason").value = current?.holdReason || "";
+    $("mNotes").value = current?.notes || "";
+    $("mGuardianName").value = current?.guardianName || "";
+    $("mGuardianPhone").value = current?.guardianPhone || "";
+    $("mGuardianEmail").value = current?.guardianEmail || "";
+    $("mGrades").value = current?.grades || "";
+    $("mSchool").value = current?.school || "";
+    $("mYearCompleted").value = current?.yearCompleted || "";
+    $("mTermId").value = current?.intakeId || "";
+    $("mSchoolLevel").value = current?.schoolLevel || "";
+
+    syncAcademicYear(current?.academicYear || "");
+    if (current?.academicYear && academicYearSelect.querySelector(`option[value="${CSS.escape(String(current.academicYear))}"]`)) {
+      academicYearSelect.value = current.academicYear;
+    }
+
+    syncClassLevels(current?.classLevel || "");
+    syncStreams(current?.streamId || "");
+    syncSections(current?.sectionId || "");
+    syncQualifications(current?.qualification || "");
+
+    $("mClassLevel").value = current?.classLevel || $("mClassLevel").value;
+    syncStreams(current?.streamId || "");
+    $("mStreamId").value = current?.streamId || $("mStreamId").value;
+    syncSections(current?.sectionId || "");
+    $("mSection1").value = current?.sectionId || $("mSection1").value;
+    $("mQualification").value = current?.qualification || $("mQualification").value;
+    syncEducationFields();
+    refreshDocumentUi();
+    resetTabs();
+    updateHoldCounter();
     openModal("mEdit");
   }
 
-  function openViewModal(s) {
-    if (!s) return;
+  function renderDocumentLinks(docState) {
+    const docs = [];
+    if (docState?.passportPhoto) docs.push({ label: "Passport Photo", doc: docState.passportPhoto });
+    if (docState?.idDocument) docs.push({ label: "National ID / Passport", doc: docState.idDocument });
+    if (docState?.transcript) docs.push({ label: "Transcript / Results Slip", doc: docState.transcript });
+    (docState?.otherDocs || []).forEach((doc, index) => docs.push({ label: doc.originalName || `Other Document ${index + 1}`, doc }));
 
-    state.currentViewId = s.id;
-    $("vFullName").textContent = s.fullName || [s.firstName, s.middleName, s.lastName].filter(Boolean).join(" ") || "—";
-    $("vRegNo").textContent = s.regNo || "—";
-    $("vStatus").innerHTML = statusPill(s.status || "active");
-    $("vSchoolUnit").textContent = s.schoolUnitName || "—";
-    $("vCampus").textContent = s.campusName || "—";
-    $("vClassName").textContent = s.className || "—";
-    $("vSection").textContent = s.section || s.stream || "—";
-    $("vSchoolLevel").textContent = schoolLevelLabel(s.schoolLevel);
-    $("vClassLevel").textContent = s.classLevel || "—";
-    $("vTerm").textContent = `Term ${Number(s.term || 1)}`;
-    $("vAcademicYear").textContent = s.academicYear || "—";
-    $("vEmail").textContent = s.email || "—";
-    $("vPhone").textContent = s.phone || "—";
-    $("vGuardian").textContent = [s.guardianName, s.guardianPhone, s.guardianEmail].filter(Boolean).join(" • ") || "—";
-    $("vSubjects").textContent = subjectLabelList(s.subjects);
-    $("vHold").textContent = s.holdType ? `${s.holdType}${s.holdReason ? " • " + s.holdReason : ""}` : "—";
+    if (!docs.length) {
+      return '<div class="muted">No documents uploaded yet.</div>';
+    }
+
+    return docs.map((item) => {
+      const bytes = item.doc?.bytes ? humanSize(item.doc.bytes) : "";
+      return `
+        <a class="doc-link" href="${escapeHtml(item.doc?.url || "#")}" target="_blank" rel="noreferrer">
+          <div style="min-width:0">
+            <div class="strong">${escapeHtml(item.label)}</div>
+            <div class="meta">${escapeHtml(item.doc?.originalName || "")}${bytes ? ` - ${escapeHtml(bytes)}` : ""}</div>
+          </div>
+          <i class="fa-solid fa-arrow-up-right-from-square"></i>
+        </a>
+      `;
+    }).join("");
+  }
+
+  function openViewModal(student) {
+    if (!student) return;
+
+    const fullName = student.fullName || [student.firstName, student.middleName, student.lastName].filter(Boolean).join(" ");
+    state.currentViewId = student.id;
+
+    $("vFullName").textContent = fullName || "-";
+    $("vRegNo").textContent = student.regNo || "-";
+    $("vStatus").innerHTML = statusPill(student.status || "active");
+    $("vTerm").textContent = termLabel(student);
+    $("vAcademicYear").textContent = student.academicYear || "-";
+    $("vSchoolLevel").textContent = schoolLevelLabel(student.schoolLevel);
+    $("vClassLevel").textContent = student.classLevel || "-";
+    $("vStream").textContent = student.stream || "-";
+    $("vSection").textContent = student.section || "-";
+    $("vDob").textContent = student.dob ? formatDate(student.dob) : "-";
+    $("vNationality").textContent = student.nationality || "-";
+    $("vEmail").textContent = student.email || "-";
+    $("vPhone").textContent = student.phone || "-";
+    $("vGuardian").textContent = [student.guardianName, student.guardianPhone, student.guardianEmail].filter(Boolean).join(" / ") || "-";
+    $("vQualification").textContent = student.qualification || "-";
+    $("vSchool").textContent = student.school || "-";
+    $("vYearCompleted").textContent = student.yearCompleted || "-";
+    $("vGrades").textContent = student.grades || "-";
+    $("vAddress").textContent = student.address || "-";
+    $("vNotes").textContent = student.notes || "-";
+    $("vHold").textContent = holdText(student);
+    $("vDocuments").innerHTML = renderDocumentLinks(student.documents || emptyDocState());
 
     openModal("mView");
   }
 
-  function saveStudent() {
-    const schoolLevel = $("mSchoolLevel").value;
-    const classLevel = $("mClassLevel").value;
-    const missing = [];
+  function updateHoldCounter() {
+    $("holdReasonCount").textContent = `${$("mHoldReason").value.length} / 200`;
+  }
 
-    if (!schoolLevel) missing.push("school level");
-    if (!classLevel) missing.push("class level");
-    if (!$("mSchoolUnitId").value) missing.push("school unit");
-    if (!$("mCampusId").value) missing.push("campus");
+  function saveStudent() {
+    const requiredFields = [
+      ["mFirstName", "first name"],
+      ["mLastName", "last name"],
+      ["mGender", "gender"],
+      ["mDob", "date of birth"],
+      ["mNationality", "nationality"],
+      ["mPhone", "phone"],
+      ["mEmail", "email"],
+      ["mAddress", "address"],
+      ["mTermId", "term"],
+      ["mAcademicYear", "academic year"],
+      ["mSchoolLevel", "school level"],
+      ["mClassLevel", "class level"],
+      ["mStreamId", "stream"],
+      ["mSection1", "section"],
+      ["mQualification", "highest qualification"],
+      ["mGuardianName", "guardian name"],
+      ["mGuardianPhone", "guardian phone"],
+    ];
+
+    const missing = requiredFields
+      .filter(([id]) => !String($(id)?.value || "").trim())
+      .map(([, label]) => label);
+
+    if (!hasNoPreviousEducation()) {
+      if (!String($("mSchool").value || "").trim()) missing.push("school / institution");
+      if (!String($("mYearCompleted").value || "").trim()) missing.push("year completed");
+      const yearCompleted = Number($("mYearCompleted").value || 0);
+      const currentYear = new Date().getFullYear();
+      if ($("mYearCompleted").value && (Number.isNaN(yearCompleted) || yearCompleted < 1900 || yearCompleted > currentYear + 1)) {
+        return alert("Year completed is invalid.");
+      }
+    }
+
+    const docs = state.currentDocs || emptyDocState();
+    if (!docs.passportPhoto && !passportInput.files?.length) missing.push("passport photo");
+    if (!docs.idDocument && !idInput.files?.length) missing.push("national ID / passport scan");
+    if (!hasNoPreviousEducation() && !docs.transcript && !transcriptInput.files?.length) missing.push("transcript / results slip");
 
     if (missing.length) {
-      return alert(`Please select ${missing.join(", ")}.`);
+      return alert(`Please complete: ${missing.join(", ")}.`);
     }
+
+    $("mFullName").value = [$("mFirstName").value, $("mMiddleName").value, $("mLastName").value]
+      .map((value) => String(value || "").trim())
+      .filter(Boolean)
+      .join(" ");
 
     $("studentForm").submit();
   }
@@ -388,213 +714,178 @@
     $("bulkForm").submit();
   }
 
-  function updateHoldCounter() {
-    $("holdReasonCount").textContent = `${$("mHoldReason").value.length} / 200`;
-  }
-
-  $("btnCreate").addEventListener("click", function () {
-    openEditor();
-  });
-
-  $("quickActive").addEventListener("click", function () {
+  $("btnCreate").addEventListener("click", () => openEditor());
+  $("quickActive").addEventListener("click", () => {
     openEditor();
     $("mStatus").value = "active";
   });
-
-  $("quickHold").addEventListener("click", function () {
+  $("quickHold").addEventListener("click", () => {
     openEditor();
     $("mStatus").value = "on_hold";
   });
-
-  $("btnImport").addEventListener("click", function () {
-    openModal("mImport");
-  });
-
-  $("quickImport").addEventListener("click", function () {
-    openModal("mImport");
-  });
-
-  $("btnPrint").addEventListener("click", function () {
-    window.print();
-  });
-
-  $("btnBulk").addEventListener("click", function () {
+  $("btnImport").addEventListener("click", () => openModal("mImport"));
+  $("quickImport").addEventListener("click", () => openModal("mImport"));
+  $("btnPrint").addEventListener("click", () => window.print());
+  $("btnBulk").addEventListener("click", () => {
     if (!state.selected.size) return alert("Select at least one student.");
     $("bulkbar").classList.add("show");
   });
 
-  $("bulkSetStatus").addEventListener("click", function () {
+  $("bulkSetStatus").addEventListener("click", () => {
     const status = prompt("Enter status: active, on_hold, suspended, graduated, archived");
     if (!status) return;
     submitBulk("set_status", { status });
   });
-
-  $("bulkApplyHold").addEventListener("click", function () {
+  $("bulkApplyHold").addEventListener("click", () => {
     const holdType = prompt("Enter hold type:");
     if (!holdType) return;
     const holdReason = prompt("Enter hold reason (optional):") || "";
     submitBulk("set_hold", { holdType, holdReason });
   });
-
-  $("bulkClearHold").addEventListener("click", function () {
-    submitBulk("clear_hold");
-  });
-
-  $("bulkArchive").addEventListener("click", function () {
-    submitBulk("archive");
-  });
-
-  $("bulkDelete").addEventListener("click", function () {
-    submitBulk("delete");
-  });
-
-  $("bulkClear").addEventListener("click", function () {
+  $("bulkClearHold").addEventListener("click", () => submitBulk("clear_hold"));
+  $("bulkArchive").addEventListener("click", () => submitBulk("archive"));
+  $("bulkDelete").addEventListener("click", () => submitBulk("delete"));
+  $("bulkClear").addEventListener("click", () => {
     state.selected.clear();
     renderTable();
   });
 
-  $("checkAll").addEventListener("change", function (e) {
-    if (e.target.checked) STUDENTS.forEach((s) => state.selected.add(s.id));
-    else STUDENTS.forEach((s) => state.selected.delete(s.id));
+  $("checkAll").addEventListener("change", (event) => {
+    if (event.target.checked) {
+      STUDENTS.forEach((student) => state.selected.add(student.id));
+    } else {
+      STUDENTS.forEach((student) => state.selected.delete(student.id));
+    }
     renderTable();
   });
 
-  $("tbodyStudents").addEventListener("change", function (e) {
-    if (!e.target.classList.contains("rowCheck")) return;
-    const id = e.target.dataset.id;
-    if (e.target.checked) state.selected.add(id);
+  $("tbodyStudents").addEventListener("change", (event) => {
+    if (!event.target.classList.contains("rowCheck")) return;
+    const id = event.target.dataset.id;
+    if (event.target.checked) state.selected.add(id);
     else state.selected.delete(id);
     renderTable();
   });
 
-  $("tbodyStudents").addEventListener("click", function (e) {
-    const tr = e.target.closest("tr[data-id]");
-    if (!tr) return;
+  $("tbodyStudents").addEventListener("click", (event) => {
+    const row = event.target.closest("tr[data-id]");
+    if (!row) return;
 
-    const s = STUDENTS.find((x) => x.id === tr.dataset.id);
-    if (!s) return;
+    const student = STUDENTS.find((entry) => entry.id === row.dataset.id);
+    if (!student) return;
 
-    if (e.target.closest(".rowCheck") || e.target.closest(".actions") || e.target.closest(".btn-xs")) {
-      if (e.target.closest(".actView")) return openViewModal(s);
-      if (e.target.closest(".actEdit")) return openEditor(s);
-
-      if (e.target.closest(".actResend")) {
-        if (!window.confirm(`Resend setup link for "${s.fullName || s.regNo}"?`)) return;
-        return submitRowAction(`/tenant/students/${encodeURIComponent(s.id)}/resend-setup`);
+    if (event.target.closest(".rowCheck") || event.target.closest(".actions") || event.target.closest(".btn-xs")) {
+      if (event.target.closest(".actView")) return openViewModal(student);
+      if (event.target.closest(".actEdit")) return openEditor(student);
+      if (event.target.closest(".actResend")) {
+        if (!window.confirm(`Resend setup link for "${student.fullName || student.regNo}"?`)) return;
+        return submitRowAction(`/admin/students/${encodeURIComponent(student.id)}/resend-setup`);
       }
-
-      if (e.target.closest(".actArchive")) {
-        if (!window.confirm(`Archive "${s.fullName || s.regNo}"?`)) return;
-        return submitRowAction(`/tenant/students/${encodeURIComponent(s.id)}/archive`);
+      if (event.target.closest(".actArchive")) {
+        if (!window.confirm(`Archive "${student.fullName || student.regNo}"?`)) return;
+        return submitRowAction(`/admin/students/${encodeURIComponent(student.id)}/archive`);
       }
-
-      if (e.target.closest(".actDelete")) {
-        if (!window.confirm(`Delete "${s.fullName || s.regNo}"?`)) return;
-        return submitRowAction(`/tenant/students/${encodeURIComponent(s.id)}/delete`);
+      if (event.target.closest(".actDelete")) {
+        if (!window.confirm(`Delete "${student.fullName || student.regNo}"?`)) return;
+        return submitRowAction(`/admin/students/${encodeURIComponent(student.id)}/delete`);
       }
-
       return;
     }
 
-    openViewModal(s);
+    openViewModal(student);
   });
 
-  $("viewEditBtn").addEventListener("click", function () {
-    const s = STUDENTS.find((x) => x.id === state.currentViewId);
-    if (!s) return;
+  $("viewEditBtn").addEventListener("click", () => {
+    const student = STUDENTS.find((entry) => entry.id === state.currentViewId);
+    if (!student) return;
     closeModal("mView");
-    openEditor(s);
+    openEditor(student);
   });
-
-  $("viewArchiveBtn").addEventListener("click", function () {
-    const s = STUDENTS.find((x) => x.id === state.currentViewId);
-    if (!s) return;
-    if (!window.confirm(`Archive "${s.fullName || s.regNo}"?`)) return;
-    submitRowAction(`/tenant/students/${encodeURIComponent(s.id)}/archive`);
+  $("viewArchiveBtn").addEventListener("click", () => {
+    const student = STUDENTS.find((entry) => entry.id === state.currentViewId);
+    if (!student) return;
+    if (!window.confirm(`Archive "${student.fullName || student.regNo}"?`)) return;
+    submitRowAction(`/admin/students/${encodeURIComponent(student.id)}/archive`);
   });
-
-  $("viewResendBtn").addEventListener("click", function () {
-    const s = STUDENTS.find((x) => x.id === state.currentViewId);
-    if (!s) return;
-    if (!window.confirm(`Resend setup link for "${s.fullName || s.regNo}"?`)) return;
-    submitRowAction(`/tenant/students/${encodeURIComponent(s.id)}/resend-setup`);
+  $("viewResendBtn").addEventListener("click", () => {
+    const student = STUDENTS.find((entry) => entry.id === state.currentViewId);
+    if (!student) return;
+    if (!window.confirm(`Resend setup link for "${student.fullName || student.regNo}"?`)) return;
+    submitRowAction(`/admin/students/${encodeURIComponent(student.id)}/resend-setup`);
   });
 
   $("saveBtn").addEventListener("click", saveStudent);
   $("mHoldReason").addEventListener("input", updateHoldCounter);
-
-  $("mSchoolUnitId").addEventListener("change", function () {
-    fillCampusOptions($("mSchoolUnitId").value, "");
-    fillLevelOptions($("mSchoolUnitId").value, "", "");
-    fillClassLevelOptions("", "");
-    fillClassOptions($("mSchoolUnitId").value, "", "", "", "");
-    fillSectionOptions($("mSchoolUnitId").value, "", "", "", "");
-    fillSubjectOptions(null);
+  $("mTermId").addEventListener("change", () => syncAcademicYear(""));
+  $("mSchoolLevel").addEventListener("change", () => {
+    syncClassLevels("");
+    syncStreams("");
+    syncSections("");
+    syncQualifications("");
   });
-
-  $("mCampusId").addEventListener("change", function () {
-    fillLevelOptions($("mSchoolUnitId").value, $("mCampusId").value, "");
-    fillClassLevelOptions("", "");
-    fillClassOptions($("mSchoolUnitId").value, $("mCampusId").value, "", "", "");
-    fillSectionOptions($("mSchoolUnitId").value, $("mCampusId").value, "", "", "");
-    fillSubjectOptions(null);
+  $("mClassLevel").addEventListener("change", () => {
+    syncStreams("");
+    syncSections("");
   });
+  $("mStreamId").addEventListener("change", () => syncSections(""));
+  $("mQualification").addEventListener("change", syncEducationFields);
 
-  $("mSchoolLevel").addEventListener("change", function () {
-    fillClassLevelOptions($("mSchoolLevel").value, "");
-    fillClassOptions($("mSchoolUnitId").value, $("mCampusId").value, $("mSchoolLevel").value, "", "");
-    fillSectionOptions($("mSchoolUnitId").value, $("mCampusId").value, $("mSchoolLevel").value, "", "");
-    fillSubjectOptions(null);
-  });
+  passportInput.addEventListener("change", refreshDocumentUi);
+  idInput.addEventListener("change", refreshDocumentUi);
+  transcriptInput.addEventListener("change", refreshDocumentUi);
+  otherDocsInput.addEventListener("change", refreshDocumentUi);
 
-  $("mClassLevel").addEventListener("change", function () {
-    fillClassOptions($("mSchoolUnitId").value, $("mCampusId").value, $("mSchoolLevel").value, $("mClassLevel").value, "");
-    fillSectionOptions($("mSchoolUnitId").value, $("mCampusId").value, $("mSchoolLevel").value, "", "");
-    fillSubjectOptions(null);
-  });
-
-  $("mClassId").addEventListener("change", function () {
-    applySelectedClass($("mClassId").value);
-  });
-
-  $("mTerm").addEventListener("change", function () {
-    fillSubjectOptions(null);
-  });
-
-  document.querySelectorAll("[data-close-modal]").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      closeModal(btn.dataset.closeModal);
+  if (dropZone && quickFiles) {
+    const isAllowed = (file) => /(\.pdf|\.jpg|\.jpeg|\.png)$/i.test(file.name || "") || /pdf|image\//i.test(file.type || "");
+    dropZone.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      dropZone.classList.add("drag");
     });
+    dropZone.addEventListener("dragleave", () => dropZone.classList.remove("drag"));
+    dropZone.addEventListener("drop", (event) => {
+      event.preventDefault();
+      dropZone.classList.remove("drag");
+      const files = Array.from(event.dataTransfer.files || []).filter(isAllowed);
+      if (files.length) mergeIntoOtherDocs(files);
+    });
+    $("pickQuick").addEventListener("click", () => quickFiles.click());
+    quickFiles.addEventListener("change", () => {
+      const files = Array.from(quickFiles.files || []).filter(isAllowed);
+      if (files.length) mergeIntoOtherDocs(files);
+    });
+  }
+
+  document.querySelectorAll("[data-close-modal]").forEach((button) => {
+    button.addEventListener("click", () => closeModal(button.dataset.closeModal));
   });
 
-  ["mEdit", "mView", "mImport"].forEach(function (mid) {
-    const el = $(mid);
+  ["mEdit", "mView", "mImport"].forEach((modalId) => {
+    const el = $(modalId);
     if (!el) return;
-    el.addEventListener("click", function (e) {
-      if (e.target.id === mid) closeModal(mid);
+    el.addEventListener("click", (event) => {
+      if (event.target.id === modalId) closeModal(modalId);
     });
   });
 
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape") {
-      document.querySelectorAll(".modal-backdrop.show").forEach(function (el) {
-        el.classList.remove("show");
-      });
-      document.body.style.overflow = "";
-    }
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    document.querySelectorAll(".modal-backdrop.show").forEach((el) => el.classList.remove("show"));
+    document.body.style.overflow = "";
   });
 
-  document.querySelectorAll(".tab").forEach(function (tab) {
-    tab.addEventListener("click", function () {
+  document.querySelectorAll(".tab").forEach((tab) => {
+    tab.addEventListener("click", () => {
       const key = tab.dataset.tab;
-      document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
-      document.querySelectorAll(".tab-pane").forEach((p) => p.classList.remove("active"));
+      document.querySelectorAll(".tab").forEach((entry) => entry.classList.remove("active"));
+      document.querySelectorAll(".tab-pane").forEach((pane) => pane.classList.remove("active"));
       tab.classList.add("active");
-      const pane = document.getElementById("tab-" + key);
+      const pane = document.getElementById(`tab-${key}`);
       if (pane) pane.classList.add("active");
     });
   });
 
   renderTable();
+  syncAcademicYear("");
   updateHoldCounter();
+  refreshDocumentUi();
 })();

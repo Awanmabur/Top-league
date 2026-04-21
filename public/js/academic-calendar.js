@@ -1,272 +1,257 @@
 (() => {
   const $ = (id) => document.getElementById(id);
+  const BASE_PATH = "/admin/academic-calendar";
 
-  const grid = $("eventGrid");
-  const modal = $("eventModal");
-  const form = $("eventForm");
-
-  const importModal = $("importModal");
-
-  const archiveForm = $("archiveForm");
-  const deleteForm = $("deleteForm");
-  const bulkForm = $("bulkForm");
-  const bulkIdsVal = $("bulkIdsVal");
-
-  const toolsMenu = $("toolsMenu");
-
-  const selectAll = $("selectAll");
-
-  const pv = {
-    title: $("pvTitle"),
-    type: $("pvType"),
-    yt: $("pvYT"),
-    dates: $("pvDates"),
-    status: $("pvStatus"),
-    location: $("pvLocation"),
-    notes: $("pvNotes"),
-  };
-
-  if (!grid || !modal || !form) {
-    console.error("Academic Calendar: Missing required DOM elements.");
-    return;
+  function readJson(id, fallback) {
+    const el = $(id);
+    if (!el) return fallback;
+    try {
+      return JSON.parse(el.value || el.textContent || JSON.stringify(fallback));
+    } catch (err) {
+      console.error("Failed to parse JSON:", id, err);
+      return fallback;
+    }
   }
 
-  let currentId = null;
+  const EVENTS = readJson("eventsData", []);
+  if (!$("tbodyEvents")) return;
 
-  const open = (el) => { el.style.display = "flex"; el.setAttribute("aria-hidden", "false"); document.body.style.overflow = "hidden"; };
-  const close = (el) => { el.style.display = "none"; el.setAttribute("aria-hidden", "true"); document.body.style.overflow = ""; };
+  const state = { selected: new Set(), currentViewId: EVENTS[0]?.id || null };
 
-  const escape = (s) => String(s ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+  function escapeHtml(v) {
+    return String(v ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
+  }
 
-  const badgeText = (status) => {
-    if (status === "active") return "Active";
-    if (status === "archived") return "Archived";
-    return "Draft";
-  };
+  function openModal(id) {
+    const el = $(id);
+    if (!el) return;
+    el.classList.add("show");
+    document.body.style.overflow = "hidden";
+  }
 
-  const clearPreview = () => {
-    currentId = null;
-    document.querySelectorAll(".ec").forEach(c => c.classList.remove("selected"));
-    pv.title.textContent = "—";
-    pv.type.textContent = "—";
-    pv.yt.textContent = "—";
-    pv.dates.textContent = "—";
-    pv.status.textContent = "—";
-    pv.location.textContent = "—";
-    pv.notes.textContent = "—";
-  };
+  function closeModal(id) {
+    const el = $(id);
+    if (!el) return;
+    el.classList.remove("show");
+    if (!document.querySelector(".modal-backdrop.show")) document.body.style.overflow = "";
+  }
 
-  const previewCard = (card) => {
-    if (!card) return;
+  function findEvent(id) {
+    return EVENTS.find((x) => x.id === id) || null;
+  }
 
-    currentId = card.dataset.id;
+  function statusPill(status) {
+    if (status === "active") return '<span class="pill ok"><i class="fa-solid fa-calendar-check"></i> Active</span>';
+    if (status === "archived") return '<span class="pill bad"><i class="fa-solid fa-box-archive"></i> Archived</span>';
+    return '<span class="pill warn"><i class="fa-solid fa-pen-to-square"></i> Draft</span>';
+  }
 
-    document.querySelectorAll(".ec").forEach(c => c.classList.remove("selected"));
-    card.classList.add("selected");
+  function dateLabel(event) {
+    if (!event?.startDate) return "-";
+    if (event.endDate) return `${event.startDisplay || event.startDate} to ${event.endDisplay || event.endDate}`;
+    return event.startDisplay || event.startDate;
+  }
 
-    const title = card.dataset.title || "—";
-    const type = card.dataset.type || "—";
-    const year = card.dataset.academicyear || "—";
-    const term = card.dataset.term || "—";
-    const start = card.dataset.start || "—";
-    const end = card.dataset.end || "";
-    const status = card.dataset.status || "draft";
-    const location = card.dataset.location || "—";
-    const notes = card.dataset.notes || "—";
+  function syncBulkbar() {
+    $("selCount").textContent = String(state.selected.size);
+    $("bulkbar").classList.toggle("show", state.selected.size > 0);
+  }
 
-    pv.title.textContent = title;
-    pv.type.textContent = type;
-    pv.yt.textContent = `${year} • ${term}`;
-    pv.dates.textContent = end ? `${start} → ${end}` : start;
-    pv.status.textContent = badgeText(status);
-    pv.location.textContent = location || "—";
-    pv.notes.textContent = notes || "—";
-  };
+  function renderTable() {
+    $("tbodyEvents").innerHTML =
+      EVENTS.map((ev) => {
+        const checked = state.selected.has(ev.id) ? "checked" : "";
+        return `
+          <tr class="row-clickable" data-id="${escapeHtml(ev.id)}">
+            <td class="col-check"><input type="checkbox" class="rowCheck" data-id="${escapeHtml(ev.id)}" ${checked}></td>
+            <td class="col-event">
+              <div class="item-main">
+                <div class="item-title" title="${escapeHtml(ev.title || "-")}">${escapeHtml(ev.title || "-")}</div>
+                <div class="item-sub">${escapeHtml(ev.location || ev.notes || "No location")}</div>
+              </div>
+            </td>
+            <td class="col-type"><span class="cell-ellipsis">${escapeHtml(ev.type || "-")}</span></td>
+            <td class="col-year"><span class="cell-ellipsis">${escapeHtml(ev.academicYear || "-")}</span></td>
+            <td class="col-term"><span class="cell-ellipsis">${escapeHtml(ev.term || "-")}</span></td>
+            <td class="col-class"><span class="cell-ellipsis">${escapeHtml(ev.className || "Whole School")}</span></td>
+            <td class="col-section"><span class="cell-ellipsis">${escapeHtml(ev.sectionName || "All Sections")}</span></td>
+            <td class="col-stream"><span class="cell-ellipsis">${escapeHtml(ev.streamName || "All Streams")}</span></td>
+            <td class="col-dates"><span class="cell-ellipsis">${escapeHtml(dateLabel(ev))}</span></td>
+            <td class="col-status">${statusPill(ev.status)}</td>
+            <td class="col-actions">
+              <div class="actions">
+                <button class="btn-xs actView" type="button" title="View"><i class="fa-solid fa-eye"></i></button>
+                <button class="btn-xs actEdit" type="button" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                <button class="btn-xs actArchive" type="button" title="Archive"><i class="fa-solid fa-box-archive"></i></button>
+                <button class="btn-xs actDelete" type="button" title="Delete"><i class="fa-solid fa-trash"></i></button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("") || `<tr><td colspan="11" style="padding:18px;"><div class="muted">No calendar events found.</div></td></tr>`;
 
-  const openForCreate = () => {
-    $("eventModalTitle").textContent = "Add Event";
-    form.action = "/admin/academic-calendar";
+    $("checkAll").checked = EVENTS.length > 0 && EVENTS.every((ev) => state.selected.has(ev.id));
+    syncBulkbar();
+  }
 
-    $("mTitle").value = "";
-    $("mType").value = "";
-    $("mYear").value = "";
-    $("mTerm").value = "";
-    $("mStart").value = "";
-    $("mEnd").value = "";
-    $("mStatus").value = "draft";
-    $("mLocation").value = "";
-    $("mNotes").value = "";
+  function refreshAcademicSelector() {
+    window.AcademicSelector?.refresh(document);
+  }
 
-    open(modal);
-  };
+  function applyAcademicSelection(eventItem) {
+    refreshAcademicSelector();
+    $("mClassGroup").value = eventItem?.classId || "";
+    refreshAcademicSelector();
+    $("mSection").value = eventItem?.sectionId || "";
+    $("mStream").value = eventItem?.streamId || "";
+    refreshAcademicSelector();
+  }
 
-  const openForEdit = (card) => {
-    if (!card) return;
+  function openEditor(item, statusOverride) {
+    const ev = item || null;
+    $("mTitleBar").textContent = ev ? "Edit Event" : "Add Event";
+    $("eventForm").action = ev ? `${BASE_PATH}/${encodeURIComponent(ev.id)}` : BASE_PATH;
 
-    $("eventModalTitle").textContent = "Edit Event";
-    form.action = `/admin/academic-calendar/${encodeURIComponent(card.dataset.id)}`;
+    $("mTitle").value = ev?.title || "";
+    $("mType").value = ev?.type || "";
+    $("mStatus").value = statusOverride || ev?.status || "draft";
+    $("mYear").value = ev?.academicYear || "";
+    $("mTerm").value = ev?.term || "";
+    $("mStart").value = ev?.startDate || "";
+    $("mEnd").value = ev?.endDate || "";
+    $("mLocation").value = ev?.location || "";
+    $("mNotes").value = ev?.notes || "";
 
-    $("mTitle").value = card.dataset.title || "";
-    $("mType").value = card.dataset.type || "";
-    $("mYear").value = card.dataset.academicyear || "";
-    $("mTerm").value = card.dataset.term || "";
-    $("mStart").value = card.dataset.start || "";
-    $("mEnd").value = card.dataset.end || "";
-    $("mStatus").value = card.dataset.status || "draft";
-    $("mLocation").value = card.dataset.location || "";
-    $("mNotes").value = card.dataset.notes || "";
+    applyAcademicSelection(ev);
+    openModal("mEdit");
+  }
 
-    open(modal);
-  };
+  function openView(eventItem) {
+    if (!eventItem) return;
+    state.currentViewId = eventItem.id;
 
-  const archiveEvent = (id) => {
-    if (!archiveForm) return alert("Archive form missing.");
-    if (!confirm("Archive this event?")) return;
-    archiveForm.action = `/admin/academic-calendar/${encodeURIComponent(id)}/archive`;
-    archiveForm.submit();
-  };
+    $("vTitle").textContent = eventItem.title || "-";
+    $("vType").textContent = eventItem.type || "-";
+    $("vStatus").innerHTML = statusPill(eventItem.status);
+    $("vYear").textContent = eventItem.academicYear || "-";
+    $("vTerm").textContent = eventItem.term || "-";
+    $("vClass").textContent = eventItem.className || "Whole School";
+    $("vSection").textContent = eventItem.sectionName || "All Sections";
+    $("vStream").textContent = eventItem.streamName || "All Streams";
+    $("vDates").textContent = dateLabel(eventItem);
+    $("vLocation").textContent = eventItem.location || "-";
+    $("vNotes").textContent = eventItem.notes || "-";
 
-  const deleteEvent = (id) => {
-    if (!deleteForm) return alert("Delete form missing.");
-    if (!confirm("Delete this event permanently?")) return;
-    deleteForm.action = `/admin/academic-calendar/${encodeURIComponent(id)}/delete`;
-    deleteForm.submit();
-  };
+    openModal("mView");
+  }
 
-  const saveEvent = () => {
-    const title = $("mTitle").value.trim();
-    const type = $("mType").value.trim();
-    const start = $("mStart").value.trim();
-
-    if (!title) return alert("Title is required.");
-    if (!type) return alert("Type is required.");
-    if (!start) return alert("Start date is required.");
-
+  function submitAction(url, confirmMsg) {
+    if (confirmMsg && !window.confirm(confirmMsg)) return;
+    const form = $("rowActionForm");
+    form.action = url;
     form.submit();
-  };
-
-  const selectedIds = () =>
-    Array.from(document.querySelectorAll(".selChk"))
-      .filter(cb => cb.checked)
-      .map(cb => cb.dataset.id);
-
-  const bulkArchive = () => {
-    if (!bulkForm || !bulkIdsVal) return alert("Bulk form missing.");
-    const ids = selectedIds();
-    if (!ids.length) return alert("Select at least one event.");
-    if (!confirm(`Archive ${ids.length} selected event(s)?`)) return;
-    bulkIdsVal.value = ids.join(",");
-    bulkForm.submit();
-  };
-
-  const closeAllRowMenus = () => {
-    document.querySelectorAll(".menu-panel").forEach(m => {
-      if (m.id !== "toolsMenu") m.classList.remove("show");
-    });
-  };
-
-  const toggleToolsMenu = () => {
-    if (!toolsMenu) return;
-    toolsMenu.classList.toggle("show");
-  };
-
-  document.addEventListener("click", (e) => {
-    const btn = e.target.closest("[data-action]");
-    if (btn) {
-      const action = btn.dataset.action;
-
-      if (action !== "toggleRowMenu") closeAllRowMenus();
-
-      if (action === "openEvent") return openForCreate();
-      if (action === "closeEvent") return close(modal);
-      if (action === "saveEvent") return saveEvent();
-
-      if (action === "clearPreview") return clearPreview();
-
-      if (action === "editCurrent") {
-        if (!currentId) return alert("Select an event first.");
-        const card = document.querySelector(`.ec[data-id="${CSS.escape(currentId)}"]`);
-        return openForEdit(card);
-      }
-      if (action === "archiveCurrent") {
-        if (!currentId) return alert("Select an event first.");
-        return archiveEvent(currentId);
-      }
-      if (action === "deleteCurrent") {
-        if (!currentId) return alert("Select an event first.");
-        return deleteEvent(currentId);
-      }
-
-      if (action === "viewEvent") {
-        const card = document.querySelector(`.ec[data-id="${CSS.escape(btn.dataset.id)}"]`);
-        return previewCard(card);
-      }
-      if (action === "editEvent") {
-        const card = document.querySelector(`.ec[data-id="${CSS.escape(btn.dataset.id)}"]`);
-        return openForEdit(card);
-      }
-
-      if (action === "toggleRowMenu") {
-        const id = btn.dataset.id;
-        const panel = document.getElementById(`rowMenu-${id}`);
-        if (!panel) return;
-        // close others
-        closeAllRowMenus();
-        panel.classList.toggle("show");
-        return;
-      }
-
-      if (action === "archiveEvent") return archiveEvent(btn.dataset.id);
-      if (action === "deleteEvent") return deleteEvent(btn.dataset.id);
-
-      if (action === "toggleTools") return toggleToolsMenu();
-      if (action === "openImport") { closeAllRowMenus(); close(toolsMenu); open(importModal); return; }
-      if (action === "closeImport") return close(importModal);
-
-      if (action === "bulkApply") { closeAllRowMenus(); return bulkArchive(); }
-    }
-
-    // click card previews
-    const card = e.target.closest(".ec");
-    if (card) previewCard(card);
-
-    // click outside menus closes
-    if (!e.target.closest(".menu")) {
-      closeAllRowMenus();
-      toolsMenu?.classList.remove("show");
-    }
-  });
-
-  // Select all
-  if (selectAll) {
-    selectAll.addEventListener("change", () => {
-      document.querySelectorAll(".selChk").forEach(cb => cb.checked = selectAll.checked);
-      $("selCount").textContent = String(selectedIds().length);
-    });
   }
 
-  // checkbox count
-  document.addEventListener("change", (e) => {
-    if (e.target.classList?.contains("selChk")) {
-      $("selCount").textContent = String(selectedIds().length);
+  function saveEvent() {
+    if (!$("mTitle").value.trim()) return alert("Title is required.");
+    if (!$("mType").value.trim()) return alert("Type is required.");
+    if (!$("mStart").value.trim()) return alert("Start date is required.");
+
+    const start = $("mStart").value;
+    const end = $("mEnd").value;
+    if (start && end && end < start) return alert("End date cannot be before start date.");
+
+    $("eventForm").submit();
+  }
+
+  function submitBulkArchive() {
+    const ids = Array.from(state.selected);
+    if (!ids.length) return alert("Select at least one event.");
+    if (!window.confirm(`Archive ${ids.length} event(s)?`)) return;
+    $("bulkIdsField").value = ids.join(",");
+    $("bulkForm").submit();
+  }
+
+  $("btnCreate").addEventListener("click", () => openEditor());
+  $("quickDraft").addEventListener("click", () => openEditor(null, "draft"));
+  $("quickActive").addEventListener("click", () => openEditor(null, "active"));
+  $("btnImport").addEventListener("click", () => openModal("mImport"));
+  $("btnPrint").addEventListener("click", () => window.print());
+  $("saveBtn").addEventListener("click", saveEvent);
+  $("btnBulk").addEventListener("click", () => {
+    if (!state.selected.size) return alert("Select at least one event.");
+    $("bulkbar").classList.add("show");
+  });
+  $("bulkArchive").addEventListener("click", submitBulkArchive);
+  $("bulkClear").addEventListener("click", () => {
+    state.selected.clear();
+    renderTable();
+  });
+
+  $("checkAll").addEventListener("change", (event) => {
+    if (event.target.checked) EVENTS.forEach((ev) => state.selected.add(ev.id));
+    else EVENTS.forEach((ev) => state.selected.delete(ev.id));
+    renderTable();
+  });
+
+  $("tbodyEvents").addEventListener("change", (event) => {
+    if (!event.target.classList.contains("rowCheck")) return;
+    const id = event.target.dataset.id;
+    if (event.target.checked) state.selected.add(id);
+    else state.selected.delete(id);
+    renderTable();
+  });
+
+  $("tbodyEvents").addEventListener("click", (event) => {
+    const row = event.target.closest("tr[data-id]");
+    if (!row) return;
+    const item = findEvent(row.dataset.id);
+    if (!item) return;
+
+    if (event.target.closest(".rowCheck")) return;
+    if (event.target.closest(".actView")) return openView(item);
+    if (event.target.closest(".actEdit")) return openEditor(item);
+    if (event.target.closest(".actArchive")) return submitAction(`${BASE_PATH}/${encodeURIComponent(item.id)}/archive`, "Archive this event?");
+    if (event.target.closest(".actDelete")) return submitAction(`${BASE_PATH}/${encodeURIComponent(item.id)}/delete`, "Delete this event?");
+
+    openView(item);
+  });
+
+  $("viewEditBtn").addEventListener("click", () => {
+    const item = findEvent(state.currentViewId);
+    if (!item) return;
+    closeModal("mView");
+    openEditor(item);
+  });
+  $("viewArchiveBtn").addEventListener("click", () => {
+    const item = findEvent(state.currentViewId);
+    if (!item) return;
+    submitAction(`${BASE_PATH}/${encodeURIComponent(item.id)}/archive`, "Archive this event?");
+  });
+
+  document.querySelectorAll("[data-close-modal]").forEach((btn) => {
+    btn.addEventListener("click", () => closeModal(btn.dataset.closeModal));
+  });
+
+  ["mEdit", "mView", "mImport"].forEach((id) => {
+    const el = $(id);
+    if (!el) return;
+    el.addEventListener("click", (event) => {
+      if (event.target.id === id) closeModal(id);
+    });
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      document.querySelectorAll(".modal-backdrop.show").forEach((el) => el.classList.remove("show"));
+      document.body.style.overflow = "";
     }
   });
 
-  // Backdrop click close
-  modal.addEventListener("click", (e) => { if (e.target === modal) close(modal); });
-  importModal?.addEventListener("click", (e) => { if (e.target === importModal) close(importModal); });
-
-  // ESC
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") {
-      close(modal);
-      if (importModal) close(importModal);
-      toolsMenu?.classList.remove("show");
-      closeAllRowMenus();
-    }
-  });
-
-  // Auto preview first card
-  const first = document.querySelector(".ec");
-  if (first) previewCard(first);
+  renderTable();
 })();

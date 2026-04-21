@@ -62,7 +62,10 @@
     .textarea{min-height:110px;resize:vertical}
     .input:focus,.select:focus,.textarea:focus{border-color:rgba(10,111,191,.45);box-shadow:0 0 0 3px rgba(10,111,191,.12)}
 
-    .tabs{display:flex;gap:8px;flex-wrap:wrap}
+    .tabs{display:flex;gap:8px;flex-wrap:wrap;max-width:100%;overflow:auto;padding-bottom:2px}
+    .tabs::-webkit-scrollbar{height:6px}
+    .tabs::-webkit-scrollbar-thumb{background:rgba(13,64,96,.18);border-radius:999px}
+    .tab{white-space:nowrap;flex:0 0 auto}
     .tab{border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 12px;cursor:pointer;font-weight:900;font-size:12px}
     .tab.active{background:rgba(10,111,191,.12);border-color:rgba(10,111,191,.35)}
     .pane{display:none;margin-top:10px}
@@ -198,16 +201,29 @@
   const docsTotal = REQUIRED.length;
   const docsUploaded = REQUIRED.filter(r => !!docUrl(r.key)).length;
   const docsVerified = REQUIRED.filter(r => !!docUrl(r.key) && docVerified(r.key)).length;
+  const docsShown = docsUploaded;
 
   const academics =
-    (a && Array.isArray(a.academics)) ? a.academics :
-    (a && Array.isArray(a.academicHistory)) ? a.academicHistory :
-    [];
+    (a && Array.isArray(a.academics) && a.academics.length) ? a.academics :
+    (a && Array.isArray(a.academicHistory) && a.academicHistory.length) ? a.academicHistory :
+    (((a && (a.school || a.qualification || a.yearCompleted || a.grades || a.transcript)) ? [{
+      institution: a.school || "—",
+      level: a.qualification || a.schoolLevel || "—",
+      year: a.yearCompleted || "—",
+      results: a.grades || (docUrl("transcript") ? "Transcript uploaded" : "—"),
+      verified: !!(a.transcript && a.transcript.verified)
+    }] : []));
 
   const audit =
-    (a && Array.isArray(a.auditTrail)) ? a.auditTrail :
-    (a && Array.isArray(a.timeline)) ? a.timeline :
-    [];
+    (a && Array.isArray(a.auditTrail) && a.auditTrail.length) ? a.auditTrail :
+    (a && Array.isArray(a.timeline) && a.timeline.length) ? a.timeline :
+    (a && Array.isArray(a.auditEntries) && a.auditEntries.length) ? a.auditEntries :
+    (((a && (a.createdAt || a.updatedAt || a.decidedAt || a.interviewWhen)) ? [
+      a.createdAt ? { title: "Application submitted", createdAt: a.createdAt, by: a.fullName || "Applicant" } : null,
+      a.updatedAt ? { title: "Application updated", createdAt: a.updatedAt, by: "System" } : null,
+      a.interviewWhen ? { title: "Interview scheduled", createdAt: a.interviewWhen, by: a.interviewPanel || "Admissions" } : null,
+      a.decidedAt ? { title: `Status: ${a.status || "updated"}`, createdAt: a.decidedAt, by: a.decidedByName || "Admissions" } : null,
+    ].filter(Boolean) : []));
 
   const preferredClassId = selectedSection && selectedSection._id ? s(selectedSection._id) : "";
 
@@ -283,9 +299,9 @@
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             <span id="aStagePill" class="pill <%= statusPillClass %>"><i class="fa-solid fa-circle-info"></i> <%= statusLabel %></span>
             <span id="aPayPill" class="pill <%= payPillClass %>"><i class="fa-solid fa-coins"></i> <%= payLabel %></span>
-            <span id="aDocsPill" class="pill <%= (docsVerified === docsTotal) ? "ok" : "warnpill" %>">
+            <span id="aDocsPill" class="pill <%= (docsShown === docsTotal) ? "ok" : "warnpill" %>">
               <i class="fa-solid <%= (docsVerified === docsTotal) ? "fa-check" : "fa-file-circle-exclamation" %>"></i>
-              Docs <%= docsVerified %>/<%= docsTotal %>
+              Docs <%= docsShown %>/<%= docsTotal %>
             </span>
           </div>
         </div>
@@ -336,7 +352,7 @@
                     <div class="divider"></div>
                     <div class="muted">Application ID: <span class="strong"><%= applicantId %></span></div>
                     <div class="muted">Section: <span class="strong"><%= program1 || "—" %></span></div>
-                    <div class="muted">Intake/Year: <span class="strong"><%= s(a.academicYear,"—") %></span></div>
+                    <div class="muted">Term / Year: <span class="strong"><%= s(a.termName || a.term, "—") %> / <%= s(a.academicYear,"—") %></span></div>
                     <div class="muted">Term: <span class="strong"><%= s(a.term,"—") %></span></div>
                     <div class="muted">Entry Type: <span class="strong"><%= s(a.entryType,"—") %></span></div>
                   </div>
@@ -357,7 +373,7 @@
                   <div class="strong"><i class="fa-solid fa-school"></i> Academic History</div>
                   <div class="divider"></div>
                   <div class="table-wrap">
-                    <table style="min-width:980px">
+                    <table style="min-width:720px">
                       <thead>
                         <tr>
                           <th>Institution</th>
@@ -581,7 +597,7 @@
                       </select>
                     </div>
                     <div class="field">
-                      <label>Effective Intake</label>
+                      <label>Effective Term</label>
                       <input class="input" id="decIntake" value="<%= s(a.academicYear,'') %>" placeholder="e.g. 2026/2027">
                     </div>
                     <div class="field">

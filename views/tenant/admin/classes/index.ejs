@@ -22,11 +22,11 @@
     .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:900;white-space:nowrap}
     .ok{background:#ecfdf3;color:#15803d}.warn{background:#fef9c3;color:#92400e}.bad{background:#fee2e2;color:#b91c1c}
     .table-wrap{overflow-x:auto;overflow-y:hidden;border:1px solid rgba(13,64,96,.10);border-radius:12px;max-width:100%;-webkit-overflow-scrolling:touch}
-    table{width:100%;min-width:1520px;border-collapse:separate;border-spacing:0;background:#fff;table-layout:fixed}
+    table{width:100%;min-width:1680px;border-collapse:separate;border-spacing:0;background:#fff;table-layout:fixed}
     th,td{padding:10px 12px;border-bottom:1px solid rgba(13,64,96,.08);vertical-align:middle}
     th{font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;text-align:left;background:rgba(13,64,96,.03);position:sticky;top:0;z-index:1;white-space:nowrap}
     tr:hover td{background:rgba(10,111,191,.04)} tr.row-clickable{cursor:pointer}
-    .col-check{width:48px}.col-class{width:220px}.col-level{width:140px}.col-classlevel{width:140px}.col-streamterm{width:200px}.col-year{width:130px}.col-shift{width:120px}.col-capacity{width:130px}.col-teacher{width:180px}.col-status{width:140px}.col-actions{width:230px}
+    .col-check{width:48px}.col-class{width:220px}.col-level{width:140px}.col-classlevel{width:140px}.col-section{width:170px}.col-stream{width:170px}.col-term{width:90px}.col-year{width:130px}.col-shift{width:120px}.col-capacity{width:130px}.col-teacher{width:180px}.col-status{width:140px}.col-actions{width:230px}
     .cell-ellipsis{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
     .class-main{min-width:0}.class-title{font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.class-sub{font-size:12px;color:#6b7280;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:nowrap;overflow:hidden}
@@ -51,7 +51,7 @@
     @media (max-width:1100px){.grid-2{grid-template-columns:1fr}}
     @media (max-width:900px){.form-grid{grid-template-columns:1fr}.topbar{flex-wrap:wrap}.top-actions{width:100%;justify-content:flex-start}}
     @media (max-width:680px){.grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}.input{min-width:160px}}
-    @media (max-width:520px){.toolbar .left,.toolbar .right{width:100%}.toolbar .left>*,.toolbar .right>*{max-width:100%}table{min-width:1520px}}
+    @media (max-width:520px){.toolbar .left,.toolbar .right{width:100%}.toolbar .left>*,.toolbar .right>*{max-width:100%}table{min-width:1680px}}
     @media print{body *{visibility:hidden !important}#printArea, #printArea *{visibility:visible !important}#printArea{position:absolute;inset:0;background:#fff;padding:20px}}
   </style>
 </head>
@@ -64,7 +64,7 @@
       <div class="topbar">
         <div>
           <div class="title">Classes</div>
-          <div class="subtitle">Classes now pick Section / Stream directly from the Section module.</div>
+          <div class="subtitle">Classes connect to Sections and Streams as separate fields.</div>
         </div>
         <div class="top-actions">
           <button class="btn light" id="btnExport" type="button"><i class="fa-solid fa-file-arrow-down"></i> Export CSV</button>
@@ -83,7 +83,7 @@
       <section class="card" style="margin-top:12px;">
         <form class="toolbar" method="GET" action="/admin/classes">
           <div class="left">
-            <input class="input" name="q" value="<%= query?.q || '' %>" placeholder="Search name, code, section, campus." />
+            <input class="input" name="q" value="<%= query?.q || '' %>" placeholder="Search name, code, section, stream, campus." />
 
             <select class="select" name="schoolUnitId">
               <option value="">All School Units</option>
@@ -114,9 +114,16 @@
             </select>
 
             <select class="select" name="sectionId">
-              <option value="">All Section / Streams</option>
+              <option value="">All Sections</option>
               <% (sections || []).forEach(function(section){ const sid = String(section._id || ''); %>
                 <option value="<%= sid %>" <%= query?.sectionId === sid ? 'selected' : '' %>><%= section.name %><%= section.className ? (' • ' + section.className) : '' %></option>
+              <% }) %>
+            </select>
+
+            <select class="select" name="streamId">
+              <option value="">All Streams</option>
+              <% (streams || []).forEach(function(stream){ const sid = String(stream._id || ''); %>
+                <option value="<%= sid %>" <%= query?.streamId === sid ? 'selected' : '' %>><%= stream.name %><%= stream.sectionName ? (' â€¢ ' + stream.sectionName) : '' %><%= stream.className ? (' â€¢ ' + stream.className) : '' %></option>
               <% }) %>
             </select>
 
@@ -183,7 +190,9 @@
                     <th class="col-class">Class</th>
                     <th class="col-level">School Level</th>
                     <th class="col-classlevel">Class Level</th>
-                    <th class="col-streamterm">Section / Term</th>
+                    <th class="col-section">Section</th>
+                    <th class="col-stream">Stream</th>
+                    <th class="col-term">Term</th>
                     <th class="col-year">Academic Year</th>
                     <th class="col-shift">Shift</th>
                     <th class="col-capacity">Cap / Enrolled</th>
@@ -211,6 +220,7 @@
                   if (query?.levelType) params.set("levelType", query.levelType);
                   if (query?.classLevel) params.set("classLevel", query.classLevel);
                   if (query?.sectionId) params.set("sectionId", query.sectionId);
+                  if (query?.streamId) params.set("streamId", query.streamId);
                   if (query?.academicYear) params.set("academicYear", query.academicYear);
                   if (query?.term) params.set("term", query.term);
                   if (query?.status) params.set("status", query.status);
@@ -260,9 +270,14 @@
             <div class="field"><label>School Level</label><select class="select" id="mLevelType" name="levelType" required><option value="">— Select Level —</option></select></div>
             <div class="field"><label>Class Level</label><select class="select" id="mClassLevel" name="classLevel" required><option value="">— Select Class Level —</option></select></div>
             <div class="field">
-              <label>Section / Stream <span class="muted">(optional)</span></label>
-              <select class="select" id="mSectionId" name="sectionId"><option value="">— No Section / Stream —</option></select>
-              <div class="muted" id="sectionHint">Select placement first to load sections from the Section module, or leave it empty for small schools.</div>
+              <label>Section <span class="muted">(optional)</span></label>
+              <select class="select" id="mSectionId" name="sectionId"><option value="">— No Section —</option></select>
+              <div class="muted" id="sectionHint">Select placement first to load sections, or leave it empty for small schools.</div>
+            </div>
+            <div class="field">
+              <label>Stream <span class="muted">(optional)</span></label>
+              <select class="select" id="mStreamId" name="streamId"><option value="">— No Stream —</option></select>
+              <div class="muted" id="streamHint">Select a section to narrow streams, or choose a class-level stream.</div>
             </div>
             <div class="field"><label>Term</label><select class="select" id="mTerm" name="term"><option value="1">Term 1</option><option value="2">Term 2</option><option value="3">Term 3</option></select></div>
             <div class="field"><label>Academic Year</label><input class="input" id="mAcademicYear" name="academicYear" placeholder="2026" /></div>
@@ -300,7 +315,8 @@
           <div class="field"><label>Class Teacher</label><div class="view-input" id="vClassTeacher">—</div></div>
           <div class="field"><label>Academic Year</label><div class="view-input" id="vAcademicYear">—</div></div>
           <div class="field"><label>Term</label><div class="view-input" id="vTerm">—</div></div>
-          <div class="field"><label>Section / Stream</label><div class="view-input" id="vStream">—</div></div>
+          <div class="field"><label>Section</label><div class="view-input" id="vSection">—</div></div>
+          <div class="field"><label>Stream</label><div class="view-input" id="vStream">—</div></div>
           <div class="field"><label>Shift</label><div class="view-input" id="vShift">—</div></div>
           <div class="field"><label>Capacity</label><div class="view-input" id="vCapacity">—</div></div>
           <div class="field"><label>Room / Campus</label><div class="view-input" id="vRoomCampus">—</div></div>
@@ -335,6 +351,7 @@
 
   <textarea id="classesData" class="json-data" aria-hidden="true"><%- JSON.stringify((classes || []).map(function(c){
     const sectionDoc = c.sectionId && typeof c.sectionId === 'object' ? c.sectionId : null;
+    const streamDoc = c.streamId && typeof c.streamId === 'object' ? c.streamId : null;
     return {
       id: String(c._id || ''),
       name: c.name || '',
@@ -346,7 +363,11 @@
       levelType: c.levelType || '',
       classLevel: c.classLevel || '',
       sectionId: sectionDoc?._id ? String(sectionDoc._id) : (c.sectionId ? String(c.sectionId) : ''),
-      sectionName: c.sectionName || sectionDoc?.name || c.stream || '',
+      sectionName: c.sectionName || sectionDoc?.name || '',
+      sectionCode: c.sectionCode || sectionDoc?.code || '',
+      streamId: streamDoc?._id ? String(streamDoc._id) : (c.streamId ? String(c.streamId) : ''),
+      streamName: c.streamName || streamDoc?.name || c.stream || '',
+      streamCode: c.streamCode || streamDoc?.code || '',
       stream: c.stream || '',
       term: Number(c.term ?? 1),
       academicYear: c.academicYear || '',
@@ -375,7 +396,29 @@
       classId: s.classId?._id ? String(s.classId._id) : String(s.classId || ''),
       className: s.className || s.classId?.name || '',
       classLevel: s.classLevel || '',
-      classStream: s.classStream || ''
+      classStream: s.classStream || '',
+      streamId: s.streamId?._id ? String(s.streamId._id) : String(s.streamId || ''),
+      streamName: s.streamName || s.streamId?.name || '',
+      streamCode: s.streamCode || s.streamId?.code || ''
+    };
+  })) %></textarea>
+
+  <textarea id="streamsData" class="json-data" aria-hidden="true"><%- JSON.stringify((streams || []).map(function(s){
+    return {
+      _id: String(s._id || ''),
+      id: String(s._id || ''),
+      name: s.name || '',
+      code: s.code || '',
+      schoolUnitId: s.schoolUnitId || '',
+      campusId: s.campusId || '',
+      levelType: s.levelType || '',
+      classId: s.classId?._id ? String(s.classId._id) : String(s.classId || ''),
+      className: s.className || s.classId?.name || '',
+      classLevel: s.classLevel || '',
+      classStream: s.classStream || '',
+      sectionId: s.sectionId?._id ? String(s.sectionId._id) : String(s.sectionId || ''),
+      sectionName: s.sectionName || s.sectionId?.name || '',
+      sectionCode: s.sectionCode || s.sectionId?.code || ''
     };
   })) %></textarea>
 

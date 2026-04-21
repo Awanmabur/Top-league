@@ -7,6 +7,9 @@ router.use("/", require("./invitation")); // /set-password, /invite, etc.
 // 2) Auth routes (public): /login, /logout, /forgot-password
 router.use("/", require("./auth"));
 
+// Public transcript verification
+router.use("/", require("./transcript"));
+
 // 3) Public tenant pages (apply/admissions/scholarships) BEFORE protected portals
 router.use("/", require("../public/admissions"));       // e.g. /apply
 router.use("/scholarships", require("../public/scholarships")); // e.g. /scholarships

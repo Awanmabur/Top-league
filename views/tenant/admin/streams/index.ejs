@@ -21,11 +21,11 @@
     .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:900;white-space:nowrap}
     .ok{background:#ecfdf3;color:#15803d}.warn{background:#fef9c3;color:#92400e}.bad{background:#fee2e2;color:#b91c1c}
     .table-wrap{overflow-x:auto;border:1px solid rgba(13,64,96,.10);border-radius:12px}
-    table{width:100%;min-width:1560px;border-collapse:separate;border-spacing:0;background:#fff;table-layout:fixed}
+    table{width:100%;min-width:1680px;border-collapse:separate;border-spacing:0;background:#fff;table-layout:fixed}
     th,td{padding:10px 12px;border-bottom:1px solid rgba(13,64,96,.08);vertical-align:middle}
     th{font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;text-align:left;background:rgba(13,64,96,.03);position:sticky;top:0;z-index:1;white-space:nowrap}
     tr:hover td{background:rgba(10,111,191,.04)} tr.row-clickable{cursor:pointer}
-    .col-check{width:48px}.col-stream{width:260px}.col-level{width:130px}.col-class{width:240px}.col-teacher{width:180px}.col-capacity{width:140px}.col-room{width:140px}.col-status{width:140px}.col-actions{width:230px}
+    .col-check{width:48px}.col-stream{width:250px}.col-level{width:130px}.col-class{width:230px}.col-section{width:180px}.col-teacher{width:180px}.col-capacity{width:140px}.col-room{width:140px}.col-status{width:140px}.col-actions{width:230px}
     .cell-ellipsis{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
     .stream-main{min-width:0}.stream-title{font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.stream-sub{font-size:12px;color:#6b7280;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .actions{display:flex;gap:6px;justify-content:flex-end}
@@ -46,7 +46,7 @@
     @media (max-width:1100px){.grid-2{grid-template-columns:1fr}}
     @media (max-width:900px){.form-grid{grid-template-columns:1fr}.topbar{flex-wrap:wrap}.top-actions{width:100%;justify-content:flex-start}}
     @media (max-width:680px){.grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}.input{min-width:160px}}
-    @media (max-width:520px){.toolbar .left,.toolbar .right{width:100%}.toolbar .left>*,.toolbar .right>*{max-width:100%}table{min-width:1560px}}
+    @media (max-width:520px){.toolbar .left,.toolbar .right{width:100%}.toolbar .left>*,.toolbar .right>*{max-width:100%}table{min-width:1680px}}
   </style>
 </head>
 <body>
@@ -83,7 +83,8 @@
             <select class="select" name="schoolUnitId"><option value="">All School Units</option><% (structure || []).forEach(function(su){ %><option value="<%= su.id %>" <%= query?.schoolUnitId===su.id?'selected':'' %>><%= su.name %></option><% }) %></select>
             <select class="select" name="campusId"><option value="">All Campuses</option><% (structure || []).forEach(function(su){ (su.campuses || []).forEach(function(c){ %><option value="<%= c.id %>" <%= query?.campusId===c.id?'selected':'' %>><%= su.name %> • <%= c.name %></option><% }) }) %></select>
             <select class="select" name="levelType"><option value="">All Levels</option><option value="nursery" <%= query?.levelType==='nursery'?'selected':'' %>>Nursery</option><option value="primary" <%= query?.levelType==='primary'?'selected':'' %>>Primary</option><option value="secondary" <%= query?.levelType==='secondary'?'selected':'' %>>Secondary</option></select>
-            <select class="select" name="classId"><option value="">All Classes</option><% (classes || []).forEach(function(c){ %><option value="<%= String(c._id) %>" <%= query?.classId===String(c._id)?'selected':'' %>><%= c.name %> • <%= c.stream || 'A' %> • <%= c.academicYear || '' %></option><% }) %></select>
+            <select class="select" name="classId"><option value="">All Classes</option><% (classes || []).forEach(function(c){ %><option value="<%= String(c._id) %>" <%= query?.classId===String(c._id)?'selected':'' %>><%= c.name %> • <%= c.sectionName || c.stream || 'A' %> • <%= c.academicYear || '' %></option><% }) %></select>
+            <select class="select" name="sectionId"><option value="">All Sections</option><% (sections || []).forEach(function(s){ %><option value="<%= String(s._id) %>" <%= query?.sectionId===String(s._id)?'selected':'' %>><%= s.name %><%= s.className ? (' • ' + s.className) : '' %></option><% }) %></select>
             <select class="select" name="status"><option value="">All Status</option><option value="active" <%= query?.status==='active'?'selected':'' %>>Active</option><option value="inactive" <%= query?.status==='inactive'?'selected':'' %>>Inactive</option><option value="archived" <%= query?.status==='archived'?'selected':'' %>>Archived</option></select>
           </div>
           <div class="right">
@@ -111,7 +112,7 @@
             <div><div class="stream-title">Streams Table</div><div class="stream-sub">Showing <%= streams.length %> of <%= query?.total || 0 %> records.</div></div>
             <div class="muted">Page <%= query?.page || 1 %> of <%= query?.totalPages || 1 %></div>
           </div>
-          <div style="margin-top:10px;"><div class="table-wrap" id="printArea"><table><thead><tr><th class="col-check"><input type="checkbox" id="checkAll" /></th><th class="col-stream">Stream</th><th class="col-level">Level</th><th class="col-class">Class</th><th class="col-teacher">Teacher</th><th class="col-capacity">Cap / Enrolled</th><th class="col-room">Room</th><th class="col-status">Status</th><th class="col-actions" style="text-align:right;">Actions</th></tr></thead><tbody id="tbodyStreams"></tbody></table></div></div>
+          <div style="margin-top:10px;"><div class="table-wrap" id="printArea"><table><thead><tr><th class="col-check"><input type="checkbox" id="checkAll" /></th><th class="col-stream">Stream</th><th class="col-level">Level</th><th class="col-class">Class</th><th class="col-section">Section</th><th class="col-teacher">Teacher</th><th class="col-capacity">Cap / Enrolled</th><th class="col-room">Room</th><th class="col-status">Status</th><th class="col-actions" style="text-align:right;">Actions</th></tr></thead><tbody id="tbodyStreams"></tbody></table></div></div>
         </section>
 
         <aside class="card" style="min-width:0;">
@@ -129,8 +130,8 @@
 
   <div class="modal-backdrop" id="mEdit">
     <div class="modal">
-      <div class="modal-header"><div class="modal-title" id="mTitleBar">Add Stream / Stream</div><button class="btn-xs" type="button" data-close-modal="mEdit"><i class="fa-solid fa-xmark"></i></button></div>
-      <form id="sectionForm" method="POST" action="/admin/streams">
+      <div class="modal-header"><div class="modal-title" id="mTitleBar">Add Stream</div><button class="btn-xs" type="button" data-close-modal="mEdit"><i class="fa-solid fa-xmark"></i></button></div>
+      <form id="streamForm" method="POST" action="/admin/streams">
         <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
         <div class="modal-body">
           <div class="form-grid">
@@ -141,6 +142,7 @@
             <div class="field"><label>Campus</label><select class="select" id="mCampusId" name="campusId"><option value="">— Select Campus —</option></select></div>
             <div class="field"><label>School Level</label><select class="select" id="mLevelType" name="levelType"><option value="">— Select Level —</option><option value="nursery">Nursery</option><option value="primary">Primary</option><option value="secondary">Secondary</option></select></div>
             <div class="field"><label>Class</label><select class="select" id="mClassId" name="classId" required><option value="">— Select Class —</option></select></div>
+            <div class="field"><label>Section <span class="muted">(optional)</span></label><select class="select" id="mSectionId" name="sectionId"><option value="">— No Section —</option></select></div>
             <div class="field"><label>Teacher</label><select class="select" id="mClassTeacher" name="classTeacher"><option value="">— Select Teacher —</option><% (staffList || []).forEach(function(s){ %><option value="<%= String(s._id) %>"><%= s.fullName || s.name || 'Staff' %><%= s.role ? (' — ' + s.role) : '' %></option><% }) %></select></div>
             <div class="field"><label>Capacity</label><input class="input" id="mCapacity" name="capacity" type="number" min="0" /></div>
             <div class="field"><label>Enrolled Count</label><input class="input" id="mEnrolledCount" name="enrolledCount" type="number" min="0" /></div>
@@ -166,6 +168,7 @@
           <div class="field"><label>Status</label><div class="view-input" id="vStatus">—</div></div>
           <div class="field"><label>Level</label><div class="view-input" id="vLevel">—</div></div>
           <div class="field"><label>Class</label><div class="view-input" id="vClass">—</div></div>
+          <div class="field"><label>Section</label><div class="view-input" id="vSection">—</div></div>
           <div class="field"><label>Teacher</label><div class="view-input" id="vTeacher">—</div></div>
           <div class="field"><label>Capacity</label><div class="view-input" id="vCapacity">—</div></div>
           <div class="field"><label>Room</label><div class="view-input" id="vRoom">—</div></div>
@@ -205,6 +208,9 @@
       levelType: s.levelType || '',
       classId: s.classId?._id ? String(s.classId._id) : String(s.classId || ''),
       className: s.className || s.classId?.name || '',
+      sectionId: s.sectionId?._id ? String(s.sectionId._id) : String(s.sectionId || ''),
+      sectionName: s.sectionName || s.sectionId?.name || '',
+      sectionCode: s.sectionCode || s.sectionId?.code || '',
       teacherId: s.classTeacher?._id ? String(s.classTeacher._id) : (s.classTeacher ? String(s.classTeacher) : ''),
       teacherName: s.classTeacher?.fullName || s.classTeacher?.name || '',
       capacity: Number(s.capacity || 0),
@@ -221,8 +227,20 @@
       schoolUnitId: c.schoolUnitId || '',
       campusId: c.campusId || '',
       levelType: c.levelType || '',
-      stream: c.stream || '',
+      stream: c.sectionName || c.stream || '',
       academicYear: c.academicYear || ''
+    };
+  })) %></textarea>
+  <textarea id="sectionsData" class="json-data"><%- JSON.stringify((sections || []).map(function(s){
+    return {
+      id: String(s._id || ''),
+      name: s.name || '',
+      code: s.code || '',
+      schoolUnitId: s.schoolUnitId || '',
+      campusId: s.campusId || '',
+      levelType: s.levelType || '',
+      classId: s.classId?._id ? String(s.classId._id) : String(s.classId || ''),
+      className: s.className || s.classId?.name || ''
     };
   })) %></textarea>
   <textarea id="structureData" class="json-data"><%- JSON.stringify(structure || []) %></textarea>

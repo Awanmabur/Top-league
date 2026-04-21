@@ -1,5 +1,10 @@
 const mongoose = require("mongoose");
 const { body, validationResult } = require("express-validator");
+const {
+  loadAcademicScopeLists,
+  resolveAcademicScope,
+  buildAcademicScopeFilter,
+} = require("../../../utils/tenantAcademicScope");
 
 const cleanStr = (v, max = 2000) => String(v || "").trim().slice(0, max);
 const isObjId = (v) => mongoose.Types.ObjectId.isValid(String(v || ""));
@@ -95,15 +100,17 @@ const buildKpis = async (Attendance, match) => {
   };
 };
 
-async function getSubjectRoster(req, classGroupId) {
+async function getSubjectRoster(req, { classGroupId, sectionId, streamId } = {}) {
   const { Student } = req.models;
 
   const filter = { isDeleted: { $ne: true } };
-  if (isObjId(classGroupId)) filter.class = classGroupId;
+  if (isObjId(classGroupId)) filter.classId = classGroupId;
+  if (isObjId(sectionId)) filter.sectionId = sectionId;
+  if (isObjId(streamId)) filter.streamId = streamId;
 
   return Student.find(filter)
     .sort({ fullName: 1 })
-    .select("fullName regNo email class")
+    .select("fullName regNo email classId sectionId streamId")
     .lean();
 }
 
@@ -116,9 +123,16 @@ const attendanceRules = [
     .withMessage("Invalid status."),
   body("notes").optional({ checkFalsy: true }).trim().isLength({ max: 500 }),
   body("classGroup")
+    .custom((v) => isObjId(v))
+    .withMessage("Class is required."),
+  body("sectionId")
     .optional({ checkFalsy: true })
     .custom((v) => !v || isObjId(v))
-    .withMessage("Invalid class."),
+    .withMessage("Invalid section."),
+  body("streamId")
+    .optional({ checkFalsy: true })
+    .custom((v) => !v || isObjId(v))
+    .withMessage("Invalid stream."),
   body("teacher")
     .optional({ checkFalsy: true })
     .custom((v) => !v || isObjId(v))
@@ -152,6 +166,8 @@ module.exports = {
       const q = cleanStr(req.query.q, 120);
       const subject = cleanStr(req.query.subject, 80);
       const classGroup = cleanStr(req.query.classGroup, 80);
+      const sectionId = cleanStr(req.query.sectionId, 80);
+      const streamId = cleanStr(req.query.streamId, 80);
       const status = cleanStr(req.query.status, 20);
       const academicYear = cleanStr(req.query.academicYear, 20);
       const term = cleanStr(req.query.term, 10);
@@ -164,7 +180,7 @@ module.exports = {
       const filter = { isDeleted: { $ne: true } };
 
       if (subject && isObjId(subject)) filter.subject = subject;
-      if (classGroup && isObjId(classGroup)) filter.classGroup = classGroup;
+      Object.assign(filter, buildAcademicScopeFilter({ classGroup, sectionId, streamId }));
       if (status && normalizeStatus(status)) filter.status = normalizeStatus(status);
       if (academicYear) filter.academicYear = academicYear;
       if (term && !Number.isNaN(Number(term))) filter.term = Number(term);
@@ -194,31 +210,36 @@ module.exports = {
         if (!ids.length) {
           const subjects = await Subject.find({})
             .sort({ title: 1, code: 1 })
-            .select("title code shortTitle")
+            .select("title code shortTitle classId sectionId streamId")
             .lean();
 
           const classes = await Class.find({})
             .sort({ name: 1 })
-            .select("name code")
+            .select("name code classLevel academicYear term")
             .lean();
 
           const students = await Student.find({ isDeleted: { $ne: true } })
             .sort({ fullName: 1 })
-            .select("fullName regNo email")
+            .select("fullName regNo email classId sectionId streamId")
             .limit(1000)
             .lean();
 
           const staffList = await Staff.find({})
             .sort({ fullName: 1, name: 1 })
             .select("fullName name role email")
-            .lean();
+              .lean();
 
+          const scopeLists = await loadAcademicScopeLists(req);
           return res.render("tenant/attendance/index", {
             tenant: req.tenant || null,
             records: [],
             subjects,
             classes,
+            sections: scopeLists.sections,
+            streams: scopeLists.streams,
             students,
+            subjectOptions: scopeLists.subjects,
+            studentOptions: scopeLists.students,
             staffList,
             kpis: { total: 0, present: 0, absent: 0, late: 0, excused: 0 },
             csrfToken: res.locals.csrfToken || null,
@@ -226,6 +247,8 @@ module.exports = {
               q,
               subject,
               classGroup,
+              sectionId,
+              streamId,
               status,
               academicYear,
               term,
@@ -254,6 +277,8 @@ module.exports = {
         .populate({ path: "student", select: "fullName regNo email" })
         .populate({ path: "subject", select: "title code shortTitle" })
         .populate({ path: "classGroup", select: "name code" })
+        .populate({ path: "sectionId", select: "name code" })
+        .populate({ path: "streamId", select: "name code" })
         .populate({ path: "teacher", select: "fullName name email role" })
         .sort({ sessionAt: -1, createdAt: -1 })
         .skip((safePage - 1) * perPage)
@@ -262,17 +287,17 @@ module.exports = {
 
       const subjects = await Subject.find({})
         .sort({ title: 1, code: 1 })
-        .select("title code shortTitle")
+        .select("title code shortTitle classId sectionId streamId")
         .lean();
 
       const classes = await Class.find({})
         .sort({ name: 1 })
-        .select("name code")
+        .select("name code classLevel academicYear term")
         .lean();
 
       const students = await Student.find({ isDeleted: { $ne: true } })
         .sort({ fullName: 1 })
-        .select("fullName regNo email")
+        .select("fullName regNo email classId sectionId streamId")
         .limit(1000)
         .lean();
 
@@ -282,13 +307,18 @@ module.exports = {
         .lean();
 
       const kpis = await buildKpis(Attendance, filter);
+      const scopeLists = await loadAcademicScopeLists(req);
 
       return res.render("tenant/attendance/index", {
         tenant: req.tenant || null,
         records,
         subjects,
         classes,
+        sections: scopeLists.sections,
+        streams: scopeLists.streams,
         students,
+        subjectOptions: scopeLists.subjects,
+        studentOptions: scopeLists.students,
         staffList,
         kpis,
         csrfToken: res.locals.csrfToken || null,
@@ -296,6 +326,8 @@ module.exports = {
           q,
           subject,
           classGroup,
+          sectionId,
+          streamId,
           status,
           academicYear,
           term,
@@ -323,6 +355,8 @@ module.exports = {
 
       const subjectId = cleanStr(req.query.subject, 80);
       const classGroupId = cleanStr(req.query.classGroup, 80);
+      const sectionId = cleanStr(req.query.sectionId, 80);
+      const streamId = cleanStr(req.query.streamId, 80);
       const sessionAtRaw = cleanStr(req.query.sessionAt, 40);
       const academicYear = cleanStr(req.query.academicYear, 20);
       const term = Math.max(1, Math.min(Number(req.query.term || 1), 3));
@@ -330,16 +364,20 @@ module.exports = {
 
       const subjects = await Subject.find({})
         .sort({ title: 1, code: 1 })
-        .select("title code shortTitle")
+        .select("title code shortTitle classId sectionId streamId")
         .lean();
 
       const classes = await Class.find({})
         .sort({ name: 1 })
-        .select("name code")
+        .select("name code classLevel academicYear term")
         .lean();
+
+      const scopeLists = await loadAcademicScopeLists(req);
 
       let selectedSubject = null;
       let selectedClass = null;
+      let selectedSection = null;
+      let selectedStream = null;
       let roster = [];
       let existingMap = {};
 
@@ -351,12 +389,22 @@ module.exports = {
         selectedClass = await Class.findById(classGroupId).select("name code").lean();
       }
 
+      if (isObjId(sectionId)) {
+        selectedSection = await req.models.Section.findById(sectionId).select("name code").lean();
+      }
+
+      if (isObjId(streamId)) {
+        selectedStream = await req.models.Stream.findById(streamId).select("name code").lean();
+      }
+
       if (selectedSubject && selectedClass && sessionAt) {
-        roster = await getSubjectRoster(req, classGroupId);
+        roster = await getSubjectRoster(req, { classGroupId, sectionId, streamId });
 
         const existing = await Attendance.find({
           subject: subjectId,
           classGroup: classGroupId,
+          ...(isObjId(sectionId) ? { sectionId } : {}),
+          ...(isObjId(streamId) ? { streamId } : {}),
           sessionAt,
           isDeleted: { $ne: true },
         })
@@ -376,8 +424,13 @@ module.exports = {
         tenant: req.tenant || null,
         subjects,
         classes,
+        sections: scopeLists.sections,
+        streams: scopeLists.streams,
+        subjectOptions: scopeLists.subjects,
         selectedSubject,
         selectedClass,
+        selectedSection,
+        selectedStream,
         roster,
         existingMap,
         academicYear,
@@ -401,6 +454,8 @@ module.exports = {
 
       const subjectId = cleanStr(req.body.subject, 80);
       const classGroupId = cleanStr(req.body.classGroup, 80);
+      const sectionId = cleanStr(req.body.sectionId, 80);
+      const streamId = cleanStr(req.body.streamId, 80);
       const sessionAt = parseDateTime(req.body.sessionAt);
       const academicYear = cleanStr(req.body.academicYear, 20);
       const term = Math.max(1, Math.min(Number(req.body.term || 1), 3));
@@ -417,9 +472,10 @@ module.exports = {
 
       const subject = await Subject.findById(subjectId).select("_id").lean();
       const classGroup = await Class.findById(classGroupId).select("_id").lean();
+      const scope = await resolveAcademicScope(req, { classId: classGroupId, sectionId, streamId });
 
-      if (!subject || !classGroup) {
-        req.flash?.("error", "Subject or class not found.");
+      if (!subject || !classGroup || scope.errors.length) {
+        req.flash?.("error", scope.errors.join(" ") || "Subject or class not found.");
         return res.redirect("/tenant/attendance/sheet");
       }
 
@@ -477,6 +533,12 @@ module.exports = {
             update: {
               $set: {
                 classGroup: classGroupId,
+                sectionId: scope.payload.sectionId || null,
+                sectionName: scope.payload.sectionName || "",
+                sectionCode: scope.payload.sectionCode || "",
+                streamId: scope.payload.streamId || null,
+                streamName: scope.payload.streamName || "",
+                streamCode: scope.payload.streamCode || "",
                 academicYear,
                 term,
                 attendanceDate,
@@ -506,7 +568,7 @@ module.exports = {
       await Attendance.bulkWrite(ops, { ordered: false });
 
       req.flash?.("success", `Saved ${touched} attendance row(s).`);
-      return res.redirect(`/tenant/attendance/sheet?subject=${encodeURIComponent(subjectId)}&classGroup=${encodeURIComponent(classGroupId)}&sessionAt=${encodeURIComponent(req.body.sessionAt || "")}&academicYear=${encodeURIComponent(academicYear)}&term=${encodeURIComponent(term)}`);
+      return res.redirect(`/tenant/attendance/sheet?subject=${encodeURIComponent(subjectId)}&classGroup=${encodeURIComponent(classGroupId)}&sectionId=${encodeURIComponent(sectionId)}&streamId=${encodeURIComponent(streamId)}&sessionAt=${encodeURIComponent(req.body.sessionAt || "")}&academicYear=${encodeURIComponent(academicYear)}&term=${encodeURIComponent(term)}`);
     } catch (err) {
       console.error("ATTENDANCE SHEET SAVE ERROR:", err);
       req.flash?.("error", "Failed to save attendance sheet.");
@@ -541,6 +603,8 @@ module.exports = {
       const status = normalizeStatus(req.body.status) || "present";
       const notes = cleanStr(req.body.notes, 500);
       const classGroup = isObjId(req.body.classGroup) ? req.body.classGroup : null;
+      const sectionId = isObjId(req.body.sectionId) ? req.body.sectionId : null;
+      const streamId = isObjId(req.body.streamId) ? req.body.streamId : null;
       const teacher = isObjId(req.body.teacher) ? req.body.teacher : null;
       const academicYear = cleanStr(req.body.academicYear, 20);
       const term = Math.max(1, Math.min(Number(req.body.term || 1), 3));
@@ -558,12 +622,24 @@ module.exports = {
         studentId = String(student._id);
       }
 
+      const scope = await resolveAcademicScope(req, { classId: classGroup, sectionId, streamId });
+      if (scope.errors.length) {
+        req.flash?.("error", scope.errors.join(" "));
+        return res.redirect("/tenant/attendance");
+      }
+
       await Attendance.updateOne(
         { student: studentId, subject: subjectId, sessionAt, isDeleted: { $ne: true } },
         {
           $set: {
             student: studentId,
-            classGroup,
+            classGroup: scope.payload.classId || classGroup,
+            sectionId: scope.payload.sectionId || null,
+            sectionName: scope.payload.sectionName || "",
+            sectionCode: scope.payload.sectionCode || "",
+            streamId: scope.payload.streamId || null,
+            streamName: scope.payload.streamName || "",
+            streamCode: scope.payload.streamCode || "",
             subject: subjectId,
             teacher,
             academicYear,
@@ -624,6 +700,8 @@ module.exports = {
       const status = normalizeStatus(req.body.status) || "present";
       const notes = cleanStr(req.body.notes, 500);
       const classGroup = isObjId(req.body.classGroup) ? req.body.classGroup : null;
+      const sectionId = isObjId(req.body.sectionId) ? req.body.sectionId : null;
+      const streamId = isObjId(req.body.streamId) ? req.body.streamId : null;
       const teacher = isObjId(req.body.teacher) ? req.body.teacher : null;
       const academicYear = cleanStr(req.body.academicYear, 20);
       const term = Math.max(1, Math.min(Number(req.body.term || 1), 3));
@@ -641,12 +719,24 @@ module.exports = {
         studentId = String(student._id);
       }
 
+      const scope = await resolveAcademicScope(req, { classId: classGroup, sectionId, streamId });
+      if (scope.errors.length) {
+        req.flash?.("error", scope.errors.join(" "));
+        return res.redirect("/tenant/attendance");
+      }
+
       await Attendance.updateOne(
         { _id: id },
         {
           $set: {
             student: studentId,
-            classGroup,
+            classGroup: scope.payload.classId || classGroup,
+            sectionId: scope.payload.sectionId || null,
+            sectionName: scope.payload.sectionName || "",
+            sectionCode: scope.payload.sectionCode || "",
+            streamId: scope.payload.streamId || null,
+            streamName: scope.payload.streamName || "",
+            streamCode: scope.payload.streamCode || "",
             subject: subjectId,
             teacher,
             academicYear,
@@ -795,7 +885,7 @@ module.exports = {
       }
 
       const students = await Student.find({ regNo: { $in: regNos }, isDeleted: { $ne: true } })
-        .select("_id regNo class")
+        .select("_id regNo classId sectionId streamId section stream")
         .lean();
 
       const studentByReg = new Map();
@@ -827,7 +917,11 @@ module.exports = {
             filter: { student: student._id, subject: subject._id, sessionAt, isDeleted: { $ne: true } },
             update: {
               $set: {
-                classGroup: student.class || null,
+                classGroup: isObjId(student.classId) ? student.classId : null,
+                sectionId: isObjId(student.sectionId) ? student.sectionId : null,
+                sectionName: student.section || "",
+                streamId: isObjId(student.streamId) ? student.streamId : null,
+                streamName: student.stream || "",
                 attendanceDate,
                 status,
                 notes,
@@ -875,6 +969,8 @@ module.exports = {
       const q = cleanStr(req.query.q, 120);
       const subject = cleanStr(req.query.subject, 80);
       const classGroup = cleanStr(req.query.classGroup, 80);
+      const sectionId = cleanStr(req.query.sectionId, 80);
+      const streamId = cleanStr(req.query.streamId, 80);
       const status = cleanStr(req.query.status, 20);
       const academicYear = cleanStr(req.query.academicYear, 20);
       const term = cleanStr(req.query.term, 10);
@@ -884,7 +980,7 @@ module.exports = {
       const filter = { isDeleted: { $ne: true } };
 
       if (subject && isObjId(subject)) filter.subject = subject;
-      if (classGroup && isObjId(classGroup)) filter.classGroup = classGroup;
+      Object.assign(filter, buildAcademicScopeFilter({ classGroup, sectionId, streamId }));
       if (status && normalizeStatus(status)) filter.status = normalizeStatus(status);
       if (academicYear) filter.academicYear = academicYear;
       if (term && !Number.isNaN(Number(term))) filter.term = Number(term);
@@ -913,7 +1009,7 @@ module.exports = {
         if (!ids.length) {
           res.setHeader("Content-Type", "text/csv; charset=utf-8");
           res.setHeader("Content-Disposition", 'attachment; filename="attendance.csv"');
-          return res.send("regNo,studentName,email,className,subjectCode,subjectTitle,sessionAt,status,notes\n");
+          return res.send("regNo,studentName,email,className,section,stream,subjectCode,subjectTitle,sessionAt,status,notes\n");
         }
 
         filter.student = { $in: ids };
@@ -922,11 +1018,13 @@ module.exports = {
       const rows = await Attendance.find(filter)
         .populate({ path: "student", select: "fullName regNo email" })
         .populate({ path: "classGroup", select: "name code" })
+        .populate({ path: "sectionId", select: "name code" })
+        .populate({ path: "streamId", select: "name code" })
         .populate({ path: "subject", select: "code title shortTitle" })
         .sort({ sessionAt: -1 })
         .lean();
 
-      const header = ["regNo", "studentName", "email", "className", "subjectCode", "subjectTitle", "sessionAt", "status", "notes"];
+      const header = ["regNo", "studentName", "email", "className", "section", "stream", "subjectCode", "subjectTitle", "sessionAt", "status", "notes"];
       const lines = [header.join(",")];
 
       rows.forEach((a) => {
@@ -936,6 +1034,8 @@ module.exports = {
           csvEsc(a.student?.fullName || ""),
           csvEsc(a.student?.email || ""),
           csvEsc(a.classGroup?.name || ""),
+          csvEsc(a.sectionId?.name || a.sectionName || ""),
+          csvEsc(a.streamId?.name || a.streamName || ""),
           csvEsc(a.subject?.code || ""),
           csvEsc(a.subject?.title || a.subject?.shortTitle || ""),
           csvEsc(sessionAt),

@@ -165,6 +165,8 @@
   const _errors = (typeof errors !== "undefined" && errors) ? errors : null;
   const _formData = (typeof formData !== "undefined" && formData) ? formData : null;
   const sectionsArr = (typeof sections !== "undefined" && Array.isArray(sections)) ? sections : [];
+  const streamsArr = (typeof streams !== "undefined" && Array.isArray(streams)) ? streams : [];
+  const qualificationMapObj = (typeof qualificationMap !== "undefined" && qualificationMap) ? qualificationMap : {};
   const yearsArr = (typeof academicYears !== "undefined" && Array.isArray(academicYears) && academicYears.length)
     ? academicYears
     : (() => {
@@ -176,6 +178,7 @@
   const termsArr = (typeof terms !== "undefined" && Array.isArray(terms)) ? terms : [];
   const _appId = (typeof applicationId !== "undefined" && applicationId) ? applicationId : null;
   const _csrf = (typeof csrfToken !== "undefined" && csrfToken) ? csrfToken : null;
+  const storedUploadsObj = (typeof storedUploads !== "undefined" && storedUploads) ? storedUploads : { passportPhoto: null, idDocument: null, transcript: null, otherDocs: [] };
 
   const safe = (v) => (v === null || v === undefined) ? "" : String(v);
 
@@ -265,6 +268,7 @@
               novalidate
               class="<%= _appId ? 'hidden' : '' %>">
           <% if (_csrf) { %><input type="hidden" name="_csrf" value="<%= _csrf %>"><% } %>
+          <% if (err('general')) { %><div class="section" style="border-color:rgba(239,68,68,.28);background:#fef2f2;color:#991b1b"><%= err('general') %></div><% } %>
 
           <div class="section">
             <h3><i class="fa-solid fa-user"></i> Personal Information</h3>
@@ -308,7 +312,12 @@
 
               <div class="field">
                 <label>Nationality <span class="req">*</span></label>
-                <input class="input" name="nationality" required placeholder="Nationality" value="<%= val('nationality') %>">
+                <select class="select" name="nationality" required>
+                  <option value="">Select nationality</option>
+                  <% ["Ugandan","Kenyan","South Sudanese","Tanzanian","Rwandan","Burundian","Other"].forEach(function(n){ %>
+                    <option value="<%= n %>" <%= val('nationality')===n ? "selected" : "" %>><%= n %></option>
+                  <% }) %>
+                </select>
                 <% if (err('nationality')) { %><div class="error" style="display:block"><%= err('nationality') %></div><% } %>
               </div>
             </div>
@@ -339,10 +348,21 @@
 
             <div class="grid-3">
               <div class="field">
+                <label>Term <span class="req">*</span></label>
+                <select class="select" name="termId" id="termId" required>
+                  <option value="">Select term</option>
+                  <% termsArr.forEach(function(t){ %>
+                    <option value="<%= t._id %>" data-year="<%= t.year %>" <%= val('termId')===String(t._id) ? "selected" : "" %>><%= t.name %></option>
+                  <% }) %>
+                </select>
+                <% if (err('termId')) { %><div class="error" style="display:block"><%= err('termId') %></div><% } %>
+              </div>
+
+              <div class="field">
                 <label>Academic Year <span class="req">*</span></label>
-                <select class="select" name="academicYear" required>
+                <select class="select" name="academicYear" id="academicYear" required>
                   <option value="">Select</option>
-                  <% yearsArr.forEach(y => { %>
+                  <% yearsArr.forEach(function(y){ %>
                     <option value="<%= y %>" <%= val('academicYear')===String(y) ? "selected" : "" %>><%= y %></option>
                   <% }) %>
                 </select>
@@ -351,79 +371,49 @@
 
               <div class="field">
                 <label>School Level <span class="req">*</span></label>
-                <select class="select" name="schoolLevel" required>
+                <select class="select" name="schoolLevel" id="schoolLevel" required>
                   <option value="">Select</option>
-                  <% schoolLevelsArr.forEach(item => { %>
+                  <% schoolLevelsArr.forEach(function(item){ %>
                     <option value="<%= item.value %>" <%= val('schoolLevel')===String(item.value) ? "selected" : "" %>><%= item.label %></option>
                   <% }) %>
                 </select>
                 <% if (err('schoolLevel')) { %><div class="error" style="display:block"><%= err('schoolLevel') %></div><% } %>
               </div>
+            </div>
 
+            <div class="grid-3" style="margin-top:12px">
               <div class="field">
                 <label>Class Level <span class="req">*</span></label>
-                <select class="select" name="classLevel" required>
+                <select class="select" name="classLevel" id="classLevel" required>
                   <option value="">Select</option>
-                  <% classLevelsArr.forEach(level => { %>
-                    <option value="<%= level %>" <%= val('classLevel')===String(level) ? "selected" : "" %>><%= level %></option>
+                  <% classLevelsArr.forEach(function(item){ %>
+                    <option value="<%= item %>" <%= val('classLevel')===String(item) ? "selected" : "" %>><%= item %></option>
                   <% }) %>
                 </select>
                 <% if (err('classLevel')) { %><div class="error" style="display:block"><%= err('classLevel') %></div><% } %>
               </div>
-            </div>
 
-            <div class="grid-2" style="margin-top:12px">
               <div class="field">
-                <label>Term <span class="req">*</span></label>
-                <select class="select" name="term" required>
-                  <option value="">Select</option>
-                  <% termsArr.forEach(t => { %>
-                    <option value="<%= t.value %>" <%= val('term','1')===String(t.value) ? "selected" : "" %>><%= t.label %></option>
+                <label>Stream <span class="req">*</span></label>
+                <select class="select" name="streamId" id="streamId" required>
+                  <option value="">Select stream</option>
+                  <% streamsArr.forEach(function(st){ %>
+                    <option value="<%= st._id %>" data-level="<%= st.levelType %>" data-class-level="<%= st.classLevel %>" data-class-id="<%= st.classId %>" <%= val('streamId')===String(st._id) ? "selected" : "" %>><%= st.name %></option>
                   <% }) %>
                 </select>
-                <% if (err('term')) { %><div class="error" style="display:block"><%= err('term') %></div><% } %>
+                <% if (err('streamId')) { %><div class="error" style="display:block"><%= err('streamId') %></div><% } %>
               </div>
 
-              <div class="field">
-                <label>Intake</label>
-                <input class="input" name="intake" placeholder="Optional intake e.g. January" value="<%= val('intake') %>">
-              </div>
-            </div>
-
-            <div class="grid-2" style="margin-top:12px">
               <div class="field">
                 <label>Section <span class="req">*</span></label>
-                <select class="select section-select" name="section1" required>
+                <select class="select section-select" name="section1" id="section1" required>
                   <option value="">Select section</option>
-                <% sectionsArr.forEach(sec => { 
-                  const label = ((sec.code ? sec.code + " — " : "") + (sec.name || sec.className || "Section")).trim();
-                  const levelText = labelSchoolLevel(sec.levelType);
-                  const extra = [levelText, sec.classLevel, sec.classStream, sec.campusName].filter(Boolean).join(" • ");
-                %>
-                  <option value="<%= sec._id %>" <%= selectedSection1 === String(sec._id) ? "selected" : "" %>>
-                    <%= label %><%= extra ? " (" + extra + ")" : "" %>
-                  </option>
-                <% }) %>
-                </select>
-                <div class="hint">Choose the class section you are applying to join.</div>
-                <% if (err('section1')) { %><div class="error" style="display:block"><%= err('section1') %></div><% } %>
-              </div>
-
-              <div class="field">
-                <label>Second Choice Section</label>
-                <select class="select section-select" name="section2">
-                  <option value="">No second choice</option>
-                  <% sectionsArr.forEach(sec => {
-                    const label = ((sec.code ? sec.code + " — " : "") + (sec.name || sec.className || "Section")).trim();
-                    const levelText = labelSchoolLevel(sec.levelType);
-                    const extra = [levelText, sec.classLevel, sec.classStream, sec.campusName].filter(Boolean).join(" • ");
-                  %>
-                    <option value="<%= sec._id %>" <%= selectedSection2 === String(sec._id) ? "selected" : "" %>>
-                      <%= label %><%= extra ? " (" + extra + ")" : "" %>
-                    </option>
+                  <% sectionsArr.forEach(function(sec){ %>
+                    <option value="<%= sec._id %>" data-level="<%= sec.levelType %>" data-class-level="<%= sec.classLevel %>" data-class-id="<%= sec.classId %>" data-stream="<%= sec.classStream %>" <%= selectedSection1 === String(sec._id) ? "selected" : "" %>><%= sec.name %></option>
                   <% }) %>
                 </select>
-                <div class="hint">Optional backup if the first section is full.</div>
+                <div class="hint">Choose the section under the selected stream.</div>
+                <% if (err('section1')) { %><div class="error" style="display:block"><%= err('section1') %></div><% } %>
               </div>
             </div>
           </div>
@@ -434,18 +424,15 @@
             <div class="grid-2">
               <div class="field">
                 <label>Highest Qualification <span class="req">*</span></label>
-                <select class="select" name="qualification" required>
+                <select class="select" name="qualification" id="qualification" required>
                   <option value="">Select</option>
-                  <% ["Primary Leaving", "Senior 4 / O-Level", "Senior 6 / A-Level", "Certificate", "Diploma", "Bachelor", "Masters"].forEach(q => { %>
-                    <option value="<%= q %>" <%= val('qualification')===q ? "selected" : "" %>><%= q %></option>
-                  <% }) %>
                 </select>
                 <% if (err('qualification')) { %><div class="error" style="display:block"><%= err('qualification') %></div><% } %>
               </div>
 
               <div class="field">
                 <label>School / Institution <span class="req">*</span></label>
-                <input class="input" name="school" required placeholder="School / institution name" value="<%= val('school') %>">
+                <input class="input" name="school" id="school" required placeholder="School / institution name" value="<%= val('school') %>">
                 <% if (err('school')) { %><div class="error" style="display:block"><%= err('school') %></div><% } %>
               </div>
             </div>
@@ -453,7 +440,7 @@
             <div class="grid-2" style="margin-top:12px">
               <div class="field">
                 <label>Year Completed <span class="req">*</span></label>
-                <input class="input" type="number" name="yearCompleted" required placeholder="e.g. 2024" value="<%= val('yearCompleted') %>">
+                <input class="input" type="number" name="yearCompleted" id="yearCompleted" required placeholder="e.g. 2024" value="<%= val('yearCompleted') %>">
                 <% if (err('yearCompleted')) { %><div class="error" style="display:block"><%= err('yearCompleted') %></div><% } %>
               </div>
 
@@ -496,19 +483,21 @@
           <div class="section">
             <h3><i class="fa-solid fa-folder-open"></i> Documents Upload</h3>
             <div class="muted" style="margin-bottom:10px">
-              Required: Passport Photo + ID + Transcript. Optional: Other Docs.
+              Admission requirements are listed below. Passport Photo is always mandatory. Other items are marked red only when mandatory.
             </div>
 
             <div class="grid-2">
               <div class="field">
                 <label>Passport Photo <span class="req">*</span></label>
-                <input class="input" type="file" name="passportPhoto" accept=".jpg,.jpeg,.png,image/*" required>
+                <input class="input" type="file" name="passportPhoto" id="passportPhoto" accept=".jpg,.jpeg,.png,image/*" required>
+                <div class="hint" id="passportPhotoStatus"></div>
                 <% if (err('passportPhoto')) { %><div class="error" style="display:block"><%= err('passportPhoto') %></div><% } %>
               </div>
 
               <div class="field">
                 <label>National ID / Passport Scan <span class="req">*</span></label>
-                <input class="input" type="file" name="idDocument" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/*" required>
+                <input class="input" type="file" name="idDocument" id="idDocument" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/*" required>
+                <div class="hint" id="idDocumentStatus"></div>
                 <% if (err('idDocument')) { %><div class="error" style="display:block"><%= err('idDocument') %></div><% } %>
               </div>
             </div>
@@ -516,13 +505,15 @@
             <div class="grid-2" style="margin-top:12px">
               <div class="field">
                 <label>Transcript / Results Slip <span class="req">*</span></label>
-                <input class="input" type="file" name="transcript" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/*" required>
+                <input class="input" type="file" name="transcript" id="transcript" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/*" required>
+                <div class="hint" id="transcriptStatus"></div>
                 <% if (err('transcript')) { %><div class="error" style="display:block"><%= err('transcript') %></div><% } %>
               </div>
 
               <div class="field">
                 <label>Other Documents (optional)</label>
-                <input class="input" type="file" name="otherDocs" multiple accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/*">
+                <input class="input" type="file" name="otherDocs" id="otherDocs" multiple accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/*">
+                <div class="hint" id="otherDocsStatus"></div>
               </div>
             </div>
 
@@ -551,6 +542,7 @@
             <% if (err('agree')) { %><div class="error" style="display:block"><%= err('agree') %></div><% } %>
           </div>
 
+          <div class="hint" id="submitStatus" style="margin-top:10px"></div>
           <div class="actions">
             <button type="button" class="btn light" id="btnDraft"><i class="fa-solid fa-floppy-disk"></i> Save Draft</button>
             <button type="reset" class="btn light" id="btnReset"><i class="fa-solid fa-rotate-left"></i> Reset</button>
@@ -642,6 +634,11 @@
 
 </div>
 
+<textarea id="streamsData" class="hidden"><%- JSON.stringify(streamsArr) %></textarea>
+<textarea id="sectionsData" class="hidden"><%- JSON.stringify(sectionsArr) %></textarea>
+<textarea id="qualificationMapData" class="hidden"><%- JSON.stringify(qualificationMapObj) %></textarea>
+<textarea id="storedUploadsData" class="hidden"><%- JSON.stringify(storedUploadsObj) %></textarea>
+<input type="hidden" id="uploadDraftUrl" value="/admissions/upload-draft">
 <script src="/js/apply.js" defer></script>
 </body>
 </html>

@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const crypto = require("crypto");
 const QRCode = require("qrcode");
 const { body, validationResult } = require("express-validator");
+const { loadAcademicScopeLists, buildAcademicScopeFilter, resolveAcademicScope } = require("../../../utils/tenantAcademicScope");
 
 const isObjId = (v) => mongoose.Types.ObjectId.isValid(String(v || "").trim());
 
@@ -58,7 +59,7 @@ function signToken(payload) {
 
 function buildVerifyUrl(issueNumber, sig) {
   const base = String(process.env.APP_PUBLIC_URL || "").replace(/\/$/, "") || "";
-  return `${base}/tenant/transcripts/verify/${encodeURIComponent(issueNumber)}?sig=${encodeURIComponent(sig || "")}`;
+  return `${base}/verify/transcript/${encodeURIComponent(issueNumber)}?sig=${encodeURIComponent(sig || "")}`;
 }
 
 async function nextIssueNumber(req) {
@@ -79,6 +80,9 @@ async function nextIssueNumber(req) {
 function transcriptRules() {
   return [
     body("student").custom((v) => isObjId(v)).withMessage("Learner is required."),
+    body("classGroup").optional({ checkFalsy: true }).custom((v) => isObjId(v)).withMessage("Invalid class."),
+    body("sectionId").optional({ checkFalsy: true }).custom((v) => isObjId(v)).withMessage("Invalid section."),
+    body("streamId").optional({ checkFalsy: true }).custom((v) => isObjId(v)).withMessage("Invalid stream."),
     body("kind").optional({ checkFalsy: true }).isIn(["official", "unofficial"]),
     body("rangeMode").optional({ checkFalsy: true }).isIn(["auto", "current_term", "all_available", "custom"]),
     body("academicYearFrom").optional({ checkFalsy: true }).trim().isLength({ max: 20 }),
@@ -92,11 +96,19 @@ function transcriptRules() {
   ];
 }
 
-async function getRangeFromResults(req, studentId, includeDraft) {
+function transcriptScopeFilter(transcriptDoc) {
+  return buildAcademicScopeFilter({
+    classGroup: transcriptDoc.classGroup,
+    sectionId: transcriptDoc.sectionId,
+    streamId: transcriptDoc.streamId,
+  });
+}
+
+async function getRangeFromResults(req, studentId, includeDraft, scopeFilter = {}) {
   const { Result } = req.models;
   const statusFilter = includeDraft ? { $in: ["draft", "published"] } : "published";
 
-  const rows = await Result.find({ student: studentId, status: statusFilter })
+  const rows = await Result.find({ student: studentId, status: statusFilter, ...scopeFilter })
     .select("academicYear term")
     .sort({ academicYear: 1, term: 1 })
     .lean();
@@ -123,11 +135,11 @@ async function getRangeFromResults(req, studentId, includeDraft) {
   };
 }
 
-async function getCurrentRange(req, studentId, includeDraft) {
+async function getCurrentRange(req, studentId, includeDraft, scopeFilter = {}) {
   const { Result } = req.models;
   const statusFilter = includeDraft ? { $in: ["draft", "published"] } : "published";
 
-  const row = await Result.findOne({ student: studentId, status: statusFilter })
+  const row = await Result.findOne({ student: studentId, status: statusFilter, ...scopeFilter })
     .select("academicYear term")
     .sort({ academicYear: -1, term: -1, createdAt: -1 })
     .lean();
@@ -158,14 +170,15 @@ async function resolveRange(req, transcriptDoc) {
   const rangeMode = String(transcriptDoc.rangeMode || "auto").trim();
   const includeDraft = !!transcriptDoc.includeDraftResults;
   const studentId = transcriptDoc.student;
+  const scopeFilter = transcriptScopeFilter(transcriptDoc);
 
   if (rangeMode === "all_available" || rangeMode === "auto") {
-    const all = await getRangeFromResults(req, studentId, includeDraft);
+    const all = await getRangeFromResults(req, studentId, includeDraft, scopeFilter);
     if (all.found) return all;
   }
 
   if (rangeMode === "current_term") {
-    const cur = await getCurrentRange(req, studentId, includeDraft);
+    const cur = await getCurrentRange(req, studentId, includeDraft, scopeFilter);
     if (cur.found) return cur;
   }
 
@@ -179,28 +192,47 @@ async function resolveRange(req, transcriptDoc) {
 }
 
 async function buildTranscriptLive(req, transcriptDoc) {
-  const { Student, Result, Attendance } = req.models;
+  const { Student, Result, Attendance, Class, Section, Stream } = req.models;
   const t = transcriptDoc;
 
-  const student = await Student.findById(t.student)
-    .populate("classGroup", "name code")
-    .lean();
+  const student = await Student.findById(t.student).lean();
 
   if (!student) return null;
 
+  const [classDoc, sectionDoc, streamDoc] = await Promise.all([
+    t.classGroup ? Class.findById(t.classGroup).select("name code").lean().catch(() => null) : null,
+    t.sectionId ? Section.findById(t.sectionId).select("name code").lean().catch(() => null) : null,
+    t.streamId ? Stream.findById(t.streamId).select("name code").lean().catch(() => null) : null,
+  ]);
+
   const className =
-    student.classGroup?.name ||
-    student.classGroup?.code ||
+    t.classGroupName ||
+    classDoc?.name ||
+    classDoc?.code ||
     student.className ||
+    "—";
+
+  const sectionName =
+    t.sectionName ||
+    sectionDoc?.name ||
+    student.section ||
+    "—";
+
+  const streamName =
+    t.streamName ||
+    streamDoc?.name ||
+    student.stream ||
     "—";
 
   const includeDraft = !!t.includeDraftResults;
   const statusFilter = includeDraft ? { $in: ["draft", "published"] } : "published";
   const range = await resolveRange(req, t);
+  const scopeFilter = transcriptScopeFilter(t);
 
   const results = await Result.find({
     student: student._id,
     status: statusFilter,
+    ...scopeFilter,
   })
     .populate("subject", "title code shortTitle")
     .populate("exam", "title")
@@ -221,6 +253,7 @@ async function buildTranscriptLive(req, transcriptDoc) {
     student: student._id,
     academicYear: { $gte: range.academicYearFrom || "", $lte: range.academicYearTo || "zzzz" },
     term: { $gte: range.termFrom, $lte: range.termTo },
+    ...scopeFilter,
   })
     .select("status")
     .lean();
@@ -309,6 +342,8 @@ async function buildTranscriptLive(req, transcriptDoc) {
       name: studentName(student),
       reg: studentReg(student),
       classGroup: className,
+      section: sectionName,
+      stream: streamName,
     },
     totals: {
       subjects: allRows.length,
@@ -324,9 +359,26 @@ async function buildTranscriptLive(req, transcriptDoc) {
 async function generateOne(req, payload, existingId = null) {
   const { Transcript } = req.models;
 
+  const scope = await resolveAcademicScope(req, {
+    classId: payload.classGroup || payload.classId || "",
+    sectionId: payload.sectionId || "",
+    streamId: payload.streamId || "",
+  });
+
+  if (scope.errors.length) {
+    return { ok: false, id: existingId || null, reason: scope.errors[0] };
+  }
+
   const base = {
     student: payload.student,
-    classGroup: payload.classGroup || null,
+    classGroup: scope.payload.classId || payload.classGroup || null,
+    classGroupName: scope.payload.className || "",
+    sectionId: scope.payload.sectionId || null,
+    sectionName: scope.payload.sectionName || "",
+    sectionCode: scope.payload.sectionCode || "",
+    streamId: scope.payload.streamId || null,
+    streamName: scope.payload.streamName || "",
+    streamCode: scope.payload.streamCode || "",
     kind: ["official", "unofficial"].includes(payload.kind) ? payload.kind : "official",
     rangeMode: ["auto", "current_term", "all_available", "custom"].includes(payload.rangeMode) ? payload.rangeMode : "auto",
     academicYearFrom: normalizeAY(payload.academicYearFrom),
@@ -379,12 +431,14 @@ module.exports = {
 
   list: async (req, res) => {
     try {
-      const { Transcript, Student, Class } = req.models;
+      const { Transcript, Student, Class, Section, Stream } = req.models;
 
       const q = safeStr(req.query.q, 120);
       const status = safeStr(req.query.status, 20);
       const kind = safeStr(req.query.kind, 20);
       const classGroup = safeStr(req.query.classGroup, 60);
+      const sectionId = safeStr(req.query.sectionId, 60);
+      const streamId = safeStr(req.query.streamId, 60);
       const tid = safeStr(req.query.tid, 60);
 
       const page = Math.max(parseInt(req.query.page || "1", 10), 1);
@@ -393,7 +447,7 @@ module.exports = {
       const filter = {};
       if (status && ["draft", "issued", "revoked"].includes(status)) filter.status = status;
       if (kind && ["official", "unofficial"].includes(kind)) filter.kind = kind;
-      if (classGroup && isObjId(classGroup)) filter.classGroup = classGroup;
+      Object.assign(filter, buildAcademicScopeFilter({ classGroup, sectionId, streamId }));
 
       if (q) {
         const students = await Student.find({
@@ -417,15 +471,19 @@ module.exports = {
       const safePage = Math.min(page, totalPages);
 
       const transcripts = await Transcript.find(filter)
-        .populate("student", "fullName firstName middleName lastName regNo studentNo indexNumber name")
+        .populate("student", "fullName firstName middleName lastName regNo studentNo indexNumber name classId className sectionId section streamId stream")
         .populate("classGroup", "name code")
+        .populate("sectionId", "name code")
+        .populate("streamId", "name code")
         .sort({ updatedAt: -1, _id: -1 })
         .skip((safePage - 1) * perPage)
         .limit(perPage)
         .lean();
 
+      const scopeLists = await loadAcademicScopeLists(req);
+
       const studentsList = await Student.find({})
-        .select("fullName firstName middleName lastName regNo studentNo indexNumber name classGroup")
+        .select("fullName firstName middleName lastName regNo studentNo indexNumber name classId className sectionId section streamId stream")
         .sort({ fullName: 1, firstName: 1, lastName: 1 })
         .limit(4000)
         .lean();
@@ -461,11 +519,14 @@ module.exports = {
         tenant: req.tenant || null,
         transcripts,
         studentsList,
+        studentsData: scopeLists.students,
         classes,
+        sections: scopeLists.sections,
+        streams: scopeLists.streams,
         preview,
         csrfToken: res.locals.csrfToken || null,
         kpis,
-        query: { q, status, kind, classGroup, tid: previewId, page: safePage, total, totalPages, perPage },
+        query: { q, status, kind, classGroup, sectionId, streamId, tid: previewId, page: safePage, total, totalPages, perPage },
         messages: {
           success: req.flash ? req.flash("success") : [],
           error: req.flash ? req.flash("error") : [],
@@ -481,22 +542,22 @@ module.exports = {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       req.flash?.("error", errors.array().map((e) => e.msg).join(" "));
-      return res.redirect("/tenant/transcripts");
+      return res.redirect("/admin/transcripts");
     }
 
     try {
       const out = await generateOne(req, req.body);
       if (!out.ok) {
         req.flash?.("error", out.reason || "Failed to generate transcript.");
-        return res.redirect("/tenant/transcripts");
+        return res.redirect("/admin/transcripts");
       }
 
       req.flash?.("success", "Transcript generated automatically.");
-      return res.redirect(`/tenant/transcripts?tid=${encodeURIComponent(out.id)}`);
+      return res.redirect(`/admin/transcripts?tid=${encodeURIComponent(out.id)}`);
     } catch (err) {
       console.error("CREATE TRANSCRIPT ERROR:", err);
       req.flash?.("error", "Failed to create transcript.");
-      return res.redirect("/tenant/transcripts");
+      return res.redirect("/admin/transcripts");
     }
   },
 
@@ -506,39 +567,39 @@ module.exports = {
 
     if (!errors.isEmpty()) {
       req.flash?.("error", errors.array().map((e) => e.msg).join(" "));
-      return res.redirect("/tenant/transcripts");
+      return res.redirect("/admin/transcripts");
     }
 
     try {
       const id = String(req.params.id || "").trim();
       if (!isObjId(id)) {
         req.flash?.("error", "Invalid transcript id.");
-        return res.redirect("/tenant/transcripts");
+        return res.redirect("/admin/transcripts");
       }
 
       const existing = await Transcript.findById(id).lean();
       if (!existing) {
         req.flash?.("error", "Transcript not found.");
-        return res.redirect("/tenant/transcripts");
+        return res.redirect("/admin/transcripts");
       }
 
       if (existing.status === "issued") {
         req.flash?.("error", "Issued transcripts cannot be edited. Clone instead.");
-        return res.redirect(`/tenant/transcripts?tid=${encodeURIComponent(id)}`);
+        return res.redirect(`/admin/transcripts?tid=${encodeURIComponent(id)}`);
       }
 
       const out = await generateOne(req, req.body, id);
       if (!out.ok) {
         req.flash?.("error", out.reason || "Failed to regenerate transcript.");
-        return res.redirect(`/tenant/transcripts?tid=${encodeURIComponent(id)}`);
+        return res.redirect(`/admin/transcripts?tid=${encodeURIComponent(id)}`);
       }
 
       req.flash?.("success", "Transcript regenerated.");
-      return res.redirect(`/tenant/transcripts?tid=${encodeURIComponent(id)}`);
+      return res.redirect(`/admin/transcripts?tid=${encodeURIComponent(id)}`);
     } catch (err) {
       console.error("UPDATE TRANSCRIPT ERROR:", err);
       req.flash?.("error", "Failed to update transcript.");
-      return res.redirect("/tenant/transcripts");
+      return res.redirect("/admin/transcripts");
     }
   },
 
@@ -547,22 +608,35 @@ module.exports = {
       const { Student } = req.models;
 
       const classGroup = String(req.body.classGroup || "").trim();
+      const sectionId = String(req.body.sectionId || "").trim();
+      const streamId = String(req.body.streamId || "").trim();
       const academicYear = normalizeAY(req.body.academicYear);
       const termFrom = clampInt(req.body.termFrom, 1, 3, 1);
       const termTo = clampInt(req.body.termTo, 1, 3, 3);
 
       if (!isObjId(classGroup)) {
         req.flash?.("error", "Class is required.");
-        return res.redirect("/tenant/transcripts");
+        return res.redirect("/admin/transcripts");
       }
 
-      const students = await Student.find({ classGroup })
-        .select("_id classGroup")
+      const scope = await resolveAcademicScope(req, { classId: classGroup, sectionId, streamId });
+      if (scope.errors.length) {
+        req.flash?.("error", scope.errors[0]);
+        return res.redirect("/admin/transcripts");
+      }
+
+      const resolvedClassId = String(scope.payload.classId || classGroup);
+      const studentFilter = { $or: [{ classId: resolvedClassId }, { classGroup: resolvedClassId }] };
+      if (scope.payload.sectionId) studentFilter.sectionId = scope.payload.sectionId;
+      if (scope.payload.streamId) studentFilter.streamId = scope.payload.streamId;
+
+      const students = await Student.find(studentFilter)
+        .select("_id classId sectionId streamId")
         .lean();
 
       if (!students.length) {
         req.flash?.("error", "No learners found in selected class.");
-        return res.redirect("/tenant/transcripts");
+        return res.redirect("/admin/transcripts");
       }
 
       let created = 0;
@@ -571,7 +645,9 @@ module.exports = {
       for (const s of students) {
         const out = await generateOne(req, {
           student: String(s._id),
-          classGroup,
+          classGroup: scope.payload.classId || classGroup,
+          sectionId: scope.payload.sectionId || "",
+          streamId: scope.payload.streamId || "",
           kind: req.body.kind || "official",
           rangeMode: academicYear ? "custom" : (req.body.rangeMode || "auto"),
           academicYearFrom: academicYear,
@@ -589,11 +665,11 @@ module.exports = {
       }
 
       req.flash?.("success", `Bulk generation complete. Generated ${created}, failed ${failed}.`);
-      return res.redirect("/tenant/transcripts");
+      return res.redirect("/admin/transcripts");
     } catch (err) {
       console.error("BULK GENERATE TRANSCRIPTS ERROR:", err);
       req.flash?.("error", "Bulk generation failed.");
-      return res.redirect("/tenant/transcripts");
+      return res.redirect("/admin/transcripts");
     }
   },
 
@@ -604,18 +680,25 @@ module.exports = {
 
       if (!isObjId(id)) {
         req.flash?.("error", "Invalid transcript id.");
-        return res.redirect("/tenant/transcripts");
+        return res.redirect("/admin/transcripts");
       }
 
       const t = await Transcript.findById(id).lean();
       if (!t) {
         req.flash?.("error", "Transcript not found.");
-        return res.redirect("/tenant/transcripts");
+        return res.redirect("/admin/transcripts");
       }
 
       const copy = await Transcript.create({
         student: t.student,
         classGroup: t.classGroup || null,
+        classGroupName: t.classGroupName || "",
+        sectionId: t.sectionId || null,
+        sectionName: t.sectionName || "",
+        sectionCode: t.sectionCode || "",
+        streamId: t.streamId || null,
+        streamName: t.streamName || "",
+        streamCode: t.streamCode || "",
         kind: t.kind || "official",
         rangeMode: t.rangeMode || "auto",
         academicYearFrom: t.academicYearFrom || "",
@@ -634,11 +717,11 @@ module.exports = {
       await generateOne(req, copy.toObject(), copy._id);
 
       req.flash?.("success", "Transcript cloned as draft.");
-      return res.redirect(`/tenant/transcripts?tid=${encodeURIComponent(copy._id)}`);
+      return res.redirect(`/admin/transcripts?tid=${encodeURIComponent(copy._id)}`);
     } catch (err) {
       console.error("CLONE TRANSCRIPT ERROR:", err);
       req.flash?.("error", "Failed to clone transcript.");
-      return res.redirect("/tenant/transcripts");
+      return res.redirect("/admin/transcripts");
     }
   },
 
@@ -649,24 +732,24 @@ module.exports = {
 
       if (!isObjId(id)) {
         req.flash?.("error", "Invalid transcript id.");
-        return res.redirect("/tenant/transcripts");
+        return res.redirect("/admin/transcripts");
       }
 
       const tdoc = await Transcript.findById(id).lean();
       if (!tdoc) {
         req.flash?.("error", "Transcript not found.");
-        return res.redirect("/tenant/transcripts");
+        return res.redirect("/admin/transcripts");
       }
 
       if (tdoc.status === "issued") {
         req.flash?.("error", "Already issued.");
-        return res.redirect(`/tenant/transcripts?tid=${encodeURIComponent(id)}`);
+        return res.redirect(`/admin/transcripts?tid=${encodeURIComponent(id)}`);
       }
 
       const live = await buildTranscriptLive(req, tdoc);
       if (!live || !live.terms?.length) {
         req.flash?.("error", "Cannot issue: no results found for selected range.");
-        return res.redirect(`/tenant/transcripts?tid=${encodeURIComponent(id)}`);
+        return res.redirect(`/admin/transcripts?tid=${encodeURIComponent(id)}`);
       }
 
       const issueNumber = await nextIssueNumber(req);
@@ -704,11 +787,11 @@ module.exports = {
       );
 
       req.flash?.("success", `Transcript issued (${issueNumber}).`);
-      return res.redirect(`/tenant/transcripts?tid=${encodeURIComponent(id)}`);
+      return res.redirect(`/admin/transcripts?tid=${encodeURIComponent(id)}`);
     } catch (err) {
       console.error("ISSUE TRANSCRIPT ERROR:", err);
       req.flash?.("error", "Failed to issue transcript.");
-      return res.redirect("/tenant/transcripts");
+      return res.redirect("/admin/transcripts");
     }
   },
 
@@ -720,7 +803,7 @@ module.exports = {
 
       if (!isObjId(id)) {
         req.flash?.("error", "Invalid transcript id.");
-        return res.redirect("/tenant/transcripts");
+        return res.redirect("/admin/transcripts");
       }
 
       await Transcript.updateOne(
@@ -736,11 +819,11 @@ module.exports = {
       );
 
       req.flash?.("success", "Transcript revoked.");
-      return res.redirect(`/tenant/transcripts?tid=${encodeURIComponent(id)}`);
+      return res.redirect(`/admin/transcripts?tid=${encodeURIComponent(id)}`);
     } catch (err) {
       console.error("REVOKE TRANSCRIPT ERROR:", err);
       req.flash?.("error", "Failed to revoke transcript.");
-      return res.redirect("/tenant/transcripts");
+      return res.redirect("/admin/transcripts");
     }
   },
 
@@ -751,16 +834,16 @@ module.exports = {
 
       if (!isObjId(id)) {
         req.flash?.("error", "Invalid transcript id.");
-        return res.redirect("/tenant/transcripts");
+        return res.redirect("/admin/transcripts");
       }
 
       await Transcript.deleteOne({ _id: id });
       req.flash?.("success", "Transcript deleted.");
-      return res.redirect("/tenant/transcripts");
+      return res.redirect("/admin/transcripts");
     } catch (err) {
       console.error("DELETE TRANSCRIPT ERROR:", err);
       req.flash?.("error", "Failed to delete transcript.");
-      return res.redirect("/tenant/transcripts");
+      return res.redirect("/admin/transcripts");
     }
   },
 
@@ -776,7 +859,7 @@ module.exports = {
 
       if (!ids.length) {
         req.flash?.("error", "No transcripts selected.");
-        return res.redirect("/tenant/transcripts");
+        return res.redirect("/admin/transcripts");
       }
 
       if (action === "delete") {
@@ -843,11 +926,11 @@ module.exports = {
         req.flash?.("error", "Invalid bulk action.");
       }
 
-      return res.redirect("/tenant/transcripts");
+      return res.redirect("/admin/transcripts");
     } catch (err) {
       console.error("TRANSCRIPT BULK ERROR:", err);
       req.flash?.("error", "Bulk action failed.");
-      return res.redirect("/tenant/transcripts");
+      return res.redirect("/admin/transcripts");
     }
   },
 

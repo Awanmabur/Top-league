@@ -33,12 +33,12 @@ router.use("/", require("./dashboard"));
 router.use("/admissions", requireTenantModule("Applicant"), require("./admissions"));
 router.use("/students", requireTenantModule("Student"), require("./students"));
 router.use("/parents", requireTenantModule("Parent"), require("./parents"));
-router.use("/enrollments", requireTenantModule("Enrollment"), require("./enrollments"));
 router.use("/promotions", requireTenantModule("PromotionLog"), require("./promotions"));
 
 router.use("/subjects", requireTenantModule("Subject"), require("./subjects"));
 router.use("/classes", requireTenantModule("Class"), require("./classes"));
 router.use("/sections", requireTenantModule("Section"), require("./sections")); 
+router.use("/streams", requireTenantModule("Stream"), require("./streams"));
 
 router.use("/exams", requireTenantModule("Exam"), require("./exams"));
 router.use("/results", requireTenantModule("Result"), require("./results"));

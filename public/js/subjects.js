@@ -17,6 +17,7 @@
   const CLASSES = readJson("classesData", []);
   const STRUCTURE = readJson("structureData", []);
   const SECTIONS_MAP = readJson("sectionsMap", {});
+  const STREAMS = readJson("streamsData", []);
   if (!$("tbodySubjects")) return;
 
   const state = { selected: new Set(), currentViewId: null };
@@ -152,6 +153,19 @@
     if (selected && $("mSectionId").value !== String(selected)) $("mSectionId").value = "";
   }
 
+  function fillStreamOptions(classId, sectionId, selected) {
+    const rows = STREAMS.filter((s) =>
+      (!classId || String(s.classId || "") === String(classId)) &&
+      (!sectionId || !s.sectionId || String(s.sectionId || "") === String(sectionId))
+    );
+    const html = rows.map((s) => {
+      const value = String(s.id || s._id || "");
+      return `<option value="${escapeHtml(value)}" ${String(selected || "") === value ? "selected" : ""}>${escapeHtml(s.name || s.label || "Stream")}</option>`;
+    }).join("");
+    $("mStreamId").innerHTML = `<option value="">— All Streams —</option>${html}`;
+    if (selected && $("mStreamId").value !== String(selected)) $("mStreamId").value = "";
+  }
+
   function renderTable() {
     $("tbodySubjects").innerHTML =
       SUBJECTS.map((s) => {
@@ -168,6 +182,7 @@
             <td class="col-level"><span class="cell-ellipsis">${escapeHtml(schoolLevelLabel(s.levelType))}</span></td>
             <td class="col-class"><span class="cell-ellipsis">${escapeHtml(s.className || "—")}</span></td>
             <td class="col-section"><span class="cell-ellipsis">${escapeHtml(s.sectionName || "Whole Class")}</span></td>
+            <td class="col-stream"><span class="cell-ellipsis">${escapeHtml(s.streamName || "All Streams")}</span></td>
             <td class="col-term"><span class="cell-ellipsis">${escapeHtml("Term " + Number(s.term || 1))}</span></td>
             <td class="col-category"><span class="cell-ellipsis">${escapeHtml(categoryLabel(s.category))}</span></td>
             <td class="col-teacher"><span class="cell-ellipsis">${escapeHtml(s.teacherName || "—")}</span></td>
@@ -182,7 +197,7 @@
             </td>
           </tr>
         `;
-      }).join("") || `<tr><td colspan="10" style="padding:18px;"><div class="muted">No subjects found.</div></td></tr>`;
+      }).join("") || `<tr><td colspan="11" style="padding:18px;"><div class="muted">No subjects found.</div></td></tr>`;
 
     $("checkAll").checked = SUBJECTS.length > 0 && SUBJECTS.every((s) => state.selected.has(s.id));
     syncBulkbar();
@@ -209,6 +224,7 @@
     fillLevelOptions($("mSchoolUnitId").value, $("mCampusId").value, s ? s.levelType : "");
     fillClassOptions($("mSchoolUnitId").value, $("mCampusId").value, $("mLevelType").value, s ? s.classId : "");
     fillSectionOptions($("mClassId").value, s ? s.sectionId : "");
+    fillStreamOptions($("mClassId").value, s ? s.sectionId : "", s ? s.streamId : "");
     $("mTerm").value = s ? String(s.term ?? 1) : "1";
     $("mAcademicYear").value = s ? s.academicYear || "" : "";
     $("mCategory").value = s ? s.category || "core" : "core";
@@ -235,6 +251,7 @@
     $("vClass").textContent = s.className || "—";
     $("vLevel").textContent = schoolLevelLabel(s.levelType);
     $("vSection").textContent = s.sectionName || "Whole Class";
+    $("vStream").textContent = s.streamName || "All Streams";
     $("vTerm").textContent = `Term ${Number(s.term || 1)}`;
     $("vCategoryType").textContent = `${categoryLabel(s.category)} • ${s.isCompulsory ? "Compulsory" : "Optional"}`;
     $("vPeriodsPass").textContent = `Periods ${Number(s.weeklyPeriods || 0)} • Pass Mark ${Number(s.passMark || 0)}%`;
@@ -283,7 +300,7 @@
 
   function exportSubjects() {
     const rows = [[
-      "Title", "Code", "SchoolUnit", "Campus", "LevelType", "Class", "Section", "Term", "AcademicYear", "Category",
+      "Title", "Code", "SchoolUnit", "Campus", "LevelType", "Class", "Section", "Stream", "Term", "AcademicYear", "Category",
       "Compulsory", "WeeklyPeriods", "PassMark", "Teacher", "Status", "AssessmentMethod", "Description"
     ]].concat(SUBJECTS.map((s) => ([
       s.title || "",
@@ -293,6 +310,7 @@
       s.levelType || "",
       s.className || "",
       s.sectionName || "",
+      s.streamName || "",
       s.term || 1,
       s.academicYear || "",
       s.category || "",
@@ -330,21 +348,29 @@
     fillLevelOptions($("mSchoolUnitId").value, "", "");
     fillClassOptions($("mSchoolUnitId").value, "", "", "");
     fillSectionOptions("", "");
+    fillStreamOptions("", "", "");
   });
 
   $("mCampusId").addEventListener("change", function () {
     fillLevelOptions($("mSchoolUnitId").value, $("mCampusId").value, "");
     fillClassOptions($("mSchoolUnitId").value, $("mCampusId").value, "", "");
     fillSectionOptions("", "");
+    fillStreamOptions("", "", "");
   });
 
   $("mLevelType").addEventListener("change", function () {
     fillClassOptions($("mSchoolUnitId").value, $("mCampusId").value, $("mLevelType").value, "");
     fillSectionOptions("", "");
+    fillStreamOptions("", "", "");
   });
 
   $("mClassId").addEventListener("change", function () {
     fillSectionOptions($("mClassId").value, "");
+    fillStreamOptions($("mClassId").value, "", "");
+  });
+
+  $("mSectionId").addEventListener("change", function () {
+    fillStreamOptions($("mClassId").value, $("mSectionId").value, "");
   });
 
   $("btnCreate").addEventListener("click", function () { openEditor(); });

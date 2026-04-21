@@ -4,6 +4,7 @@ const router = express.Router();
 const multer = require("multer");
 
 const ctrl = require("../../../controllers/tenant/admin/studentsController");
+const uploadDocs = require("../../../middleware/uploadMemory");
 
 const upload = multer({
 storage: multer.memoryStorage(),
@@ -18,9 +19,16 @@ cb(null, true);
 },
 });
 
+const studentUploads = uploadDocs.fields([
+  { name: "passportPhoto", maxCount: 1 },
+  { name: "idDocument", maxCount: 1 },
+  { name: "transcript", maxCount: 1 },
+  { name: "otherDocs", maxCount: 8 },
+]);
+
 router.get("/", ctrl.list);
-router.post("/", ctrl.studentRules, ctrl.create);
-router.post("/:id", ctrl.studentRules, ctrl.update);
+router.post("/", studentUploads, ctrl.studentRules, ctrl.create);
+router.post("/:id", studentUploads, ctrl.studentRules, ctrl.update);
 router.post("/:id/archive", ctrl.archive);
 router.post("/:id/delete", ctrl.remove);
 router.post("/:id/resend-setup", ctrl.resendSetupLink);

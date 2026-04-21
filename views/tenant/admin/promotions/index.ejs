@@ -228,7 +228,7 @@
       <div class="topbar">
         <div>
           <div class="title">Promotions</div>
-          <div class="subtitle">Select students, promote to next class/year/semester, and keep audit logs.</div>
+          <div class="subtitle">Select students, move them to the next class and term, and keep audit logs.</div>
         </div>
         <div class="top-actions">
           <button class="btn primary" type="button" data-open="mPromote">
@@ -273,26 +273,43 @@
             <div class="left">
               <input class="input" name="q" value="<%= query?.q || '' %>" placeholder="regNo, name, email, phone">
 
-              <select class="select" name="program">
-                <option value="">All Programs</option>
-                <% (programs || []).forEach(function(p){ %>
-                  <option value="<%= p._id %>" <%= String(query?.program || '') === String(p._id) ? 'selected' : '' %>>
-                    <%= (p.code ? (p.code + ' — ') : '') + (p.name || p.title || 'Program') %>
-                  </option>
-                <% }) %>
+              <select class="select" name="schoolLevel">
+                <option value="">All School Levels</option>
+                <option value="nursery" <%= String(query?.schoolLevel || '') === 'nursery' ? 'selected' : '' %>>Nursery</option>
+                <option value="primary" <%= String(query?.schoolLevel || '') === 'primary' ? 'selected' : '' %>>Primary</option>
+                <option value="secondary" <%= String(query?.schoolLevel || '') === 'secondary' ? 'selected' : '' %>>Secondary</option>
               </select>
 
-              <select class="select" name="classGroup">
+              <select class="select" name="classId">
                 <option value="">All Classes</option>
                 <% (classes || []).forEach(function(c){ %>
-                  <option value="<%= c._id %>" <%= String(query?.classGroup || '') === String(c._id) ? 'selected' : '' %>>
-                    <%= (c.code ? (c.code + ' — ') : '') + (c.name || c.title || 'Class') %>
+                  <option value="<%= c._id %>" <%= String(query?.classId || '') === String(c._id) ? 'selected' : '' %>>
+                    <%= c.name || c.title || 'Class' %>
                   </option>
                 <% }) %>
               </select>
 
-              <input class="input" name="yearLevel" value="<%= query?.yearLevel || '' %>" placeholder="Year Level">
-              <input class="input" name="status" value="<%= query?.status || '' %>" placeholder="Status">
+              <select class="select" name="classLevel">
+                <option value="">All Class Levels</option>
+                <% (classLevels || []).forEach(function(level){ %>
+                  <option value="<%= level %>" <%= String(query?.classLevel || '') === String(level) ? 'selected' : '' %>><%= level %></option>
+                <% }) %>
+              </select>
+
+              <select class="select" name="term">
+                <option value="">All Terms</option>
+                <option value="1" <%= String(query?.term || '') === '1' ? 'selected' : '' %>>Term 1</option>
+                <option value="2" <%= String(query?.term || '') === '2' ? 'selected' : '' %>>Term 2</option>
+                <option value="3" <%= String(query?.term || '') === '3' ? 'selected' : '' %>>Term 3</option>
+              </select>
+
+              <select class="select" name="status">
+                <option value="">Any Status</option>
+                <option value="active" <%= String(query?.status || '') === 'active' ? 'selected' : '' %>>Active</option>
+                <option value="on_hold" <%= String(query?.status || '') === 'on_hold' ? 'selected' : '' %>>On Hold</option>
+                <option value="suspended" <%= String(query?.status || '') === 'suspended' ? 'selected' : '' %>>Suspended</option>
+                <option value="graduated" <%= String(query?.status || '') === 'graduated' ? 'selected' : '' %>>Graduated</option>
+              </select>
             </div>
 
             <div class="right">
@@ -320,7 +337,7 @@
                   <tr>
                     <th style="width:44px"><input type="checkbox" id="checkAll"></th>
                     <th>Student</th>
-                    <th>Program / Class</th>
+                    <th>Placement</th>
                     <th>Academic</th>
                     <th>Status</th>
                   </tr>
@@ -338,12 +355,12 @@
                         <div class="muted"><%= s.regNo || '' %> <%= s.email ? ('• ' + s.email) : '' %></div>
                       </td>
                       <td>
-                        <div><%= s.program ? ((s.program.code ? s.program.code + ' — ' : '') + (s.program.name || s.program.title || '')) : '—' %></div>
-                        <div class="muted"><%= s.classGroup ? ((s.classGroup.code ? s.classGroup.code + ' — ' : '') + (s.classGroup.name || s.classGroup.title || '')) : '—' %></div>
+                        <div><%= [s.schoolUnitName, s.campusName].filter(Boolean).join(' / ') || '—' %></div>
+                        <div class="muted"><%= [s.className || s.classLevel, s.section || s.stream].filter(Boolean).join(' / ') || '—' %></div>
                       </td>
                       <td>
                         <div class="strong"><%= s.academicYear || '—' %></div>
-                        <div class="muted"><%= s.yearLevel || '—' %> • Sem <%= s.semester || 1 %></div>
+                        <div class="muted"><%= s.classLevel || '—' %> • Term <%= s.term || 1 %></div>
                       </td>
                       <td class="muted"><%= s.status || 'active' %></td>
                     </tr>
@@ -361,9 +378,10 @@
                   function buildPageUrl(targetPage) {
                     const params = new URLSearchParams();
                     if (query?.q) params.set("q", query.q);
-                    if (query?.program) params.set("program", query.program);
-                    if (query?.classGroup) params.set("classGroup", query.classGroup);
-                    if (query?.yearLevel) params.set("yearLevel", query.yearLevel);
+                    if (query?.schoolLevel) params.set("schoolLevel", query.schoolLevel);
+                    if (query?.classId) params.set("classId", query.classId);
+                    if (query?.classLevel) params.set("classLevel", query.classLevel);
+                    if (query?.term) params.set("term", query.term);
                     if (query?.status) params.set("status", query.status);
                     if (query?.limit) params.set("limit", String(query.limit));
                     params.set("page", String(targetPage));
@@ -403,7 +421,7 @@
             <% (logs || []).forEach(function(l){ %>
               <div style="margin-bottom:12px;">
                 <div class="strong"><%= l.student ? (l.student.fullName || l.student.regNo || 'Student') : 'Student' %></div>
-                <div class="muted"><%= l.fromYearLevel || '—' %> → <%= l.toYearLevel || '—' %></div>
+                <div class="muted"><%= l.fromClassLevel || l.fromYearLevel || '—' %> / Term <%= l.fromTerm || l.fromSemester || '—' %> → <%= l.toClassLevel || l.toYearLevel || '—' %> / Term <%= l.toTerm || l.toSemester || '—' %></div>
                 <div class="muted"><%= l.createdAt ? new Date(l.createdAt).toLocaleString() : '' %></div>
               </div>
             <% }) %>
@@ -435,28 +453,37 @@
             </div>
 
             <div class="field">
-              <label>To Semester</label>
-              <input class="input" name="toSemester" value="1">
+              <label>To Term</label>
+              <select class="select" name="toTerm" required>
+                <option value="1">Term 1</option>
+                <option value="2">Term 2</option>
+                <option value="3">Term 3</option>
+              </select>
             </div>
 
             <div class="field">
-              <label>To Year Level *</label>
-              <input class="input" name="toYearLevel" placeholder="Year 2" required>
+              <label>Destination Status</label>
+              <select class="select" name="toStatus">
+                <option value="active">Active</option>
+                <option value="on_hold">On Hold</option>
+                <option value="suspended">Suspended</option>
+                <option value="graduated">Graduated</option>
+              </select>
             </div>
 
             <div class="field">
               <label>To Class *</label>
-              <select class="select" name="toClassGroup" required>
+              <select class="select" name="toClassId" required>
                 <option value="">— select —</option>
                 <% (classes || []).forEach(function(c){ %>
-                  <option value="<%= c._id %>"><%= (c.code ? (c.code + ' — ') : '') + (c.name || c.title || 'Class') %></option>
+                  <option value="<%= c._id %>"><%= c.name || c.title || 'Class' %></option>
                 <% }) %>
               </select>
             </div>
 
             <div class="field" style="grid-column:1/-1">
               <label>Reason</label>
-              <input class="input" name="reason" placeholder="End of semester promotion…">
+              <input class="input" name="reason" placeholder="End of term promotion">
             </div>
           </div>
         </div>

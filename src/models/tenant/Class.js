@@ -65,7 +65,7 @@ module.exports = (connection) => {
         index: true,
       },
 
-      // Keep legacy stream fields for compatibility, but now source them from Section model.
+      // Keep legacy stream for compatibility, while storing Section and Stream separately.
       sectionId: {
         type: Schema.Types.ObjectId,
         ref: "Section",
@@ -74,6 +74,16 @@ module.exports = (connection) => {
         sparse: true,
       },
       sectionName: { type: String, default: "", trim: true, maxlength: 100, index: true },
+      sectionCode: { type: String, default: "", trim: true, maxlength: 40 },
+      streamId: {
+        type: Schema.Types.ObjectId,
+        ref: "Stream",
+        default: null,
+        index: true,
+        sparse: true,
+      },
+      streamName: { type: String, default: "", trim: true, maxlength: 100, index: true },
+      streamCode: { type: String, default: "", trim: true, maxlength: 40 },
       stream: { type: String, default: "", trim: true, maxlength: 100, index: true },
 
       term: { type: Number, default: 1, min: 1, max: 3, index: true },
@@ -109,6 +119,9 @@ module.exports = (connection) => {
     this.levelName = normalizeText(this.levelName, 80);
     this.classLevel = normalizeClassLevel(this.classLevel);
     this.sectionName = normalizeText(this.sectionName, 100);
+    this.sectionCode = normalizeCode(this.sectionCode);
+    this.streamName = normalizeText(this.streamName, 100);
+    this.streamCode = normalizeCode(this.streamCode);
     this.stream = normalizeText(this.stream, 100).toUpperCase();
     this.academicYear = normalizeText(this.academicYear, 20);
     this.room = normalizeText(this.room, 80);
@@ -123,11 +136,11 @@ module.exports = (connection) => {
 
   ClassSchema.index({ code: 1 }, { unique: true });
   ClassSchema.index(
-    { schoolUnitId: 1, campusId: 1, levelType: 1, classLevel: 1, sectionId: 1, academicYear: 1, term: 1 },
+    { schoolUnitId: 1, campusId: 1, levelType: 1, classLevel: 1, sectionId: 1, streamId: 1, academicYear: 1, term: 1 },
     { unique: true, sparse: true }
   );
   ClassSchema.index({ campusId: 1, status: 1, classLevel: 1 });
-  ClassSchema.index({ levelType: 1, classLevel: 1, sectionName: 1 });
+  ClassSchema.index({ levelType: 1, classLevel: 1, sectionName: 1, streamName: 1 });
   ClassSchema.index({ academicYear: 1, term: 1 });
 
   return connection.model("Class", ClassSchema);

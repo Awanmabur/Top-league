@@ -11,6 +11,15 @@ module.exports = (connection) => {
       academicYear: { type: String, trim: true, maxlength: 20 }, // "2025/2026"
       term: { type: String, trim: true, maxlength: 40 },         // "Semester 1"
 
+      classGroup: { type: Schema.Types.ObjectId, ref: "Class", default: null, index: true },
+      className: { type: String, trim: true, maxlength: 180, default: "" },
+      sectionId: { type: Schema.Types.ObjectId, ref: "Section", default: null, index: true },
+      sectionName: { type: String, trim: true, maxlength: 100, default: "" },
+      sectionCode: { type: String, trim: true, maxlength: 40, default: "" },
+      streamId: { type: Schema.Types.ObjectId, ref: "Stream", default: null, index: true },
+      streamName: { type: String, trim: true, maxlength: 100, default: "" },
+      streamCode: { type: String, trim: true, maxlength: 40, default: "" },
+
       startDate: { type: Date, required: true },
       endDate: { type: Date },
 
@@ -29,6 +38,7 @@ module.exports = (connection) => {
   );
 
   AcademicEventSchema.index({ academicYear: 1, term: 1, type: 1, startDate: 1 });
+  AcademicEventSchema.index({ classGroup: 1, sectionId: 1, streamId: 1, startDate: 1 });
   AcademicEventSchema.index({ title: 1 });
 
   return connection.model("AcademicEvent", AcademicEventSchema);

@@ -103,6 +103,14 @@
               <span class="cell-ellipsis" title="${escapeHtml(r.className || "—")}">${escapeHtml(r.className || "—")}</span>
             </td>
 
+            <td class="col-section">
+              <span class="cell-ellipsis" title="${escapeHtml(r.sectionName || "Whole Class")}">${escapeHtml(r.sectionName || "Whole Class")}</span>
+            </td>
+
+            <td class="col-stream">
+              <span class="cell-ellipsis" title="${escapeHtml(r.streamName || "All Streams")}">${escapeHtml(r.streamName || "All Streams")}</span>
+            </td>
+
             <td class="col-subject">
               <span class="cell-ellipsis" title="${escapeHtml(r.subjectName || "—")}">${escapeHtml(r.subjectName || "—")}</span>
             </td>
@@ -134,7 +142,7 @@
       }).join("") ||
       `
       <tr>
-        <td colspan="9" style="padding:18px;">
+        <td colspan="11" style="padding:18px;">
           <div class="muted">No attendance records found.</div>
         </td>
       </tr>
@@ -150,6 +158,8 @@
 
   function fillHiddenStatusForm(r, status) {
     $("hsClassGroup").value = r.classGroupId || "";
+    $("hsSection").value = r.sectionId || "";
+    $("hsStream").value = r.streamId || "";
     $("hsSubject").value = r.subjectId || "";
     $("hsTeacher").value = r.teacherId || "";
     $("hsStudent").value = r.studentId || "";
@@ -188,6 +198,8 @@
     $("mStudent").value = r ? r.studentId || "" : "";
     $("mRegNo").value = r ? r.regNo || "" : "";
     $("mClassGroup").value = r ? r.classGroupId || "" : "";
+    $("mSection").value = r ? r.sectionId || "" : "";
+    $("mStream").value = r ? r.streamId || "" : "";
     $("mSubject").value = r ? r.subjectId || "" : "";
     $("mTeacher").value = r ? r.teacherId || "" : "";
     $("mAcademicYear").value = r ? r.academicYear || "" : "";
@@ -196,6 +208,7 @@
     $("mStatus").value = r ? r.status || "present" : "present";
     $("mNotes").value = r ? r.notes || "" : "";
 
+    window.AcademicSelector?.refresh(document);
     updateCounters();
     openModal("mEdit");
   }
@@ -203,6 +216,8 @@
   function openViewModal(r) {
     if (!r) return;
     state.currentViewId = r.id;
+    $("vSection").textContent = r.sectionName || "Whole Class";
+    $("vStream").textContent = r.streamName || "All Streams";
 
     $("vStudent").textContent = r.studentName || "—";
     $("vRegNo").textContent = r.regNo || "—";

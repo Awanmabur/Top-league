@@ -101,6 +101,14 @@
               <span class="cell-ellipsis" title="${escapeHtml(e.className || "—")}">${escapeHtml(e.className || "—")}</span>
             </td>
 
+            <td class="col-section">
+              <span class="cell-ellipsis" title="${escapeHtml(e.sectionName || "Whole Class")}">${escapeHtml(e.sectionName || "Whole Class")}</span>
+            </td>
+
+            <td class="col-stream">
+              <span class="cell-ellipsis" title="${escapeHtml(e.streamName || "All Streams")}">${escapeHtml(e.streamName || "All Streams")}</span>
+            </td>
+
             <td class="col-teacher">
               <span class="cell-ellipsis" title="${escapeHtml(e.teacherName || "—")}">${escapeHtml(e.teacherName || "—")}</span>
             </td>
@@ -148,7 +156,7 @@
       }).join("") ||
       `
       <tr>
-        <td colspan="12" style="padding:18px;">
+        <td colspan="14" style="padding:18px;">
           <div class="muted">No timetable entries found.</div>
         </td>
       </tr>
@@ -170,9 +178,11 @@
     const e = prefill || null;
 
     $("mTitle").textContent = e ? "Edit Timetable Slot" : "Add Timetable Slot";
-    $("entryForm").action = e ? `/tenant/timetable/${encodeURIComponent(e.id)}` : "/tenant/timetable";
+    $("entryForm").action = e ? `/admin/timetable/${encodeURIComponent(e.id)}` : "/admin/timetable";
 
     $("mClass").value = e ? e.classId || "" : "";
+    $("mSection").value = e ? e.sectionId || "" : "";
+    $("mStream").value = e ? e.streamId || "" : "";
     $("mSubject").value = e ? e.subjectId || "" : "";
     $("mTeacher").value = e ? e.teacherId || "" : "";
     $("mDay").value = e ? e.dayOfWeek || "Mon" : "Mon";
@@ -186,6 +196,7 @@
     $("mStatus").value = e ? e.status || "active" : "active";
     $("mNote").value = e ? e.note || "" : "";
 
+    window.AcademicSelector?.refresh(document);
     updateCounters();
     openModal("mEdit");
   }
@@ -194,6 +205,8 @@
     if (!e) return;
 
     state.currentViewId = e.id;
+    $("vSection").textContent = e.sectionName || "Whole Class";
+    $("vStream").textContent = e.streamName || "All Streams";
 
     $("vSubject").textContent = [e.subjectCode, e.subjectTitle].filter(Boolean).join(" — ") || "—";
     $("vClass").textContent = e.className || "—";
@@ -246,11 +259,13 @@
 
   function exportEntries() {
     const rows = [
-      ["SubjectCode", "SubjectTitle", "Class", "Teacher", "Day", "StartTime", "EndTime", "Room", "Campus", "AcademicYear", "Term", "WeekPattern", "Status", "Note"],
+      ["SubjectCode", "SubjectTitle", "Class", "Section", "Stream", "Teacher", "Day", "StartTime", "EndTime", "Room", "Campus", "AcademicYear", "Term", "WeekPattern", "Status", "Note"],
       ...ENTRIES.map((e) => [
         e.subjectCode || "",
         e.subjectTitle || "",
         e.className || "",
+        e.sectionName || "",
+        e.streamName || "",
         e.teacherName || "",
         e.dayOfWeek || "",
         e.startTime || "",
@@ -310,6 +325,7 @@
       div.className = "block";
       div.innerHTML = `
         <div class="b1">${escapeHtml(e.subjectCode || "SUBJECT")}</div>
+        <div class="b2">${escapeHtml([e.className, e.sectionName, e.streamName].filter(Boolean).join(" / ") || "Class")}</div>
         <div class="b2">${escapeHtml((e.startTime || "") + "–" + (e.endTime || ""))} • ${escapeHtml(e.room || "—")}</div>
         <div class="b2">${escapeHtml(e.className || "—")}</div>
       `;
@@ -411,12 +427,12 @@
       if (e.target.closest(".actStatus")) {
         const next = item.status === "active" ? "inactive" : item.status === "inactive" ? "archived" : "active";
         if (!window.confirm(`Set "${item.subjectCode || "slot"}" to ${next}?`)) return;
-        return submitRowAction(`/tenant/timetable/${encodeURIComponent(item.id)}/status`, next);
+        return submitRowAction(`/admin/timetable/${encodeURIComponent(item.id)}/status`, next);
       }
 
       if (e.target.closest(".actDelete")) {
         if (!window.confirm(`Delete "${item.subjectCode || "slot"}" permanently?`)) return;
-        return submitRowAction(`/tenant/timetable/${encodeURIComponent(item.id)}/delete`);
+        return submitRowAction(`/admin/timetable/${encodeURIComponent(item.id)}/delete`);
       }
 
       return;

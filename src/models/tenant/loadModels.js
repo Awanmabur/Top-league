@@ -42,7 +42,6 @@ module.exports = function loadTenantModels(conn) {
     PromotionLog: defineModel("PromotionLog"),
     StudentDoc: defineModel("StudentDoc"),
     DisciplineCase: defineModel("DisciplineCase"),
-    Enrollment: defineModel("Enrollment"),
 
     LeaveRequest: defineModel("LeaveRequest"),
     PayrollRun: defineModel("PayrollRun"),
@@ -52,6 +51,7 @@ module.exports = function loadTenantModels(conn) {
     Class: defineModel("Class"),
     TimetableEntry: defineModel("TimetableEntry"),
     Section: defineModel("Section"),
+    Stream: defineModel("Stream"),
 
     Student: defineModel("Student"),
     Parent: defineModel("Parent"),

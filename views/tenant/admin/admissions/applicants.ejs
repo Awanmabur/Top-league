@@ -648,7 +648,7 @@
         <div class="modal-body">
           <div class="note">
             Required headers:
-            <strong>firstName,lastName,email,phone,sectionCode,intake,status</strong>
+            <strong>firstName,lastName,email,phone,sectionName,term,status</strong>
           </div>
 
           <div class="field" style="margin-top:12px;">
@@ -688,7 +688,7 @@
       applicationId: a.applicationId || '',
       intake: a.intake || '',
       status: a.status || 'submitted',
-      programLabel: (a.section1 || a.program1) ? ((((a.section1 || a.program1).code ? (a.section1 || a.program1).code + ' — ' : '') + ((a.section1 || a.program1).name || (a.section1 || a.program1).className || 'Section'))) : '—',
+      programLabel: (a.section1 || a.program1) ? (((a.section1 || a.program1).name || (a.section1 || a.program1).className || 'Section')) : '—',
       paymentLabel: 'N/A',
       submittedAt: a.createdAt || null,
       docs: docs,

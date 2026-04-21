@@ -38,10 +38,14 @@ function buildStructure(req) {
   }));
 }
 
-function buildSmartCode(body, klass) {
+function sameId(a, b) {
+  return String(a || "") === String(b || "");
+}
+
+function buildSmartCode(body, klass, section) {
   const campusCode = slugCode(klass?.campusCode || klass?.campusName || "CAMPUS");
   const classLevel = slugCode(klass?.classLevel || "CLASS");
-  const classStream = slugCode(klass?.stream || "A");
+  const classStream = slugCode(section?.name || klass?.sectionName || klass?.stream || "A");
   const stream = slugCode(body.name || "STREAM");
   return slugCode(`${campusCode}-${classLevel}-${classStream}-${stream}`);
 }
@@ -50,6 +54,7 @@ const streamRules = [
   body("name").trim().isLength({ min: 1, max: 100 }).withMessage("Stream name is required."),
   body("code").optional({ checkFalsy: true }).trim().isLength({ min: 1, max: 40 }).withMessage("Code must be 1-40 chars."),
   body("classId").trim().custom((v) => mongoose.Types.ObjectId.isValid(v)).withMessage("Valid class is required."),
+  body("sectionId").optional({ checkFalsy: true }).custom((v) => !v || mongoose.Types.ObjectId.isValid(v)).withMessage("Invalid section."),
   body("classTeacher").optional({ checkFalsy: true }).custom((v) => !v || mongoose.Types.ObjectId.isValid(v)).withMessage("Invalid teacher."),
   body("status").optional({ checkFalsy: true }).isIn(STATUSES).withMessage("Invalid status."),
   body("capacity").optional({ checkFalsy: true }).isInt({ min: 0, max: 100000 }).toInt(),
@@ -63,12 +68,13 @@ module.exports = {
 
   list: async (req, res) => {
     try {
-      const { Stream, Staff, Class } = req.models;
+      const { Stream, Staff, Class, Section } = req.models;
 
       const q = String(req.query.q || "").trim();
       const status = String(req.query.status || "").trim();
       const levelType = String(req.query.levelType || "").trim();
       const classId = String(req.query.classId || "").trim();
+      const sectionId = String(req.query.sectionId || "").trim();
       const schoolUnitId = String(req.query.schoolUnitId || "").trim();
       const campusId = String(req.query.campusId || "").trim();
 
@@ -83,6 +89,8 @@ module.exports = {
           { className: { $regex: q, $options: "i" } },
           { classLevel: { $regex: q, $options: "i" } },
           { classStream: { $regex: q, $options: "i" } },
+          { sectionName: { $regex: q, $options: "i" } },
+          { sectionCode: { $regex: q, $options: "i" } },
           { room: { $regex: q, $options: "i" } },
           { notes: { $regex: q, $options: "i" } },
         ];
@@ -91,6 +99,7 @@ module.exports = {
       if (status) filter.status = status;
       if (levelType) filter.levelType = levelType;
       if (classId) filter.classId = classId;
+      if (sectionId) filter.sectionId = sectionId;
       if (schoolUnitId) filter.schoolUnitId = schoolUnitId;
       if (campusId) filter.campusId = campusId;
 
@@ -101,6 +110,7 @@ module.exports = {
       const streams = await Stream.find(filter)
         .populate("classTeacher", "fullName name email role")
         .populate("classId", "name code classLevel stream academicYear term campusName levelType")
+        .populate("sectionId", "name code classId className")
         .sort({ createdAt: -1 })
         .skip((safePage - 1) * perPage)
         .limit(perPage)
@@ -108,8 +118,15 @@ module.exports = {
 
       const classes = Class
         ? await Class.find({})
-            .select("name code schoolUnitId schoolUnitName campusId campusName levelType classLevel stream academicYear term")
+            .select("name code schoolUnitId schoolUnitName campusId campusName levelType classLevel stream sectionName academicYear term")
             .sort({ createdAt: -1 })
+            .lean()
+        : [];
+
+      const sections = Section
+        ? await Section.find({})
+            .select("name code schoolUnitId schoolUnitName campusId campusName levelType classId className classLevel classStream streamId streamName streamCode status")
+            .sort({ name: 1, createdAt: -1 })
             .lean()
         : [];
 
@@ -131,11 +148,12 @@ module.exports = {
         tenant: req.tenant || null,
         streams,
         classes,
+        sections,
         staffList,
         structure: buildStructure(req),
         csrfToken: res.locals.csrfToken || null,
         kpis,
-        query: { q, status, levelType, classId, schoolUnitId, campusId, page: safePage, total, totalPages, perPage },
+        query: { q, status, levelType, classId, sectionId, schoolUnitId, campusId, page: safePage, total, totalPages, perPage },
         messages: {
           success: req.flash ? req.flash("success") : [],
           error: req.flash ? req.flash("error") : [],
@@ -148,7 +166,7 @@ module.exports = {
   },
 
   create: async (req, res) => {
-    const { Stream, Class } = req.models;
+    const { Stream, Class, Section } = req.models;
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       req.flash?.("error", errors.array().map((e) => e.msg).join(" "));
@@ -162,9 +180,22 @@ module.exports = {
         return res.redirect("/admin/streams");
       }
 
+      let section = null;
+      if (req.body.sectionId) {
+        section = Section ? await Section.findById(req.body.sectionId).lean() : null;
+        if (!section) {
+          req.flash?.("error", "Selected section was not found.");
+          return res.redirect("/admin/streams");
+        }
+        if (section.classId && !sameId(section.classId, klass._id)) {
+          req.flash?.("error", "Selected section does not belong to the selected class.");
+          return res.redirect("/admin/streams");
+        }
+      }
+
       const name = String(req.body.name || "").trim();
       let code = String(req.body.code || "").trim().toUpperCase();
-      if (!code) code = buildSmartCode(req.body, klass);
+      if (!code) code = buildSmartCode(req.body, klass, section);
       code = slugCode(code);
 
       const exists = await Stream.findOne({ code }).lean();
@@ -187,7 +218,10 @@ module.exports = {
         className: klass.name || "",
         classCode: klass.code || "",
         classLevel: klass.classLevel || "",
-        classStream: klass.stream || "",
+        classStream: name || klass.streamName || klass.stream || "",
+        sectionId: section?._id || null,
+        sectionName: section ? String(section.name || "").trim() : "",
+        sectionCode: section ? String(section.code || "").trim() : "",
         classTeacher: req.body.classTeacher && mongoose.Types.ObjectId.isValid(req.body.classTeacher) ? req.body.classTeacher : null,
         room: String(req.body.room || "").trim().slice(0, 80),
         capacity: Math.max(0, Math.min(Number(req.body.capacity || 0), 100000)),
@@ -209,7 +243,7 @@ module.exports = {
   },
 
   update: async (req, res) => {
-    const { Stream, Class } = req.models;
+    const { Stream, Class, Section } = req.models;
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       req.flash?.("error", errors.array().map((e) => e.msg).join(" "));
@@ -229,9 +263,22 @@ module.exports = {
         return res.redirect("/admin/streams");
       }
 
+      let section = null;
+      if (req.body.sectionId) {
+        section = Section ? await Section.findById(req.body.sectionId).lean() : null;
+        if (!section) {
+          req.flash?.("error", "Selected section was not found.");
+          return res.redirect("/admin/streams");
+        }
+        if (section.classId && !sameId(section.classId, klass._id)) {
+          req.flash?.("error", "Selected section does not belong to the selected class.");
+          return res.redirect("/admin/streams");
+        }
+      }
+
       const name = String(req.body.name || "").trim();
       let code = String(req.body.code || "").trim().toUpperCase();
-      if (!code) code = buildSmartCode(req.body, klass);
+      if (!code) code = buildSmartCode(req.body, klass, section);
       code = slugCode(code);
 
       const collision = await Stream.findOne({ code, _id: { $ne: id } }).lean();
@@ -254,7 +301,10 @@ module.exports = {
         className: klass.name || "",
         classCode: klass.code || "",
         classLevel: klass.classLevel || "",
-        classStream: klass.stream || "",
+        classStream: name || klass.streamName || klass.stream || "",
+        sectionId: section?._id || null,
+        sectionName: section ? String(section.name || "").trim() : "",
+        sectionCode: section ? String(section.code || "").trim() : "",
         classTeacher: req.body.classTeacher && mongoose.Types.ObjectId.isValid(req.body.classTeacher) ? req.body.classTeacher : null,
         room: String(req.body.room || "").trim().slice(0, 80),
         capacity: Math.max(0, Math.min(Number(req.body.capacity || 0), 100000)),

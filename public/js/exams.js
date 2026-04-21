@@ -76,6 +76,8 @@
               </div>
             </td>
             <td class="col-class"><span class="cell-ellipsis">${escapeHtml(e.className || "—")}</span></td>
+            <td class="col-section"><span class="cell-ellipsis">${escapeHtml(e.sectionName || "Whole Class")}</span></td>
+            <td class="col-stream"><span class="cell-ellipsis">${escapeHtml(e.streamName || "All Streams")}</span></td>
             <td class="col-subject"><span class="cell-ellipsis">${escapeHtml(e.subjectName || "—")}</span></td>
             <td class="col-type"><span class="cell-ellipsis">${escapeHtml(e.examType || "—")}</span></td>
             <td class="col-date"><span class="cell-ellipsis">${escapeHtml(e.examDateLabel || "—")}</span></td>
@@ -93,7 +95,7 @@
       }).join("") ||
       `
       <tr>
-        <td colspan="9" style="padding:18px;">
+        <td colspan="11" style="padding:18px;">
           <div class="muted">No exams found.</div>
         </td>
       </tr>
@@ -116,6 +118,8 @@
     $("mTitle").value = e ? e.title || "" : "";
     $("mCode").value = e ? e.code || "" : "";
     $("mClassGroup").value = e ? e.classGroupId || "" : "";
+    $("mSection").value = e ? e.sectionId || "" : "";
+    $("mStream").value = e ? e.streamId || "" : "";
     $("mSubject").value = e ? e.subjectId || "" : "";
     $("mTeacher").value = e ? e.teacherId || "" : "";
     $("mAcademicYear").value = e ? e.academicYear || "" : "";
@@ -132,6 +136,8 @@
     $("mStatus").value = e ? e.status || "draft" : "draft";
     $("mInstructions").value = e ? e.instructions || "" : "";
 
+    window.AcademicSelector?.refresh(document);
+
     updateCounters();
     openModal("mEdit");
   }
@@ -143,6 +149,8 @@
     $("vTitle").textContent = e.title || "—";
     $("vCode").textContent = e.code || "—";
     $("vClassGroup").textContent = e.className || "—";
+    $("vSection").textContent = e.sectionName || "Whole Class";
+    $("vStream").textContent = e.streamName || "All Streams";
     $("vSubject").textContent = e.subjectName || "—";
     $("vTeacher").textContent = e.teacherName || "—";
     $("vAcademic").textContent = `${e.academicYear || "—"} • Term ${e.term || 1}`;

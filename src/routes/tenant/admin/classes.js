@@ -9,6 +9,9 @@ router.get("/", classesCtrl.list);
 // create
 router.post("/", classesCtrl.classRules, classesCtrl.create);
 
+// bulk
+router.post("/bulk", classesCtrl.bulk);
+
 // update
 router.post("/:id", classesCtrl.classRules, classesCtrl.update);
 
@@ -17,8 +20,5 @@ router.post("/:id/status", classesCtrl.setStatus);
 
 // delete
 router.post("/:id/delete", classesCtrl.remove);
-
-// bulk
-router.post("/bulk", classesCtrl.bulk);
 
 module.exports = router;

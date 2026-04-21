@@ -163,6 +163,34 @@
     .mini-list{display:grid;gap:10px;margin-top:10px}
     .mini-item{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 12px;border:1px solid rgba(13,64,96,.10);border-radius:12px;background:#fff}
     .mini-item .left{display:grid;gap:2px}
+    .coverage-table{min-width:1180px}
+    .col-coverage-student{width:280px}
+    .col-coverage-count{width:160px}
+    .col-coverage-missing{width:250px}
+    .col-coverage-docs{width:330px}
+    .col-coverage-actions{width:190px}
+    .doc-chip-list{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+    .doc-chip{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      max-width:150px;
+      padding:6px 8px;
+      border-radius:10px;
+      border:1px solid rgba(13,64,96,.14);
+      background:#fff;
+      color:#0f172a;
+      font-size:12px;
+      font-weight:800;
+      cursor:pointer;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .doc-chip.present{background:#ecfdf3;color:#15803d;border-color:#bbf7d0}
+    .doc-chip.missing{background:#fef2f2;color:#b91c1c;border-color:#fecaca}
+    .doc-chip.other{background:#eef2ff;color:#3730a3;border-color:#c7d2fe}
+    .doc-count{display:grid;gap:3px}
 
     .flash-wrap{display:grid;gap:10px;margin-bottom:12px}
     .flash{padding:12px 14px;border-radius:12px;font-weight:700}
@@ -367,7 +395,7 @@
       <div class="topbar">
         <div>
           <div class="title">Student Docs</div>
-          <div class="subtitle">Upload, edit, export, print and manage student documents securely.</div>
+          <div class="subtitle">Track each student, their uploaded files, missing required documents and document updates.</div>
         </div>
 
         <div class="top-actions">
@@ -379,24 +407,24 @@
 
       <div class="grid-4">
         <div class="card">
-          <div class="section-title">Total</div>
-          <div class="kpi-value"><%= kpis?.total || 0 %></div>
-          <div class="muted">Matching filter</div>
+          <div class="section-title">Students</div>
+          <div class="kpi-value"><%= kpis?.students || 0 %></div>
+          <div class="muted">Tracked for documents</div>
         </div>
         <div class="card">
-          <div class="section-title">Passport</div>
-          <div class="kpi-value" style="color:#3730a3"><%= kpis?.passport || 0 %></div>
-          <div class="muted">Passport files</div>
+          <div class="section-title">Uploaded Docs</div>
+          <div class="kpi-value" style="color:#3730a3"><%= kpis?.uploaded || 0 %></div>
+          <div class="muted">All stored files</div>
         </div>
         <div class="card">
-          <div class="section-title">Transcript</div>
-          <div class="kpi-value" style="color:#15803d"><%= kpis?.transcript || 0 %></div>
-          <div class="muted">Academic records</div>
+          <div class="section-title">Missing Required</div>
+          <div class="kpi-value" style="color:#b91c1c"><%= kpis?.missingRequired || 0 %></div>
+          <div class="muted">Passport, ID, transcript gaps</div>
         </div>
         <div class="card">
-          <div class="section-title">Certificate</div>
-          <div class="kpi-value" style="color:#92400e"><%= kpis?.certificate || 0 %></div>
-          <div class="muted">Certificates</div>
+          <div class="section-title">Complete</div>
+          <div class="kpi-value" style="color:#15803d"><%= kpis?.completeStudents || 0 %></div>
+          <div class="muted">Students with required docs</div>
         </div>
       </div>
 
@@ -433,74 +461,97 @@
         <section class="card" style="min-width:0;">
           <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;">
             <div>
-              <div class="section-title">Documents Table</div>
-              <div class="section-sub">Showing <%= docs.length %> of <%= query?.total || 0 %> records.</div>
+              <div class="section-title">Students & Documents</div>
+              <div class="section-sub">Uploaded and missing document coverage per student.</div>
             </div>
             <div class="muted" id="resultMeta">
-              Page <%= query?.page || 1 %> of <%= query?.totalPages || 1 %>
+              <%= (studentDocSummaries || []).length %> student(s)
             </div>
           </div>
 
           <div style="margin-top:10px;">
             <div class="table-wrap" id="printArea">
-              <table>
+              <table class="coverage-table">
                 <thead>
                   <tr>
-                    <th class="col-student">Student</th>
-                    <th class="col-type">Type</th>
-                    <th class="col-title">Title</th>
-                    <th class="col-file">File</th>
-                    <th class="col-size">Size</th>
-                    <th class="col-date">Uploaded</th>
-                    <th class="col-actions" style="text-align:right;">Actions</th>
+                    <th class="col-coverage-student">Student</th>
+                    <th class="col-coverage-count">Coverage</th>
+                    <th class="col-coverage-missing">Missing Required</th>
+                    <th class="col-coverage-docs">Uploaded Documents</th>
+                    <th class="col-coverage-actions" style="text-align:right;">Actions</th>
                   </tr>
                 </thead>
-                <tbody id="tbodyDocs"></tbody>
+                <tbody id="tbodyStudentDocs">
+                  <%
+                    const typeLabels = { passport: "Passport", id: "ID", transcript: "Transcript", certificate: "Certificate", other: "Other" };
+                    const coverageRows = studentDocSummaries || [];
+                  %>
+                  <% if (!coverageRows.length) { %>
+                    <tr>
+                      <td colspan="5" style="padding:18px;">
+                        <div class="muted">No students found for document tracking.</div>
+                      </td>
+                    </tr>
+                  <% } %>
+                  <% coverageRows.forEach(function(row){ %>
+                    <tr>
+                      <td class="col-coverage-student">
+                        <div class="doc-main">
+                          <div class="doc-title" title="<%= row.label %>"><%= row.label %></div>
+                          <div class="doc-sub"><%= row.email || "No email recorded" %></div>
+                        </div>
+                      </td>
+                      <td class="col-coverage-count">
+                        <div class="doc-count">
+                          <strong><%= row.requiredUploadedCount || 0 %>/<%= row.requiredCount || 3 %> required</strong>
+                          <span class="muted"><%= row.uploadedCount || 0 %> total uploaded</span>
+                        </div>
+                      </td>
+                      <td class="col-coverage-missing">
+                        <div class="doc-chip-list">
+                          <% if (row.missing && row.missing.length) { %>
+                            <% row.missing.forEach(function(type){ %>
+                              <button class="doc-chip missing missingUpload" type="button" data-student="<%= row.id %>" data-type="<%= type %>">
+                                <i class="fa-solid fa-upload"></i> <%= typeLabels[type] || type %>
+                              </button>
+                            <% }) %>
+                          <% } else { %>
+                            <span class="pill ok"><i class="fa-solid fa-circle-check"></i> Complete</span>
+                          <% } %>
+                        </div>
+                      </td>
+                      <td class="col-coverage-docs">
+                        <div class="doc-chip-list">
+                          <% if (row.docs && row.docs.length) { %>
+                            <% row.docs.slice(0, 6).forEach(function(doc){ %>
+                              <button class="doc-chip <%= doc.type === 'other' ? 'other' : 'present' %> docMiniEdit" type="button" data-doc="<%= doc.id %>" title="<%= doc.title || doc.originalName || '' %>">
+                                <i class="fa-solid fa-file-lines"></i> <%= typeLabels[doc.type] || doc.type || "Doc" %>
+                              </button>
+                            <% }) %>
+                            <% if (row.docs.length > 6) { %>
+                              <span class="muted">+<%= row.docs.length - 6 %> more</span>
+                            <% } %>
+                          <% } else { %>
+                            <span class="muted">No uploaded documents.</span>
+                          <% } %>
+                        </div>
+                      </td>
+                      <td class="col-coverage-actions" style="text-align:right;">
+                        <button class="btn-xs missingUpload" type="button" data-student="<%= row.id %>" data-type="<%= (row.missing && row.missing[0]) || 'other' %>">
+                          <i class="fa-solid fa-upload"></i> <%= row.missing && row.missing.length ? "Upload Missing" : "Upload More" %>
+                        </button>
+                      </td>
+                    </tr>
+                  <% }) %>
+                </tbody>
               </table>
-            </div>
-          </div>
-
-          <div class="pagination">
-            <div class="muted">
-              Rows per page: <strong>10</strong>
-            </div>
-
-            <div class="pagination-links">
-              <%
-                const currentPage = Number(query?.page || 1);
-                const totalPages = Number(query?.totalPages || 1);
-
-                function buildPageUrl(targetPage) {
-                  const params = new URLSearchParams();
-                  if (query?.q) params.set("q", query.q);
-                  if (query?.type) params.set("type", query.type);
-                  if (query?.student) params.set("student", query.student);
-                  params.set("page", String(targetPage));
-                  return "/admin/student-docs?" + params.toString();
-                }
-
-                const startPage = Math.max(1, currentPage - 2);
-                const endPage = Math.min(totalPages, currentPage + 2);
-              %>
-
-              <a class="page-link <%= currentPage <= 1 ? 'disabled' : '' %>" href="<%= buildPageUrl(Math.max(1, currentPage - 1)) %>">
-                <i class="fa-solid fa-angle-left"></i>
-              </a>
-
-              <% for (let p = startPage; p <= endPage; p++) { %>
-                <a class="page-link <%= p === currentPage ? 'active' : '' %>" href="<%= buildPageUrl(p) %>"><%= p %></a>
-              <% } %>
-
-              <a class="page-link <%= currentPage >= totalPages ? 'disabled' : '' %>" href="<%= buildPageUrl(Math.min(totalPages, currentPage + 1)) %>">
-                <i class="fa-solid fa-angle-right"></i>
-              </a>
             </div>
           </div>
         </section>
 
         <aside class="card" style="min-width:0;">
           <div class="section-title">Quick Actions</div>
-          <div class="section-sub">Fast upload helpers.</div>
+          <div class="section-sub">Fast upload helpers and missing required docs.</div>
 
           <div class="mini-list">
             <div class="mini-item">
@@ -529,8 +580,104 @@
           <div class="note" style="margin-top:12px;">
             Keep uploads small and relevant. Replacing a file during edit automatically removes the old cloud asset.
           </div>
+
+          <div class="divider"></div>
+
+          <div class="section-title">Missing Documents</div>
+          <div class="section-sub">Passport, ID and transcript are tracked per student.</div>
+
+          <div class="mini-list">
+            <%
+              const missingDocRows = (studentDocSummaries || []).filter(function(row){ return row.missing && row.missing.length; }).slice(0, 8);
+            %>
+            <% if (!missingDocRows.length) { %>
+              <div class="muted">No missing required documents for listed students.</div>
+            <% } %>
+            <% missingDocRows.forEach(function(row){ %>
+              <div class="mini-item">
+                <div class="left">
+                  <div class="strong"><%= row.label %></div>
+                  <div class="muted">Missing: <%= row.missing.join(", ") %></div>
+                </div>
+                <button class="btn-xs missingUpload" type="button" data-student="<%= row.id %>" data-type="<%= row.missing[0] %>">
+                  <i class="fa-solid fa-upload"></i>
+                </button>
+              </div>
+            <% }) %>
+          </div>
         </aside>
       </div>
+
+      <section class="card" style="margin-top:12px;min-width:0;">
+        <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;">
+          <div>
+            <div class="section-title">Document Records</div>
+            <div class="section-sub">Showing <%= docs.length %> of <%= query?.total || 0 %> uploaded document record(s).</div>
+          </div>
+          <div class="muted">
+            Page <%= query?.page || 1 %> of <%= query?.totalPages || 1 %>
+          </div>
+        </div>
+
+        <div style="margin-top:10px;">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th class="col-student">Student</th>
+                  <th class="col-type">Type</th>
+                  <th class="col-title">Title</th>
+                  <th class="col-file">File</th>
+                  <th class="col-size">Size</th>
+                  <th class="col-date">Uploaded</th>
+                  <th class="col-actions" style="text-align:right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyDocs"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="pagination">
+          <div class="muted">
+            Rows per page: <strong>10</strong>
+          </div>
+
+          <div class="pagination-links">
+            <%
+              {
+                const currentPage = Number(query?.page || 1);
+                const totalPages = Number(query?.totalPages || 1);
+
+                function buildPageUrl(targetPage) {
+                  const params = new URLSearchParams();
+                  if (query?.q) params.set("q", query.q);
+                  if (query?.type) params.set("type", query.type);
+                  if (query?.student) params.set("student", query.student);
+                  params.set("page", String(targetPage));
+                  return "/admin/student-docs?" + params.toString();
+                }
+
+                const startPage = Math.max(1, currentPage - 2);
+                const endPage = Math.min(totalPages, currentPage + 2);
+            %>
+
+            <a class="page-link <%= currentPage <= 1 ? 'disabled' : '' %>" href="<%= buildPageUrl(Math.max(1, currentPage - 1)) %>">
+              <i class="fa-solid fa-angle-left"></i>
+            </a>
+
+            <% for (let p = startPage; p <= endPage; p++) { %>
+              <a class="page-link <%= p === currentPage ? 'active' : '' %>" href="<%= buildPageUrl(p) %>"><%= p %></a>
+            <% } %>
+
+            <a class="page-link <%= currentPage >= totalPages ? 'disabled' : '' %>" href="<%= buildPageUrl(Math.min(totalPages, currentPage + 1)) %>">
+              <i class="fa-solid fa-angle-right"></i>
+            </a>
+
+            <% } %>
+          </div>
+        </div>
+      </section>
     </main>
   </div>
 
@@ -656,6 +803,8 @@
       uploadedAt: d.createdAt || null
     };
   })) %></script>
+
+  <script id="studentDocSummariesData" type="application/json"><%- JSON.stringify(studentDocSummaries || []) %></script>
 
   <script src="/js/navbar.js"></script>
   <script src="/js/student-docs.js" defer></script>

@@ -1,5 +1,10 @@
 const mongoose = require("mongoose");
 const { body, validationResult } = require("express-validator");
+const {
+  loadAcademicScopeLists,
+  resolveAcademicScope,
+  buildAcademicScopeFilter,
+} = require("../../../utils/tenantAcademicScope");
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -72,6 +77,8 @@ function parseCsv(text) {
 
 const timetableRules = [
   body("classGroup").custom(isObjId).withMessage("Class is required."),
+  body("sectionId").optional({ checkFalsy: true }).custom((v) => !v || isObjId(v)).withMessage("Invalid section."),
+  body("streamId").optional({ checkFalsy: true }).custom((v) => !v || isObjId(v)).withMessage("Invalid stream."),
   body("subject").custom(isObjId).withMessage("Subject is required."),
   body("teacher").optional({ checkFalsy: true }).custom((v) => !v || isObjId(v)).withMessage("Invalid teacher."),
   body("academicYear").optional({ checkFalsy: true }).trim().isLength({ max: 20 }),
@@ -95,6 +102,8 @@ async function findConflicts({
   academicYear,
   term,
   classGroup,
+  sectionId,
+  streamId,
   teacher,
   room,
 }) {
@@ -110,12 +119,23 @@ async function findConflicts({
   const conflicts = [];
 
   const classItems = await TimetableEntry.find({ ...base, classGroup })
-    .select("startMinutes endMinutes subject teacher room")
+    .select("startMinutes endMinutes subject teacher room sectionId streamId")
     .populate("subject", "code title")
     .populate("teacher", "fullName name")
     .lean();
 
-  const classConflict = classItems.find((x) => overlaps(startMin, endMin, x.startMinutes, x.endMinutes));
+  const classConflict = classItems.find((x) => {
+    if (!overlaps(startMin, endMin, x.startMinutes, x.endMinutes)) return false;
+    const existingSection = String(x.sectionId || "");
+    const existingStream = String(x.streamId || "");
+    const nextSection = String(sectionId || "");
+    const nextStream = String(streamId || "");
+    if (!nextSection && !nextStream) return true;
+    if (!existingSection && !existingStream) return true;
+    if (nextSection && existingSection && nextSection === existingSection) return true;
+    if (nextStream && existingStream && nextStream === existingStream) return true;
+    return false;
+  });
   if (classConflict) conflicts.push({ type: "Class conflict", item: classConflict });
 
   if (teacher) {
@@ -154,6 +174,8 @@ module.exports = {
       const academicYear = safeStr(req.query.academicYear, 20);
       const term = safeStr(req.query.term, 6);
       const classGroup = safeStr(req.query.classGroup, 50);
+      const sectionId = safeStr(req.query.sectionId, 50);
+      const streamId = safeStr(req.query.streamId, 50);
       const teacher = safeStr(req.query.teacher, 50);
       const dayOfWeek = safeStr(req.query.dayOfWeek, 10);
       const status = safeStr(req.query.status, 20);
@@ -165,7 +187,7 @@ module.exports = {
       if (academicYear) filter.academicYear = academicYear;
       if (term && !Number.isNaN(Number(term))) filter.term = Number(term);
       if (dayOfWeek && DAYS.includes(dayOfWeek)) filter.dayOfWeek = dayOfWeek;
-      if (classGroup && isObjId(classGroup)) filter.classGroup = classGroup;
+      Object.assign(filter, buildAcademicScopeFilter({ classGroup, sectionId, streamId }));
       if (teacher && isObjId(teacher)) filter.teacher = teacher;
       if (["active", "inactive", "archived"].includes(status)) filter.status = status;
 
@@ -183,7 +205,9 @@ module.exports = {
 
       const entries = await TimetableEntry.find(filter)
         .populate("classGroup", "name code schoolLevel classLevel stream")
-        .populate("subject", "title code shortTitle")
+        .populate("sectionId", "name code")
+        .populate("streamId", "name code")
+        .populate("subject", "title code shortTitle classId sectionId streamId")
         .populate("teacher", "fullName name role email")
         .sort({ dayOfWeek: 1, startMinutes: 1, createdAt: -1 })
         .skip((safePage - 1) * perPage)
@@ -191,12 +215,12 @@ module.exports = {
         .lean();
 
       const classes = await Class.find({})
-        .select("name code schoolLevel classLevel stream")
+        .select("name code schoolLevel classLevel stream academicYear term")
         .sort({ name: 1 })
         .lean();
 
       const subjects = await Subject.find({})
-        .select("title code shortTitle schoolLevel")
+        .select("title code shortTitle schoolLevel classId className sectionId sectionName streamId streamName academicYear term")
         .sort({ title: 1 })
         .lean();
 
@@ -206,6 +230,7 @@ module.exports = {
         .lean();
 
       const academicYears = (await TimetableEntry.distinct("academicYear")).filter(Boolean).sort();
+      const scopeLists = await loadAcademicScopeLists(req);
 
       const kpis = {
         total,
@@ -218,7 +243,10 @@ module.exports = {
         tenant: req.tenant || null,
         entries,
         classes,
+        sections: scopeLists.sections,
+        streams: scopeLists.streams,
         subjects,
+        subjectOptions: scopeLists.subjects,
         staffList,
         academicYears,
         days: DAYS,
@@ -229,6 +257,8 @@ module.exports = {
           academicYear,
           term,
           classGroup,
+          sectionId,
+          streamId,
           teacher,
           dayOfWeek,
           status,
@@ -254,7 +284,7 @@ module.exports = {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       req.flash?.("error", errors.array().map((e) => e.msg).join(" "));
-      return res.redirect("/tenant/timetable");
+      return res.redirect("/admin/timetable");
     }
 
     try {
@@ -263,13 +293,29 @@ module.exports = {
 
       if (startMin === null || endMin === null || endMin <= startMin) {
         req.flash?.("error", "End time must be later than start time.");
-        return res.redirect("/tenant/timetable");
+        return res.redirect("/admin/timetable");
+      }
+
+      const scope = await resolveAcademicScope(req, {
+        classId: req.body.classGroup,
+        sectionId: req.body.sectionId,
+        streamId: req.body.streamId,
+      });
+      if (scope.errors.length || !scope.payload.classId) {
+        req.flash?.("error", scope.errors.join(" ") || "Class is required.");
+        return res.redirect("/admin/timetable");
       }
 
       const doc = {
         academicYear: safeStr(req.body.academicYear, 20),
         term: Math.max(1, Math.min(Number(req.body.term || 1), 3)),
-        classGroup: req.body.classGroup,
+        classGroup: scope.payload.classId,
+        sectionId: scope.payload.sectionId || null,
+        sectionName: scope.payload.sectionName || "",
+        sectionCode: scope.payload.sectionCode || "",
+        streamId: scope.payload.streamId || null,
+        streamName: scope.payload.streamName || "",
+        streamCode: scope.payload.streamCode || "",
         subject: req.body.subject,
         teacher: req.body.teacher && isObjId(req.body.teacher) ? req.body.teacher : null,
         room: safeStr(req.body.room, 60),
@@ -294,6 +340,8 @@ module.exports = {
         academicYear: doc.academicYear,
         term: doc.term,
         classGroup: doc.classGroup,
+        sectionId: doc.sectionId,
+        streamId: doc.streamId,
         teacher: doc.teacher,
         room: doc.room,
       });
@@ -303,17 +351,17 @@ module.exports = {
           .map((c) => `${c.type} (${c.item?.subject?.code || "Subject"} ${c.item?.startMinutes}-${c.item?.endMinutes})`)
           .join(" | ");
         req.flash?.("error", `Schedule conflict detected: ${msg}`);
-        return res.redirect("/tenant/timetable");
+        return res.redirect("/admin/timetable");
       }
 
       await TimetableEntry.create(doc);
 
       req.flash?.("success", "Timetable entry created.");
-      return res.redirect("/tenant/timetable");
+      return res.redirect("/admin/timetable");
     } catch (err) {
       console.error("CREATE TIMETABLE ERROR:", err);
       req.flash?.("error", "Failed to create timetable entry.");
-      return res.redirect("/tenant/timetable");
+      return res.redirect("/admin/timetable");
     }
   },
 
@@ -323,14 +371,14 @@ module.exports = {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       req.flash?.("error", errors.array().map((e) => e.msg).join(" "));
-      return res.redirect("/tenant/timetable");
+      return res.redirect("/admin/timetable");
     }
 
     try {
       const id = String(req.params.id || "").trim();
       if (!mongoose.Types.ObjectId.isValid(id)) {
         req.flash?.("error", "Invalid timetable entry id.");
-        return res.redirect("/tenant/timetable");
+        return res.redirect("/admin/timetable");
       }
 
       const startMin = toMinutes(req.body.startTime);
@@ -338,13 +386,29 @@ module.exports = {
 
       if (startMin === null || endMin === null || endMin <= startMin) {
         req.flash?.("error", "End time must be later than start time.");
-        return res.redirect("/tenant/timetable");
+        return res.redirect("/admin/timetable");
+      }
+
+      const scope = await resolveAcademicScope(req, {
+        classId: req.body.classGroup,
+        sectionId: req.body.sectionId,
+        streamId: req.body.streamId,
+      });
+      if (scope.errors.length || !scope.payload.classId) {
+        req.flash?.("error", scope.errors.join(" ") || "Class is required.");
+        return res.redirect("/admin/timetable");
       }
 
       const update = {
         academicYear: safeStr(req.body.academicYear, 20),
         term: Math.max(1, Math.min(Number(req.body.term || 1), 3)),
-        classGroup: req.body.classGroup,
+        classGroup: scope.payload.classId,
+        sectionId: scope.payload.sectionId || null,
+        sectionName: scope.payload.sectionName || "",
+        sectionCode: scope.payload.sectionCode || "",
+        streamId: scope.payload.streamId || null,
+        streamName: scope.payload.streamName || "",
+        streamCode: scope.payload.streamCode || "",
         subject: req.body.subject,
         teacher: req.body.teacher && isObjId(req.body.teacher) ? req.body.teacher : null,
         room: safeStr(req.body.room, 60),
@@ -368,6 +432,8 @@ module.exports = {
         academicYear: update.academicYear,
         term: update.term,
         classGroup: update.classGroup,
+        sectionId: update.sectionId,
+        streamId: update.streamId,
         teacher: update.teacher,
         room: update.room,
       });
@@ -377,17 +443,17 @@ module.exports = {
           .map((c) => `${c.type} (${c.item?.subject?.code || "Subject"} ${c.item?.startMinutes}-${c.item?.endMinutes})`)
           .join(" | ");
         req.flash?.("error", `Schedule conflict detected: ${msg}`);
-        return res.redirect("/tenant/timetable");
+        return res.redirect("/admin/timetable");
       }
 
       await TimetableEntry.updateOne({ _id: id }, { $set: update }, { runValidators: true });
 
       req.flash?.("success", "Timetable entry updated.");
-      return res.redirect("/tenant/timetable");
+      return res.redirect("/admin/timetable");
     } catch (err) {
       console.error("UPDATE TIMETABLE ERROR:", err);
       req.flash?.("error", "Failed to update timetable entry.");
-      return res.redirect("/tenant/timetable");
+      return res.redirect("/admin/timetable");
     }
   },
 
@@ -398,22 +464,22 @@ module.exports = {
 
       if (!mongoose.Types.ObjectId.isValid(id)) {
         req.flash?.("error", "Invalid timetable entry id.");
-        return res.redirect("/tenant/timetable");
+        return res.redirect("/admin/timetable");
       }
 
       const next = ["active", "inactive", "archived"].includes(req.body.status) ? req.body.status : null;
       if (!next) {
         req.flash?.("error", "Invalid status.");
-        return res.redirect("/tenant/timetable");
+        return res.redirect("/admin/timetable");
       }
 
       await TimetableEntry.updateOne({ _id: id }, { $set: { status: next } });
       req.flash?.("success", "Status updated.");
-      return res.redirect("/tenant/timetable");
+      return res.redirect("/admin/timetable");
     } catch (err) {
       console.error("SET TIMETABLE STATUS ERROR:", err);
       req.flash?.("error", "Failed to update status.");
-      return res.redirect("/tenant/timetable");
+      return res.redirect("/admin/timetable");
     }
   },
 
@@ -424,16 +490,16 @@ module.exports = {
 
       if (!mongoose.Types.ObjectId.isValid(id)) {
         req.flash?.("error", "Invalid timetable entry id.");
-        return res.redirect("/tenant/timetable");
+        return res.redirect("/admin/timetable");
       }
 
       await TimetableEntry.deleteOne({ _id: id });
       req.flash?.("success", "Timetable entry deleted.");
-      return res.redirect("/tenant/timetable");
+      return res.redirect("/admin/timetable");
     } catch (err) {
       console.error("DELETE TIMETABLE ERROR:", err);
       req.flash?.("error", "Failed to delete timetable entry.");
-      return res.redirect("/tenant/timetable");
+      return res.redirect("/admin/timetable");
     }
   },
 
@@ -449,7 +515,7 @@ module.exports = {
 
       if (!ids.length) {
         req.flash?.("error", "No timetable items selected.");
-        return res.redirect("/tenant/timetable");
+        return res.redirect("/admin/timetable");
       }
 
       if (action === "activate") {
@@ -468,21 +534,21 @@ module.exports = {
         req.flash?.("error", "Invalid bulk action.");
       }
 
-      return res.redirect("/tenant/timetable");
+      return res.redirect("/admin/timetable");
     } catch (err) {
       console.error("TIMETABLE BULK ERROR:", err);
       req.flash?.("error", "Bulk action failed.");
-      return res.redirect("/tenant/timetable");
+      return res.redirect("/admin/timetable");
     }
   },
 
   importCsv: async (req, res) => {
     try {
-      const { TimetableEntry, Class, Subject, Staff } = req.models;
+      const { TimetableEntry, Class, Section, Stream, Subject, Staff } = req.models;
 
       if (!req.file || !req.file.buffer) {
         req.flash?.("error", "CSV file is required.");
-        return res.redirect("/tenant/timetable");
+        return res.redirect("/admin/timetable");
       }
 
       const raw = String(req.file.buffer.toString("utf8") || "").replace(/^\uFEFF/, "");
@@ -490,7 +556,7 @@ module.exports = {
 
       if (!rows.length) {
         req.flash?.("error", "CSV file is empty.");
-        return res.redirect("/tenant/timetable");
+        return res.redirect("/admin/timetable");
       }
 
       const headers = rows[0].map((h) => String(h || "").trim());
@@ -499,6 +565,8 @@ module.exports = {
       const idx = (name) => headers.findIndex((h) => h.toLowerCase() === name.toLowerCase());
 
       const iClassCode = idx("classCode");
+      const iSectionCode = idx("sectionCode");
+      const iStreamCode = idx("streamCode");
       const iSubjectCode = idx("subjectCode");
       const iDay = idx("dayOfWeek");
       const iStart = idx("startTime");
@@ -514,14 +582,18 @@ module.exports = {
 
       if ([iClassCode, iSubjectCode, iDay, iStart, iEnd].some((x) => x === -1)) {
         req.flash?.("error", "CSV must include classCode, subjectCode, dayOfWeek, startTime, endTime.");
-        return res.redirect("/tenant/timetable");
+        return res.redirect("/admin/timetable");
       }
 
       const classes = await Class.find({}).select("_id code name").lean();
+      const sections = Section ? await Section.find({}).select("_id code name classId").lean() : [];
+      const streams = Stream ? await Stream.find({}).select("_id code name classId sectionId").lean() : [];
       const subjects = await Subject.find({}).select("_id code title").lean();
       const staff = await Staff.find({}).select("_id email").lean();
 
       const classByCode = new Map(classes.filter((x) => x.code).map((x) => [String(x.code).trim().toUpperCase(), String(x._id)]));
+      const sectionByCode = new Map(sections.filter((x) => x.code).map((x) => [String(x.code).trim().toUpperCase(), String(x._id)]));
+      const streamByCode = new Map(streams.filter((x) => x.code).map((x) => [String(x.code).trim().toUpperCase(), String(x._id)]));
       const subjectByCode = new Map(subjects.filter((x) => x.code).map((x) => [String(x.code).trim().toUpperCase(), String(x._id)]));
       const staffByEmail = new Map(staff.filter((x) => x.email).map((x) => [String(x.email).trim().toLowerCase(), String(x._id)]));
 
@@ -536,20 +608,44 @@ module.exports = {
         const endTime = String(row[iEnd] || "").trim();
 
         const classId = classByCode.get(classCode);
+        const sectionCode = iSectionCode >= 0 ? String(row[iSectionCode] || "").trim().toUpperCase() : "";
+        const streamCode = iStreamCode >= 0 ? String(row[iStreamCode] || "").trim().toUpperCase() : "";
+        const sectionId = sectionCode ? sectionByCode.get(sectionCode) : null;
+        const streamId = streamCode ? streamByCode.get(streamCode) : null;
         const subjectId = subjectByCode.get(subjectCode);
         const startMin = toMinutes(startTime);
         const endMin = toMinutes(endTime);
 
-        if (!classId || !subjectId || !DAYS.includes(dayOfWeek) || startMin === null || endMin === null || endMin <= startMin) {
+        if (
+          !classId ||
+          (sectionCode && !sectionId) ||
+          (streamCode && !streamId) ||
+          !subjectId ||
+          !DAYS.includes(dayOfWeek) ||
+          startMin === null ||
+          endMin === null ||
+          endMin <= startMin
+        ) {
           skipped += 1;
           continue;
         }
 
         const teacherEmail = iTeacherEmail >= 0 ? String(row[iTeacherEmail] || "").trim().toLowerCase() : "";
         const teacherId = teacherEmail && staffByEmail.has(teacherEmail) ? staffByEmail.get(teacherEmail) : null;
+        const scope = await resolveAcademicScope(req, { classId, sectionId, streamId });
+        if (scope.errors.length || !scope.payload.classId) {
+          skipped += 1;
+          continue;
+        }
 
         const doc = {
-          classGroup: classId,
+          classGroup: scope.payload.classId,
+          sectionId: scope.payload.sectionId || null,
+          sectionName: scope.payload.sectionName || "",
+          sectionCode: scope.payload.sectionCode || "",
+          streamId: scope.payload.streamId || null,
+          streamName: scope.payload.streamName || "",
+          streamCode: scope.payload.streamCode || "",
           subject: subjectId,
           teacher: teacherId,
           dayOfWeek,
@@ -576,6 +672,8 @@ module.exports = {
           academicYear: doc.academicYear,
           term: doc.term,
           classGroup: doc.classGroup,
+          sectionId: doc.sectionId,
+          streamId: doc.streamId,
           teacher: doc.teacher,
           room: doc.room,
         });
@@ -594,11 +692,11 @@ module.exports = {
       }
 
       req.flash?.("success", `Import completed. Created ${created}, skipped ${skipped}.`);
-      return res.redirect("/tenant/timetable");
+      return res.redirect("/admin/timetable");
     } catch (err) {
       console.error("IMPORT TIMETABLE CSV ERROR:", err);
       req.flash?.("error", "Failed to import CSV.");
-      return res.redirect("/tenant/timetable");
+      return res.redirect("/admin/timetable");
     }
   },
 };

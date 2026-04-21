@@ -19,6 +19,50 @@ module.exports = (connection) => {
         index: true,
       },
 
+      classGroupName: {
+        type: String,
+        default: "",
+        trim: true,
+      },
+
+      sectionId: {
+        type: Schema.Types.ObjectId,
+        ref: "Section",
+        default: null,
+        index: true,
+      },
+
+      sectionName: {
+        type: String,
+        default: "",
+        trim: true,
+      },
+
+      sectionCode: {
+        type: String,
+        default: "",
+        trim: true,
+      },
+
+      streamId: {
+        type: Schema.Types.ObjectId,
+        ref: "Stream",
+        default: null,
+        index: true,
+      },
+
+      streamName: {
+        type: String,
+        default: "",
+        trim: true,
+      },
+
+      streamCode: {
+        type: String,
+        default: "",
+        trim: true,
+      },
+
       kind: {
         type: String,
         enum: ["official", "unofficial"],
@@ -170,6 +214,9 @@ module.exports = (connection) => {
   TranscriptSchema.index(
     {
       student: 1,
+      classGroup: 1,
+      sectionId: 1,
+      streamId: 1,
       academicYearFrom: 1,
       academicYearTo: 1,
       termFrom: 1,

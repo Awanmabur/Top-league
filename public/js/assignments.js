@@ -1,293 +1,289 @@
- 
 (() => {
   const $ = (id) => document.getElementById(id);
+  const BASE_PATH = "/admin/assignments";
 
-  const grid = $("assignmentGrid");
-  const modal = $("assignModal");
-  const form = $("assignForm");
-  const importModal = $("importModal");
-
-  const publishForm = $("publishForm");
-  const archiveForm = $("archiveForm");
-  const deleteForm = $("deleteForm");
-  const bulkForm = $("bulkForm");
-  const bulkActionVal = $("bulkActionVal");
-  const bulkIdsVal = $("bulkIdsVal");
-
-  const toolsMenu = $("toolsMenu");
-  const selectAll = $("selectAll");
-
-  const mTabs = $("mTabs");
-
-  const pv = {
-    title: $("pvTitle"),
-    course: $("pvCourse"),
-    due: $("pvDue"),
-    points: $("pvPoints"),
-    status: $("pvStatus"),
-    instr: $("pvInstr"),
-    rubric: $("pvRubric"),
-    attach: $("pvAttach"),
-  };
-
-  if (!grid || !modal || !form) {
-    console.error("Assignments: Missing required DOM elements.");
-    return;
+  function readJson(id, fallback) {
+    const el = $(id);
+    if (!el) return fallback;
+    try {
+      return JSON.parse(el.value || el.textContent || JSON.stringify(fallback));
+    } catch (err) {
+      console.error("Failed to parse JSON:", id, err);
+      return fallback;
+    }
   }
 
-  let currentId = null;
+  const ASSIGNMENTS = readJson("assignmentsData", []);
+  if (!$("tbodyAssignments")) return;
 
-  const open = (el) => { el.style.display = "flex"; el.setAttribute("aria-hidden","false"); document.body.style.overflow = "hidden"; };
-  const close = (el) => { el.style.display = "none"; el.setAttribute("aria-hidden","true"); document.body.style.overflow = ""; };
+  const state = { selected: new Set(), currentViewId: ASSIGNMENTS[0]?.id || null };
 
-  const splitList = (s) => String(s || "").split("||").map(x => x.trim()).filter(Boolean);
-  const escape = (s) => String(s ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+  function escapeHtml(v) {
+    return String(v ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
+  }
 
-  const closeAllMenus = () => {
-    document.querySelectorAll(".menu-panel").forEach(p => p.classList.remove("show"));
-  };
+  function openModal(id) {
+    const el = $(id);
+    if (!el) return;
+    el.classList.add("show");
+    document.body.style.overflow = "hidden";
+  }
 
-  const setTab = (name) => {
-    document.querySelectorAll("#mTabs .tab").forEach(t => t.classList.toggle("active", t.dataset.tab === name));
-    ["basic","rubric","attach"].forEach(k => {
-      const el = document.getElementById("tab-" + k);
-      if (el) el.style.display = (k === name) ? "" : "none";
-    });
-  };
+  function closeModal(id) {
+    const el = $(id);
+    if (!el) return;
+    el.classList.remove("show");
+    if (!document.querySelector(".modal-backdrop.show")) document.body.style.overflow = "";
+  }
 
-  const clearPreview = () => {
-    currentId = null;
-    document.querySelectorAll(".acard").forEach(c => c.classList.remove("selected"));
-    pv.title.textContent = "—";
-    pv.course.textContent = "—";
-    pv.due.textContent = "—";
-    pv.points.textContent = "—";
-    pv.status.textContent = "—";
-    pv.instr.textContent = "—";
-    pv.rubric.textContent = "—";
-    pv.attach.textContent = "—";
-  };
+  function findItem(id) {
+    return ASSIGNMENTS.find((x) => x.id === id) || null;
+  }
 
-  const previewCard = (card) => {
-    if (!card) return;
-    currentId = card.dataset.id;
+  function statusPill(status) {
+    if (status === "published") return '<span class="pill ok"><i class="fa-solid fa-eye"></i> Published</span>';
+    if (status === "archived") return '<span class="pill bad"><i class="fa-solid fa-box-archive"></i> Archived</span>';
+    if (status === "closed") return '<span class="pill info"><i class="fa-solid fa-lock"></i> Closed</span>';
+    return '<span class="pill warn"><i class="fa-solid fa-pen-to-square"></i> Draft</span>';
+  }
 
-    document.querySelectorAll(".acard").forEach(c => c.classList.remove("selected"));
-    card.classList.add("selected");
+  function syncBulkbar() {
+    $("selCount").textContent = String(state.selected.size);
+    $("bulkbar").classList.toggle("show", state.selected.size > 0);
+  }
 
-    pv.title.textContent = card.dataset.title || "—";
-    pv.course.textContent = card.dataset.coursename || "—";
-    pv.due.textContent = card.dataset.duedate ? card.dataset.duedate.replace("T"," ") : "—";
-    pv.points.textContent = String(card.dataset.points || "—");
-    pv.status.textContent = card.dataset.status || "—";
-    pv.instr.textContent = card.dataset.instructions || "—";
-    pv.rubric.textContent = (card.dataset.rubric || "—").replace(/\\n/g,"\n");
-    const at = splitList(card.dataset.attachments);
-    pv.attach.textContent = at.length ? at.join(", ") : "—";
-  };
+  function renderTable() {
+    $("tbodyAssignments").innerHTML =
+      ASSIGNMENTS.map((a) => {
+        const checked = state.selected.has(a.id) ? "checked" : "";
+        const primaryAction = a.status === "published" ? "unpublish" : "publish";
+        const primaryIcon = a.status === "published" ? "fa-eye-slash" : "fa-eye";
+        return `
+          <tr class="row-clickable" data-id="${escapeHtml(a.id)}">
+            <td class="col-check"><input type="checkbox" class="rowCheck" data-id="${escapeHtml(a.id)}" ${checked}></td>
+            <td class="col-assignment">
+              <div class="item-main">
+                <div class="item-title" title="${escapeHtml(a.title || "-")}">${escapeHtml(a.title || "-")}</div>
+                <div class="item-sub">${escapeHtml((a.instructions || "").slice(0, 90) || "No instructions")}</div>
+              </div>
+            </td>
+            <td class="col-subject"><span class="cell-ellipsis">${escapeHtml(a.courseName || "-")}</span></td>
+            <td class="col-class"><span class="cell-ellipsis">${escapeHtml(a.className || "-")}</span></td>
+            <td class="col-section"><span class="cell-ellipsis">${escapeHtml(a.sectionName || "Whole Class")}</span></td>
+            <td class="col-stream"><span class="cell-ellipsis">${escapeHtml(a.streamName || "All Streams")}</span></td>
+            <td class="col-due"><span class="cell-ellipsis">${escapeHtml(a.dueDisplay || "-")}</span></td>
+            <td class="col-points"><span class="cell-ellipsis">${escapeHtml(String(a.totalPoints ?? 100))}</span></td>
+            <td class="col-status">${statusPill(a.status)}</td>
+            <td class="col-actions">
+              <div class="actions">
+                <button class="btn-xs actView" type="button" title="View"><i class="fa-solid fa-eye"></i></button>
+                <button class="btn-xs actEdit" type="button" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                <button class="btn-xs actPrimary" type="button" title="${escapeHtml(primaryAction)}" data-next="${escapeHtml(primaryAction)}"><i class="fa-solid ${primaryIcon}"></i></button>
+                <button class="btn-xs actArchive" type="button" title="Archive"><i class="fa-solid fa-box-archive"></i></button>
+                <button class="btn-xs actDelete" type="button" title="Delete"><i class="fa-solid fa-trash"></i></button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("") || `<tr><td colspan="10" style="padding:18px;"><div class="muted">No assignments found.</div></td></tr>`;
 
-  const fillHiddenList = (wrapId, inputName, values) => {
-    const wrap = $(wrapId);
+    $("checkAll").checked = ASSIGNMENTS.length > 0 && ASSIGNMENTS.every((a) => state.selected.has(a.id));
+    syncBulkbar();
+  }
+
+  function fillHiddenAttachments(values) {
+    const wrap = $("mAttachWrap");
     if (!wrap) return;
     wrap.innerHTML = "";
-    values.forEach(v => {
-      const inp = document.createElement("input");
-      inp.type = "hidden";
-      inp.name = inputName; // "attachments[]"
-      inp.value = v;
-      wrap.appendChild(inp);
+    values.forEach((value) => {
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = "attachments[]";
+      input.value = value;
+      wrap.appendChild(input);
     });
-  };
+  }
 
-  const openForCreate = () => {
-    $("assignModalTitle").textContent = "New Assignment";
-    form.action = "/admin/assignments";
+  function refreshAcademicSelector() {
+    window.AcademicSelector?.refresh(document);
+  }
 
-    $("mTitle").value = "";
-    $("mCourse").value = "";
-    $("mDue").value = "";
-    $("mPoints").value = "100";
-    $("mStatus").value = "draft";
-    $("mInstr").value = "";
-    $("mRubric").value = "";
-    $("mAttach").value = "";
-    $("mAttachWrap").innerHTML = "";
+  function applyAcademicSelection(item) {
+    refreshAcademicSelector();
+    $("mClassGroup").value = item?.classId || "";
+    refreshAcademicSelector();
+    $("mSection").value = item?.sectionId || "";
+    $("mStream").value = item?.streamId || "";
+    $("mCourse").value = item?.courseId || "";
+    refreshAcademicSelector();
+  }
 
-    setTab("basic");
-    open(modal);
-  };
+  function openEditor(item, statusOverride) {
+    const a = item || null;
+    $("mTitleBar").textContent = a ? "Edit Assignment" : "Add Assignment";
+    $("assignForm").action = a ? `${BASE_PATH}/${encodeURIComponent(a.id)}` : BASE_PATH;
 
-  const openForEdit = (card) => {
-    if (!card) return;
-    $("assignModalTitle").textContent = "Edit Assignment";
-    form.action = `/admin/assignments/${encodeURIComponent(card.dataset.id)}`;
+    $("mTitle").value = a?.title || "";
+    $("mDue").value = a?.dueDate || "";
+    $("mPoints").value = String(a?.totalPoints ?? 100);
+    $("mStatus").value = statusOverride || a?.status || "draft";
+    $("mInstr").value = a?.instructions || "";
+    $("mRubric").value = a?.rubric || "";
+    $("mAttach").value = Array.isArray(a?.attachments) ? a.attachments.join("\n") : "";
+    fillHiddenAttachments([]);
 
-    $("mTitle").value = card.dataset.title || "";
-    $("mCourse").value = card.dataset.courseid || "";
-    $("mDue").value = card.dataset.duedate || "";
-    $("mPoints").value = String(card.dataset.points || "100");
-    $("mStatus").value = card.dataset.status || "draft";
-    $("mInstr").value = card.dataset.instructions || "";
-    $("mRubric").value = (card.dataset.rubric || "").replace(/\\n/g,"\n");
+    applyAcademicSelection(a);
+    openModal("mEdit");
+  }
 
-    const at = splitList(card.dataset.attachments).join("\n");
-    $("mAttach").value = at;
-    $("mAttachWrap").innerHTML = "";
+  function openView(item) {
+    if (!item) return;
+    state.currentViewId = item.id;
 
-    setTab("basic");
-    open(modal);
-  };
+    $("vTitle").textContent = item.title || "-";
+    $("vCourse").textContent = item.courseName || "-";
+    $("vClass").textContent = item.className || "-";
+    $("vSection").textContent = item.sectionName || "Whole Class";
+    $("vStream").textContent = item.streamName || "All Streams";
+    $("vDue").textContent = item.dueDisplay || "-";
+    $("vPoints").textContent = String(item.totalPoints ?? 100);
+    $("vStatus").innerHTML = statusPill(item.status);
+    $("vInstr").textContent = item.instructions || "-";
+    $("vRubric").textContent = item.rubric || "-";
+    $("vAttach").textContent = Array.isArray(item.attachments) && item.attachments.length ? item.attachments.join("\n") : "-";
+    $("viewPublishBtn").textContent = item.status === "published" ? "Draft" : "Publish";
 
-  const saveAssign = () => {
-    const title = $("mTitle").value.trim();
-    const course = $("mCourse").value.trim();
+    openModal("mView");
+  }
 
-    if (!title) return alert("Title is required.");
-    if (!course) return alert("Course is required.");
+  function submitAction(url, confirmMsg) {
+    if (confirmMsg && !window.confirm(confirmMsg)) return;
+    const form = $("rowActionForm");
+    form.action = url;
+    form.submit();
+  }
+
+  function saveAssignment() {
+    if (!$("mTitle").value.trim()) return alert("Title is required.");
+    if (!$("mCourse").value.trim()) return alert("Subject is required.");
 
     const attachments = $("mAttach").value
       .split("\n")
-      .map(s => s.trim())
+      .map((value) => value.trim())
       .filter(Boolean)
       .slice(0, 30);
 
-    fillHiddenList("mAttachWrap", "attachments[]", attachments);
-    form.submit();
-  };
-
-  const selectedIds = () =>
-    Array.from(document.querySelectorAll(".selChk"))
-      .filter(cb => cb.checked)
-      .map(cb => cb.dataset.id);
-
-  const bulkSubmit = (action) => {
-    if (!bulkForm || !bulkActionVal || !bulkIdsVal) return alert("Bulk form missing.");
-    const ids = selectedIds();
-    if (!ids.length) return alert("Select at least one assignment.");
-    if (!confirm(`Apply "${action}" to ${ids.length} selected assignment(s)?`)) return;
-    bulkActionVal.value = action;
-    bulkIdsVal.value = ids.join(",");
-    bulkForm.submit();
-  };
-
-  const postAction = (formEl, url, confirmMsg) => {
-    if (!formEl) return alert("Action form missing.");
-    if (confirmMsg && !confirm(confirmMsg)) return;
-    formEl.action = url;
-    formEl.submit();
-  };
-
-  document.addEventListener("click", (e) => {
-    const btn = e.target.closest("[data-action]");
-    if (btn) {
-      const action = btn.dataset.action;
-
-      if (action !== "toggleRowMenu" && action !== "toggleTools") closeAllMenus();
-
-      if (action === "openAssign") return openForCreate();
-      if (action === "closeAssign") return close(modal);
-      if (action === "saveAssign") return saveAssign();
-
-      if (action === "clearPreview") return clearPreview();
-
-      if (action === "toggleTools") {
-        if (!toolsMenu) return;
-        toolsMenu.classList.toggle("show");
-        return;
-      }
-      if (action === "openImport") return open(importModal);
-      if (action === "closeImport") return close(importModal);
-
-      if (action === "toggleRowMenu") {
-        const id = btn.dataset.id;
-        const panel = document.getElementById("rowMenu-" + id);
-        if (!panel) return;
-        document.querySelectorAll(".menu-panel").forEach(p => { if (p !== panel && p !== toolsMenu) p.classList.remove("show"); });
-        panel.classList.toggle("show");
-        return;
-      }
-
-      if (action === "viewAssign") {
-        const card = document.querySelector(`.acard[data-id="${CSS.escape(btn.dataset.id)}"]`);
-        return previewCard(card);
-      }
-      if (action === "editAssign") {
-        const card = document.querySelector(`.acard[data-id="${CSS.escape(btn.dataset.id)}"]`);
-        return openForEdit(card);
-      }
-
-      if (action === "publishAssign") return postAction(publishForm, `/admin/assignments/${encodeURIComponent(btn.dataset.id)}/publish`, "Publish this assignment?");
-      if (action === "unpublishAssign") return postAction(publishForm, `/admin/assignments/${encodeURIComponent(btn.dataset.id)}/unpublish`, "Unpublish this assignment?");
-      if (action === "archiveAssign") return postAction(archiveForm, `/admin/assignments/${encodeURIComponent(btn.dataset.id)}/archive`, "Archive this assignment?");
-      if (action === "deleteAssign") return postAction(deleteForm, `/admin/assignments/${encodeURIComponent(btn.dataset.id)}/delete`, "Delete this assignment permanently?");
-
-      if (action === "editCurrent") {
-        if (!currentId) return alert("Select an assignment first.");
-        const card = document.querySelector(`.acard[data-id="${CSS.escape(currentId)}"]`);
-        return openForEdit(card);
-      }
-      if (action === "publishCurrent") {
-        if (!currentId) return alert("Select an assignment first.");
-        return postAction(publishForm, `/admin/assignments/${encodeURIComponent(currentId)}/publish`, "Publish this assignment?");
-      }
-      if (action === "archiveCurrent") {
-        if (!currentId) return alert("Select an assignment first.");
-        return postAction(archiveForm, `/admin/assignments/${encodeURIComponent(currentId)}/archive`, "Archive this assignment?");
-      }
-      if (action === "deleteCurrent") {
-        if (!currentId) return alert("Select an assignment first.");
-        return postAction(deleteForm, `/admin/assignments/${encodeURIComponent(currentId)}/delete`, "Delete this assignment permanently?");
-      }
-
-      if (action === "bulkPublish") return bulkSubmit("publish");
-      if (action === "bulkArchive") return bulkSubmit("archive");
-    }
-
-    // modal tabs
-    const tab = e.target.closest("#mTabs .tab");
-    if (tab) return setTab(tab.dataset.tab);
-
-    // clicking card previews it
-    const card = e.target.closest(".acard");
-    if (card) previewCard(card);
-
-    // click outside menus closes them
-    if (!e.target.closest(".menu")) {
-      toolsMenu?.classList.remove("show");
-      document.querySelectorAll(".menu-panel").forEach(p => p.classList.remove("show"));
-    }
-  });
-
-  // select all
-  if (selectAll) {
-    selectAll.addEventListener("change", () => {
-      document.querySelectorAll(".selChk").forEach(cb => cb.checked = selectAll.checked);
-      $("selCount").textContent = String(selectedIds().length);
-    });
+    fillHiddenAttachments(attachments);
+    $("assignForm").submit();
   }
 
-  // selection count updates
-  document.addEventListener("change", (e) => {
-    if (e.target.classList?.contains("selChk")) {
-      $("selCount").textContent = String(selectedIds().length);
+  function selectedIds() {
+    return Array.from(state.selected);
+  }
+
+  function submitBulk(action) {
+    const ids = selectedIds();
+    if (!ids.length) return alert("Select at least one assignment.");
+    if (!window.confirm(`Apply ${action} to ${ids.length} assignment(s)?`)) return;
+    $("bulkActionField").value = action;
+    $("bulkIdsField").value = ids.join(",");
+    $("bulkForm").submit();
+  }
+
+  $("btnCreate").addEventListener("click", () => openEditor());
+  $("quickDraft").addEventListener("click", () => openEditor(null, "draft"));
+  $("quickPublished").addEventListener("click", () => openEditor(null, "published"));
+  $("btnImport").addEventListener("click", () => openModal("mImport"));
+  $("btnPrint").addEventListener("click", () => window.print());
+  $("saveBtn").addEventListener("click", saveAssignment);
+  $("btnBulk").addEventListener("click", () => {
+    if (!state.selected.size) return alert("Select at least one assignment.");
+    $("bulkbar").classList.add("show");
+  });
+
+  $("bulkPublish").addEventListener("click", () => submitBulk("publish"));
+  $("bulkUnpublish").addEventListener("click", () => submitBulk("unpublish"));
+  $("bulkClose").addEventListener("click", () => submitBulk("close"));
+  $("bulkArchive").addEventListener("click", () => submitBulk("archive"));
+  $("bulkClear").addEventListener("click", () => {
+    state.selected.clear();
+    renderTable();
+  });
+
+  $("checkAll").addEventListener("change", (event) => {
+    if (event.target.checked) ASSIGNMENTS.forEach((a) => state.selected.add(a.id));
+    else ASSIGNMENTS.forEach((a) => state.selected.delete(a.id));
+    renderTable();
+  });
+
+  $("tbodyAssignments").addEventListener("change", (event) => {
+    if (!event.target.classList.contains("rowCheck")) return;
+    const id = event.target.dataset.id;
+    if (event.target.checked) state.selected.add(id);
+    else state.selected.delete(id);
+    renderTable();
+  });
+
+  $("tbodyAssignments").addEventListener("click", (event) => {
+    const row = event.target.closest("tr[data-id]");
+    if (!row) return;
+    const item = findItem(row.dataset.id);
+    if (!item) return;
+
+    if (event.target.closest(".rowCheck")) return;
+    if (event.target.closest(".actView")) return openView(item);
+    if (event.target.closest(".actEdit")) return openEditor(item);
+    if (event.target.closest(".actPrimary")) {
+      const action = event.target.closest(".actPrimary").dataset.next;
+      return submitAction(`${BASE_PATH}/${encodeURIComponent(item.id)}/${action}`, `${action === "publish" ? "Publish" : "Unpublish"} this assignment?`);
+    }
+    if (event.target.closest(".actArchive")) return submitAction(`${BASE_PATH}/${encodeURIComponent(item.id)}/archive`, "Archive this assignment?");
+    if (event.target.closest(".actDelete")) return submitAction(`${BASE_PATH}/${encodeURIComponent(item.id)}/delete`, "Delete this assignment?");
+
+    openView(item);
+  });
+
+  $("viewEditBtn").addEventListener("click", () => {
+    const item = findItem(state.currentViewId);
+    if (!item) return;
+    closeModal("mView");
+    openEditor(item);
+  });
+  $("viewPublishBtn").addEventListener("click", () => {
+    const item = findItem(state.currentViewId);
+    if (!item) return;
+    const action = item.status === "published" ? "unpublish" : "publish";
+    submitAction(`${BASE_PATH}/${encodeURIComponent(item.id)}/${action}`, `${action === "publish" ? "Publish" : "Unpublish"} this assignment?`);
+  });
+  $("viewArchiveBtn").addEventListener("click", () => {
+    const item = findItem(state.currentViewId);
+    if (!item) return;
+    submitAction(`${BASE_PATH}/${encodeURIComponent(item.id)}/archive`, "Archive this assignment?");
+  });
+
+  document.querySelectorAll("[data-close-modal]").forEach((btn) => {
+    btn.addEventListener("click", () => closeModal(btn.dataset.closeModal));
+  });
+
+  ["mEdit", "mView", "mImport"].forEach((id) => {
+    const el = $(id);
+    if (!el) return;
+    el.addEventListener("click", (event) => {
+      if (event.target.id === id) closeModal(id);
+    });
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      document.querySelectorAll(".modal-backdrop.show").forEach((el) => el.classList.remove("show"));
+      document.body.style.overflow = "";
     }
   });
 
-  // backdrop closes
-  modal.addEventListener("click", (e) => { if (e.target === modal) close(modal); });
-  importModal.addEventListener("click", (e) => { if (e.target === importModal) close(importModal); });
-
-  // esc closes
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") {
-      close(modal); close(importModal);
-      toolsMenu?.classList.remove("show");
-      closeAllMenus();
-    }
-  });
-
-  // preview first
-  const first = document.querySelector(".acard");
-  if (first) previewCard(first);
-  else clearPreview();
+  renderTable();
 })();

@@ -11,6 +11,9 @@ module.exports = (connection) => {
       originalName: { type: String, trim: true, maxlength: 200 },
       bytes: { type: Number, default: 0 },
       mimeType: { type: String, trim: true, maxlength: 80 },
+      source: { type: String, trim: true, maxlength: 40, default: "" },
+      sharedAsset: { type: Boolean, default: false },
+      uploadedAt: { type: Date, default: Date.now },
     },
     { _id: false }
   );
@@ -24,6 +27,8 @@ module.exports = (connection) => {
       doc: { type: DocSchema, required: true },
 
       uploadedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
+      sourceApplicant: { type: Schema.Types.ObjectId, ref: "Applicant", default: null, index: true },
+      updatedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
       isDeleted: { type: Boolean, default: false, index: true },
       deletedAt: { type: Date, default: null },
     },
@@ -31,6 +36,7 @@ module.exports = (connection) => {
   );
 
   StudentDocSchema.index({ createdAt: -1 });
+  StudentDocSchema.index({ student: 1, type: 1, isDeleted: 1 });
 
   StudentDocSchema.methods.softDelete = async function () {
     this.isDeleted = true;

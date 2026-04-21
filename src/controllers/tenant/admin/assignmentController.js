@@ -1,5 +1,10 @@
 const mongoose = require("mongoose");
 const { body, validationResult } = require("express-validator");
+const {
+  loadAcademicScopeLists,
+  resolveAcademicScope,
+  buildAcademicScopeFilter,
+} = require("../../../utils/tenantAcademicScope");
 
 /* -----------------------
    Helpers
@@ -92,7 +97,10 @@ const requireTenantModel = (req, name) => {
 ------------------------ */
 const assignmentRules = [
   body("title").trim().isLength({ min: 2, max: 200 }).withMessage("Title is required (2-200 chars)."),
-  body("course").custom((v) => isObjId(v)).withMessage("Course is required."),
+  body("course").custom((v) => isObjId(v)).withMessage("Subject is required."),
+  body("classGroup").optional({ checkFalsy: true }).custom((v) => !v || isObjId(v)).withMessage("Invalid class."),
+  body("sectionId").optional({ checkFalsy: true }).custom((v) => !v || isObjId(v)).withMessage("Invalid section."),
+  body("streamId").optional({ checkFalsy: true }).custom((v) => !v || isObjId(v)).withMessage("Invalid stream."),
   body("dueDate").optional({ checkFalsy: true }).custom((v) => !!parseDateTime(v)).withMessage("Invalid due date."),
   body("totalPoints").optional({ checkFalsy: true }).isInt({ min: 0, max: 1000 }).toInt(),
   body("status")
@@ -113,11 +121,14 @@ module.exports = {
   list: async (req, res) => {
     try {
       const Assignment = requireTenantModel(req, "Assignment");
-      // Course can be optional in some setups, so don’t hard-fail
-      const Course = req.models?.Course || null;
+      // Assignments use Subject as their coursework source.
+      const Subject = req.models?.Subject || null;
 
       const q = cleanStr(req.query.q, 120);
       const course = cleanStr(req.query.course, 80);
+      const classGroup = cleanStr(req.query.classGroup, 80);
+      const sectionId = cleanStr(req.query.sectionId, 80);
+      const streamId = cleanStr(req.query.streamId, 80);
       const status = cleanStr(req.query.status, 20);
 
       const page = Math.max(parseInt(req.query.page || "1", 10), 1);
@@ -134,22 +145,27 @@ module.exports = {
         ];
       }
       if (course && isObjId(course)) filter.course = course;
+      Object.assign(filter, buildAcademicScopeFilter({ classGroup, sectionId, streamId }));
       if (status) filter.status = status;
 
       const total = await Assignment.countDocuments(filter);
       const totalPages = Math.max(Math.ceil(total / perPage), 1);
 
       const assignments = await Assignment.find(filter)
-        .populate({ path: "course", select: "title code name" })
+        .populate({ path: "course", select: "title code name classId sectionId streamId" })
+        .populate({ path: "classGroup", select: "name code classLevel" })
+        .populate({ path: "sectionId", select: "name code" })
+        .populate({ path: "streamId", select: "name code" })
         .sort({ dueDate: 1, createdAt: -1 })
         .skip((page - 1) * perPage)
         .limit(perPage)
         .lean();
 
-      const courses = Course
-        ? await Course.find({ isDeleted: { $ne: true } })
+      const scopeLists = await loadAcademicScopeLists(req);
+      const courses = Subject
+        ? await Subject.find({ status: { $ne: "archived" } })
             .sort({ title: 1, code: 1 })
-            .select("title code name")
+            .select("title code name classId className sectionId sectionName streamId streamName academicYear term")
             .lean()
         : [];
 
@@ -159,9 +175,18 @@ module.exports = {
         tenant: req.tenant || null,
         assignments,
         courses,
+        subjects: courses,
+        classes: scopeLists.classes,
+        sections: scopeLists.sections,
+        streams: scopeLists.streams,
+        subjectOptions: scopeLists.subjects,
         kpis,
         csrfToken: res.locals.csrfToken || null,
-        query: { q, course, status, page, perPage, total, totalPages },
+        query: { q, course, classGroup, sectionId, streamId, status, page, perPage, total, totalPages },
+        messages: {
+          success: req.flash ? req.flash("success") : [],
+          error: req.flash ? req.flash("error") : [],
+        },
       });
     } catch (err) {
       console.error("ASSIGNMENTS LIST ERROR:", err);
@@ -174,7 +199,7 @@ module.exports = {
   create: async (req, res) => {
     try {
       const Assignment = requireTenantModel(req, "Assignment");
-      const Course = requireTenantModel(req, "Course"); // creating assignment needs course lookup
+      const Subject = requireTenantModel(req, "Subject");
 
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -185,9 +210,21 @@ module.exports = {
       const title = cleanStr(req.body.title, 200);
       const courseId = cleanStr(req.body.course, 80);
 
-      const course = await Course.findById(courseId).select("title code name").lean();
+      const course = await Subject.findById(courseId)
+        .select("title code name classId className sectionId sectionName streamId streamName")
+        .lean();
       if (!course) {
-        req.flash?.("error", "Course not found.");
+        req.flash?.("error", "Subject not found.");
+        return res.redirect("/admin/assignments");
+      }
+
+      const scope = await resolveAcademicScope(req, {
+        classId: req.body.classGroup || course.classId,
+        sectionId: req.body.sectionId || course.sectionId,
+        streamId: req.body.streamId || course.streamId,
+      });
+      if (scope.errors.length) {
+        req.flash?.("error", scope.errors.join(" "));
         return res.redirect("/admin/assignments");
       }
 
@@ -206,6 +243,14 @@ module.exports = {
         title,
         course: courseId,
         courseName: course.title || course.code || course.name || "",
+        classGroup: scope.payload.classId || null,
+        className: scope.payload.className || course.className || "",
+        sectionId: scope.payload.sectionId || null,
+        sectionName: scope.payload.sectionName || course.sectionName || "",
+        sectionCode: scope.payload.sectionCode || "",
+        streamId: scope.payload.streamId || null,
+        streamName: scope.payload.streamName || course.streamName || "",
+        streamCode: scope.payload.streamCode || "",
         dueDate,
         totalPoints,
         status,
@@ -228,7 +273,7 @@ module.exports = {
   update: async (req, res) => {
     try {
       const Assignment = requireTenantModel(req, "Assignment");
-      const Course = requireTenantModel(req, "Course");
+      const Subject = requireTenantModel(req, "Subject");
 
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -245,9 +290,21 @@ module.exports = {
       const title = cleanStr(req.body.title, 200);
       const courseId = cleanStr(req.body.course, 80);
 
-      const course = await Course.findById(courseId).select("title code name").lean();
+      const course = await Subject.findById(courseId)
+        .select("title code name classId className sectionId sectionName streamId streamName")
+        .lean();
       if (!course) {
-        req.flash?.("error", "Course not found.");
+        req.flash?.("error", "Subject not found.");
+        return res.redirect("/admin/assignments");
+      }
+
+      const scope = await resolveAcademicScope(req, {
+        classId: req.body.classGroup || course.classId,
+        sectionId: req.body.sectionId || course.sectionId,
+        streamId: req.body.streamId || course.streamId,
+      });
+      if (scope.errors.length) {
+        req.flash?.("error", scope.errors.join(" "));
         return res.redirect("/admin/assignments");
       }
 
@@ -255,6 +312,14 @@ module.exports = {
         title,
         course: courseId,
         courseName: course.title || course.code || course.name || "",
+        classGroup: scope.payload.classId || null,
+        className: scope.payload.className || course.className || "",
+        sectionId: scope.payload.sectionId || null,
+        sectionName: scope.payload.sectionName || course.sectionName || "",
+        sectionCode: scope.payload.sectionCode || "",
+        streamId: scope.payload.streamId || null,
+        streamName: scope.payload.streamName || course.streamName || "",
+        streamCode: scope.payload.streamCode || "",
         dueDate: parseDateTime(req.body.dueDate),
         totalPoints: Math.max(0, Math.min(Number(req.body.totalPoints || 100), 1000)),
         status: ["draft", "published", "closed", "archived"].includes(req.body.status) ? req.body.status : "draft",
@@ -418,7 +483,7 @@ module.exports = {
   importCsv: async (req, res) => {
     try {
       const Assignment = requireTenantModel(req, "Assignment");
-      const Course = requireTenantModel(req, "Course");
+      const Subject = requireTenantModel(req, "Subject");
 
       if (!req.file?.buffer) {
         req.flash?.("error", "CSV file is required.");
@@ -437,6 +502,7 @@ module.exports = {
 
       const iTitle = idx("title");
       const iCourseCode = idx("courseCode");
+      const iSubjectCode = idx("subjectCode");
       const iDue = idx("dueDate");
       const iPoints = idx("totalPoints");
       const iStatus = idx("status");
@@ -444,13 +510,14 @@ module.exports = {
       const iRubric = idx("rubric");
       const iAttach = idx("attachments");
 
-      if (iTitle < 0 || iCourseCode < 0) {
-        req.flash?.("error", "CSV must include headers: title, courseCode (minimum).");
+      if (iTitle < 0 || (iCourseCode < 0 && iSubjectCode < 0)) {
+        req.flash?.("error", "CSV must include headers: title and subjectCode (or legacy courseCode).");
         return res.redirect("/admin/assignments");
       }
 
-      // Build a fast map of courses by code (UPPERCASE)
-      const allCourses = await Course.find({ isDeleted: { $ne: true } }).select("title code name").lean();
+      const allCourses = await Subject.find({ status: { $ne: "archived" } })
+        .select("title code name classId className sectionId sectionName streamId streamName")
+        .lean();
 
       const courseByCode = new Map();
       allCourses.forEach(c => {
@@ -463,7 +530,8 @@ module.exports = {
         const row = rows[r];
 
         const title = cleanStr(row[iTitle], 200);
-        const courseCode = cleanStr(row[iCourseCode], 40).toUpperCase();
+        const codeIndex = iSubjectCode >= 0 ? iSubjectCode : iCourseCode;
+        const courseCode = cleanStr(row[codeIndex], 40).toUpperCase();
 
         if (!title || !courseCode) continue;
 
@@ -490,6 +558,12 @@ module.exports = {
           title,
           course: course._id,
           courseName: course.title || course.code || course.name || "",
+          classGroup: isObjId(course.classId) ? course.classId : null,
+          className: course.className || "",
+          sectionId: isObjId(course.sectionId) ? course.sectionId : null,
+          sectionName: course.sectionName || "",
+          streamId: isObjId(course.streamId) ? course.streamId : null,
+          streamName: course.streamName || "",
           dueDate,
           totalPoints,
           status,
@@ -501,7 +575,7 @@ module.exports = {
       }
 
       if (!docs.length) {
-        req.flash?.("error", "No valid rows imported. Ensure courseCode matches existing Course.code.");
+        req.flash?.("error", "No valid rows imported. Ensure subjectCode matches an existing subject code.");
         return res.redirect("/admin/assignments");
       }
 
@@ -510,7 +584,7 @@ module.exports = {
       return res.redirect("/admin/assignments");
     } catch (err) {
       console.error("ASSIGNMENT IMPORT ERROR:", err);
-      req.flash?.("error", "Import failed. Check CSV format and course codes.");
+      req.flash?.("error", "Import failed. Check CSV format and subject codes.");
       return res.redirect("/admin/assignments");
     }
   },
@@ -522,6 +596,9 @@ module.exports = {
 
       const q = cleanStr(req.query.q, 120);
       const course = cleanStr(req.query.course, 80);
+      const classGroup = cleanStr(req.query.classGroup, 80);
+      const sectionId = cleanStr(req.query.sectionId, 80);
+      const streamId = cleanStr(req.query.streamId, 80);
       const status = cleanStr(req.query.status, 20);
 
       const filter = { isDeleted: { $ne: true } };
@@ -534,14 +611,18 @@ module.exports = {
         ];
       }
       if (course && isObjId(course)) filter.course = course;
+      Object.assign(filter, buildAcademicScopeFilter({ classGroup, sectionId, streamId }));
       if (status) filter.status = status;
 
       const rows = await Assignment.find(filter)
         .populate({ path: "course", select: "code title" })
+        .populate({ path: "classGroup", select: "name code" })
+        .populate({ path: "sectionId", select: "name code" })
+        .populate({ path: "streamId", select: "name code" })
         .sort({ dueDate: 1, createdAt: -1 })
         .lean();
 
-      const header = ["title","courseCode","dueDate","totalPoints","status","instructions","rubric","attachments"];
+      const header = ["title","subjectCode","class","section","stream","dueDate","totalPoints","status","instructions","rubric","attachments"];
       const lines = [header.join(",")];
 
       rows.forEach(a => {
@@ -552,6 +633,9 @@ module.exports = {
         lines.push([
           csvEsc(a.title),
           csvEsc(courseCode),
+          csvEsc(a.classGroup?.name || a.className || ""),
+          csvEsc(a.sectionId?.name || a.sectionName || ""),
+          csvEsc(a.streamId?.name || a.streamName || ""),
           csvEsc(due),
           csvEsc(a.totalPoints ?? 100),
           csvEsc(a.status || "draft"),

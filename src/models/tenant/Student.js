@@ -49,6 +49,9 @@ module.exports = (connection) => {
       classId: { type: String, trim: true, maxlength: 80, index: true },
       className: { type: String, trim: true, maxlength: 180 },
       classCode: { type: String, trim: true, maxlength: 40 },
+      intakeId: { type: String, trim: true, maxlength: 80, index: true },
+      streamId: { type: String, trim: true, maxlength: 80, index: true },
+      sectionId: { type: String, trim: true, maxlength: 80, index: true },
 
       section: { type: String, trim: true, maxlength: 40 },
       stream: { type: String, trim: true, maxlength: 40 },
@@ -93,6 +96,12 @@ module.exports = (connection) => {
       guardianName: { type: String, trim: true, maxlength: 120 },
       guardianPhone: { type: String, trim: true, maxlength: 40 },
       guardianEmail: { type: String, trim: true, lowercase: true, maxlength: 120 },
+
+      qualification: { type: String, trim: true, maxlength: 60 },
+      school: { type: String, trim: true, maxlength: 120 },
+      yearCompleted: { type: Number, min: 1900, max: 2100, default: null },
+      grades: { type: String, trim: true, maxlength: 160 },
+      notes: { type: String, trim: true, maxlength: 600 },
 
       userId: { type: Schema.Types.ObjectId, ref: "User", default: null, index: true },
       guardianUserId: { type: Schema.Types.ObjectId, ref: "User", default: null, index: true },

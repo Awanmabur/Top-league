@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const { body, validationResult } = require("express-validator");
+const { loadAcademicScopeLists, resolveAcademicScope } = require("../../../utils/tenantAcademicScope");
 
 const LEVEL_TYPES = ["nursery", "primary", "secondary"];
 const TERMS = [1, 2, 3];
@@ -104,10 +105,10 @@ function buildSectionsMap(req, classes) {
   return map;
 }
 
-function buildSmartCode(body, klass, section) {
+function buildSmartCode(body, klass, section, stream) {
   const campusCode = slugCode(klass?.campusCode || klass?.campusName || "CAMPUS");
   const classLevel = slugCode(klass?.classLevel || "CLASS");
-  const classStream = slugCode(klass?.stream || "A");
+  const classStream = slugCode(stream?.name || klass?.stream || "A");
   const subject = slugCode(body.title || "SUBJECT");
   const term = Math.max(1, Math.min(Number(body.term || 1), 3));
   const sectionCode = section?.code ? `-${slugCode(section.code)}` : "";
@@ -119,6 +120,7 @@ const subjectRules = [
   body("code").optional({ checkFalsy: true }).trim().isLength({ min: 2, max: 40 }).withMessage("Code must be 2-40 chars."),
   body("classId").trim().custom((v) => mongoose.Types.ObjectId.isValid(v)).withMessage("Valid class is required."),
   body("sectionId").optional({ checkFalsy: true }).trim().isLength({ max: 100 }),
+  body("streamId").optional({ checkFalsy: true }).trim().isLength({ max: 100 }),
   body("term").optional({ checkFalsy: true }).isInt({ min: 1, max: 3 }).toInt().withMessage("Term must be 1-3."),
   body("teacher").optional({ checkFalsy: true }).custom((v) => !v || mongoose.Types.ObjectId.isValid(v)).withMessage("Invalid teacher."),
   body("category").optional({ checkFalsy: true }).isIn(CATEGORIES).withMessage("Invalid subject category."),
@@ -145,6 +147,7 @@ module.exports = {
       const levelType = String(req.query.levelType || "").trim().toLowerCase();
       const classId = String(req.query.classId || "").trim();
       const sectionId = String(req.query.sectionId || "").trim();
+      const streamId = String(req.query.streamId || "").trim();
       const term = String(req.query.term || "").trim();
       const schoolUnitId = String(req.query.schoolUnitId || "").trim();
       const campusId = String(req.query.campusId || "").trim();
@@ -171,6 +174,7 @@ module.exports = {
       if (LEVEL_TYPES.includes(levelType)) filter.levelType = levelType;
       if (classId && mongoose.Types.ObjectId.isValid(classId)) filter.classId = classId;
       if (sectionId) filter.sectionId = sectionId;
+      if (streamId) filter.streamId = streamId;
       if (schoolUnitId) filter.schoolUnitId = schoolUnitId;
       if (campusId) filter.campusId = campusId;
       if (academicYear) filter.academicYear = academicYear;
@@ -202,6 +206,7 @@ module.exports = {
             .lean()
         : [];
 
+      const scopeLists = await loadAcademicScopeLists(req);
       const academicYears = (await Subject.distinct("academicYear")).filter(Boolean).sort();
 
       const kpis = {
@@ -215,14 +220,16 @@ module.exports = {
         tenant: req.tenant || null,
         subjects,
         classes,
+        sections: scopeLists.sections,
+        streams: scopeLists.streams,
         staffList,
         structure: buildStructure(req),
-        sectionsMap: buildSectionsMap(req, classes),
+        sectionsMap: Object.fromEntries(scopeLists.classes.map((c) => [String(c._id), scopeLists.sections.filter((s) => String(s.classId) === String(c._id))])),
         academicYears,
         csrfToken: res.locals.csrfToken || null,
         kpis,
         query: {
-          q, status, category, levelType, classId, sectionId, term, schoolUnitId, campusId, academicYear,
+          q, status, category, levelType, classId, sectionId, streamId, term, schoolUnitId, campusId, academicYear,
           page: safePage, total, totalPages, perPage,
         },
         messages: {
@@ -245,17 +252,27 @@ module.exports = {
     }
 
     try {
-      const klass = await Class.findById(req.body.classId).lean();
+      const scope = await resolveAcademicScope(req, {
+        classId: req.body.classId,
+        sectionId: req.body.sectionId,
+        streamId: req.body.streamId,
+      });
+      if (scope.errors.length) {
+        req.flash?.("error", scope.errors.join(" "));
+        return res.redirect(BASE_PATH);
+      }
+
+      const klass = scope.classDoc;
       if (!klass) {
         req.flash?.("error", "Selected class was not found.");
         return res.redirect(BASE_PATH);
       }
 
-      const sections = buildSectionsMap(req, [klass])[String(klass._id || klass.id)] || [];
-      const section = sections.find((s) => String(s.id) === String(req.body.sectionId || "")) || null;
+      const section = scope.sectionDoc || null;
+      const stream = scope.streamDoc || null;
 
       let code = String(req.body.code || "").trim().toUpperCase();
-      if (!code) code = buildSmartCode(req.body, klass, section);
+      if (!code) code = buildSmartCode(req.body, klass, section, stream);
       code = slugCode(code);
 
       const exists = await Subject.findOne({ code }).lean();
@@ -279,10 +296,13 @@ module.exports = {
         className: klass.name || "",
         classCode: klass.code || "",
         classLevel: klass.classLevel || "",
-        classStream: klass.stream || "",
-        sectionId: section?.id || "",
+        classStream: stream?.name || klass.stream || "",
+        sectionId: section?._id || "",
         sectionName: section?.name || "",
         sectionCode: section?.code || "",
+        streamId: stream?._id || "",
+        streamName: stream?.name || "",
+        streamCode: stream?.code || "",
         term: TERMS.includes(Number(req.body.term)) ? Number(req.body.term) : 1,
         academicYear: String(req.body.academicYear || klass.academicYear || "").trim().slice(0, 20),
         category: CATEGORIES.includes(req.body.category) ? req.body.category : "core",
@@ -324,17 +344,27 @@ module.exports = {
         return res.redirect(BASE_PATH);
       }
 
-      const klass = await Class.findById(req.body.classId).lean();
+      const scope = await resolveAcademicScope(req, {
+        classId: req.body.classId,
+        sectionId: req.body.sectionId,
+        streamId: req.body.streamId,
+      });
+      if (scope.errors.length) {
+        req.flash?.("error", scope.errors.join(" "));
+        return res.redirect(BASE_PATH);
+      }
+
+      const klass = scope.classDoc;
       if (!klass) {
         req.flash?.("error", "Selected class was not found.");
         return res.redirect(BASE_PATH);
       }
 
-      const sections = buildSectionsMap(req, [klass])[String(klass._id || klass.id)] || [];
-      const section = sections.find((s) => String(s.id) === String(req.body.sectionId || "")) || null;
+      const section = scope.sectionDoc || null;
+      const stream = scope.streamDoc || null;
 
       let code = String(req.body.code || "").trim().toUpperCase();
-      if (!code) code = buildSmartCode(req.body, klass, section);
+      if (!code) code = buildSmartCode(req.body, klass, section, stream);
       code = slugCode(code);
 
       const collision = await Subject.findOne({ code, _id: { $ne: id } }).lean();
@@ -358,10 +388,13 @@ module.exports = {
         className: klass.name || "",
         classCode: klass.code || "",
         classLevel: klass.classLevel || "",
-        classStream: klass.stream || "",
-        sectionId: section?.id || "",
+        classStream: stream?.name || klass.stream || "",
+        sectionId: section?._id || "",
         sectionName: section?.name || "",
         sectionCode: section?.code || "",
+        streamId: stream?._id || "",
+        streamName: stream?.name || "",
+        streamCode: stream?.code || "",
         term: TERMS.includes(Number(req.body.term)) ? Number(req.body.term) : 1,
         academicYear: String(req.body.academicYear || klass.academicYear || "").trim().slice(0, 20),
         category: CATEGORIES.includes(req.body.category) ? req.body.category : "core",

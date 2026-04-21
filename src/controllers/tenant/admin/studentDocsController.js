@@ -1,5 +1,12 @@
 const mongoose = require("mongoose");
 const { uploadBuffer, safeDestroy } = require("../../../utils/cloudinaryUpload");
+const {
+  REQUIRED_STUDENT_DOC_TYPES,
+  normalizeStudentDocType,
+  titleForStudentDocType,
+  ensureStudentDocsFromApplicants,
+  buildStudentDocSummaries,
+} = require("../../../utils/studentDocs");
 
 function safeStr(v) {
   return String(v == null ? "" : v).trim();
@@ -14,9 +21,7 @@ function escapeRegex(text) {
 }
 
 function normalizeType(type) {
-  const allowed = new Set(["passport", "id", "transcript", "certificate", "other"]);
-  const value = safeStr(type).toLowerCase();
-  return allowed.has(value) ? value : "other";
+  return normalizeStudentDocType(type);
 }
 
 async function softDeleteDoc(doc, userId) {
@@ -30,7 +35,7 @@ async function softDeleteDoc(doc, userId) {
 module.exports = {
   async index(req, res) {
     try {
-      const { StudentDoc, Student } = req.models;
+      const { StudentDoc, Student, Applicant } = req.models;
 
       const q = safeStr(req.query.q);
       const type = normalizeType(req.query.type || "");
@@ -73,6 +78,24 @@ module.exports = {
         ];
       }
 
+      const students = await Student.find({ isDeleted: { $ne: true } })
+        .select("_id regNo fullName email")
+        .sort({ regNo: 1, fullName: 1 })
+        .limit(2000)
+        .lean();
+
+      const studentIds = students.map((st) => st._id);
+      if (studentIds.length) {
+        await ensureStudentDocsFromApplicants({
+          StudentDoc,
+          Applicant,
+          studentIds,
+          uploadedBy: req.user?._id || null,
+        }).catch((err) => {
+          console.error("STUDENT DOC BACKFILL ERROR:", err);
+        });
+      }
+
       const total = await StudentDoc.countDocuments(filter);
       const totalPages = Math.max(Math.ceil(total / perPage), 1);
       const safePage = Math.min(page, totalPages);
@@ -88,17 +111,24 @@ module.exports = {
         .limit(perPage)
         .lean();
 
-      const students = await Student.find({ isDeleted: { $ne: true } })
-        .select("_id regNo fullName email")
-        .sort({ regNo: 1, fullName: 1 })
-        .limit(2000)
-        .lean();
+      const allStudentDocs = studentIds.length
+        ? await StudentDoc.find({ isDeleted: { $ne: true }, student: { $in: studentIds } })
+            .select("_id student type title doc createdAt updatedAt")
+            .sort({ createdAt: -1 })
+            .lean()
+        : [];
+      const studentDocSummaries = buildStudentDocSummaries(students, allStudentDocs);
 
+      const missingRequired = studentDocSummaries.reduce((sum, row) => sum + Number(row.missingCount || 0), 0);
+      const completeStudents = studentDocSummaries.filter((row) => row.complete).length;
       const baseKpiFilter = { isDeleted: { $ne: true } };
-      if (student && isOid(student)) baseKpiFilter.student = student;
-      if (q && filter.$or) baseKpiFilter.$or = filter.$or;
 
       const kpis = {
+        students: await Student.countDocuments({ isDeleted: { $ne: true } }),
+        uploaded: await StudentDoc.countDocuments(baseKpiFilter),
+        missingRequired,
+        completeStudents,
+        incompleteStudents: Math.max(studentDocSummaries.length - completeStudents, 0),
         total,
         passport: await StudentDoc.countDocuments({ ...baseKpiFilter, type: "passport" }),
         transcript: await StudentDoc.countDocuments({ ...baseKpiFilter, type: "transcript" }),
@@ -107,8 +137,14 @@ module.exports = {
 
       return res.render("tenant/admin/student-docs/index", {
         tenant: req.tenant || null,
-        docs,
+        docs: docs.map((row) => ({
+          ...row,
+          type: normalizeStudentDocType(row.type, row.title),
+          title: safeStr(row.title) || titleForStudentDocType(row.type),
+        })),
         students,
+        studentDocSummaries,
+        requiredTypes: REQUIRED_STUDENT_DOC_TYPES,
         types: ["passport", "id", "transcript", "certificate", "other"],
         csrfToken: typeof req.csrfToken === "function" ? req.csrfToken() : "",
         kpis,
@@ -138,10 +174,10 @@ module.exports = {
 
       const student = safeStr(req.body.student);
       const type = normalizeType(req.body.type);
-      const title = safeStr(req.body.title).slice(0, 180);
+      const title = (safeStr(req.body.title) || titleForStudentDocType(type)).slice(0, 180);
 
-      if (!isOid(student) || !title) {
-        req.flash?.("error", "Student and title are required.");
+      if (!isOid(student)) {
+        req.flash?.("error", "Student is required.");
         return res.redirect("/admin/student-docs");
       }
 
@@ -173,6 +209,8 @@ module.exports = {
           originalName: req.file.originalname || "",
           bytes: req.file.size || 0,
           mimeType: req.file.mimetype || "",
+          source: "admin_upload",
+          sharedAsset: false,
           uploadedAt: new Date(),
         },
         uploadedBy: req.user?._id || null,
@@ -205,7 +243,7 @@ module.exports = {
 
       const student = safeStr(req.body.student);
       const type = normalizeType(req.body.type || row.type);
-      const title = safeStr(req.body.title).slice(0, 180);
+      const title = (safeStr(req.body.title) || titleForStudentDocType(type)).slice(0, 180);
 
       if (!student || !isOid(student)) {
         req.flash?.("error", "Valid student is required.");
@@ -221,11 +259,6 @@ module.exports = {
         return res.redirect("/admin/student-docs");
       }
 
-      if (!title) {
-        req.flash?.("error", "Title is required.");
-        return res.redirect("/admin/student-docs");
-      }
-
       row.student = student;
       row.type = type;
       row.title = title;
@@ -234,7 +267,7 @@ module.exports = {
         const folder = `classic-academy/${req.tenant?.slug || "tenant"}/student-docs`;
         const up = await uploadBuffer(req.file, folder);
 
-        if (row.doc?.publicId) {
+        if (row.doc?.publicId && !row.doc?.sharedAsset) {
           await safeDestroy(row.doc.publicId, row.doc.resourceType || "auto");
         }
 
@@ -245,6 +278,8 @@ module.exports = {
           originalName: req.file.originalname || "",
           bytes: req.file.size || 0,
           mimeType: req.file.mimetype || "",
+          source: "admin_upload",
+          sharedAsset: false,
           uploadedAt: new Date(),
         };
       }
@@ -277,7 +312,7 @@ module.exports = {
         return res.redirect("/admin/student-docs");
       }
 
-      if (row.doc?.publicId) {
+      if (row.doc?.publicId && !row.doc?.sharedAsset) {
         await safeDestroy(row.doc.publicId, row.doc.resourceType || "auto");
       }
 

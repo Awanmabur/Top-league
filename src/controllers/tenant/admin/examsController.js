@@ -1,5 +1,10 @@
 const mongoose = require("mongoose");
 const { body, validationResult } = require("express-validator");
+const {
+  loadAcademicScopeLists,
+  resolveAcademicScope,
+  buildAcademicScopeFilter,
+} = require("../../../utils/tenantAcademicScope");
 
 const cleanStr = (v, max = 1000) => String(v || "").trim().slice(0, max);
 const isObjId = (v) => mongoose.Types.ObjectId.isValid(String(v || ""));
@@ -53,6 +58,16 @@ const examRules = [
   body("classGroup")
     .custom((v) => isObjId(v))
     .withMessage("Class is required."),
+
+  body("sectionId")
+    .optional({ checkFalsy: true })
+    .custom((v) => !v || isObjId(v))
+    .withMessage("Invalid section."),
+
+  body("streamId")
+    .optional({ checkFalsy: true })
+    .custom((v) => !v || isObjId(v))
+    .withMessage("Invalid stream."),
 
   body("subject")
     .custom((v) => isObjId(v))
@@ -154,6 +169,8 @@ module.exports = {
 
       const q = cleanStr(req.query.q, 120);
       const classGroup = cleanStr(req.query.classGroup, 80);
+      const sectionId = cleanStr(req.query.sectionId, 80);
+      const streamId = cleanStr(req.query.streamId, 80);
       const subject = cleanStr(req.query.subject, 80);
       const examType = cleanStr(req.query.examType, 40);
       const status = cleanStr(req.query.status, 20);
@@ -167,7 +184,7 @@ module.exports = {
 
       const filter = {};
 
-      if (classGroup && isObjId(classGroup)) filter.classGroup = classGroup;
+      Object.assign(filter, buildAcademicScopeFilter({ classGroup, sectionId, streamId }));
       if (subject && isObjId(subject)) filter.subject = subject;
       if (examType && EXAM_TYPES.includes(examType)) filter.examType = examType;
       if (status && STATUSES.includes(status)) filter.status = status;
@@ -197,6 +214,8 @@ module.exports = {
 
       const exams = await Exam.find(filter)
         .populate({ path: "classGroup", select: "name code" })
+        .populate({ path: "sectionId", select: "name code" })
+        .populate({ path: "streamId", select: "name code" })
         .populate({ path: "subject", select: "title code shortTitle" })
         .populate({ path: "teacher", select: "fullName name email role" })
         .sort({ examDate: -1, createdAt: -1 })
@@ -206,12 +225,12 @@ module.exports = {
 
       const classes = await Class.find({})
         .sort({ name: 1 })
-        .select("name code")
+        .select("name code classLevel academicYear term")
         .lean();
 
       const subjects = await Subject.find({})
         .sort({ title: 1, code: 1 })
-        .select("title code shortTitle")
+        .select("title code shortTitle classId className sectionId sectionName streamId streamName academicYear term")
         .lean();
 
       const staffList = await Staff.find({})
@@ -220,12 +239,16 @@ module.exports = {
         .lean();
 
       const kpis = await buildKpis(Exam, filter);
+      const scopeLists = await loadAcademicScopeLists(req);
 
       return res.render("tenant/exams/index", {
         tenant: req.tenant || null,
         exams,
         classes,
+        sections: scopeLists.sections,
+        streams: scopeLists.streams,
         subjects,
+        subjectOptions: scopeLists.subjects,
         staffList,
         examTypes: EXAM_TYPES,
         csrfToken: res.locals.csrfToken || null,
@@ -233,6 +256,8 @@ module.exports = {
         query: {
           q,
           classGroup,
+          sectionId,
+          streamId,
           subject,
           examType,
           status,
@@ -280,10 +305,26 @@ module.exports = {
         return res.redirect("/tenant/exams");
       }
 
+      const scope = await resolveAcademicScope(req, {
+        classId: req.body.classGroup,
+        sectionId: req.body.sectionId,
+        streamId: req.body.streamId,
+      });
+      if (scope.errors.length || !scope.payload.classId) {
+        req.flash?.("error", scope.errors.join(" ") || "Class is required.");
+        return res.redirect("/tenant/exams");
+      }
+
       const doc = {
         title,
         code,
-        classGroup: req.body.classGroup,
+        classGroup: scope.payload.classId,
+        sectionId: scope.payload.sectionId || null,
+        sectionName: scope.payload.sectionName || "",
+        sectionCode: scope.payload.sectionCode || "",
+        streamId: scope.payload.streamId || null,
+        streamName: scope.payload.streamName || "",
+        streamCode: scope.payload.streamCode || "",
         subject: req.body.subject,
         teacher: isObjId(req.body.teacher) ? req.body.teacher : null,
         academicYear: cleanStr(req.body.academicYear, 20),
@@ -344,13 +385,29 @@ module.exports = {
         return res.redirect("/tenant/exams");
       }
 
+      const scope = await resolveAcademicScope(req, {
+        classId: req.body.classGroup,
+        sectionId: req.body.sectionId,
+        streamId: req.body.streamId,
+      });
+      if (scope.errors.length || !scope.payload.classId) {
+        req.flash?.("error", scope.errors.join(" ") || "Class is required.");
+        return res.redirect("/tenant/exams");
+      }
+
       await Exam.updateOne(
         { _id: id },
         {
           $set: {
             title,
             code,
-            classGroup: req.body.classGroup,
+            classGroup: scope.payload.classId,
+            sectionId: scope.payload.sectionId || null,
+            sectionName: scope.payload.sectionName || "",
+            sectionCode: scope.payload.sectionCode || "",
+            streamId: scope.payload.streamId || null,
+            streamName: scope.payload.streamName || "",
+            streamCode: scope.payload.streamCode || "",
             subject: req.body.subject,
             teacher: isObjId(req.body.teacher) ? req.body.teacher : null,
             academicYear: cleanStr(req.body.academicYear, 20),

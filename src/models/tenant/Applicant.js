@@ -47,6 +47,9 @@ module.exports = (connection) => {
       },
       classLevel: { type: String, default: "", trim: true, uppercase: true, maxlength: 30, index: true },
       term: { type: Number, min: 1, max: 3, default: 1, index: true },
+      intakeId: { type: Schema.Types.ObjectId, ref: "Intake", default: null, index: true },
+      streamId: { type: Schema.Types.ObjectId, ref: "Stream", default: null, index: true },
+      streamName: { type: String, trim: true, maxlength: 100, default: "" },
 
       // Legacy university-era fields kept optional so older documents still load.
       semester: { type: Number, min: 0, max: 6, default: 1 },
@@ -135,6 +138,7 @@ module.exports = (connection) => {
     if (this.semester && !this.term && Number(this.semester) >= 1 && Number(this.semester) <= 3) {
       this.term = Number(this.semester);
     }
+    if (this.streamName) this.streamName = String(this.streamName).trim();
     if (!this.section1 && this.program1) this.section1 = this.program1;
     if (!this.program1 && this.section1) this.program1 = this.section1;
     if (!this.section2 && this.program2) this.section2 = this.program2;

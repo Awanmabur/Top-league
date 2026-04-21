@@ -16,8 +16,7 @@
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
-    .input,.select,.textarea{
-      width:100%;
+    .input,.select,.textarea,.view-input{
       padding:10px 12px;
       border-radius:12px;
       border:1px solid rgba(13,64,96,.16);
@@ -25,15 +24,39 @@
       outline:none;
     }
 
-    .textarea{min-height:90px;resize:vertical}
+    .input{min-width:220px}
+    .textarea{width:100%;min-height:100px;resize:vertical}
     .input:focus,.select:focus,.textarea:focus{
       border-color:rgba(10,111,191,.45);
       box-shadow:0 0 0 3px rgba(10,111,191,.12);
     }
 
+    .view-input{
+      min-height:44px;
+      display:flex;
+      align-items:center;
+      font-weight:800;
+      color:#0f172a;
+      background:#fbfdff;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+
+    .view-input.multiline{
+      display:block;
+      min-height:96px;
+      align-items:flex-start;
+      white-space:pre-wrap;
+      overflow:auto;
+      text-overflow:unset;
+      line-height:1.55;
+    }
+
     .muted{font-size:12px;color:#6b7280}
     .strong{font-weight:900}
     .grid-4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+    .right{text-align:right}
 
     .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:900}
     .pill.open{background:#fff7ed;color:#92400e}
@@ -59,23 +82,27 @@
     .top-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;align-items:center;flex:0 0 auto;margin-left:auto}
 
     .table-wrap{
-      overflow:auto;
+      overflow-x:auto;
+      overflow-y:hidden;
       border:1px solid rgba(13,64,96,.10);
       border-radius:12px;
+      max-width:100%;
+      -webkit-overflow-scrolling:touch;
     }
 
     table{
       width:100%;
-      min-width:1200px;
+      min-width:1120px;
       border-collapse:separate;
       border-spacing:0;
       background:#fff;
+      table-layout:fixed;
     }
 
     th,td{
       padding:10px 12px;
       border-bottom:1px solid rgba(13,64,96,.08);
-      vertical-align:top;
+      vertical-align:middle;
     }
 
     th{
@@ -88,10 +115,30 @@
       position:sticky;
       top:0;
       z-index:1;
+      white-space:nowrap;
     }
 
     tr:hover td{background:rgba(10,111,191,.04)}
-    .actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+    .col-case{width:150px}
+    .col-student{width:260px}
+    .col-incident{width:250px}
+    .col-category{width:150px}
+    .col-status{width:130px}
+    .col-files{width:150px}
+    .col-actions{width:180px}
+    .actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:nowrap;overflow:hidden}
+    .btn-xs{
+      padding:6px 8px;
+      border-radius:10px;
+      border:1px solid rgba(13,64,96,.14);
+      background:#fff;
+      cursor:pointer;
+      font-size:12px;
+      position:relative;
+      z-index:2;
+      flex:0 0 auto;
+    }
+    .btn-xs:hover{background:rgba(10,111,191,.06)}
 
     .modal-backdrop{
       position:fixed;
@@ -109,17 +156,29 @@
 
     .modal{
       width:min(980px,100%);
+      max-height:calc(100dvh - 60px);
       background:#fff;
-      border-radius:16px;
-      box-shadow:0 20px 60px rgba(0,0,0,.25);
+      border-radius:22px;
+      box-shadow:0 24px 70px rgba(0,0,0,.25);
       overflow:hidden;
+      display:flex;
+      flex-direction:column;
     }
 
-    .modal-header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid rgba(13,64,96,.12)}
-    .modal-title{font-weight:1000}
-    .modal-body{padding:16px}
-    .modal-footer{display:flex;justify-content:flex-end;gap:10px;padding:14px 16px;border-top:1px solid rgba(13,64,96,.12)}
+    .modal.sm{width:min(760px,100%)}
+    .modal > form{display:flex;flex-direction:column;flex:1 1 auto;min-height:0;overflow:hidden}
+    .modal-header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid rgba(13,64,96,.10);background:#fff}
+    .modal-title{font-weight:900;font-size:18px}
+    .modal-body{padding:16px 18px;overflow-y:auto;min-height:0;flex:1 1 auto}
+    .modal-footer{display:flex;justify-content:flex-end;gap:10px;padding:14px 18px;border-top:1px solid rgba(13,64,96,.10);background:#fff;flex-wrap:wrap}
     .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .field label{display:block;font-size:12px;color:#6b7280;margin-bottom:6px}
+    .field input,.field select,.field textarea{width:100%}
+    .divider{height:1px;background:rgba(13,64,96,.10);margin:12px 0}
+    .mini-list{display:grid;gap:10px}
+    .mini-item{padding:10px 12px;border:1px solid rgba(13,64,96,.10);border-radius:12px;background:#fff}
+    .link-inline{color:#0a6fbf;text-decoration:none;font-weight:800}
+    .link-inline:hover{text-decoration:underline}
 
     .pagination{
       display:flex;
@@ -165,7 +224,7 @@
 
     @media(max-width:1100px){ .grid-4{grid-template-columns:repeat(2,minmax(0,1fr))} }
     @media(max-width:900px){ .grid2{grid-template-columns:1fr} .topbar{flex-wrap:wrap} .top-actions{width:100%;justify-content:flex-start} }
-    @media(max-width:650px){ table{min-width:980px} }
+    @media(max-width:650px){ .toolbar .left,.toolbar .right{width:100%}.toolbar .left > *,.toolbar .right > *{max-width:100%}.input{min-width:160px}table{min-width:1120px} }
   </style>
 </head>
 <body>
@@ -173,6 +232,7 @@
     <%- include("../../partials/navbar") %>
 
     <main class="main">
+      <% const disciplineStatusLabels = { open: "Open", investigating: "Investigating", hearing: "Hearing", resolved: "Resolved", dismissed: "Dismissed" }; %>
       <% if (typeof messages !== "undefined" && (messages.success?.length || messages.error?.length)) { %>
         <div class="flash-wrap">
           <% (messages.success || []).forEach(function(msg){ %>
@@ -219,22 +279,15 @@
         </div>
       </div>
 
-      <section class="card" style="margin-top:12px">
-        <div class="card-head" style="padding:14px 16px;border-bottom:1px solid rgba(13,64,96,.10);">
-          <div>
-            <div class="section-title">All Cases</div>
-            <div class="section-sub">Search by case number, student, category or description.</div>
-          </div>
-        </div>
-
-        <div class="card-body" style="padding:14px 16px;">
+      <section class="card" style="margin-top:12px;">
+        <div class="card-body">
           <form class="toolbar" method="GET" action="/admin/discipline">
             <div class="left">
-              <input class="input" name="q" value="<%= query?.q || '' %>" placeholder="caseNo, regNo, name, category">
-              <select class="select" name="status" style="min-width:180px">
-                <option value="">Any Status</option>
+              <input class="input" name="q" value="<%= query?.q || '' %>" placeholder="Search case no, student, category..." />
+              <select class="select" name="status">
+                <option value="">All Statuses</option>
                 <% ["open","investigating","hearing","resolved","dismissed"].forEach(function(s){ %>
-                  <option value="<%= s %>" <%= String(query?.status || '') === s ? 'selected' : '' %>><%= s %></option>
+                  <option value="<%= s %>" <%= String(query?.status || '') === s ? 'selected' : '' %>><%= disciplineStatusLabels[s] || s %></option>
                 <% }) %>
               </select>
             </div>
@@ -243,18 +296,30 @@
               <button class="btn primary" type="submit"><i class="fa-solid fa-filter"></i> Filter</button>
             </div>
           </form>
+        </div>
+      </section>
 
-          <div class="table-wrap" style="margin-top:14px;">
+      <section class="card" style="margin-top:12px;">
+        <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;">
+          <div>
+            <div class="section-title">Discipline Cases</div>
+            <div class="section-sub">Showing <%= (cases || []).length %> of <%= query?.total || 0 %> records.</div>
+          </div>
+          <div class="muted">Page <%= query?.page || 1 %> of <%= query?.totalPages || 1 %></div>
+        </div>
+
+        <div style="margin-top:10px;">
+          <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Case</th>
-                  <th>Student</th>
-                  <th>Incident</th>
-                  <th>Category</th>
-                  <th>Status</th>
-                  <th>Files</th>
-                  <th class="right">Actions</th>
+                  <th class="col-case">Case</th>
+                  <th class="col-student">Student</th>
+                  <th class="col-incident">Incident</th>
+                  <th class="col-category">Category</th>
+                  <th class="col-status">Status</th>
+                  <th class="col-files">Files</th>
+                  <th class="col-actions right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -279,26 +344,33 @@
                     <td><%= c.category || '—' %></td>
                     <td>
                       <span class="pill <%= c.status || 'open' %>">
-                        <%= c.status || 'open' %>
+                        <%= disciplineStatusLabels[c.status || 'open'] || c.status || 'open' %>
                       </span>
                     </td>
                     <td class="muted">
                       Statement: <%= (c.studentStatement && c.studentStatement.url) ? "Yes" : "No" %><br/>
-                      Attachments: <%= Array.isArray(c.attachments) ? c.attachments.length : 0 %>
+                      Attachments: <%= Array.isArray(c.attachments) ? c.attachments.length : 0 %><br/>
+                      Actions: <%= Array.isArray(c.actions) ? c.actions.length : 0 %>
                     </td>
                     <td class="right">
                       <div class="actions">
-                        <button class="btn light small" type="button" data-open="mCase" data-mode="edit" data-id="<%= c._id %>">
-                          <i class="fa-solid fa-pen"></i> Manage
+                        <button class="btn-xs" type="button" title="View" data-case-action="view" data-id="<%= c._id %>">
+                          <i class="fa-solid fa-eye"></i>
                         </button>
-                        <button class="btn danger small" type="button" data-open="mDelete" data-id="<%= c._id %>" data-name="<%= c.caseNo || 'Case' %>">
-                          <i class="fa-solid fa-trash"></i> Delete
+                        <button class="btn-xs" type="button" title="Edit" data-open="mCase" data-mode="edit" data-id="<%= c._id %>">
+                          <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <button class="btn-xs" type="button" title="More" data-case-action="more" data-id="<%= c._id %>">
+                          <i class="fa-solid fa-ellipsis"></i>
+                        </button>
+                        <button class="btn-xs" type="button" title="Delete" data-open="mDelete" data-id="<%= c._id %>" data-name="<%= c.caseNo || 'Case' %>">
+                          <i class="fa-solid fa-trash"></i>
                         </button>
                       </div>
                     </td>
                   </tr>
 
-                  <% if (Array.isArray(c.actions) && c.actions.length) { %>
+                  <% if (false && Array.isArray(c.actions) && c.actions.length) { %>
                     <tr>
                       <td colspan="7" class="muted">
                         <b>Actions:</b>
@@ -358,7 +430,7 @@
       <form id="caseForm" method="POST" action="/admin/discipline">
         <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>"/>
         <div class="modal-body">
-          <div class="grid2">
+          <div class="grid2" id="caseMainFields">
             <div class="field" style="grid-column:1/-1">
               <label>Student *</label>
               <select class="select" name="student" id="fStudent" required>
@@ -377,11 +449,11 @@
             <div class="field">
               <label>Status</label>
               <select class="select" name="status" id="fStatus">
-                <option value="open">open</option>
-                <option value="investigating">investigating</option>
-                <option value="hearing">hearing</option>
-                <option value="resolved">resolved</option>
-                <option value="dismissed">dismissed</option>
+                <option value="open">Open</option>
+                <option value="investigating">Investigating</option>
+                <option value="hearing">Hearing</option>
+                <option value="resolved">Resolved</option>
+                <option value="dismissed">Dismissed</option>
               </select>
             </div>
 
@@ -430,13 +502,10 @@
             <div class="grid2">
               <div class="field" style="grid-column:1/-1">
                 <label>Upload / Replace Student Statement</label>
-                <form id="statementForm" method="POST" action="#" enctype="multipart/form-data">
-                  <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>"/>
-                  <input class="input" type="file" name="file" required>
-                  <div style="margin-top:8px;">
-                    <button class="btn success" type="submit"><i class="fa-solid fa-upload"></i> Upload Statement</button>
-                  </div>
-                </form>
+                <input class="input" type="file" name="file" form="statementForm" required>
+                <div style="margin-top:8px;">
+                  <button class="btn success" type="submit" form="statementForm"><i class="fa-solid fa-upload"></i> Upload Statement</button>
+                </div>
               </div>
             </div>
 
@@ -445,13 +514,10 @@
             <div class="grid2">
               <div class="field" style="grid-column:1/-1">
                 <label>Upload Attachments (up to 5)</label>
-                <form id="attachForm" method="POST" action="#" enctype="multipart/form-data">
-                  <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>"/>
-                  <input class="input" type="file" name="files" multiple>
-                  <div style="margin-top:8px;">
-                    <button class="btn success" type="submit"><i class="fa-solid fa-paperclip"></i> Upload Attachments</button>
-                  </div>
-                </form>
+                <input class="input" type="file" name="files" form="attachForm" multiple>
+                <div style="margin-top:8px;">
+                  <button class="btn success" type="submit" form="attachForm"><i class="fa-solid fa-paperclip"></i> Upload Attachments</button>
+                </div>
               </div>
             </div>
 
@@ -461,11 +527,83 @@
 
         <div class="modal-footer">
           <button class="btn light" type="button" data-close="mCase">Close</button>
-          <button class="btn primary" type="submit"><i class="fa-solid fa-check"></i> Save</button>
+          <button class="btn primary" type="submit" id="caseSaveBtn"><i class="fa-solid fa-check"></i> Save</button>
         </div>
       </form>
     </div>
   </div>
+
+  <div class="modal-backdrop" id="mView">
+    <div class="modal sm">
+      <div class="modal-header">
+        <div class="modal-title">Case Details</div>
+        <button class="btn-xs" type="button" data-close="mView"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="grid2">
+          <div class="field">
+            <label>Case No</label>
+            <div class="view-input" id="vCaseNo">&mdash;</div>
+          </div>
+
+          <div class="field">
+            <label>Status</label>
+            <div class="view-input" id="vStatus">&mdash;</div>
+          </div>
+
+          <div class="field" style="grid-column:1/-1">
+            <label>Student</label>
+            <div class="view-input" id="vStudent">&mdash;</div>
+          </div>
+
+          <div class="field">
+            <label>Incident Date</label>
+            <div class="view-input" id="vIncidentDate">&mdash;</div>
+          </div>
+
+          <div class="field">
+            <label>Category</label>
+            <div class="view-input" id="vCategory">&mdash;</div>
+          </div>
+
+          <div class="field" style="grid-column:1/-1">
+            <label>Description</label>
+            <div class="view-input multiline" id="vDescription">&mdash;</div>
+          </div>
+
+          <div class="field" style="grid-column:1/-1">
+            <label>Note</label>
+            <div class="view-input multiline" id="vNote">&mdash;</div>
+          </div>
+
+          <div class="field" style="grid-column:1/-1">
+            <label>Files</label>
+            <div class="view-input multiline" id="vFiles">&mdash;</div>
+          </div>
+
+          <div class="field" style="grid-column:1/-1">
+            <label>Actions Taken</label>
+            <div class="mini-list" id="vActions"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn light" type="button" data-close="mView">Close</button>
+        <button class="btn light" type="button" id="viewMoreBtn"><i class="fa-solid fa-ellipsis"></i> More</button>
+        <button class="btn primary" type="button" id="viewEditBtn"><i class="fa-solid fa-pen"></i> Edit</button>
+      </div>
+    </div>
+  </div>
+
+  <form id="statementForm" method="POST" action="#" enctype="multipart/form-data" style="display:none;">
+    <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>"/>
+  </form>
+
+  <form id="attachForm" method="POST" action="#" enctype="multipart/form-data" style="display:none;">
+    <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>"/>
+  </form>
 
   <div class="modal-backdrop" id="mDelete">
     <div class="modal" style="max-width:520px;">

@@ -56,6 +56,8 @@
         <div><b>Learner:</b> <%= data.student.name %></div>
         <div><b>Reg No:</b> <%= data.student.reg || "—" %></div>
         <div><b>Class:</b> <%= data.student.classGroup || "—" %></div>
+        <div><b>Section:</b> <%= data.student.section || "—" %></div>
+        <div><b>Stream:</b> <%= data.student.stream || "—" %></div>
       </div>
       <div>
         <div><b>Average:</b> <%= Number(data.totals.average || 0).toFixed(2) %>%</div>

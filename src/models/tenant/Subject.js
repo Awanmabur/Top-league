@@ -49,6 +49,10 @@ module.exports = (connection) => {
       sectionName: { type: String, default: "", trim: true, maxlength: 80 },
       sectionCode: { type: String, default: "", trim: true, maxlength: 40 },
 
+      streamId: { type: String, default: "", trim: true, index: true },
+      streamName: { type: String, default: "", trim: true, maxlength: 80 },
+      streamCode: { type: String, default: "", trim: true, maxlength: 40 },
+
       term: { type: Number, default: 1, min: 1, max: 3, index: true },
       academicYear: { type: String, default: "", trim: true, maxlength: 20, index: true },
 
@@ -78,6 +82,7 @@ module.exports = (connection) => {
     this.campusCode = normalizeCode(this.campusCode);
     this.classCode = normalizeCode(this.classCode);
     this.sectionCode = normalizeCode(this.sectionCode);
+    this.streamCode = normalizeCode(this.streamCode);
     this.classLevel = String(this.classLevel || "").trim().toUpperCase();
     this.classStream = String(this.classStream || "").trim().toUpperCase();
     this.assessmentMethod = normalizeText(this.assessmentMethod, 500);
@@ -88,9 +93,9 @@ module.exports = (connection) => {
   });
 
   SubjectSchema.index({ code: 1 }, { unique: true });
-  SubjectSchema.index({ campusId: 1, classId: 1, sectionId: 1, term: 1, academicYear: 1, status: 1 });
+  SubjectSchema.index({ campusId: 1, classId: 1, sectionId: 1, streamId: 1, term: 1, academicYear: 1, status: 1 });
   SubjectSchema.index({ levelType: 1, classLevel: 1, category: 1 });
-  SubjectSchema.index({ classId: 1, sectionId: 1, teacher: 1 });
+  SubjectSchema.index({ classId: 1, sectionId: 1, streamId: 1, teacher: 1 });
 
   return connection.model("Subject", SubjectSchema);
 };

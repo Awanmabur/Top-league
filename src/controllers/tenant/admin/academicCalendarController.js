@@ -1,5 +1,10 @@
 const mongoose = require("mongoose");
 const { body, validationResult } = require("express-validator");
+const {
+  loadAcademicScopeLists,
+  resolveAcademicScope,
+  buildAcademicScopeFilter,
+} = require("../../../utils/tenantAcademicScope");
 
 const cleanStr = (v, max = 200) => String(v || "").trim().slice(0, max);
 const isObjId = (v) => mongoose.Types.ObjectId.isValid(String(v || ""));
@@ -13,6 +18,9 @@ const parseDate = (v) => {
 const eventRules = [
   body("title").trim().isLength({ min: 2, max: 160 }).withMessage("Title is required (2-160 chars)."),
   body("type").trim().isLength({ min: 2, max: 40 }).withMessage("Type is required."),
+  body("classGroup").optional({ checkFalsy: true }).custom(isObjId).withMessage("Invalid class."),
+  body("sectionId").optional({ checkFalsy: true }).custom(isObjId).withMessage("Invalid section."),
+  body("streamId").optional({ checkFalsy: true }).custom(isObjId).withMessage("Invalid stream."),
   body("academicYear").optional({ checkFalsy: true }).trim().isLength({ max: 20 }),
   body("term").optional({ checkFalsy: true }).trim().isLength({ max: 40 }),
   body("startDate").custom((v) => !!parseDate(v)).withMessage("Start date is required (YYYY-MM-DD)."),
@@ -35,6 +43,19 @@ const kpiAgg = async (AcademicEvent, baseFilter) => {
     archived: m.archived || 0,
   };
 };
+
+function buildScopePayload(scope) {
+  return {
+    classGroup: scope.payload.classId || null,
+    className: scope.payload.className || "",
+    sectionId: scope.payload.sectionId || null,
+    sectionName: scope.payload.sectionName || "",
+    sectionCode: scope.payload.sectionCode || "",
+    streamId: scope.payload.streamId || null,
+    streamName: scope.payload.streamName || "",
+    streamCode: scope.payload.streamCode || "",
+  };
+}
 
 // Simple CSV parser (supports quoted commas)
 function parseCsv(text) {
@@ -65,13 +86,16 @@ module.exports = {
   // GET /admin/academic-calendar
   list: async (req, res) => {
     try {
-      const { AcademicEvent } = req.models;
+      const { AcademicEvent, Class, Section, Stream } = req.models;
 
       const q = cleanStr(req.query.q, 120);
       const academicYear = cleanStr(req.query.academicYear, 20);
       const term = cleanStr(req.query.term, 40);
       const type = cleanStr(req.query.type, 40);
       const status = cleanStr(req.query.status, 20);
+      const classGroup = cleanStr(req.query.classGroup, 80);
+      const sectionId = cleanStr(req.query.sectionId, 80);
+      const streamId = cleanStr(req.query.streamId, 80);
 
       const page = Math.max(parseInt(req.query.page || "1", 10), 1);
       const perPage = 18;
@@ -84,21 +108,33 @@ module.exports = {
           { type: { $regex: q, $options: "i" } },
           { term: { $regex: q, $options: "i" } },
           { academicYear: { $regex: q, $options: "i" } },
+          { className: { $regex: q, $options: "i" } },
+          { sectionName: { $regex: q, $options: "i" } },
+          { streamName: { $regex: q, $options: "i" } },
         ];
       }
       if (academicYear) filter.academicYear = academicYear;
       if (term) filter.term = term;
       if (type) filter.type = type;
       if (status) filter.status = status;
+      Object.assign(filter, buildAcademicScopeFilter({ classGroup, sectionId, streamId }));
 
       const total = await AcademicEvent.countDocuments(filter);
       const totalPages = Math.max(Math.ceil(total / perPage), 1);
 
-      const events = await AcademicEvent.find(filter)
+      let eventQuery = AcademicEvent.find(filter)
         .sort({ startDate: 1, createdAt: -1 })
         .skip((page - 1) * perPage)
-        .limit(perPage)
-        .lean();
+        .limit(perPage);
+
+      if (Class) eventQuery = eventQuery.populate({ path: "classGroup", model: Class, select: "name code title" });
+      if (Section) eventQuery = eventQuery.populate({ path: "sectionId", model: Section, select: "name code" });
+      if (Stream) eventQuery = eventQuery.populate({ path: "streamId", model: Stream, select: "name code" });
+
+      const [events, scopeLists] = await Promise.all([
+        eventQuery.lean(),
+        loadAcademicScopeLists(req),
+      ]);
 
       const years = (await AcademicEvent.distinct("academicYear", { isDeleted: { $ne: true } }))
         .filter(Boolean).sort();
@@ -117,9 +153,16 @@ module.exports = {
         years: years.length ? years : ["2025/2026", "2026/2027"],
         terms: terms.length ? terms : ["Semester 1", "Semester 2"],
         types: types.length ? types : ["Semester","Registration","Exam","Holiday","Deadline","Meeting","Other"],
+        classes: scopeLists.classes,
+        sections: scopeLists.sections,
+        streams: scopeLists.streams,
         kpis,
         csrfToken: res.locals.csrfToken || null,
-        query: { q, academicYear, term, type, status, page, perPage, total, totalPages },
+        query: { q, academicYear, term, type, status, classGroup, sectionId, streamId, page, perPage, total, totalPages },
+        messages: {
+          success: req.flash ? req.flash("success") : [],
+          error: req.flash ? req.flash("error") : [],
+        },
       });
     } catch (err) {
       console.error("ACADEMIC CALENDAR LIST ERROR:", err);
@@ -138,9 +181,21 @@ module.exports = {
         return res.redirect("/admin/academic-calendar");
       }
 
+      const scope = await resolveAcademicScope(req, {
+        classId: req.body.classGroup,
+        sectionId: req.body.sectionId,
+        streamId: req.body.streamId,
+      });
+
+      if (scope.errors.length) {
+        req.flash?.("error", scope.errors.join(" "));
+        return res.redirect("/admin/academic-calendar");
+      }
+
       const doc = {
         title: cleanStr(req.body.title, 160),
         type: cleanStr(req.body.type, 40),
+        ...buildScopePayload(scope),
         academicYear: cleanStr(req.body.academicYear, 20),
         term: cleanStr(req.body.term, 40),
         startDate: parseDate(req.body.startDate),
@@ -184,9 +239,21 @@ module.exports = {
         return res.redirect("/admin/academic-calendar");
       }
 
+      const scope = await resolveAcademicScope(req, {
+        classId: req.body.classGroup,
+        sectionId: req.body.sectionId,
+        streamId: req.body.streamId,
+      });
+
+      if (scope.errors.length) {
+        req.flash?.("error", scope.errors.join(" "));
+        return res.redirect("/admin/academic-calendar");
+      }
+
       const update = {
         title: cleanStr(req.body.title, 160),
         type: cleanStr(req.body.type, 40),
+        ...buildScopePayload(scope),
         academicYear: cleanStr(req.body.academicYear, 20),
         term: cleanStr(req.body.term, 40),
         startDate: parseDate(req.body.startDate),
@@ -298,6 +365,9 @@ module.exports = {
       const iType = idx("type");
       const iYear = idx("academicYear");
       const iTerm = idx("term");
+      const iClass = idx("classId");
+      const iSection = idx("sectionId");
+      const iStream = idx("streamId");
       const iStart = idx("startDate");
       const iEnd = idx("endDate");
       const iStatus = idx("status");
@@ -320,10 +390,18 @@ module.exports = {
 
         const endDate = iEnd >= 0 ? parseDate(row[iEnd]) : null;
         const status = iStatus >= 0 ? cleanStr(row[iStatus], 20).toLowerCase() : "draft";
+        const scope = await resolveAcademicScope(req, {
+          classId: iClass >= 0 ? row[iClass] : "",
+          sectionId: iSection >= 0 ? row[iSection] : "",
+          streamId: iStream >= 0 ? row[iStream] : "",
+        });
+
+        if (scope.errors.length) continue;
 
         docs.push({
           title,
           type,
+          ...buildScopePayload(scope),
           academicYear: iYear >= 0 ? cleanStr(row[iYear], 20) : "",
           term: iTerm >= 0 ? cleanStr(row[iTerm], 40) : "",
           startDate,
@@ -360,6 +438,9 @@ module.exports = {
       const term = cleanStr(req.query.term, 40);
       const type = cleanStr(req.query.type, 40);
       const status = cleanStr(req.query.status, 20);
+      const classGroup = cleanStr(req.query.classGroup, 80);
+      const sectionId = cleanStr(req.query.sectionId, 80);
+      const streamId = cleanStr(req.query.streamId, 80);
 
       const filter = { isDeleted: { $ne: true } };
       if (q) {
@@ -368,12 +449,16 @@ module.exports = {
           { type: { $regex: q, $options: "i" } },
           { term: { $regex: q, $options: "i" } },
           { academicYear: { $regex: q, $options: "i" } },
+          { className: { $regex: q, $options: "i" } },
+          { sectionName: { $regex: q, $options: "i" } },
+          { streamName: { $regex: q, $options: "i" } },
         ];
       }
       if (academicYear) filter.academicYear = academicYear;
       if (term) filter.term = term;
       if (type) filter.type = type;
       if (status) filter.status = status;
+      Object.assign(filter, buildAcademicScopeFilter({ classGroup, sectionId, streamId }));
 
       const rows = await AcademicEvent.find(filter).sort({ startDate: 1 }).lean();
 
@@ -383,13 +468,16 @@ module.exports = {
         return v;
       };
 
-      const header = ["title","type","academicYear","term","startDate","endDate","status","location","notes"];
+      const header = ["title","type","class","section","stream","academicYear","term","startDate","endDate","status","location","notes"];
       const lines = [header.join(",")];
 
       rows.forEach(r => {
         lines.push([
           esc(r.title),
           esc(r.type),
+          esc(r.className || ""),
+          esc(r.sectionName || ""),
+          esc(r.streamName || ""),
           esc(r.academicYear || ""),
           esc(r.term || ""),
           esc(r.startDate ? new Date(r.startDate).toISOString().slice(0,10) : ""),

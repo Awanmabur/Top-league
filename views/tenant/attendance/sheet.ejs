@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title><%= (tenant?.name || "Classic Academy") %> • Attendance Sheet</title>
+  <title><%= (tenant?.name || "Classic Academy") %> - Attendance Sheet</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
         crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -11,8 +11,8 @@
   <style>
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-    .input,.select,.textarea{padding:10px 12px;border-radius:12px;border:1px solid rgba(13,64,96,.16);background:#fff;outline:none}
-    .input:focus,.select:focus,.textarea:focus{border-color:rgba(10,111,191,.45);box-shadow:0 0 0 3px rgba(10,111,191,.12)}
+    .input,.select{padding:10px 12px;border-radius:12px;border:1px solid rgba(13,64,96,.16);background:#fff;outline:none}
+    .input:focus,.select:focus{border-color:rgba(10,111,191,.45);box-shadow:0 0 0 3px rgba(10,111,191,.12)}
     .topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}
     .top-actions{display:flex;gap:8px;flex-wrap:wrap}
     .table-wrap{overflow:auto;border:1px solid rgba(13,64,96,.10);border-radius:12px;background:#fff}
@@ -33,6 +33,7 @@
     .status-btn.active-late{background:#fef9c3;color:#92400e;border-color:#fde68a}
     .status-btn.active-excused{background:#eef2ff;color:#3730a3;border-color:#c7d2fe}
     .note-input{min-width:220px}
+    .json-data{display:none!important}
   </style>
 </head>
 <body>
@@ -42,38 +43,52 @@
     <main class="main">
       <% if (typeof messages !== "undefined" && (messages.success?.length || messages.error?.length)) { %>
         <div class="flash-wrap">
-          <% (messages.success || []).forEach(function(msg){ %>
-            <div class="flash flash-success"><%= msg %></div>
-          <% }) %>
-          <% (messages.error || []).forEach(function(msg){ %>
-            <div class="flash flash-error"><%= msg %></div>
-          <% }) %>
+          <% (messages.success || []).forEach(function(msg){ %><div class="flash flash-success"><%= msg %></div><% }) %>
+          <% (messages.error || []).forEach(function(msg){ %><div class="flash flash-error"><%= msg %></div><% }) %>
         </div>
       <% } %>
 
       <div class="topbar">
         <div>
           <div class="title">Attendance Sheet</div>
-          <div class="subtitle">Choose a course and one session time, then mark everyone inline and save all at once.</div>
+          <div class="subtitle">Load one class, section, stream and subject session, then mark everyone inline.</div>
         </div>
-
         <div class="top-actions">
           <a class="btn light" href="/admin/attendance"><i class="fa-solid fa-table"></i> Standard View</a>
         </div>
       </div>
 
       <section class="card" style="margin-top:12px;">
-        <form class="toolbar" method="GET" action="/admin/attendance/sheet">
+        <form class="toolbar" method="GET" action="/admin/attendance/sheet" data-academic-selector>
           <div class="left">
-            <select class="select" name="course" required>
-              <option value="">Select Course</option>
-              <% (courses || []).forEach(function(c){ %>
-                <option value="<%= c._id %>" <%= String(selectedCourse?._id || '') === String(c._id) ? 'selected' : '' %>>
-                  <%= (c.code ? (c.code + ' — ') : '') + (c.title || c.name || 'Course') %>
-                </option>
+            <select class="select" name="classGroup" data-role="class" data-placeholder="Select Class" required>
+              <option value="">Select Class</option>
+              <% (classes || []).forEach(function(c){ %>
+                <option value="<%= c._id %>" <%= String(selectedClass?._id || '') === String(c._id) ? 'selected' : '' %>><%= c.name || c.code || 'Class' %></option>
               <% }) %>
             </select>
 
+            <select class="select" name="sectionId" data-role="section" data-placeholder="Whole Class" data-selected="<%= selectedSection?._id || '' %>">
+              <option value="">Whole Class</option>
+            </select>
+
+            <select class="select" name="streamId" data-role="stream" data-placeholder="All Streams" data-selected="<%= selectedStream?._id || '' %>">
+              <option value="">All Streams</option>
+            </select>
+
+            <select class="select" name="subject" data-role="subject" data-placeholder="Select Subject" required>
+              <option value="">Select Subject</option>
+              <% (subjects || []).forEach(function(s){ %>
+                <option value="<%= s._id %>" <%= String(selectedSubject?._id || '') === String(s._id) ? 'selected' : '' %>><%= (s.code ? (s.code + ' - ') : '') + (s.title || s.name || 'Subject') %></option>
+              <% }) %>
+            </select>
+
+            <input class="input" name="academicYear" data-role="academicYear" value="<%= academicYear || '' %>" placeholder="Academic Year" />
+            <select class="select" name="term" data-role="term">
+              <option value="1" <%= String(term || 1) === '1' ? 'selected' : '' %>>Term 1</option>
+              <option value="2" <%= String(term || '') === '2' ? 'selected' : '' %>>Term 2</option>
+              <option value="3" <%= String(term || '') === '3' ? 'selected' : '' %>>Term 3</option>
+            </select>
             <input class="input" type="datetime-local" name="sessionAt" value="<%= sessionAtValue || '' %>" required />
           </div>
 
@@ -83,14 +98,17 @@
         </form>
       </section>
 
-      <% if (selectedCourse && sessionAtValue) { %>
+      <% if (selectedSubject && selectedClass && sessionAtValue) { %>
         <section class="card" style="margin-top:12px;">
           <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;">
             <div>
               <div class="section-title">Current Session</div>
               <div class="section-sub">
-                <strong><%= (selectedCourse.code ? selectedCourse.code + ' — ' : '') + (selectedCourse.title || selectedCourse.name || 'Course') %></strong>
-                • <%= new Date(sessionAtValue).toLocaleString() %>
+                <strong><%= (selectedSubject.code ? selectedSubject.code + ' - ' : '') + (selectedSubject.title || selectedSubject.name || 'Subject') %></strong>
+                - <%= selectedClass.name || selectedClass.code || 'Class' %>
+                <% if (selectedSection) { %> / <%= selectedSection.name || selectedSection.code || 'Section' %><% } %>
+                <% if (selectedStream) { %> / <%= selectedStream.name || selectedStream.code || 'Stream' %><% } %>
+                - <%= new Date(sessionAtValue).toLocaleString() %>
               </div>
             </div>
 
@@ -104,7 +122,12 @@
 
           <form method="POST" action="/admin/attendance/sheet" id="sheetForm" style="margin-top:12px;">
             <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
-            <input type="hidden" name="course" value="<%= selectedCourse._id %>">
+            <input type="hidden" name="subject" value="<%= selectedSubject._id %>">
+            <input type="hidden" name="classGroup" value="<%= selectedClass._id %>">
+            <input type="hidden" name="sectionId" value="<%= selectedSection?._id || '' %>">
+            <input type="hidden" name="streamId" value="<%= selectedStream?._id || '' %>">
+            <input type="hidden" name="academicYear" value="<%= academicYear || '' %>">
+            <input type="hidden" name="term" value="<%= term || 1 %>">
             <input type="hidden" name="sessionAt" value="<%= sessionAtValue %>">
 
             <div class="table-wrap">
@@ -120,7 +143,7 @@
                 </thead>
                 <tbody>
                   <% if ((roster || []).length) { %>
-                    <% roster.forEach(function(s, idx){ 
+                    <% roster.forEach(function(s, idx){
                       const keyById = "s:" + String(s._id);
                       const keyByReg = "r:" + String(s.regNo || "");
                       const existing = existingMap[keyById] || existingMap[keyByReg] || {};
@@ -131,11 +154,11 @@
                         <td><%= idx + 1 %></td>
                         <td>
                           <div class="strong"><%= s.fullName || 'Student' %></div>
-                          <div class="muted"><%= s.email || '—' %></div>
+                          <div class="muted"><%= s.email || '-' %></div>
                           <input type="hidden" name="rows[<%= idx %>][student]" value="<%= s._id %>">
                           <input type="hidden" name="rows[<%= idx %>][regNo]" value="<%= s.regNo || '' %>">
                         </td>
-                        <td><%= s.regNo || '—' %></td>
+                        <td><%= s.regNo || '-' %></td>
                         <td>
                           <div class="status-group" data-row-status>
                             <button type="button" class="status-btn <%= st === 'present' ? 'active-present' : '' %>" data-status="present">Present</button>
@@ -145,17 +168,11 @@
                             <input type="hidden" name="rows[<%= idx %>][status]" value="<%= st %>" class="row-status-value">
                           </div>
                         </td>
-                        <td>
-                          <input class="input note-input" name="rows[<%= idx %>][notes]" value="<%= nt %>" placeholder="Optional note">
-                        </td>
+                        <td><input class="input note-input" name="rows[<%= idx %>][notes]" value="<%= nt %>" placeholder="Optional note"></td>
                       </tr>
                     <% }) %>
                   <% } else { %>
-                    <tr>
-                      <td colspan="5">
-                        <div class="muted">No students found for this sheet.</div>
-                      </td>
-                    </tr>
+                    <tr><td colspan="5"><div class="muted">No students found for this sheet.</div></td></tr>
                   <% } %>
                 </tbody>
               </table>
@@ -168,12 +185,18 @@
         </section>
       <% } else { %>
         <section class="card" style="margin-top:12px;">
-          <div class="muted">Choose a course and session date/time to load the attendance sheet.</div>
+          <div class="muted">Choose a class, optional section or stream, subject and session date/time to load the attendance sheet.</div>
         </section>
       <% } %>
     </main>
   </div>
 
+  <textarea id="classesData" class="json-data" aria-hidden="true"><%- JSON.stringify(classes || []) %></textarea>
+  <textarea id="sectionsData" class="json-data" aria-hidden="true"><%- JSON.stringify(sections || []) %></textarea>
+  <textarea id="streamsData" class="json-data" aria-hidden="true"><%- JSON.stringify(streams || []) %></textarea>
+  <textarea id="subjectOptionsData" class="json-data" aria-hidden="true"><%- JSON.stringify(subjectOptions || subjects || []) %></textarea>
+
+  <script src="/js/academic-selector.js"></script>
   <script>
     (function () {
       function applyStatusToGroup(group, status) {
@@ -182,17 +205,14 @@
 
         group.querySelectorAll(".status-btn").forEach(function (btn) {
           btn.classList.remove("active-present", "active-absent", "active-late", "active-excused");
-          if (btn.dataset.status === status) {
-            btn.classList.add("active-" + status);
-          }
+          if (btn.dataset.status === status) btn.classList.add("active-" + status);
         });
       }
 
       document.querySelectorAll("[data-row-status]").forEach(function (group) {
         group.addEventListener("click", function (e) {
           const btn = e.target.closest(".status-btn");
-          if (!btn) return;
-          applyStatusToGroup(group, btn.dataset.status);
+          if (btn) applyStatusToGroup(group, btn.dataset.status);
         });
       });
 
@@ -202,15 +222,15 @@
         });
       }
 
-      const allPresent = document.getElementById("markAllPresent");
-      const allAbsent = document.getElementById("markAllAbsent");
-      const allLate = document.getElementById("markAllLate");
-      const allExcused = document.getElementById("markAllExcused");
+      const bind = (id, status) => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener("click", function () { markAll(status); });
+      };
 
-      if (allPresent) allPresent.addEventListener("click", function () { markAll("present"); });
-      if (allAbsent) allAbsent.addEventListener("click", function () { markAll("absent"); });
-      if (allLate) allLate.addEventListener("click", function () { markAll("late"); });
-      if (allExcused) allExcused.addEventListener("click", function () { markAll("excused"); });
+      bind("markAllPresent", "present");
+      bind("markAllAbsent", "absent");
+      bind("markAllLate", "late");
+      bind("markAllExcused", "excused");
     })();
   </script>
 </body>

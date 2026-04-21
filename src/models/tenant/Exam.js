@@ -27,6 +27,44 @@ module.exports = (connection) => {
         index: true,
       },
 
+      sectionId: {
+        type: Schema.Types.ObjectId,
+        ref: "Section",
+        default: null,
+        index: true,
+      },
+
+      sectionName: {
+        type: String,
+        default: "",
+        trim: true,
+      },
+
+      sectionCode: {
+        type: String,
+        default: "",
+        trim: true,
+      },
+
+      streamId: {
+        type: Schema.Types.ObjectId,
+        ref: "Stream",
+        default: null,
+        index: true,
+      },
+
+      streamName: {
+        type: String,
+        default: "",
+        trim: true,
+      },
+
+      streamCode: {
+        type: String,
+        default: "",
+        trim: true,
+      },
+
       subject: {
         type: Schema.Types.ObjectId,
         ref: "Subject",
@@ -143,7 +181,7 @@ module.exports = (connection) => {
   );
 
   ExamSchema.index(
-    { classGroup: 1, subject: 1, academicYear: 1, term: 1, examType: 1, examDate: 1 },
+    { classGroup: 1, sectionId: 1, streamId: 1, subject: 1, academicYear: 1, term: 1, examType: 1, examDate: 1 },
     { unique: true }
   );
 

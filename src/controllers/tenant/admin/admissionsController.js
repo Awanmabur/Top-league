@@ -8,6 +8,7 @@ const { nextRegNo } = require("../../../utils/regNo");
 const { sendMail } = require("../../../utils/mailer");
 const { createSetPasswordInvite } = require("../../../utils/inviteService");
 const { setupPasswordEmail } = require("../../../utils/emailTemplates");
+const { syncApplicantDocsToStudentDocs } = require("../../../utils/studentDocs");
 
 const ALLOWED_STATUSES = ["submitted", "under_review", "accepted", "rejected", "converted"];
 const MAX_IMPORT_ROWS = 2000;
@@ -387,9 +388,9 @@ async function getApplicantListing(req) {
     .sort({ createdAt: -1, _id: -1 })
     .skip((safePage - 1) * perPage)
     .limit(perPage)
-    .populate("section1", "code name levelType classLevel classStream className")
+    .populate("section1", "name levelType classLevel classStream className")
     .populate("section2", "code name levelType classLevel classStream className")
-    .populate("program1", "code name levelType classLevel classStream className")
+    .populate("program1", "name levelType classLevel classStream className")
     .populate("program2", "code name levelType classLevel classStream className")
     .lean();
 
@@ -459,12 +460,12 @@ module.exports = {
 
       const rows = await Applicant.find(filter)
         .sort({ createdAt: -1, _id: -1 })
-        .populate("section1", "code name classLevel classStream")
-        .populate("program1", "code name classLevel classStream")
+        .populate("section1", "name classLevel classStream")
+        .populate("program1", "name classLevel classStream")
         .lean();
 
       const csvRows = [
-        ["ApplicationId", "FullName", "Email", "Phone", "SectionCode", "SectionName", "Intake", "Status", "SubmittedAt"],
+        ["ApplicationId", "FullName", "Email", "Phone", "SectionName", "Stream", "Term", "Status", "SubmittedAt"],
         ...rows.map((a) => {
           const sec = a.section1 || a.program1 || null;
           return [
@@ -472,8 +473,8 @@ module.exports = {
           (a.fullName || [a.firstName, a.middleName, a.lastName].filter(Boolean).join(" ")).trim(),
           a.email || "",
           a.phone || "",
-          sec?.code || "",
           sec?.name || sec?.className || "",
+          a.streamName || sec?.classStream || "",
           a.intake || "",
           a.status || "",
           a.createdAt ? new Date(a.createdAt).toISOString() : "",
@@ -618,7 +619,7 @@ module.exports = {
   },
 
   viewApplicant: async (req, res) => {
-    const { Applicant, Class, Section } = req.models;
+    const { Applicant, Class, Section, AuditLog, Intake } = req.models;
 
     if (!isValidId(req.params.id)) return res.status(404).send("Invalid applicant ID");
 
@@ -627,6 +628,7 @@ module.exports = {
       isDeleted: { $ne: true },
     })
       .populate("preferredClassGroup", "code name title")
+      .populate("intakeId", "name term year")
       .populate("section1", "code name levelType classLevel classStream className classId classCode campusName schoolUnitName")
       .populate("section2", "code name levelType classLevel classStream className classId classCode campusName schoolUnitName")
       .populate("program1", "code name levelType classLevel classStream className classId classCode campusName schoolUnitName")
@@ -643,6 +645,44 @@ module.exports = {
           .sort({ levelType: 1, classLevel: 1, classStream: 1, name: 1 })
           .lean()
       : [];
+
+    let auditEntries = [];
+    if (AuditLog) {
+      try {
+        const auditOr = [{ entityId: applicant._id }];
+        if (applicant.applicationId) {
+          auditOr.push({ entityLabel: applicant.applicationId });
+          auditOr.push({ "metadata.applicationId": applicant.applicationId });
+        }
+        if (applicant.regNo) auditOr.push({ "metadata.regNo": applicant.regNo });
+        auditEntries = await AuditLog.find({
+          isDeleted: { $ne: true },
+          $or: auditOr,
+        })
+          .sort({ createdAt: -1 })
+          .limit(20)
+          .lean();
+      } catch (_) {}
+    }
+
+    if (applicant.intakeId && typeof applicant.intakeId === "object") {
+      applicant.termName = applicant.intakeId.term || applicant.intakeId.name || "";
+      if (!applicant.academicYear && applicant.intakeId.year) applicant.academicYear = String(applicant.intakeId.year);
+    } else if (applicant.intakeId && Intake) {
+      try {
+        const termDoc = await Intake.findById(applicant.intakeId).select("name term year").lean();
+        if (termDoc) {
+          applicant.termName = termDoc.term || termDoc.name || "";
+          if (!applicant.academicYear && termDoc.year) applicant.academicYear = String(termDoc.year);
+        }
+      } catch (_) {}
+    }
+
+    applicant.auditEntries = auditEntries.map((x) => ({
+      title: x.action || x.module || "Update",
+      createdAt: x.createdAt,
+      by: x.actorName || x.actorEmail || "System",
+    }));
 
     return res.render("tenant/admin/admissions/applicant-view", {
       tenant: req.tenant,
@@ -822,7 +862,7 @@ module.exports = {
   },
 
   acceptApplicant: async (req, res) => {
-    const { Applicant, Student, Section } = req.models;
+    const { Applicant, Student, Section, StudentDoc } = req.models;
 
     if (!isValidId(req.params.id)) return res.status(404).send("Invalid applicant ID");
 
@@ -894,6 +934,9 @@ module.exports = {
         classId: section.classId ? String(section.classId) : "",
         className: section.className || "",
         classCode: section.classCode || "",
+        intakeId: applicant.intakeId ? String(applicant.intakeId) : "",
+        streamId: applicant.streamId ? String(applicant.streamId) : "",
+        sectionId: section._id ? String(section._id) : "",
         section: section.classStream || section.name || "",
         stream: section.classStream || section.name || "",
         schoolLevel: applicant.schoolLevel || section.levelType || "primary",
@@ -908,6 +951,11 @@ module.exports = {
         guardianName: applicant.guardianName,
         guardianPhone: applicant.guardianPhone,
         guardianEmail: applicant.guardianEmail,
+        qualification: applicant.qualification || "",
+        school: applicant.school || "",
+        yearCompleted: applicant.yearCompleted || null,
+        grades: applicant.grades || "",
+        notes: applicant.notes || "",
         photoUrl: applicant.passportPhoto?.url || "",
         createdBy: req.user?._id || null,
         updatedBy: req.user?._id || null,
@@ -916,6 +964,17 @@ module.exports = {
       if (modelHasPath(Student, "applicationId")) studentPayload.applicationId = applicant._id;
 
       student = await Student.create(studentPayload);
+
+      if (StudentDoc) {
+        await syncApplicantDocsToStudentDocs({
+          StudentDoc,
+          applicant: applicant.toObject ? applicant.toObject() : applicant,
+          studentId: student._id,
+          uploadedBy: req.user?._id || null,
+        }).catch((err) => {
+          console.error("SYNC APPLICANT DOCS ERROR:", err);
+        });
+      }
 
       applicant.status = "converted";
       applicant.decidedAt = new Date();
@@ -1038,8 +1097,8 @@ module.exports = {
       if (!isValidId(req.params.id)) return res.status(404).send("Invalid applicant ID");
 
       const a = await Applicant.findOne({ _id: req.params.id, isDeleted: { $ne: true } })
-        .populate("section1", "code name classLevel classStream")
-        .populate("program1", "code name classLevel classStream")
+        .populate("section1", "name classLevel classStream")
+        .populate("program1", "name classLevel classStream")
         .lean();
 
       if (!a) return res.status(404).send("Applicant not found");

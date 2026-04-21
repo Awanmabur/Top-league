@@ -14,6 +14,7 @@ const SCHOOL_BASELINE_MODULES = [
   "Parent",
   "Class",
   "Section",
+  "Stream",
   "Subject",
   "TimetableEntry",
   "Attendance",
@@ -23,7 +24,6 @@ const SCHOOL_BASELINE_MODULES = [
   "Transcript",
   "AcademicEvent",
   "StudentDoc",
-  "Enrollment",
   "PromotionLog",
   "Applicant",
   "Intake",
@@ -50,6 +50,8 @@ const SCHOOL_BASELINE_MODULES = [
 ];
 
 const MODULE_ALIASES = {
+  Stream: ["Stream", "Section"],
+  Section: ["Section", "Stream"],
   FeeStructure: ["FeeStructure", "Fees"],
   Fees: ["Fees", "FeeStructure"],
   ReportCard: ["ReportCard", "Transcript"],

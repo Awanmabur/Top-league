@@ -5,6 +5,9 @@ const ctrl = require("../../../controllers/tenant/admin/transcriptsController");
 
 router.get("/", ctrl.list);
 
+router.post("/bulk-generate", ctrl.bulkGenerate);
+router.post("/bulk", ctrl.bulk);
+
 router.post("/", ctrl.transcriptRules, ctrl.create);
 router.post("/:id", ctrl.transcriptRules, ctrl.update);
 
@@ -12,8 +15,6 @@ router.post("/:id/clone", ctrl.clone);
 router.post("/:id/issue", ctrl.issue);
 router.post("/:id/revoke", ctrl.revoke);
 router.post("/:id/delete", ctrl.remove);
-
-router.post("/bulk", ctrl.bulk);
 
 router.get("/:id/print", ctrl.printView);
 

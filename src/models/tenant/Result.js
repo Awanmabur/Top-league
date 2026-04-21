@@ -9,6 +9,12 @@ module.exports = (connection) => {
       student: { type: Schema.Types.ObjectId, ref: "Student", required: true, index: true },
 
       classGroup: { type: Schema.Types.ObjectId, ref: "Class", required: true, index: true },
+      sectionId: { type: Schema.Types.ObjectId, ref: "Section", default: null, index: true },
+      sectionName: { type: String, default: "", trim: true },
+      sectionCode: { type: String, default: "", trim: true },
+      streamId: { type: Schema.Types.ObjectId, ref: "Stream", default: null, index: true },
+      streamName: { type: String, default: "", trim: true },
+      streamCode: { type: String, default: "", trim: true },
       subject: { type: Schema.Types.ObjectId, ref: "Subject", default: null, index: true },
 
       academicYear: { type: String, default: "", trim: true, index: true },
@@ -30,6 +36,7 @@ module.exports = (connection) => {
   );
 
   ResultSchema.index({ exam: 1, student: 1 }, { unique: true });
+  ResultSchema.index({ classGroup: 1, sectionId: 1, streamId: 1, academicYear: 1, term: 1 });
 
   return connection.model("Result", ResultSchema);
 };

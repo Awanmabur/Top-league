@@ -14,22 +14,22 @@ const upload = multer({
 
 // List: GET /admin/academic-calendar
 router.get("/", ctrl.list);
+router.get("/export", ctrl.exportCsv);
 
 // Create: POST /admin/academic-calendar
 router.post("/", ctrl.eventRules, ctrl.create);
 
-// Update: POST /admin/academic-calendar/:id
-router.post("/:id", ctrl.eventRules, ctrl.update);
+// Bulk
+router.post("/bulk-archive", ctrl.bulkArchive);
+
+// Import
+router.post("/import", upload.single("file"), ctrl.importCsv);
 
 // Archive/Delete
 router.post("/:id/archive", ctrl.archive);
 router.post("/:id/delete", ctrl.remove);
 
-// Bulk
-router.post("/bulk-archive", ctrl.bulkArchive);
-
-// Import/Export
-router.post("/import", upload.single("file"), ctrl.importCsv);
-router.get("/export", ctrl.exportCsv);
+// Update: POST /admin/academic-calendar/:id
+router.post("/:id", ctrl.eventRules, ctrl.update);
 
 module.exports = router;

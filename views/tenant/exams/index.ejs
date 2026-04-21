@@ -26,7 +26,7 @@
     .bad{background:#fee2e2;color:#b91c1c}
     .info{background:#eef2ff;color:#3730a3}
     .table-wrap{overflow-x:auto;overflow-y:hidden;border:1px solid rgba(13,64,96,.10);border-radius:12px;max-width:100%;-webkit-overflow-scrolling:touch}
-    table{width:100%;min-width:1350px;border-collapse:separate;border-spacing:0;background:#fff;table-layout:fixed}
+    table{width:100%;min-width:1650px;border-collapse:separate;border-spacing:0;background:#fff;table-layout:fixed}
     th,td{padding:10px 12px;border-bottom:1px solid rgba(13,64,96,.08);vertical-align:middle}
     th{font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;text-align:left;background:rgba(13,64,96,.03);position:sticky;top:0;z-index:1;white-space:nowrap}
     tr:hover td{background:rgba(10,111,191,.04)}
@@ -34,6 +34,8 @@
     .col-check{width:48px}
     .col-title{width:260px}
     .col-class{width:160px}
+    .col-section{width:140px}
+    .col-stream{width:140px}
     .col-subject{width:180px}
     .col-type{width:120px}
     .col-date{width:180px}
@@ -109,18 +111,26 @@
       </div>
 
       <section class="card" style="margin-top:12px;">
-        <form class="toolbar" method="GET" action="/tenant/exams">
+        <form class="toolbar" method="GET" action="/tenant/exams" data-academic-selector>
           <div class="left">
             <input class="input" name="q" value="<%= query?.q || '' %>" placeholder="Search exam, code, room..." />
 
-            <select class="select" name="classGroup">
+            <select class="select" name="classGroup" data-role="class" data-placeholder="All Classes">
               <option value="">All Classes</option>
               <% (classes || []).forEach(function(c){ %>
                 <option value="<%= String(c._id) %>" <%= String(query?.classGroup || '') === String(c._id) ? 'selected' : '' %>><%= c.name || c.code || 'Class' %></option>
               <% }) %>
             </select>
 
-            <select class="select" name="subject">
+            <select class="select" name="sectionId" data-role="section" data-placeholder="All Sections" data-selected="<%= query?.sectionId || '' %>">
+              <option value="">All Sections</option>
+            </select>
+
+            <select class="select" name="streamId" data-role="stream" data-placeholder="All Streams" data-selected="<%= query?.streamId || '' %>">
+              <option value="">All Streams</option>
+            </select>
+
+            <select class="select" name="subject" data-role="subject" data-placeholder="All Subjects">
               <option value="">All Subjects</option>
               <% (subjects || []).forEach(function(s){ %>
                 <option value="<%= String(s._id) %>" <%= String(query?.subject || '') === String(s._id) ? 'selected' : '' %>><%= s.title || s.code || 'Subject' %></option>
@@ -193,6 +203,8 @@
                     <th class="col-check"><input type="checkbox" id="checkAll" /></th>
                     <th class="col-title">Exam</th>
                     <th class="col-class">Class</th>
+                    <th class="col-section">Section</th>
+                    <th class="col-stream">Stream</th>
                     <th class="col-subject">Subject</th>
                     <th class="col-type">Type</th>
                     <th class="col-date">Date</th>
@@ -217,6 +229,8 @@
                   const params = new URLSearchParams();
                   if (query?.q) params.set("q", query.q);
                   if (query?.classGroup) params.set("classGroup", query.classGroup);
+                  if (query?.sectionId) params.set("sectionId", query.sectionId);
+                  if (query?.streamId) params.set("streamId", query.streamId);
                   if (query?.subject) params.set("subject", query.subject);
                   if (query?.examType) params.set("examType", query.examType);
                   if (query?.status) params.set("status", query.status);
@@ -265,7 +279,7 @@
         <button class="btn-xs" type="button" data-close-modal="mEdit">×</button>
       </div>
 
-      <form id="examForm" method="POST" action="/tenant/exams">
+      <form id="examForm" method="POST" action="/tenant/exams" data-academic-selector>
         <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
         <div class="modal-body">
           <div class="form-grid">
@@ -281,7 +295,7 @@
             </div>
 
             <div class="field"><label>Class</label>
-              <select class="select" id="mClassGroup" name="classGroup" required>
+              <select class="select" id="mClassGroup" name="classGroup" data-role="class" data-placeholder="Select Class" required>
                 <option value="">— Select Class —</option>
                 <% (classes || []).forEach(function(c){ %>
                   <option value="<%= String(c._id) %>"><%= c.name || c.code || 'Class' %></option>
@@ -289,8 +303,20 @@
               </select>
             </div>
 
+            <div class="field"><label>Section</label>
+              <select class="select" id="mSection" name="sectionId" data-role="section" data-placeholder="Whole Class">
+                <option value="">â€” Whole Class â€”</option>
+              </select>
+            </div>
+
+            <div class="field"><label>Stream</label>
+              <select class="select" id="mStream" name="streamId" data-role="stream" data-placeholder="All Streams">
+                <option value="">â€” All Streams â€”</option>
+              </select>
+            </div>
+
             <div class="field"><label>Subject</label>
-              <select class="select" id="mSubject" name="subject" required>
+              <select class="select" id="mSubject" name="subject" data-role="subject" data-placeholder="Select Subject" required>
                 <option value="">— Select Subject —</option>
                 <% (subjects || []).forEach(function(s){ %>
                   <option value="<%= String(s._id) %>"><%= s.title || s.code || 'Subject' %></option>
@@ -307,10 +333,10 @@
               </select>
             </div>
 
-            <div class="field"><label>Academic Year</label><input class="input" id="mAcademicYear" name="academicYear" /></div>
+            <div class="field"><label>Academic Year</label><input class="input" id="mAcademicYear" name="academicYear" data-role="academicYear" /></div>
 
             <div class="field"><label>Term</label>
-              <select class="select" id="mTerm" name="term">
+              <select class="select" id="mTerm" name="term" data-role="term">
                 <option value="1">Term 1</option>
                 <option value="2">Term 2</option>
                 <option value="3">Term 3</option>
@@ -363,6 +389,8 @@
           <div class="field"><label>Title</label><div class="view-input" id="vTitle">—</div></div>
           <div class="field"><label>Code</label><div class="view-input" id="vCode">—</div></div>
           <div class="field"><label>Class</label><div class="view-input" id="vClassGroup">—</div></div>
+          <div class="field"><label>Section</label><div class="view-input" id="vSection">—</div></div>
+          <div class="field"><label>Stream</label><div class="view-input" id="vStream">—</div></div>
           <div class="field"><label>Subject</label><div class="view-input" id="vSubject">—</div></div>
           <div class="field"><label>Teacher</label><div class="view-input" id="vTeacher">—</div></div>
           <div class="field"><label>Academic</label><div class="view-input" id="vAcademic">—</div></div>
@@ -406,6 +434,10 @@
       code: e.code || '',
       classGroupId: e.classGroup?._id ? String(e.classGroup._id) : '',
       className: e.classGroup?.name || '',
+      sectionId: e.sectionId?._id ? String(e.sectionId._id) : String(e.sectionId || ''),
+      sectionName: e.sectionName || e.sectionId?.name || '',
+      streamId: e.streamId?._id ? String(e.streamId._id) : String(e.streamId || ''),
+      streamName: e.streamName || e.streamId?.name || '',
       subjectId: e.subject?._id ? String(e.subject._id) : '',
       subjectName: e.subject?.title || e.subject?.code || '',
       teacherId: e.teacher?._id ? String(e.teacher._id) : '',
@@ -427,7 +459,13 @@
     };
   })) %></textarea>
 
+  <textarea id="classesData" class="json-data" aria-hidden="true"><%- JSON.stringify(classes || []) %></textarea>
+  <textarea id="sectionsData" class="json-data" aria-hidden="true"><%- JSON.stringify(sections || []) %></textarea>
+  <textarea id="streamsData" class="json-data" aria-hidden="true"><%- JSON.stringify(streams || []) %></textarea>
+  <textarea id="subjectOptionsData" class="json-data" aria-hidden="true"><%- JSON.stringify(subjectOptions || subjects || []) %></textarea>
+
   <script src="/js/navbar.js"></script>
+  <script src="/js/academic-selector.js"></script>
   <script src="/js/exams.js"></script>
 </body>
 </html>

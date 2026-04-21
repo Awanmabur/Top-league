@@ -14,6 +14,13 @@ function isOid(id) {
   return mongoose.Types.ObjectId.isValid(String(id || ""));
 }
 
+const CASE_STATUSES = ["open", "investigating", "hearing", "resolved", "dismissed"];
+
+function normalizeStatus(value, fallback = "open") {
+  const status = safeStr(value).toLowerCase();
+  return CASE_STATUSES.includes(status) ? status : fallback;
+}
+
 async function softDeleteDoc(doc, userId) {
   if (typeof doc.softDelete === "function") return doc.softDelete();
   doc.isDeleted = true;
@@ -186,7 +193,7 @@ module.exports = {
       const incidentDate = safeStr(req.body.incidentDate);
       const category = safeStr(req.body.category);
       const description = safeStr(req.body.description);
-      const status = safeStr(req.body.status) || "open";
+      const status = normalizeStatus(req.body.status, "open");
       const note = safeStr(req.body.note);
 
       if (!isOid(student) || !incidentDate || !category || !description) {
@@ -245,7 +252,7 @@ module.exports = {
       const incidentDate = safeStr(req.body.incidentDate);
       const category = safeStr(req.body.category);
       const description = safeStr(req.body.description);
-      const status = safeStr(req.body.status);
+      const status = normalizeStatus(req.body.status, row.status || "open");
       const note = safeStr(req.body.note);
 
       if (!student || !incidentDate || !category || !description) {

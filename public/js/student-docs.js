@@ -1,18 +1,27 @@
 (function () {
   const $ = (id) => document.getElementById(id);
 
-  function readDocsData() {
-    const el = $("docsData");
-    if (!el) return [];
+  function readJsonScript(id, fallback) {
+    const el = $(id);
+    if (!el) return fallback || [];
     try {
-      return JSON.parse(el.textContent || "[]");
+      return JSON.parse(el.textContent || JSON.stringify(fallback || []));
     } catch (err) {
-      console.error("Failed to parse docs data:", err);
-      return [];
+      console.error(`Failed to parse ${id}:`, err);
+      return fallback || [];
     }
   }
 
-  const DOCS = readDocsData();
+  const DOCS = readJsonScript("docsData", []);
+  const STUDENT_SUMMARIES = readJsonScript("studentDocSummariesData", []);
+  const SUMMARY_DOCS = STUDENT_SUMMARIES.flatMap((row) => {
+    const docs = Array.isArray(row.docs) ? row.docs : [];
+    return docs.map((doc) => ({
+      ...doc,
+      studentId: doc.studentId || row.id || "",
+      studentLabel: row.label || "",
+    }));
+  });
   if (!$("tbodyDocs")) return;
 
   const state = {
@@ -76,6 +85,21 @@
     if (t === "certificate") return '<span class="pill warn"><i class="fa-solid fa-certificate"></i> Certificate</span>';
     if (t === "id") return '<span class="pill info"><i class="fa-solid fa-id-card"></i> ID</span>';
     return '<span class="pill bad"><i class="fa-solid fa-file"></i> Other</span>';
+  }
+
+  function titleForType(type) {
+    return {
+      passport: "Passport Photo",
+      id: "National ID / Passport",
+      transcript: "Transcript / Results Slip",
+      certificate: "Certificate",
+      other: "Other Document",
+    }[String(type || "").toLowerCase()] || "Student Document";
+  }
+
+  function findDoc(id) {
+    const target = String(id || "");
+    return DOCS.find((x) => x.id === target) || SUMMARY_DOCS.find((x) => x.id === target) || null;
   }
 
   function renderTable() {
@@ -255,6 +279,25 @@
     $("mType").value = "certificate";
   });
 
+  document.querySelectorAll(".missingUpload").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      openEditor();
+      $("mStudent").value = btn.dataset.student || "";
+      $("mType").value = btn.dataset.type || "other";
+      $("mTitleInput").value = titleForType(btn.dataset.type);
+      $("mFile").focus();
+    });
+  });
+
+  if ($("tbodyStudentDocs")) {
+    $("tbodyStudentDocs").addEventListener("click", function (e) {
+      const editBtn = e.target.closest(".docMiniEdit");
+      if (!editBtn) return;
+      const d = findDoc(editBtn.dataset.doc);
+      if (d) openEditor(d);
+    });
+  }
+
   $("btnExport").addEventListener("click", exportDocs);
   $("btnPrint").addEventListener("click", function () {
     window.print();
@@ -264,7 +307,7 @@
     const tr = e.target.closest("tr[data-id]");
     if (!tr) return;
 
-    const d = DOCS.find((x) => x.id === tr.dataset.id);
+    const d = findDoc(tr.dataset.id);
     if (!d) return;
 
     if (e.target.closest(".actions") || e.target.closest(".btn-xs")) {
@@ -283,7 +326,7 @@
   });
 
   $("viewEditBtn").addEventListener("click", function () {
-    const d = DOCS.find((x) => x.id === state.currentViewId);
+    const d = findDoc(state.currentViewId);
     if (!d) return;
     closeModal("mView");
     openEditor(d);

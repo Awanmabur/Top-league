@@ -9,6 +9,12 @@ module.exports = (connection) => {
       term: { type: Number, default: 1, min: 1, max: 3, index: true },
 
       classGroup: { type: Schema.Types.ObjectId, ref: "Class", required: true, index: true },
+      sectionId: { type: Schema.Types.ObjectId, ref: "Section", default: null, index: true },
+      sectionName: { type: String, default: "", trim: true },
+      sectionCode: { type: String, default: "", trim: true },
+      streamId: { type: Schema.Types.ObjectId, ref: "Stream", default: null, index: true },
+      streamName: { type: String, default: "", trim: true },
+      streamCode: { type: String, default: "", trim: true },
       subject: { type: Schema.Types.ObjectId, ref: "Subject", required: true, index: true },
       teacher: { type: Schema.Types.ObjectId, ref: "Staff", default: null, index: true },
 
@@ -43,6 +49,7 @@ module.exports = (connection) => {
   );
 
   TimetableEntrySchema.index({ classGroup: 1, dayOfWeek: 1, startMinutes: 1, academicYear: 1, term: 1 });
+  TimetableEntrySchema.index({ classGroup: 1, sectionId: 1, streamId: 1, academicYear: 1, term: 1 });
   TimetableEntrySchema.index({ teacher: 1, dayOfWeek: 1, startMinutes: 1, academicYear: 1, term: 1 });
   TimetableEntrySchema.index({ room: 1, dayOfWeek: 1, startMinutes: 1, academicYear: 1, term: 1 });
 

@@ -84,7 +84,7 @@
 
     table{
       width:100%;
-      min-width:1600px;
+      min-width:1880px;
       border-collapse:separate;
       border-spacing:0;
       background:#fff;
@@ -118,6 +118,8 @@
     .col-reg{width:140px}
     .col-exam{width:220px}
     .col-class{width:180px}
+    .col-section{width:150px}
+    .col-stream{width:150px}
     .col-subject{width:220px}
     .col-score{width:120px}
     .col-grade{width:100px}
@@ -463,7 +465,7 @@
       .toolbar .right{width:100%}
       .toolbar .left > *,
       .toolbar .right > *{max-width:100%}
-      table{min-width:1600px}
+      table{min-width:1880px}
     }
 
     @media print{
@@ -480,7 +482,7 @@
 </head>
 <body>
   <div class="app">
-    <%- include("../partials/navbar") %>
+    <%- include("../../partials/navbar") %>
 
     <main class="main">
       <% if (messages?.success?.length || messages?.error?.length) { %>
@@ -501,7 +503,7 @@
         </div>
 
         <div class="top-actions">
-          <a class="btn light" href="/tenant/results/export<%= exportQueryString ? ('?' + exportQueryString) : '' %>">
+          <a class="btn light" href="/admin/results/export.csv<%= exportQueryString ? ('?' + exportQueryString) : '' %>">
             <i class="fa-solid fa-file-arrow-down"></i> Export CSV
           </a>
           <button class="btn light" id="btnImport" type="button">
@@ -540,7 +542,7 @@
       </div>
 
       <section class="card" style="margin-top:12px;">
-        <form class="toolbar" method="GET" action="/tenant/results">
+        <form class="toolbar" method="GET" action="/admin/results" data-academic-selector>
           <div class="left">
             <input class="input" name="q" value="<%= query?.q || '' %>" placeholder="Search student, exam..." />
 
@@ -553,7 +555,7 @@
               <% }) %>
             </select>
 
-            <select class="select" name="classGroup">
+            <select class="select" name="classGroup" data-role="class" data-placeholder="All Classes">
               <option value="">All Classes</option>
               <% (classes || []).forEach(function(c){ %>
                 <option value="<%= String(c._id) %>" <%= String(query?.classGroup || '') === String(c._id) ? 'selected' : '' %>>
@@ -562,7 +564,15 @@
               <% }) %>
             </select>
 
-            <select class="select" name="subject">
+            <select class="select" name="sectionId" data-role="section" data-placeholder="All Sections" data-selected="<%= query?.sectionId || '' %>">
+              <option value="">All Sections</option>
+            </select>
+
+            <select class="select" name="streamId" data-role="stream" data-placeholder="All Streams" data-selected="<%= query?.streamId || '' %>">
+              <option value="">All Streams</option>
+            </select>
+
+            <select class="select" name="subject" data-role="subject" data-placeholder="All Subjects">
               <option value="">All Subjects</option>
               <% (subjects || []).forEach(function(s){ %>
                 <option value="<%= String(s._id) %>" <%= String(query?.subject || '') === String(s._id) ? 'selected' : '' %>>
@@ -595,7 +605,7 @@
             <button class="btn light" id="btnBulk" type="button">
               <i class="fa-solid fa-layer-group"></i> Bulk
             </button>
-            <a class="btn light" href="/tenant/results">
+            <a class="btn light" href="/admin/results">
               <i class="fa-solid fa-rotate-left"></i> Reset
             </a>
             <button class="btn primary" type="submit">
@@ -649,6 +659,8 @@
                     <th class="col-reg">Reg No</th>
                     <th class="col-exam">Exam</th>
                     <th class="col-class">Class</th>
+                    <th class="col-section">Section</th>
+                    <th class="col-stream">Stream</th>
                     <th class="col-subject">Subject</th>
                     <th class="col-score">Score</th>
                     <th class="col-grade">Grade</th>
@@ -699,6 +711,14 @@
               <div class="preview-box">
                 <div class="preview-label">Class</div>
                 <div class="preview-value" id="pvClass">—</div>
+              </div>
+              <div class="preview-box">
+                <div class="preview-label">Section</div>
+                <div class="preview-value" id="pvSection">—</div>
+              </div>
+              <div class="preview-box">
+                <div class="preview-label">Stream</div>
+                <div class="preview-value" id="pvStream">—</div>
               </div>
               <div class="preview-box">
                 <div class="preview-label">Subject</div>
@@ -786,7 +806,7 @@
         </button>
       </div>
 
-      <form id="resultForm" method="POST" action="/tenant/results">
+      <form id="resultForm" method="POST" action="/admin/results">
         <% if (csrfToken) { %>
           <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <% } %>
@@ -816,6 +836,21 @@
                 <option value="draft">Draft</option>
                 <option value="published">Published</option>
               </select>
+            </div>
+
+            <div class="field">
+              <label>Class</label>
+              <div class="view-input" id="mClassScope">—</div>
+            </div>
+
+            <div class="field">
+              <label>Section</label>
+              <div class="view-input" id="mSectionScope">—</div>
+            </div>
+
+            <div class="field">
+              <label>Stream</label>
+              <div class="view-input" id="mStreamScope">—</div>
             </div>
 
             <div class="field">
@@ -894,6 +929,16 @@
           <div class="field">
             <label>Class</label>
             <div class="view-input" id="vClass">—</div>
+          </div>
+
+          <div class="field">
+            <label>Section</label>
+            <div class="view-input" id="vSection">—</div>
+          </div>
+
+          <div class="field">
+            <label>Stream</label>
+            <div class="view-input" id="vStream">—</div>
           </div>
 
           <div class="field">
@@ -985,7 +1030,7 @@
         </button>
       </div>
 
-      <form method="POST" action="/tenant/results/import" enctype="multipart/form-data">
+      <form method="POST" action="/admin/results/import" enctype="multipart/form-data">
         <% if (csrfToken) { %>
           <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <% } %>
@@ -1036,7 +1081,7 @@
     <% } %>
   </form>
 
-  <form id="bulkForm" method="POST" action="/tenant/results/bulk" style="display:none;">
+  <form id="bulkForm" method="POST" action="/admin/results/bulk" style="display:none;">
     <% if (csrfToken) { %>
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
     <% } %>
@@ -1045,8 +1090,13 @@
   </form>
 
   <textarea id="resultsData" class="json-data" aria-hidden="true"><%- JSON.stringify(resultsData || []) %></textarea>
+  <textarea id="classesData" class="json-data" aria-hidden="true"><%- JSON.stringify(classes || []) %></textarea>
+  <textarea id="sectionsData" class="json-data" aria-hidden="true"><%- JSON.stringify(sections || []) %></textarea>
+  <textarea id="streamsData" class="json-data" aria-hidden="true"><%- JSON.stringify(streams || []) %></textarea>
+  <textarea id="subjectOptionsData" class="json-data" aria-hidden="true"><%- JSON.stringify(subjectOptions || subjects || []) %></textarea>
 
   <script src="/js/navbar.js"></script>
+  <script src="/js/academic-selector.js"></script>
   <script src="/js/results.js"></script>
 </body>
 </html>

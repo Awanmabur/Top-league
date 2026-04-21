@@ -8,6 +8,7 @@
   const bulkActionVal = $("bulkActionVal");
   const bulkIdsVal = $("bulkIdsVal");
   const bulkForm = $("bulkForm");
+  const bulkGeneratePanel = $("bulkGeneratePanel");
   const issueForm = $("issueForm");
   const revokeForm = $("revokeForm");
   const deleteForm = $("deleteForm");
@@ -16,6 +17,8 @@
   const trModalTitle = $("trModalTitle");
   const mStudent = $("mStudent");
   const mClassGroup = $("mClassGroup");
+  const mSectionId = $("mSectionId");
+  const mStreamId = $("mStreamId");
   const mKind = $("mKind");
   const mRangeMode = $("mRangeMode");
   const mAYFrom = $("mAYFrom");
@@ -63,12 +66,18 @@
     });
   }
 
+  function refreshAcademicSelector() {
+    window.AcademicSelector?.refresh(document);
+  }
+
   function resetModal() {
     if (!trForm) return;
-    trForm.action = "/tenant/transcripts";
+    trForm.action = "/admin/transcripts";
     mId.value = "";
     mStudent.value = "";
     mClassGroup.value = "";
+    if (mSectionId) mSectionId.value = "";
+    if (mStreamId) mStreamId.value = "";
     mKind.value = "official";
     mRangeMode.value = "auto";
     mAYFrom.value = "";
@@ -81,6 +90,7 @@
     mTeacherComment.value = "";
     mHeadTeacherComment.value = "";
     mStatus.value = "draft";
+    refreshAcademicSelector();
     toggleRangeFields();
   }
 
@@ -103,10 +113,12 @@
     const id = btn.dataset.id;
     mId.value = id;
     mStatus.value = status;
-    trForm.action = `/tenant/transcripts/${encodeURIComponent(id)}`;
+    trForm.action = `/admin/transcripts/${encodeURIComponent(id)}`;
 
     mStudent.value = btn.dataset.student || "";
     mClassGroup.value = btn.dataset.classgroup || "";
+    if (mSectionId) mSectionId.value = btn.dataset.sectionid || "";
+    if (mStreamId) mStreamId.value = btn.dataset.streamid || "";
     mKind.value = btn.dataset.kind || "official";
     mRangeMode.value = btn.dataset.rangemode || "auto";
     mAYFrom.value = btn.dataset.ayfrom || "";
@@ -120,6 +132,7 @@
     mHeadTeacherComment.value = btn.dataset.headteachercomment || "";
 
     toggleRangeFields();
+    refreshAcademicSelector();
     open(trModal);
   }
 
@@ -135,7 +148,7 @@
 
   function issue(id) {
     if (!window.confirm("Issue this transcript? It will be snapshotted and locked.")) return;
-    issueForm.action = `/tenant/transcripts/${encodeURIComponent(id)}/issue`;
+    issueForm.action = `/admin/transcripts/${encodeURIComponent(id)}/issue`;
     issueForm.submit();
   }
 
@@ -143,7 +156,7 @@
     const reason = (window.prompt("Revoke reason (optional):") || "").trim().slice(0, 300);
     if (!window.confirm("Revoke this transcript?")) return;
 
-    revokeForm.action = `/tenant/transcripts/${encodeURIComponent(id)}/revoke`;
+    revokeForm.action = `/admin/transcripts/${encodeURIComponent(id)}/revoke`;
 
     let inp = revokeForm.querySelector('input[name="reason"]');
     if (!inp) {
@@ -158,7 +171,7 @@
 
   function del(id) {
     if (!window.confirm("Delete this transcript permanently?")) return;
-    deleteForm.action = `/tenant/transcripts/${encodeURIComponent(id)}/delete`;
+    deleteForm.action = `/admin/transcripts/${encodeURIComponent(id)}/delete`;
     deleteForm.submit();
   }
 
@@ -181,6 +194,12 @@
     bulkForm.submit();
   }
 
+  function toggleBulkGenerate() {
+    if (!bulkGeneratePanel) return;
+    bulkGeneratePanel.classList.toggle("show");
+    refreshAcademicSelector();
+  }
+
   document.addEventListener("click", function (e) {
     const btn = e.target.closest("[data-action]");
     if (!btn) return;
@@ -188,6 +207,7 @@
     const action = btn.dataset.action;
 
     if (action === "openCreate") return openCreate();
+    if (action === "toggleBulkGenerate") return toggleBulkGenerate();
     if (action === "closeModal") return close(trModal);
     if (action === "saveTranscript") return saveTranscript();
     if (action === "openEdit") return openEditFromBtn(btn);
