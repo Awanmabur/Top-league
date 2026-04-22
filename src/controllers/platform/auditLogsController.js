@@ -2,6 +2,10 @@ const { platformConnection } = require("../../config/db");
 
 const AuditLog = require("../../models/platform/AuditLog")(platformConnection);
 
+function escRegex(value) {
+  return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 module.exports = {
   listAuditLogs: async (req, res) => {
     try {
@@ -11,15 +15,17 @@ module.exports = {
 
       if (action) filter.action = action;
       if (q) {
+        const rx = new RegExp(escRegex(q), "i");
         filter.$or = [
-          { action: new RegExp(q, "i") },
-          { description: new RegExp(q, "i") },
-          { actorName: new RegExp(q, "i") },
-          { entityType: new RegExp(q, "i") },
+          { action: rx },
+          { description: rx },
+          { actorName: rx },
+          { entityType: rx },
         ];
       }
 
       const logs = await AuditLog.find(filter)
+        .select("createdAt actorName actorRole action entityType entityId description ipAddress")
         .sort({ createdAt: -1 })
         .limit(300)
         .lean();
@@ -30,7 +36,7 @@ module.exports = {
         error: null,
       });
     } catch (err) {
-      console.error("❌ listAuditLogs error:", err);
+      console.error("listAuditLogs error:", err.message || err);
       return res.status(500).render("platform/audit-logs/index", {
         logs: [],
         filters: { q: "", action: "" },
@@ -55,7 +61,7 @@ module.exports = {
         error: null,
       });
     } catch (err) {
-      console.error("❌ showAuditLog error:", err);
+      console.error("showAuditLog error:", err.message || err);
       return res.status(500).render("platform/audit-logs/show", {
         log: null,
         error: "Failed to load audit log.",

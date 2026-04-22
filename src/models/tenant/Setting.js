@@ -15,7 +15,6 @@ module.exports = function SettingModel(conn) {
     { timestamps: true }
   );
 
-  SettingSchema.index({ key: 1 }, { unique: true });
   SettingSchema.index({ isDeleted: 1, updatedAt: -1 });
 
   return conn.models.Setting || conn.model("Setting", SettingSchema);

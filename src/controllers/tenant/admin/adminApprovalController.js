@@ -24,7 +24,9 @@ module.exports = {
     user.status = "active";
     await user.save();
 
-    console.log("User approved with password:", password);
+    if (process.env.DEBUG_AUTH_TOKENS === "1") {
+      console.log("User approved with password:", password);
+    }
 
     // TODO: send email here
 

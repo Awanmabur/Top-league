@@ -1,5 +1,9 @@
 require("dotenv").config({ quiet: true });
 
+if (process.env.NODE_DEPRECATION_LOGS !== "1") {
+  process.noDeprecation = true;
+}
+
 const express = require("express");
 const path = require("path");
 const helmet = require("helmet");
@@ -14,7 +18,7 @@ const session = require("express-session");
 const MongoStore = require("connect-mongo");
 const flash = require("connect-flash");
 
-const { waitForPlatform } = require("./config/db");
+const { platformConnection, waitForPlatform } = require("./config/db");
 
 // Middlewares
 const tenantResolver = require("./middleware/tenant/tenantResolver");
@@ -27,6 +31,30 @@ const tenantRouter = require("./routes/tenant/tenant");
 const app = express();
 const isProd = process.env.NODE_ENV === "production";
 const PLATFORM_PATHS = ["/platform", "/super-admin"];
+const SESSION_TTL_SECONDS = 7 * 24 * 60 * 60;
+const SESSION_TOUCH_AFTER_SECONDS = 24 * 60 * 60;
+
+function isReadOnlyPublicSchoolPage(req) {
+  const method = String(req.method || "GET").toUpperCase();
+  return (method === "GET" || method === "HEAD") && /^\/schools(?:\/|$)/.test(String(req.path || ""));
+}
+
+function dbStateLabel(connection) {
+  const states = {
+    0: "disconnected",
+    1: "connected",
+    2: "connecting",
+    3: "disconnecting",
+  };
+
+  return states[connection?.readyState] || "unknown";
+}
+
+function logStartup(port) {
+  console.log(`Classic Academy running on port ${port} in ${process.env.NODE_ENV || "development"} mode`);
+  console.log(`Platform DB: ${dbStateLabel(platformConnection)}`);
+  console.log("Tenant DBs: connect on demand");
+}
 
 function requireEnv(name, options = {}) {
   const value = process.env[name];
@@ -48,6 +76,12 @@ function validateCoreEnv() {
 
 validateCoreEnv();
 app.disable("x-powered-by");
+
+const sessionStore = MongoStore.create({
+  client: platformConnection.getClient(),
+  ttl: SESSION_TTL_SECONDS,
+  touchAfter: SESSION_TOUCH_AFTER_SECONDS,
+});
 
 // ======================================
 // VIEW ENGINE
@@ -141,7 +175,7 @@ app.use(
   }),
 );
 
-if (!isProd) {
+if (!isProd && process.env.HTTP_LOGS === "1") {
   app.use(morgan("dev"));
 }
 
@@ -174,16 +208,13 @@ app.use(
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    store: MongoStore.create({
-      mongoUrl: process.env.PLATFORM_DB_URI,
-      ttl: 7 * 24 * 60 * 60,
-    }),
+    store: sessionStore,
     cookie: {
       path: "/",
       secure: isProd,
       httpOnly: true,
       sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      maxAge: SESSION_TTL_SECONDS * 1000,
     },
   }),
 );
@@ -211,29 +242,39 @@ app.use(tenantResolver);
 ======================================================= */
 const tenantStack = express.Router();
 
-tenantStack.use(
-  session({
+const tenantSession = session({
     name: "tenant.sid",
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    store: MongoStore.create({
-      mongoUrl: process.env.PLATFORM_DB_URI,
-      ttl: 7 * 24 * 60 * 60,
-    }),
+    store: sessionStore,
     cookie: {
       path: "/",
       secure: isProd,
       httpOnly: true,
       sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      maxAge: SESSION_TTL_SECONDS * 1000,
     },
-  }),
-);
-
-tenantStack.use(flash());
+  });
 
 tenantStack.use((req, res, next) => {
+  if (isReadOnlyPublicSchoolPage(req)) return next();
+  return tenantSession(req, res, next);
+});
+
+const tenantFlash = flash();
+
+tenantStack.use((req, res, next) => {
+  if (isReadOnlyPublicSchoolPage(req)) return next();
+  return tenantFlash(req, res, next);
+});
+
+tenantStack.use((req, res, next) => {
+  if (isReadOnlyPublicSchoolPage(req)) {
+    res.locals.flash = { success: [], error: [], info: [], warning: [] };
+    return next();
+  }
+
   const f = typeof req.flash === "function" ? req.flash.bind(req) : null;
   res.locals.flash = {
     success: f ? f("success") : [],
@@ -270,12 +311,11 @@ app.use(errorHandler);
     const port = process.env.PORT || 3000;
 
     app.listen(port, () => {
-      console.log(
-        `Classic Academy running on port ${port} in ${process.env.NODE_ENV || "development"} mode`,
-      );
+      logStartup(port);
     });
   } catch (err) {
-    console.error("Failed to start server:", err);
+    console.error(`Platform DB: ${dbStateLabel(platformConnection)}`);
+    console.error("Failed to start server:", err.message || err);
     process.exit(1);
   }
 })();

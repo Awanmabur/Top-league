@@ -59,6 +59,8 @@ module.exports = function PaymentModel(conn) {
   PaymentSchema.index({ invoiceId: 1 });
   PaymentSchema.index({ method: 1, status: 1 });
   PaymentSchema.index({ isDeleted: 1, createdAt: -1 });
+  PaymentSchema.index({ isDeleted: 1, status: 1, paymentDate: -1 });
+  PaymentSchema.index({ isDeleted: 1, method: 1, status: 1, paymentDate: -1 });
 
   return conn.models.Payment || conn.model("Payment", PaymentSchema);
 };

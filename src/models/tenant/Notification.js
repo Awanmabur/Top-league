@@ -54,6 +54,7 @@ module.exports = (connection) => {
 
   NotificationSchema.index({ createdAt: -1 });
   NotificationSchema.index({ audience: 1, isRead: 1, createdAt: -1 });
+  NotificationSchema.index({ isDeleted: 1, audience: 1, isRead: 1, createdAt: -1 });
   NotificationSchema.index(
     { userId: 1, isRead: 1, createdAt: -1 },
     { partialFilterExpression: { userId: { $type: "objectId" } } }

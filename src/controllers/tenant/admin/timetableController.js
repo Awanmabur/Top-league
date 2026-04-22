@@ -21,6 +21,10 @@ function safeStr(v, max = 120) {
   return String(v || "").trim().slice(0, max);
 }
 
+function escapeRegExp(value) {
+  return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function isObjId(v) {
   return mongoose.Types.ObjectId.isValid(String(v || ""));
 }
@@ -168,7 +172,7 @@ module.exports = {
 
   list: async (req, res) => {
     try {
-      const { TimetableEntry, Class, Subject, Staff } = req.models;
+      const { TimetableEntry, Staff } = req.models;
 
       const q = safeStr(req.query.q, 120);
       const academicYear = safeStr(req.query.academicYear, 20);
@@ -192,14 +196,33 @@ module.exports = {
       if (["active", "inactive", "archived"].includes(status)) filter.status = status;
 
       if (q) {
+        const rx = escapeRegExp(q);
         filter.$or = [
-          { room: { $regex: q, $options: "i" } },
-          { campus: { $regex: q, $options: "i" } },
-          { note: { $regex: q, $options: "i" } },
+          { room: { $regex: rx, $options: "i" } },
+          { campus: { $regex: rx, $options: "i" } },
+          { note: { $regex: rx, $options: "i" } },
         ];
       }
 
-      const total = await TimetableEntry.countDocuments(filter);
+      const kpiFilter = { ...filter };
+      delete kpiFilter.status;
+
+      const [total, activeCount, inactiveCount, archivedCount, staffList, academicYearsRaw, scopeLists] = await Promise.all([
+        TimetableEntry.countDocuments(filter),
+        TimetableEntry.countDocuments({ ...kpiFilter, status: "active" }),
+        TimetableEntry.countDocuments({ ...kpiFilter, status: "inactive" }),
+        TimetableEntry.countDocuments({ ...kpiFilter, status: "archived" }),
+        Staff
+          ? Staff.find({})
+              .select("fullName name role email")
+              .sort({ fullName: 1, name: 1 })
+              .limit(500)
+              .lean()
+          : [],
+        TimetableEntry.distinct("academicYear"),
+        loadAcademicScopeLists(req),
+      ]);
+
       const totalPages = Math.max(Math.ceil(total / perPage), 1);
       const safePage = Math.min(page, totalPages);
 
@@ -214,38 +237,22 @@ module.exports = {
         .limit(perPage)
         .lean();
 
-      const classes = await Class.find({})
-        .select("name code schoolLevel classLevel stream academicYear term")
-        .sort({ name: 1 })
-        .lean();
-
-      const subjects = await Subject.find({})
-        .select("title code shortTitle schoolLevel classId className sectionId sectionName streamId streamName academicYear term")
-        .sort({ title: 1 })
-        .lean();
-
-      const staffList = await Staff.find({})
-        .select("fullName name role email")
-        .sort({ fullName: 1, name: 1 })
-        .lean();
-
-      const academicYears = (await TimetableEntry.distinct("academicYear")).filter(Boolean).sort();
-      const scopeLists = await loadAcademicScopeLists(req);
+      const academicYears = academicYearsRaw.filter(Boolean).sort();
 
       const kpis = {
         total,
-        active: await TimetableEntry.countDocuments({ ...filter, status: "active" }),
-        inactive: await TimetableEntry.countDocuments({ ...filter, status: "inactive" }),
-        archived: await TimetableEntry.countDocuments({ ...filter, status: "archived" }),
+        active: activeCount,
+        inactive: inactiveCount,
+        archived: archivedCount,
       };
 
       return res.render("tenant/timetable/index", {
         tenant: req.tenant || null,
         entries,
-        classes,
+        classes: scopeLists.classes,
         sections: scopeLists.sections,
         streams: scopeLists.streams,
-        subjects,
+        subjects: scopeLists.subjects,
         subjectOptions: scopeLists.subjects,
         staffList,
         academicYears,

@@ -239,16 +239,16 @@ module.exports = {
 
     const { mongo: query, clean } = buildQuery(req);
 
-    const docs = await AuditLog.find(query).sort({ createdAt: -1 }).limit(500).lean();
+    const [docs, actions, modules] = await Promise.all([
+      AuditLog.find(query).sort({ createdAt: -1 }).limit(500).lean(),
+      AuditLog.distinct("action", { isDeleted: { $ne: true } }),
+      AuditLog.distinct("module", { isDeleted: { $ne: true } }),
+    ]);
     const logs = docs.map(serializeLog);
 
-    const allDocs = await AuditLog.find({ isDeleted: { $ne: true } })
-      .select("action module")
-      .lean();
-
     const filters = {
-      actions: [...new Set(allDocs.map((x) => x.action).filter(Boolean))].sort(),
-      modules: [...new Set(allDocs.map((x) => x.module).filter(Boolean))].sort(),
+      actions: actions.filter(Boolean).sort(),
+      modules: modules.filter(Boolean).sort(),
     };
 
     return res.render("tenant/admin/auditlogs/index", {

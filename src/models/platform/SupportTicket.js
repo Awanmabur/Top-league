@@ -137,6 +137,7 @@ module.exports = (connection) => {
   SupportTicketSchema.index({ tenantId: 1, status: 1, createdAt: -1 });
   SupportTicketSchema.index({ assignedTo: 1, status: 1 });
   SupportTicketSchema.index({ priority: 1, status: 1 });
+  SupportTicketSchema.index({ status: 1, createdAt: -1 });
 
   return connection.model("SupportTicket", SupportTicketSchema);
 };

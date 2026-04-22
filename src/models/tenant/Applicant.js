@@ -150,6 +150,11 @@ module.exports = (connection) => {
     { applicationId: 1 },
     { unique: true, partialFilterExpression: { isDeleted: { $ne: true } } }
   );
+  ApplicantSchema.index({ isDeleted: 1, status: 1, createdAt: -1 });
+  ApplicantSchema.index({ isDeleted: 1, section1: 1, status: 1, createdAt: -1 });
+  ApplicantSchema.index({ isDeleted: 1, program1: 1, status: 1, createdAt: -1 });
+  ApplicantSchema.index({ isDeleted: 1, createdAt: -1 });
+  ApplicantSchema.index({ isDeleted: 1, nationality: 1, createdAt: -1 });
 
   ApplicantSchema.methods.softDelete = async function () {
     this.isDeleted = true;

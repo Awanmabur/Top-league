@@ -10,27 +10,33 @@ module.exports = {
   dashboardPage: async (req, res) => {
     try {
       const [
-        tenantCount,
-        activeTenants,
-        trialTenants,
-        suspendedTenants,
+        tenantStatsAgg,
         planCount,
         openTickets,
         publishedAnnouncements,
         recentTenants,
         recentPaymentsAgg,
       ] = await Promise.all([
-        Tenant.countDocuments({ isDeleted: { $ne: true } }),
-        Tenant.countDocuments({ status: "active", isDeleted: { $ne: true } }),
-        Tenant.countDocuments({ status: "trial", isDeleted: { $ne: true } }),
-        Tenant.countDocuments({ status: "suspended", isDeleted: { $ne: true } }),
+        Tenant.aggregate([
+          { $match: { isDeleted: { $ne: true } } },
+          {
+            $group: {
+              _id: null,
+              total: { $sum: 1 },
+              active: { $sum: { $cond: [{ $eq: ["$status", "active"] }, 1, 0] } },
+              trial: { $sum: { $cond: [{ $eq: ["$status", "trial"] }, 1, 0] } },
+              suspended: { $sum: { $cond: [{ $eq: ["$status", "suspended"] }, 1, 0] } },
+            },
+          },
+        ]),
         Plan.countDocuments({ isDeleted: { $ne: true }, isActive: true }),
         SupportTicket.countDocuments({ status: { $in: ["open", "pending"] } }),
         PlatformAnnouncement.countDocuments({ status: "published" }),
         Tenant.find({ isDeleted: { $ne: true } })
+          .select("name code status planId createdAt")
           .sort({ createdAt: -1 })
           .limit(5)
-          .populate("planId")
+          .populate("planId", "name code")
           .lean(),
         PlatformPayment.aggregate([
           {
@@ -45,12 +51,14 @@ module.exports = {
         ]),
       ]);
 
+      const tenantStats = tenantStatsAgg[0] || {};
+
       return res.render("platform/dashboard/index", {
         stats: {
-          tenantCount,
-          activeTenants,
-          trialTenants,
-          suspendedTenants,
+          tenantCount: tenantStats.total || 0,
+          activeTenants: tenantStats.active || 0,
+          trialTenants: tenantStats.trial || 0,
+          suspendedTenants: tenantStats.suspended || 0,
           planCount,
           openTickets,
           publishedAnnouncements,
@@ -61,7 +69,7 @@ module.exports = {
         error: null,
       });
     } catch (err) {
-      console.error("❌ dashboardPage error:", err);
+      console.error("dashboardPage error:", err.message || err);
       return res.status(500).render("platform/dashboard/index", {
         stats: {
           tenantCount: 0,

@@ -13,8 +13,9 @@ function buildId(value) {
   return isValidObjectId(str) ? str : '';
 }
 
-async function loadAcademicScopeLists(req) {
+async function loadAcademicScopeLists(req, options = {}) {
   const { Class, Section, Stream, Subject, Student } = req.models || {};
+  const includeStudents = options.includeStudents === true;
 
   const [classes, sections, streams, subjects, students] = await Promise.all([
     Class
@@ -29,7 +30,7 @@ async function loadAcademicScopeLists(req) {
     Subject
       ? Subject.find({ status: { $ne: 'archived' } }).select('title code shortTitle classId className sectionId sectionName streamId streamName academicYear term status').sort({ title: 1, code: 1 }).lean()
       : [],
-    Student
+    includeStudents && Student
       ? Student.find({ isDeleted: { $ne: true }, status: { $ne: 'archived' } }).select('fullName name regNo studentNo indexNumber email classId className sectionId section streamId stream academicYear term').sort({ fullName: 1, name: 1 }).limit(3000).lean()
       : [],
   ]);

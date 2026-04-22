@@ -92,7 +92,6 @@ module.exports = (connection) => {
     next();
   });
 
-  SubjectSchema.index({ code: 1 }, { unique: true });
   SubjectSchema.index({ campusId: 1, classId: 1, sectionId: 1, streamId: 1, term: 1, academicYear: 1, status: 1 });
   SubjectSchema.index({ levelType: 1, classLevel: 1, category: 1 });
   SubjectSchema.index({ classId: 1, sectionId: 1, streamId: 1, teacher: 1 });

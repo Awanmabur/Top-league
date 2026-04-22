@@ -84,6 +84,8 @@ module.exports = (connection) => {
   AuditLogSchema.index({ actorId: 1, createdAt: -1 });
   AuditLogSchema.index({ tenantId: 1, createdAt: -1 });
   AuditLogSchema.index({ entityType: 1, entityId: 1 });
+  AuditLogSchema.index({ action: 1, createdAt: -1 });
+  AuditLogSchema.index({ actorName: 1, createdAt: -1 });
 
   return connection.model("AuditLog", AuditLogSchema);
 };

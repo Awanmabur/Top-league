@@ -1,12 +1,10 @@
 // /public/js/school-profile-public.js
-console.log("[SchoolProfile] Loaded:", location.href);
 
 function $(id) {
   return document.getElementById(id);
 }
 
 function postJson(url, payload) {
-  console.log("[SchoolProfile] POST ->", url, payload);
   return fetch(url, {
     method: "POST",
     headers: {
@@ -241,9 +239,6 @@ function initForms() {
   const reviewForm = $("reviewForm");
   const reviewMsg = $("reviewMsg");
 
-  console.log("[SchoolProfile] inquiry action =", inquiryForm?.action);
-  console.log("[SchoolProfile] review action =", reviewForm?.action);
-
   inquiryForm?.addEventListener("submit", async (e) => {
     e.preventDefault();
     inquiryMsg.textContent = "";
@@ -254,11 +249,10 @@ function initForms() {
     try {
       const res = await postJson(url, payload);
       const data = await res.json().catch(() => ({}));
-      console.log("[SchoolProfile] inquiry resp", res.status, data);
 
       if (!res.ok || !data.ok)
         throw new Error(data.message || `Failed (${res.status})`);
-      inquiryMsg.textContent = data.message || "Message submitted ✅";
+      inquiryMsg.textContent = data.message || "Message submitted";
       inquiryForm.reset();
     } catch (err) {
       inquiryMsg.textContent = err.message || "Failed";
@@ -275,11 +269,10 @@ function initForms() {
     try {
       const res = await postJson(url, payload);
       const data = await res.json().catch(() => ({}));
-      console.log("[SchoolProfile] review resp", res.status, data);
 
       if (!res.ok || !data.ok)
         throw new Error(data.message || `Failed (${res.status})`);
-      reviewMsg.textContent = data.message || "Review submitted ✅";
+      reviewMsg.textContent = data.message || "Review submitted";
       reviewForm.reset();
     } catch (err) {
       reviewMsg.textContent = err.message || "Failed";
@@ -295,5 +288,4 @@ document.addEventListener("DOMContentLoaded", () => {
   initSubjectSearch();
   initLightbox();
   initForms();
-  console.log("[SchoolProfile] Init complete ✅");
 });

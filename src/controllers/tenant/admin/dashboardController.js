@@ -60,25 +60,94 @@ module.exports = {
       const pendingApplicantStatuses = ["submitted", "under_review"];
       const acceptedApplicantStatuses = ["accepted", "converted"];
       const unpaidInvoiceStatuses = ["Unpaid", "Partially Paid", "Overdue"];
+      const dashboardApplicantStatuses = Array.from(
+        new Set([...pendingApplicantStatuses, ...acceptedApplicantStatuses]),
+      );
 
       const [
-        totalStudents,
-        newStudentsThisMonth,
-        pendingApps,
-        submittedApps,
-        inReviewApps,
-        acceptedApps,
+        studentKpiAgg,
+        applicantKpiAgg,
         outstandingFeesAgg,
         studentsOwingAgg,
         activeUsers,
         notificationsCount,
       ] = await Promise.all([
-        safeCount(Student, activeStudentFilter),
-        safeCount(Student, { ...activeStudentFilter, createdAt: { $gte: startOfMonth } }),
-        safeCount(Applicant, { isDeleted: { $ne: true }, status: { $in: pendingApplicantStatuses } }),
-        safeCount(Applicant, { isDeleted: { $ne: true }, status: "submitted", createdAt: { $gte: startOfMonth } }),
-        safeCount(Applicant, { isDeleted: { $ne: true }, status: "under_review", createdAt: { $gte: startOfMonth } }),
-        safeCount(Applicant, { isDeleted: { $ne: true }, status: { $in: acceptedApplicantStatuses }, createdAt: { $gte: startOfMonth } }),
+        safeAggregate(Student, [
+          {
+            $match: activeStudentFilter,
+          },
+          {
+            $group: {
+              _id: null,
+              total: { $sum: 1 },
+              newThisMonth: {
+                $sum: {
+                  $cond: [{ $gte: ["$createdAt", startOfMonth] }, 1, 0],
+                },
+              },
+            },
+          },
+        ]),
+        safeAggregate(Applicant, [
+          {
+            $match: {
+              isDeleted: { $ne: true },
+              status: { $in: dashboardApplicantStatuses },
+            },
+          },
+          {
+            $group: {
+              _id: null,
+              pending: {
+                $sum: {
+                  $cond: [{ $in: ["$status", pendingApplicantStatuses] }, 1, 0],
+                },
+              },
+              submittedThisMonth: {
+                $sum: {
+                  $cond: [
+                    {
+                      $and: [
+                        { $eq: ["$status", "submitted"] },
+                        { $gte: ["$createdAt", startOfMonth] },
+                      ],
+                    },
+                    1,
+                    0,
+                  ],
+                },
+              },
+              inReviewThisMonth: {
+                $sum: {
+                  $cond: [
+                    {
+                      $and: [
+                        { $eq: ["$status", "under_review"] },
+                        { $gte: ["$createdAt", startOfMonth] },
+                      ],
+                    },
+                    1,
+                    0,
+                  ],
+                },
+              },
+              acceptedThisMonth: {
+                $sum: {
+                  $cond: [
+                    {
+                      $and: [
+                        { $in: ["$status", acceptedApplicantStatuses] },
+                        { $gte: ["$createdAt", startOfMonth] },
+                      ],
+                    },
+                    1,
+                    0,
+                  ],
+                },
+              },
+            },
+          },
+        ]),
         safeAggregate(Invoice, [
         {
           $match: {
@@ -116,53 +185,47 @@ module.exports = {
         }),
       ]);
 
+      const studentKpis = studentKpiAgg[0] || {};
+      const applicantKpis = applicantKpiAgg[0] || {};
+      const totalStudents = studentKpis.total || 0;
+      const newStudentsThisMonth = studentKpis.newThisMonth || 0;
+      const pendingApps = applicantKpis.pending || 0;
+      const submittedApps = applicantKpis.submittedThisMonth || 0;
+      const inReviewApps = applicantKpis.inReviewThisMonth || 0;
+      const acceptedApps = applicantKpis.acceptedThisMonth || 0;
       const outstandingFees = outstandingFeesAgg[0]?.total || 0;
       const studentsOwing = studentsOwingAgg[0]?.total || 0;
 
-      const avgReviewTime = await computeAverageReviewTime(Applicant, startOfMonth);
-
-      // Admissions snapshot
-      const admissionsTotal =
-        submittedApps + inReviewApps + acceptedApps || Math.max(pendingApps, 1);
-
-      const submittedPct = admissionsTotal ? Math.round((submittedApps / admissionsTotal) * 100) : 0;
-      const verifiedPct = admissionsTotal ? Math.round((inReviewApps / admissionsTotal) * 100) : 0;
-      const acceptedPct = admissionsTotal ? Math.round((acceptedApps / admissionsTotal) * 100) : 0;
-
-      const countriesAgg = await safeAggregate(Applicant, [
-        {
-          $match: {
-            isDeleted: { $ne: true },
-            createdAt: { $gte: thirtyDaysAgo },
-            nationality: { $exists: true, $ne: null, $ne: "" },
+      const [
+        avgReviewTime,
+        countriesAgg,
+        classAgg,
+        auditLogs,
+        announcementRows,
+        recentStudentRows,
+        pendingApplicationRows,
+        financeAggs,
+        systemSnapshot,
+      ] = await Promise.all([
+        computeAverageReviewTime(Applicant, startOfMonth),
+        safeAggregate(Applicant, [
+          {
+            $match: {
+              isDeleted: { $ne: true },
+              createdAt: { $gte: thirtyDaysAgo },
+              nationality: { $exists: true, $nin: [null, ""] },
+            },
           },
-        },
-        {
-          $group: {
-            _id: "$nationality",
-            count: { $sum: 1 },
+          {
+            $group: {
+              _id: "$nationality",
+              count: { $sum: 1 },
+            },
           },
-        },
-        { $sort: { count: -1 } },
-        { $limit: 5 },
-      ]);
-
-      const totalCountryCount = countriesAgg.reduce((sum, item) => sum + item.count, 0) || 1;
-      const countryColors = ["#0a6fbf", "#60a5fa", "#7dd3fc", "#a78bfa", "#fb7185"];
-
-      const countries = countriesAgg.map((item, index) => ({
-        country: item._id,
-        val: Math.round((item.count / totalCountryCount) * 100),
-        color: countryColors[index] || "#94a3b8",
-      }));
-
-      const portalUptime = await computePortalUptime(SystemHealth);
-
-      // Distribution data
-      let departments = [];
-
-      if (Student) {
-        const classAgg = await safeAggregate(Student, [
+          { $sort: { count: -1 } },
+          { $limit: 5 },
+        ]),
+        safeAggregate(Student, [
           {
             $match: {
               isDeleted: { $ne: true },
@@ -177,37 +240,127 @@ module.exports = {
           },
           { $sort: { val: -1 } },
           { $limit: 6 },
-        ]);
-
-        departments = classAgg.map((d) => ({
-          name: d._id || "Unknown",
-          val: d.val,
-        }));
-      }
-
-      // Recent activity
-      let recentActivity = [];
-
-      if (AuditLog) {
-        const logs = await safeFind(
+        ]),
+        safeFind(
           AuditLog,
           { isDeleted: { $ne: true } },
           "action actorName actorEmail module entityLabel createdAt",
           {
             sort: { createdAt: -1 },
             limit: 10,
-          }
-        );
+          },
+        ),
+        safeFind(
+          Announcement,
+          { isDeleted: { $ne: true } },
+          "title status createdAt",
+          {
+            sort: { createdAt: -1 },
+            limit: 4,
+          },
+        ),
+        Student
+          ? Student.find({ isDeleted: { $ne: true } })
+              .select("fullName name firstName lastName classLevel section stream className status financeBalance")
+              .sort({ createdAt: -1 })
+              .limit(5)
+              .lean()
+          : Promise.resolve([]),
+        Applicant
+          ? Applicant.find({
+              isDeleted: { $ne: true },
+              status: { $in: pendingApplicantStatuses },
+            })
+              .select("fullName name firstName lastName nationality section1 program1")
+              .sort({ createdAt: -1 })
+              .limit(5)
+              .populate("section1", "code name classLevel classStream")
+              .populate("program1", "code name classLevel classStream")
+              .lean()
+          : Promise.resolve([]),
+        safeAggregate(Payment, [
+          {
+            $match: {
+              ...activePaymentFilter,
+              status: { $in: ["Completed", "Refunded"] },
+              paymentDate: {
+                $gte: new Date(now.getFullYear(), now.getMonth() - 11, 1),
+              },
+            },
+          },
+          {
+            $facet: {
+              collected: [
+                { $match: { status: "Completed", paymentDate: { $gte: startOfMonth } } },
+                { $group: { _id: null, total: { $sum: "$amount" } } },
+              ],
+              refunds: [
+                { $match: { status: "Refunded", paymentDate: { $gte: startOfMonth } } },
+                { $group: { _id: null, total: { $sum: "$amount" } } },
+              ],
+              offline: [
+                {
+                  $match: {
+                    status: "Completed",
+                    paymentDate: { $gte: startOfMonth },
+                    method: { $in: ["Cash", "Bank", "Cheque", "Transfer"] },
+                  },
+                },
+                { $group: { _id: null, total: { $sum: "$amount" } } },
+              ],
+              monthlyRevenue: [
+                { $match: { status: "Completed" } },
+                {
+                  $group: {
+                    _id: {
+                      month: { $month: "$paymentDate" },
+                      year: { $year: "$paymentDate" },
+                    },
+                    total: { $sum: "$amount" },
+                  },
+                },
+                { $sort: { "_id.year": 1, "_id.month": 1 } },
+              ],
+            },
+          },
+        ]),
+        loadSystemHealthSnapshot(SystemHealth),
+      ]);
 
-        recentActivity = logs.map((log) => ({
-          text: [
-            log.action || "Activity recorded",
-            log.module ? `in ${log.module}` : "",
-            log.entityLabel ? `(${log.entityLabel})` : "",
-          ].filter(Boolean).join(" "),
-          time: formatTimeAgo(log.createdAt),
-        }));
-      }
+      // Admissions snapshot
+      const admissionsTotal =
+        submittedApps + inReviewApps + acceptedApps || Math.max(pendingApps, 1);
+
+      const submittedPct = admissionsTotal ? Math.round((submittedApps / admissionsTotal) * 100) : 0;
+      const verifiedPct = admissionsTotal ? Math.round((inReviewApps / admissionsTotal) * 100) : 0;
+      const acceptedPct = admissionsTotal ? Math.round((acceptedApps / admissionsTotal) * 100) : 0;
+
+      const totalCountryCount = countriesAgg.reduce((sum, item) => sum + item.count, 0) || 1;
+      const countryColors = ["#0a6fbf", "#60a5fa", "#7dd3fc", "#a78bfa", "#fb7185"];
+
+      const countries = countriesAgg.map((item, index) => ({
+        country: item._id,
+        val: Math.round((item.count / totalCountryCount) * 100),
+        color: countryColors[index] || "#94a3b8",
+      }));
+
+      const portalUptime = systemSnapshot.portalUptime;
+
+      // Distribution data
+      const departments = classAgg.map((d) => ({
+        name: d._id || "Unknown",
+        val: d.val,
+      }));
+
+      // Recent activity
+      let recentActivity = auditLogs.map((log) => ({
+        text: [
+          log.action || "Activity recorded",
+          log.module ? `in ${log.module}` : "",
+          log.entityLabel ? `(${log.entityLabel})` : "",
+        ].filter(Boolean).join(" "),
+        time: formatTimeAgo(log.createdAt),
+      }));
 
       if (!recentActivity.length) {
         recentActivity = [
@@ -219,146 +372,43 @@ module.exports = {
       }
 
       // Announcements
-      let announcements = [];
-
-      if (Announcement) {
-        const rows = await safeFind(
-          Announcement,
-          { isDeleted: { $ne: true } },
-          "title status createdAt",
-          {
-            sort: { createdAt: -1 },
-            limit: 4,
-          }
-        );
-
-        announcements = rows.map((a) => ({
-          title: a.title || "Untitled Announcement",
-          status: capitalize(a.status || "Draft"),
-        }));
-      }
+      const announcements = announcementRows.map((a) => ({
+        title: a.title || "Untitled Announcement",
+        status: capitalize(a.status || "Draft"),
+      }));
 
       // Recent students
-      let recentStudents = [];
-
-      if (Student) {
-        const rows = await Student.find({ isDeleted: { $ne: true } })
-          .sort({ createdAt: -1 })
-          .limit(5)
-          .lean();
-
-        recentStudents = rows.map((s) => ({
-          name:
-            s.fullName ||
-            s.name ||
-            `${s.firstName || ""} ${s.lastName || ""}`.trim() ||
-            "Student",
-          group: [s.classLevel, s.section || s.stream].filter(Boolean).join(" ") || s.className || "-",
-          status: capitalize(String(s.status || "active").replace(/_/g, " ")),
-          balance: formatMoney(s.financeBalance || 0, tenant?.currency || "USD"),
-        }));
-      }
+      const recentStudents = recentStudentRows.map((s) => ({
+        name:
+          s.fullName ||
+          s.name ||
+          `${s.firstName || ""} ${s.lastName || ""}`.trim() ||
+          "Student",
+        group: [s.classLevel, s.section || s.stream].filter(Boolean).join(" ") || s.className || "-",
+        status: capitalize(String(s.status || "active").replace(/_/g, " ")),
+        balance: formatMoney(s.financeBalance || 0, tenant?.currency || "USD"),
+      }));
 
       // Pending applications table
-      let pendingApplicationsTable = [];
-
-      if (Applicant) {
-        const rows = await Applicant.find({
-          isDeleted: { $ne: true },
-          status: { $in: pendingApplicantStatuses },
-        })
-          .sort({ createdAt: -1 })
-          .limit(5)
-          .populate("section1", "code name classLevel classStream")
-          .populate("program1", "code name classLevel classStream")
-          .lean();
-
-        pendingApplicationsTable = rows.map((a) => ({
-          id: a._id,
-          name:
-            a.fullName ||
-            a.name ||
-            `${a.firstName || ""} ${a.lastName || ""}`.trim() ||
-            "Applicant",
-          group: a.section1
-            ? ((a.section1.code ? `${a.section1.code} - ` : "") + (a.section1.name || a.section1.className || "Section"))
-            : (a.program1 ? ((a.program1.code ? `${a.program1.code} - ` : "") + (a.program1.name || a.program1.className || "Section")) : "-"),
-          country: a.nationality || "-",
-        }));
-      }
+      const pendingApplicationsTable = pendingApplicationRows.map((a) => ({
+        id: a._id,
+        name:
+          a.fullName ||
+          a.name ||
+          `${a.firstName || ""} ${a.lastName || ""}`.trim() ||
+          "Applicant",
+        group: a.section1
+          ? ((a.section1.code ? `${a.section1.code} - ` : "") + (a.section1.name || a.section1.className || "Section"))
+          : (a.program1 ? ((a.program1.code ? `${a.program1.code} - ` : "") + (a.program1.name || a.program1.className || "Section")) : "-"),
+        country: a.nationality || "-",
+      }));
 
       // Finance snapshot
-      const [collectedAgg, refundsAgg, offlineAgg, monthlyRevenueAgg] = await Promise.all([
-        safeAggregate(Payment, [
-        {
-          $match: {
-            ...activePaymentFilter,
-            paymentDate: { $gte: startOfMonth },
-            status: "Completed",
-          },
-        },
-        {
-          $group: {
-            _id: null,
-            total: { $sum: "$amount" },
-          },
-        },
-        ]),
-
-        safeAggregate(Payment, [
-        {
-          $match: {
-            ...activePaymentFilter,
-            paymentDate: { $gte: startOfMonth },
-            status: "Refunded",
-          },
-        },
-        {
-          $group: {
-            _id: null,
-            total: { $sum: "$amount" },
-          },
-        },
-        ]),
-
-        safeAggregate(Payment, [
-        {
-          $match: {
-            ...activePaymentFilter,
-            paymentDate: { $gte: startOfMonth },
-            method: { $in: ["Cash", "Bank", "Cheque", "Transfer"] },
-            status: "Completed",
-          },
-        },
-        {
-          $group: {
-            _id: null,
-            total: { $sum: "$amount" },
-          },
-        },
-        ]),
-        safeAggregate(Payment, [
-        {
-          $match: {
-            ...activePaymentFilter,
-            status: "Completed",
-            paymentDate: {
-              $gte: new Date(now.getFullYear(), now.getMonth() - 11, 1),
-            },
-          },
-        },
-        {
-          $group: {
-            _id: {
-              month: { $month: "$paymentDate" },
-              year: { $year: "$paymentDate" },
-            },
-            total: { $sum: "$amount" },
-          },
-        },
-        { $sort: { "_id.year": 1, "_id.month": 1 } },
-        ]),
-      ]);
+      const financeFacet = financeAggs[0] || {};
+      const collectedAgg = financeFacet.collected || [];
+      const refundsAgg = financeFacet.refunds || [];
+      const offlineAgg = financeFacet.offline || [];
+      const monthlyRevenueAgg = financeFacet.monthlyRevenue || [];
 
       const finance = {
         collected: collectedAgg[0]?.total || 0,
@@ -370,7 +420,7 @@ module.exports = {
       // Revenue trend
 
       const revenue = buildMonthlySeries(monthlyRevenueAgg, now);
-      const systemStatus = await buildSystemStatus(SystemHealth, portalUptime);
+      const systemStatus = systemSnapshot.systemStatus;
 
       const dashboardData = {
         studentsTrend: buildSoftTrend(totalStudents, newStudentsThisMonth, 15),
@@ -543,32 +593,27 @@ async function computeAverageReviewTime(Applicant, startOfMonth) {
   return `${Math.round(hours / 24)} days`;
 }
 
-async function computePortalUptime(SystemHealth) {
-  if (!SystemHealth) return 100;
+async function loadSystemHealthSnapshot(SystemHealth) {
+  const fallback = {
+    portalUptime: 100,
+    systemStatus: { uptime: 100, errors24h: 0, dbLag: "0s", storage: 0 },
+  };
 
-  const rows = await SystemHealth.find({ isDeleted: { $ne: true } })
-    .select("metrics.uptime")
-    .lean();
+  if (!SystemHealth) return fallback;
 
-  const values = rows
-    .map((row) => parsePercent(row.metrics?.uptime, NaN))
-    .filter((value) => Number.isFinite(value));
-
-  if (!values.length) return 100;
-  const avg = values.reduce((sum, value) => sum + value, 0) / values.length;
-  return Math.round(avg * 10) / 10;
-}
-
-async function buildSystemStatus(SystemHealth, uptime) {
-  if (!SystemHealth) {
-    return { uptime, errors24h: 0, dbLag: "0s", storage: 0 };
-  }
-
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
   const services = await SystemHealth.find({ isDeleted: { $ne: true } })
     .select("type status metrics lastCheckedAt updatedAt incidents")
     .lean();
 
+  const values = services
+    .map((row) => parsePercent(row.metrics?.uptime, NaN))
+    .filter((value) => Number.isFinite(value));
+
+  const portalUptime = values.length
+    ? Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 10) / 10
+    : 100;
+
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
   const errors24h = services.filter((service) => {
     const changedAt = service.lastCheckedAt || service.updatedAt;
     return ["Critical", "Warning"].includes(service.status) && changedAt && new Date(changedAt) >= since;
@@ -580,10 +625,13 @@ async function buildSystemStatus(SystemHealth, uptime) {
     : 0;
 
   return {
-    uptime,
-    errors24h,
-    dbLag: "0s",
-    storage: storageValue,
+    portalUptime,
+    systemStatus: {
+      uptime: portalUptime,
+      errors24h,
+      dbLag: "0s",
+      storage: storageValue,
+    },
   };
 }
 

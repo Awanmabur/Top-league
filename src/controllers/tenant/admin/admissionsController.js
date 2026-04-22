@@ -384,28 +384,29 @@ async function getApplicantListing(req) {
   const totalPages = Math.max(Math.ceil(total / perPage), 1);
   const safePage = Math.min(page, totalPages);
 
-  const applicants = await Applicant.find(filter)
-    .sort({ createdAt: -1, _id: -1 })
-    .skip((safePage - 1) * perPage)
-    .limit(perPage)
-    .populate("section1", "name levelType classLevel classStream className")
-    .populate("section2", "code name levelType classLevel classStream className")
-    .populate("program1", "name levelType classLevel classStream className")
-    .populate("program2", "code name levelType classLevel classStream className")
-    .lean();
-
-  const sections = Section
-    ? await Section.find({ status: { $ne: "archived" } })
-    .select("code name levelType classLevel classStream className campusName")
-    .sort({ levelType: 1, classLevel: 1, classStream: 1, name: 1 })
-    .lean()
-    : [];
-
   const pendingFilter = { ...filter, status: { $in: ["submitted", "under_review"] } };
   const acceptedFilter = { ...filter, status: { $in: ["accepted", "converted"] } };
   const rejectedFilter = { ...filter, status: "rejected" };
 
-  const [pending, accepted, rejected] = await Promise.all([
+  const [applicants, sections, pending, accepted, rejected] = await Promise.all([
+    Applicant.find(filter)
+      .select(
+        "applicationId fullName firstName middleName lastName email phone intake status createdAt section1 section2 program1 program2 passportPhoto idDocument transcript otherDocs adminNotes notes",
+      )
+      .sort({ createdAt: -1, _id: -1 })
+      .skip((safePage - 1) * perPage)
+      .limit(perPage)
+      .populate("section1", "name levelType classLevel classStream className")
+      .populate("section2", "code name levelType classLevel classStream className")
+      .populate("program1", "name levelType classLevel classStream className")
+      .populate("program2", "code name levelType classLevel classStream className")
+      .lean(),
+    Section
+      ? Section.find({ status: { $ne: "archived" } })
+          .select("code name levelType classLevel classStream className campusName")
+          .sort({ levelType: 1, classLevel: 1, classStream: 1, name: 1 })
+          .lean()
+      : Promise.resolve([]),
     Applicant.countDocuments(pendingFilter),
     Applicant.countDocuments(acceptedFilter),
     Applicant.countDocuments(rejectedFilter),

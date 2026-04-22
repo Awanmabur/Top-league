@@ -34,7 +34,7 @@ const COMMON_OPTS = {
 const platformConnection = mongoose.createConnection(platformUri, COMMON_OPTS);
 
 platformConnection.on("error", (e) => {
-  console.error("❌ Platform DB error:", e.message);
+  console.error("Platform DB error:", e.message);
 });
 
 async function waitForPlatform() {
@@ -75,7 +75,7 @@ async function createTenantConnection(dbName) {
   });
 
   conn.on("error", (e) => {
-    console.error(`❌ Tenant DB error (${dbName}):`, e.message);
+    console.error(`Tenant DB error (${dbName}):`, e.message);
   });
 
   try {

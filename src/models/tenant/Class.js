@@ -134,7 +134,6 @@ module.exports = (connection) => {
     next();
   });
 
-  ClassSchema.index({ code: 1 }, { unique: true });
   ClassSchema.index(
     { schoolUnitId: 1, campusId: 1, levelType: 1, classLevel: 1, sectionId: 1, streamId: 1, academicYear: 1, term: 1 },
     { unique: true, sparse: true }

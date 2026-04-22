@@ -61,6 +61,7 @@ module.exports = function SystemHealthModel(conn) {
 
   SystemHealthSchema.index({ createdAt: -1 });
   SystemHealthSchema.index({ status: 1, type: 1, region: 1, createdAt: -1 });
+  SystemHealthSchema.index({ isDeleted: 1, type: 1 });
 
   return conn.models.SystemHealth || conn.model("SystemHealth", SystemHealthSchema);
 };

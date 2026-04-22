@@ -29,6 +29,10 @@ function normalizeClassLevel(value) {
   return String(value || "").trim().toUpperCase();
 }
 
+function escapeRegExp(value) {
+  return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function getSchoolUnits(req) {
   return req.tenantDoc?.settings?.academics?.schoolUnits
     || req.tenant?.settings?.academics?.schoolUnits
@@ -133,18 +137,19 @@ module.exports = {
 
       const filter = {};
       if (q) {
+        const rx = escapeRegExp(q);
         filter.$or = [
-          { name: { $regex: q, $options: "i" } },
-          { code: { $regex: q, $options: "i" } },
-          { classLevel: { $regex: q, $options: "i" } },
-          { sectionName: { $regex: q, $options: "i" } },
-          { sectionCode: { $regex: q, $options: "i" } },
-          { streamName: { $regex: q, $options: "i" } },
-          { streamCode: { $regex: q, $options: "i" } },
-          { stream: { $regex: q, $options: "i" } },
-          { campusName: { $regex: q, $options: "i" } },
-          { room: { $regex: q, $options: "i" } },
-          { shift: { $regex: q, $options: "i" } },
+          { name: { $regex: rx, $options: "i" } },
+          { code: { $regex: rx, $options: "i" } },
+          { classLevel: { $regex: rx, $options: "i" } },
+          { sectionName: { $regex: rx, $options: "i" } },
+          { sectionCode: { $regex: rx, $options: "i" } },
+          { streamName: { $regex: rx, $options: "i" } },
+          { streamCode: { $regex: rx, $options: "i" } },
+          { stream: { $regex: rx, $options: "i" } },
+          { campusName: { $regex: rx, $options: "i" } },
+          { room: { $regex: rx, $options: "i" } },
+          { shift: { $regex: rx, $options: "i" } },
         ];
       }
 
@@ -158,7 +163,47 @@ module.exports = {
       if (sectionId) filter.sectionId = sectionId;
       if (streamId) filter.streamId = streamId;
 
-      const total = await Class.countDocuments(filter);
+      const kpiFilter = { ...filter };
+      delete kpiFilter.status;
+
+      const [
+        total,
+        activeCount,
+        inactiveCount,
+        archivedCount,
+        staffList,
+        sections,
+        streams,
+        academicYearsRaw,
+        classLevelsRaw,
+      ] = await Promise.all([
+        Class.countDocuments(filter),
+        Class.countDocuments({ ...kpiFilter, status: "active" }),
+        Class.countDocuments({ ...kpiFilter, status: "inactive" }),
+        Class.countDocuments({ ...kpiFilter, status: "archived" }),
+        Staff
+          ? Staff.find({})
+              .select("fullName name email role")
+              .sort({ fullName: 1, name: 1 })
+              .limit(500)
+              .lean()
+          : [],
+        Section
+          ? Section.find({})
+              .select("name code schoolUnitId campusId levelType classId className classLevel classStream streamId streamName streamCode status")
+              .sort({ name: 1, createdAt: -1 })
+              .lean()
+          : [],
+        Stream
+          ? Stream.find({})
+              .select("name code schoolUnitId campusId levelType classId className classLevel classStream sectionId sectionName sectionCode status")
+              .sort({ name: 1, createdAt: -1 })
+              .lean()
+          : [],
+        Class.distinct("academicYear"),
+        Class.distinct("classLevel"),
+      ]);
+
       const totalPages = Math.max(Math.ceil(total / perPage), 1);
       const safePage = Math.min(page, totalPages);
 
@@ -171,35 +216,14 @@ module.exports = {
         .limit(perPage)
         .lean();
 
-      const staffList = Staff
-        ? await Staff.find({})
-            .select("fullName name email role")
-            .sort({ fullName: 1, name: 1 })
-            .lean()
-        : [];
-
-      const sections = Section
-        ? await Section.find({})
-            .select("name code schoolUnitId campusId levelType classId className classLevel classStream streamId streamName streamCode status")
-            .sort({ name: 1, createdAt: -1 })
-            .lean()
-        : [];
-
-      const streams = Stream
-        ? await Stream.find({})
-            .select("name code schoolUnitId campusId levelType classId className classLevel classStream sectionId sectionName sectionCode status")
-            .sort({ name: 1, createdAt: -1 })
-            .lean()
-        : [];
-
-      const academicYears = (await Class.distinct("academicYear")).filter(Boolean).sort();
-      const classLevels = (await Class.distinct("classLevel")).filter(Boolean).sort();
+      const academicYears = academicYearsRaw.filter(Boolean).sort();
+      const classLevels = classLevelsRaw.filter(Boolean).sort();
 
       const kpis = {
         total,
-        active: await Class.countDocuments({ ...filter, status: "active" }),
-        inactive: await Class.countDocuments({ ...filter, status: "inactive" }),
-        archived: await Class.countDocuments({ ...filter, status: "archived" }),
+        active: activeCount,
+        inactive: inactiveCount,
+        archived: archivedCount,
       };
 
       return res.render("tenant/admin/classes/index", {

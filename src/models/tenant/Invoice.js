@@ -106,6 +106,7 @@ module.exports = function InvoiceModel(conn) {
   InvoiceSchema.index({ studentId: 1, createdAt: -1 });
   InvoiceSchema.index({ status: 1, dueDate: 1 });
   InvoiceSchema.index({ isDeleted: 1, createdAt: -1 });
+  InvoiceSchema.index({ isDeleted: 1, status: 1, balance: 1, studentId: 1 });
 
   return conn.models.Invoice || conn.model("Invoice", InvoiceSchema);
 };

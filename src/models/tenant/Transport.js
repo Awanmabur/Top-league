@@ -7,7 +7,7 @@ module.exports = (connection) => {
   const TransportSchema = new Schema(
     {
       routeName: { type: String, required: true, trim: true, maxlength: 160 },
-      routeCode: { type: String, required: true, trim: true, uppercase: true, maxlength: 40, index: true },
+      routeCode: { type: String, required: true, trim: true, uppercase: true, maxlength: 40 },
       vehicleName: { type: String, default: "", trim: true, maxlength: 120 },
       vehicleRegNo: { type: String, default: "", trim: true, uppercase: true, maxlength: 40, index: true },
       driverName: { type: String, default: "", trim: true, maxlength: 120 },

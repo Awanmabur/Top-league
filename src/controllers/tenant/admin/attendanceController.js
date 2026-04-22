@@ -229,7 +229,7 @@ module.exports = {
             .select("fullName name role email")
               .lean();
 
-          const scopeLists = await loadAcademicScopeLists(req);
+          const scopeLists = await loadAcademicScopeLists(req, { includeStudents: true });
           return res.render("tenant/attendance/index", {
             tenant: req.tenant || null,
             records: [],
@@ -307,7 +307,7 @@ module.exports = {
         .lean();
 
       const kpis = await buildKpis(Attendance, filter);
-      const scopeLists = await loadAcademicScopeLists(req);
+      const scopeLists = await loadAcademicScopeLists(req, { includeStudents: true });
 
       return res.render("tenant/attendance/index", {
         tenant: req.tenant || null,
@@ -372,7 +372,7 @@ module.exports = {
         .select("name code classLevel academicYear term")
         .lean();
 
-      const scopeLists = await loadAcademicScopeLists(req);
+      const scopeLists = await loadAcademicScopeLists(req, { includeStudents: true });
 
       let selectedSubject = null;
       let selectedClass = null;

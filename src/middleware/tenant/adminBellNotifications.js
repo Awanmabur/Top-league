@@ -1,5 +1,5 @@
 const BELL_CACHE = new Map();
-const BELL_TTL_MS = 30 * 1000;
+const BELL_TTL_MS = 2 * 60 * 1000;
 
 function cacheKey(req) {
   const tenantCode = req.tenant?.code || req.tenant?._id || "tenant";
@@ -67,6 +67,7 @@ module.exports = async function adminBellNotifications(req, res, next) {
     const [unread, items] = await Promise.all([
       Notification.countDocuments({ ...visible, isRead: false }),
       Notification.find(visible)
+        .select("title message type url isRead createdAt")
         .sort({ createdAt: -1 })
         .limit(6)
         .lean(),

@@ -268,7 +268,9 @@ module.exports = {
           }
         );
 
-        console.log("🔐 Platform reset token:", rawToken);
+        if (process.env.DEBUG_AUTH_TOKENS === "1") {
+          console.log("Platform reset token:", rawToken);
+        }
       }
 
       return res.render("platform/auth/forgot-password", {

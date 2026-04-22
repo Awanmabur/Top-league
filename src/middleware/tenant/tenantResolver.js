@@ -55,6 +55,12 @@ function getModelsForConn(conn) {
   return loadTenantModels(conn);
 }
 
+function isPublicProfileRead(req) {
+  const method = String(req.method || "GET").toUpperCase();
+  if (method !== "GET" && method !== "HEAD") return false;
+  return /^\/schools(?:\/|$)/.test(String(req.path || req.url || ""));
+}
+
 function perf(label, startedAt) {
   if (process.env.DEBUG_PERF === "1") {
     console.log(`[tenantResolver] ${label}: ${Date.now() - startedAt}ms`);
@@ -147,6 +153,15 @@ module.exports = async function tenantResolver(req, res, next) {
       if (!tenant) {
         return res.status(404).send(`Tenant for host '${host}' not found`);
       }
+    }
+
+    if (isPublicProfileRead(req)) {
+      req.isPlatform = false;
+      req.tenant = tenant;
+      req.tenantConnection = null;
+      req.models = null;
+      perf("public profile fast path", totalStartedAt);
+      return next();
     }
 
     if (!tenant.dbName) {

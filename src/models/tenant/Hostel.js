@@ -100,7 +100,7 @@ module.exports = function HostelModel(conn) {
     {
       roomId: { type: String, trim: true, index: true },
       block: { type: String, trim: true, required: true, index: true },
-      code: { type: String, trim: true, required: true, index: true },
+      code: { type: String, trim: true, required: true },
       gender: {
         type: String,
         enum: ["Male", "Female", "Mixed"],

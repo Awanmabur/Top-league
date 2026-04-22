@@ -480,7 +480,7 @@ module.exports = {
         .limit(perPage)
         .lean();
 
-      const scopeLists = await loadAcademicScopeLists(req);
+      const scopeLists = await loadAcademicScopeLists(req, { includeStudents: true });
 
       const studentsList = await Student.find({})
         .select("fullName firstName middleName lastName regNo studentNo indexNumber name classId className sectionId section streamId stream")

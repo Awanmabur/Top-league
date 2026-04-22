@@ -62,7 +62,7 @@ module.exports = function AssetModel(conn) {
   const assetSchema = new mongoose.Schema(
     {
       assetId: { type: String, trim: true, index: true },
-      assetTag: { type: String, trim: true, required: true, index: true },
+      assetTag: { type: String, trim: true, required: true },
       name: { type: String, trim: true, required: true, index: true },
       category: {
         type: String,

@@ -170,6 +170,8 @@ module.exports = (connection) => {
   StudentSchema.index({ schoolUnitId: 1, campusId: 1, schoolLevel: 1, classLevel: 1, term: 1, status: 1 });
   StudentSchema.index({ classId: 1, section: 1 });
   StudentSchema.index({ createdAt: -1 });
+  StudentSchema.index({ isDeleted: 1, createdAt: -1 });
+  StudentSchema.index({ isDeleted: 1, classLevel: 1 });
 
   StudentSchema.methods.softDelete = async function () {
     this.isDeleted = true;

@@ -46,7 +46,9 @@ module.exports = async function resolveTenantByCode(req, res, next) {
       return res.status(400).send("Missing school code.");
     }
 
-    let tenant = cacheGet(code);
+    let tenant = req.tenant && safeLower(req.tenant.code) === code
+      ? req.tenant
+      : cacheGet(code);
 
     if (!tenant) {
       tenant = await Tenant.findOne({

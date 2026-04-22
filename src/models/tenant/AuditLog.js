@@ -46,6 +46,8 @@ module.exports = function AuditLogModel(conn) {
   AuditLogSchema.index({ module: 1, severity: 1, createdAt: -1 });
   AuditLogSchema.index({ entityType: 1, entityId: 1, createdAt: -1 });
   AuditLogSchema.index({ reviewed: 1, createdAt: -1 });
+  AuditLogSchema.index({ isDeleted: 1, createdAt: -1 });
+  AuditLogSchema.index({ isDeleted: 1, action: 1, module: 1, createdAt: -1 });
 
   return conn.models.AuditLog || conn.model("AuditLog", AuditLogSchema);
 };

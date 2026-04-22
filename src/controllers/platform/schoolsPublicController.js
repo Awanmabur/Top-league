@@ -32,6 +32,10 @@ function escapeRegex(s) {
   return String(s || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function useLiveTenantProfile(req) {
+  return process.env.PUBLIC_PROFILE_LIVE_TENANT_DB === "1" || String(req.query.live || "") === "1";
+}
+
 async function getTenantModels(req, tenantDoc) {
   if (req.models) return req.models;
   if (!tenantDoc?.dbName) return {};
@@ -191,6 +195,19 @@ function buildSchoolListBaseFilter() {
     isDeleted: { $ne: true },
     "settings.profile.enabled": { $ne: false },
   };
+}
+
+async function findTenantForPublicPage(req, code) {
+  if (req.tenant && String(req.tenant.code || "").toLowerCase() === code) {
+    return req.tenant;
+  }
+
+  return Tenant.findOne({
+    code,
+    isDeleted: { $ne: true },
+  })
+    .select("name code dbName settings status planName createdAt updatedAt")
+    .lean();
 }
 
 function buildChipFilter(chip) {
@@ -388,10 +405,7 @@ module.exports = {
         .trim()
         .toLowerCase();
 
-      const tenantDoc = await Tenant.findOne({
-        code,
-        isDeleted: { $ne: true },
-      }).lean();
+      const tenantDoc = await findTenantForPublicPage(req, code);
 
       if (!tenantDoc) {
         return res.status(404).render("errors/404");
@@ -404,7 +418,7 @@ module.exports = {
         return res.status(404).render("errors/404");
       }
 
-      const tenantModels = await getTenantModels(req, tenantDoc);
+      const tenantModels = useLiveTenantProfile(req) ? await getTenantModels(req, tenantDoc) : {};
       const counts = await computeCounts(tenantModels);
       const subjects = await loadSubjects(tenantModels, {
         ...profile,

@@ -52,6 +52,7 @@ module.exports = (conn) => {
 
   userSchema.index({ status: 1 });
   userSchema.index({ roles: 1 });
+  userSchema.index({ status: 1, deletedAt: 1 });
 
   // Unique email for non-deleted users
   userSchema.index(

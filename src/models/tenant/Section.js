@@ -66,7 +66,6 @@ module.exports = (connection) => {
     next();
   });
 
-  SectionSchema.index({ code: 1 }, { unique: true });
   SectionSchema.index({ classId: 1, streamId: 1, name: 1 }, { unique: true });
   SectionSchema.index({ campusId: 1, classId: 1, status: 1 });
   SectionSchema.index({ levelType: 1, classLevel: 1, classStream: 1, streamId: 1 });

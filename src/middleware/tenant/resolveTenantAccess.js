@@ -37,7 +37,7 @@ function extractTenantCodeFromHost(host) {
 }
 
 const ACCESS_CACHE = new Map();
-const ACCESS_TTL_MS = 60 * 1000;
+const ACCESS_TTL_MS = 5 * 60 * 1000;
 
 function accessCacheKey(tenant) {
   const tenantId = tenant?._id ? String(tenant._id) : "";
@@ -153,7 +153,7 @@ module.exports = async function resolveTenantAccess(req, res, next) {
 
     return next();
   } catch (err) {
-    console.error("❌ resolveTenantAccess error:", err);
+    console.error("resolveTenantAccess error:", err.message || err);
     return res.status(500).render("tenant/errors/tenant-not-found", {
       error: "Failed to resolve tenant access.",
     });

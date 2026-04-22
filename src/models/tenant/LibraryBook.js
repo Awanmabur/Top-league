@@ -115,7 +115,7 @@ module.exports = function LibraryBookModel(conn) {
       bookId: { type: String, trim: true, index: true },
       title: { type: String, trim: true, required: true, index: true },
       author: { type: String, trim: true, required: true, index: true },
-      isbn: { type: String, trim: true, required: true, index: true },
+      isbn: { type: String, trim: true, required: true },
       category: {
         type: String,
         enum: ["Computer Science", "Mathematics", "Business", "Literature", "Other"],

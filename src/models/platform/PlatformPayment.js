@@ -97,6 +97,7 @@ module.exports = (connection) => {
 
   PlatformPaymentSchema.index({ tenantId: 1, createdAt: -1 });
   PlatformPaymentSchema.index({ status: 1, type: 1 });
+  PlatformPaymentSchema.index({ status: 1, createdAt: -1 });
   PlatformPaymentSchema.index({ reference: 1 }, { sparse: true });
 
   return connection.model("PlatformPayment", PlatformPaymentSchema);
