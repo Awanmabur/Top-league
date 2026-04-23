@@ -875,11 +875,11 @@
     <nav aria-label="Primary" class="navbar">
       <a href="/">Home</a>
       <a href="/about">About</a>
-      <a href="/services">Features</a>
+      <a href="/features">Features</a>
+      <a href="/schools">Schools</a>
       <a href="/#testimonials">Benefits</a>
       <a href="/#contact">Contact</a>
-      <a class="nav-pill" href="/#pricing">Join Today</a>
-      <a class="nav-pill" href="/login">Sign In</a>
+      <a class="nav-pill" href="/super-admin/login">Login</a>
     </nav>
 
     <div class="nav-actions">
@@ -990,6 +990,23 @@
         </div>
       </form>
 
+      <%
+        const textOf = (value, fallback = "") => {
+          if (value === null || value === undefined) return fallback;
+          if (typeof value === "string") return value;
+          if (typeof value === "number" || typeof value === "boolean") return String(value);
+          if (Array.isArray(value)) return value.map(v => textOf(v, "")).filter(Boolean).join(", ") || fallback;
+          if (typeof value === "object") {
+            for (const key of ["label", "name", "title", "text", "value", "schoolType", "category", "type", "shortName", "code"]) {
+              const text = textOf(value[key], "");
+              if (text) return text;
+            }
+            return fallback;
+          }
+          return String(value || fallback);
+        };
+      %>
+
       <% if (!items || !items.length) { %>
         <div aria-live="polite" class="schools-empty">
           <div class="schools-empty-icon"><i class="fa-solid fa-face-frown"></i></div>
@@ -1006,12 +1023,18 @@
             const contact = profile.contact || {};
             const awards = profile.awards || [];
             const rating = profile.ratingSummary || {};
-            const initials = (profile.shortName || item.name || 'S').slice(0, 2).toUpperCase();
-            const applyHref = profile.admissions?.applyUrl || ('https://' + item.code + '.' + baseDomain + '/apply');
+            const schoolTypeLabel = textOf(profile.type || profile.category, 'School');
+            const schoolSystemLabel = textOf(profile.system, '');
+            const initials = textOf(profile.shortName || item.name || 'S', 'S').slice(0, 2).toUpperCase();
+            const schoolUnits = item.settings?.academics?.schoolUnits || [];
+            const activeUnit = schoolUnits.find(unit => unit.isActive !== false && unit.profile?.enabled !== false) || schoolUnits[0];
+            const unitQuery = activeUnit?._id ? ('?schoolUnitId=' + encodeURIComponent(String(activeUnit._id))) : '';
+            const profileHref = '/schools/' + encodeURIComponent(item.code) + unitQuery;
+            const applyHref = '/schools/' + encodeURIComponent(item.code) + '/apply' + unitQuery;
           %>
             <article
               class="school-card"
-              data-url="/schools/<%= item.code %>"
+              data-url="<%= profileHref %>"
               tabindex="0"
               role="link">
 
@@ -1042,7 +1065,7 @@
                   <h3 class="school-name"><%= item.name %></h3>
                   <span class="school-pill">
                     <i class="fa-solid fa-building-columns"></i>
-                    <%= profile.type || 'School' %>
+                    <%= schoolTypeLabel %>
                   </span>
                 </div>
 
@@ -1056,10 +1079,10 @@
                     <%= location.city || 'N/A' %><%= location.country ? ', ' + location.country : '' %>
                   </span>
 
-                  <% if (profile.system) { %>
+                  <% if (schoolSystemLabel) { %>
                     <span>
                       <i class="fa-solid fa-layer-group"></i>
-                      <%= profile.system %>
+                      <%= schoolSystemLabel %>
                     </span>
                   <% } %>
 
@@ -1094,7 +1117,7 @@
                 </div>
 
                 <div class="school-actions">
-                  <a class="btn schools-btn" href="/schools/<%= item.code %>">
+                  <a class="btn schools-btn" href="<%= profileHref %>">
                     <i class="fa-solid fa-id-card"></i> View Profile
                   </a>
 
@@ -1149,7 +1172,7 @@
       <h4>Learn about our mission</h4>
       <ul>
         <li><a href="/about">Our Story</a></li>
-        <li><a href="/services">What We Offer</a></li>
+        <li><a href="/features">What We Offer</a></li>
         <li><a href="/plan?plan=standard">Plans &amp; Pricing</a></li>
         <li><a href="/blog?slug=increase-admissions">Press resources</a></li>
         <li><a href="/careers">Careers</a></li>

@@ -6,6 +6,7 @@ const { publicInquiryLimiter, publicReviewLimiter } = require("../../../middlewa
 
 const ctrl = require("../../../controllers/tenant/public/schoolProfilePublicController");
 
+router.get("/:code/apply", resolveTenantByCode, ctrl.applyRedirect);
 router.get("/:code", resolveTenantByCode, ctrl.page);
 router.post("/:code/inquiry", publicInquiryLimiter, resolveTenantByCode, ctrl.inquiry);
 router.post("/:code/reviews", publicReviewLimiter, resolveTenantByCode, ctrl.review);

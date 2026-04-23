@@ -30,7 +30,7 @@ module.exports = (connection) => {
   // Unique roomNo per hostel (ignore deleted)
   HostelRoomSchema.index(
     { hostel: 1, roomNo: 1 },
-    { unique: true, partialFilterExpression: { isDeleted: { $ne: true } } }
+    { unique: true, partialFilterExpression: { isDeleted: false } }
   );
 
   HostelRoomSchema.methods.softDelete = async function () {

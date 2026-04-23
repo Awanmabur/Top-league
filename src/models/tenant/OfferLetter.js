@@ -37,7 +37,7 @@ module.exports = (conn) => {
 
   OfferLetterSchema.index(
     { letterNo: 1 },
-    { unique: true, partialFilterExpression: { isDeleted: { $ne: true } } }
+    { unique: true, partialFilterExpression: { isDeleted: false } }
   );
 
   return conn.model("OfferLetter", OfferLetterSchema);

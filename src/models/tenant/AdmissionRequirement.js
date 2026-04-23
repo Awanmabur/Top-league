@@ -44,7 +44,7 @@ module.exports = (conn) => {
 
   AdmissionRequirementSchema.index(
     { code: 1 },
-    { unique: true, partialFilterExpression: { isDeleted: { $ne: true } } }
+    { unique: true, partialFilterExpression: { isDeleted: false } }
   );
 
   AdmissionRequirementSchema.methods.softDelete = async function () {

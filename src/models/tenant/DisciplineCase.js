@@ -59,7 +59,7 @@ module.exports = (connection) => {
 
   DisciplineCaseSchema.index(
     { caseNo: 1 },
-    { unique: true, partialFilterExpression: { isDeleted: { $ne: true } } }
+    { unique: true, partialFilterExpression: { isDeleted: false } }
   );
 
   DisciplineCaseSchema.methods.softDelete = async function () {

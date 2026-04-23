@@ -778,18 +778,22 @@
 
     .card-content {
       padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: .65rem;
+      min-height: 230px;
     }
 
     .card h3 {
       font-size: 1.15rem;
-      margin-bottom: 0.5rem;
+      margin: 0;
       color: var(--primary);
     }
 
     .card p {
       font-size: 0.95rem;
       color: #64748b;
-      margin-bottom: 1rem;
+      margin: 0;
       text-align: left;
     }
 
@@ -800,6 +804,50 @@
       border-radius: 2rem;
       font-weight: 800;
       align-self: flex-start;
+    }
+
+    .school-card-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .35rem;
+      width: fit-content;
+      border-radius: 999px;
+      background: rgba(74, 144, 226, .12);
+      color: #1d4ed8;
+      padding: .35rem .65rem;
+      font-size: .78rem;
+      font-weight: 900;
+    }
+
+    .school-card-meta {
+      display: grid;
+      gap: .35rem;
+      color: #475569;
+      font-size: .86rem;
+      margin-top: auto;
+    }
+
+    .school-card-meta span {
+      display: inline-flex;
+      align-items: center;
+      gap: .35rem;
+      min-width: 0;
+    }
+
+    .school-card-actions {
+      display: flex;
+      gap: .5rem;
+      flex-wrap: wrap;
+      margin-top: .2rem;
+    }
+
+    .card .school-card-actions a {
+      padding: .48rem .8rem;
+    }
+
+    .card .school-card-actions .ghost {
+      background: rgba(74, 144, 226, .10);
+      color: var(--primary);
     }
 
     /* ORBIT */
@@ -2126,6 +2174,23 @@
       }
     }
 
+    @media (max-width: 600px) {
+      .feature-list {
+        grid-template-columns: none;
+        grid-template-rows: repeat(4, minmax(72px, auto));
+        grid-auto-flow: column;
+        grid-auto-columns: minmax(235px, 82vw);
+        overflow-x: auto;
+        overscroll-behavior-inline: contain;
+        scroll-snap-type: x mandatory;
+        padding-bottom: .55rem;
+      }
+
+      .feature-item {
+        scroll-snap-align: start;
+      }
+    }
+
     @media (max-width: 480px) {
       .features {
         grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -2200,10 +2265,10 @@
       <a href="/">Home</a>
       <a href="/about">About</a>
       <a href="/features">Features</a>
+      <a href="/schools">Schools</a>
       <a href="#testimonials">Benefits</a>
       <a href="#contact">Contact</a>
-      <a class="nav-pill" href="#pricing">Join Today</a>
-      <a class="nav-pill" href="/schedule">Sign In</a>
+      <a class="nav-pill" href="/super-admin/login">Login</a>
     </nav>
 
     <div class="nav-actions">
@@ -2279,8 +2344,8 @@
     </div>
     <div class="feature">
       <img src="https://img.icons8.com/ios-filled/50/4a90e2/combo-chart.png" alt="Programs">
-      <h3>Programs</h3>
-      <p>Discover academic and extracurricular offerings</p>
+      <h3>Subjects</h3>
+      <p>Discover academic subjects and extracurricular offerings</p>
     </div>
     <div class="feature">
       <img src="https://img.icons8.com/ios-filled/50/4a90e2/resume.png" alt="Admissions">
@@ -2301,50 +2366,55 @@
   <section class="featured-schools">
     <div class="carousel-container">
       <div class="carousel-track" id="featuredTrack">
-        <div class="card">
-          <img src="https://picsum.photos/seed/school1/400/300" alt="School">
-          <div class="card-content">
-            <h3>Harvard School of Excellence</h3>
-            <p>Offering world-class education with state-of-the-art facilities and experienced faculty.</p>
-            <a href="/schools">Learn More</a>
+        <%
+          const featuredSchoolsList = Array.isArray(typeof featuredSchools !== "undefined" ? featuredSchools : null)
+            ? featuredSchools
+            : [];
+          const carouselSchools = featuredSchoolsList.length
+            ? featuredSchoolsList
+            : [{
+                name: "Classic Academy",
+                type: "Featured School",
+                description: "Explore public school profiles, subjects, admissions and updates on Classic Academy.",
+                image: "https://images.unsplash.com/photo-1580582932707-520aed937b7b?q=80&w=900&auto=format&fit=crop",
+                href: "/schools",
+                applyHref: "/schools",
+                location: "Browse schools",
+                students: 0,
+                subjects: 0,
+                rating: 0,
+                badge: "Featured"
+              }];
+        %>
+        <% carouselSchools.forEach(function(school){ %>
+          <div class="card">
+            <img src="<%= school.image %>" alt="<%= school.name %>">
+            <div class="card-content">
+              <span class="school-card-badge"><i class="fa-solid fa-star"></i> <%= school.badge || "Featured" %></span>
+              <h3><%= school.name %></h3>
+              <p><%= school.description %></p>
+              <div class="school-card-meta">
+                <% if (school.location) { %>
+                  <span><i class="fa-solid fa-location-dot"></i> <%= school.location %></span>
+                <% } %>
+                <span>
+                  <i class="fa-solid fa-layer-group"></i>
+                  <%= school.type || "School" %><%= school.subjects ? " - " + Number(school.subjects).toLocaleString() + " subjects" : "" %>
+                </span>
+                <% if (school.students || school.rating) { %>
+                  <span>
+                    <i class="fa-solid fa-chart-line"></i>
+                    <%= school.students ? Number(school.students).toLocaleString() + " students" : "Public profile" %><%= school.rating ? " - " + school.rating + "/5" : "" %>
+                  </span>
+                <% } %>
+              </div>
+              <div class="school-card-actions">
+                <a href="<%= school.href %>">Learn More</a>
+                <a class="ghost" href="<%= school.applyHref || school.href %>">Apply</a>
+              </div>
+            </div>
           </div>
-        </div>
-
-        <div class="card">
-          <img src="https://picsum.photos/seed/school2/400/300" alt="School">
-          <div class="card-content">
-            <h3>Stanford Academy</h3>
-            <p>A hub of innovation and research, nurturing the leaders of tomorrow.</p>
-            <a href="/schools">Learn More</a>
-          </div>
-        </div>
-
-        <div class="card">
-          <img src="https://picsum.photos/seed/school3/400/300" alt="School">
-          <div class="card-content">
-            <h3>Cambridge Learning Center</h3>
-            <p>Empowering students with a curriculum that balances academics and extracurriculars.</p>
-            <a href="/schools">Learn More</a>
-          </div>
-        </div>
-
-        <div class="card">
-          <img src="https://picsum.photos/seed/school4/400/300" alt="School">
-          <div class="card-content">
-            <h3>Bright Future High School</h3>
-            <p>Focused on individual student growth and practical learning experiences.</p>
-            <a href="/schools">Learn More</a>
-          </div>
-        </div>
-
-        <div class="card">
-          <img src="https://picsum.photos/seed/school5/400/300" alt="School">
-          <div class="card-content">
-            <h3>Future Stars International</h3>
-            <p>Building confident, creative, and compassionate leaders from a young age.</p>
-            <a href="/schools">Learn More</a>
-          </div>
-        </div>
+        <% }) %>
       </div>
     </div>
   </section>
@@ -2446,6 +2516,24 @@
       </div>
       <div class="feature-item"><i class="fas fa-check-circle"></i>
         <div><strong>Accessible Anywhere:</strong> Access Classic Academy from any device on the go.</div>
+      </div>
+      <div class="feature-item"><i class="fas fa-check-circle"></i>
+        <div><strong>Admissions Pipeline:</strong> Track inquiries, applications, reviews, interviews and decisions.</div>
+      </div>
+      <div class="feature-item"><i class="fas fa-check-circle"></i>
+        <div><strong>Finance Reports:</strong> View balances, receipts, invoices and collection summaries quickly.</div>
+      </div>
+      <div class="feature-item"><i class="fas fa-check-circle"></i>
+        <div><strong>Staff Management:</strong> Organize teachers, roles, departments, workloads and staff records.</div>
+      </div>
+      <div class="feature-item"><i class="fas fa-check-circle"></i>
+        <div><strong>Attendance:</strong> Monitor daily attendance and spot absence patterns before they grow.</div>
+      </div>
+      <div class="feature-item"><i class="fas fa-check-circle"></i>
+        <div><strong>Library & Hostel:</strong> Manage books, borrowing, rooms, allocations and student welfare.</div>
+      </div>
+      <div class="feature-item"><i class="fas fa-check-circle"></i>
+        <div><strong>Roles & Audit Logs:</strong> Control access and keep a clear record of important actions.</div>
       </div>
     </div>
   </section>

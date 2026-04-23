@@ -31,7 +31,7 @@ module.exports = (connection) => {
   // prevent duplicate active allocation for same student per term
   HostelAllocationSchema.index(
     { student: 1, academicYear: 1, semester: 1, status: 1 },
-    { unique: true, partialFilterExpression: { isDeleted: { $ne: true }, status: "active" } }
+    { unique: true, partialFilterExpression: { isDeleted: false, status: "active" } }
   );
 
   HostelAllocationSchema.methods.vacate = async function () {

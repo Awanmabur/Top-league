@@ -46,6 +46,9 @@ module.exports = (connection) => {
         index: true,
       },
       classLevel: { type: String, default: "", trim: true, uppercase: true, maxlength: 30, index: true },
+      schoolUnitId: { type: String, default: "", trim: true, maxlength: 80, index: true },
+      schoolUnitName: { type: String, default: "", trim: true, maxlength: 160 },
+      schoolUnitCode: { type: String, default: "", trim: true, maxlength: 80 },
       term: { type: Number, min: 1, max: 3, default: 1, index: true },
       intakeId: { type: Schema.Types.ObjectId, ref: "Intake", default: null, index: true },
       streamId: { type: Schema.Types.ObjectId, ref: "Stream", default: null, index: true },
@@ -148,7 +151,7 @@ module.exports = (connection) => {
 
   ApplicantSchema.index(
     { applicationId: 1 },
-    { unique: true, partialFilterExpression: { isDeleted: { $ne: true } } }
+    { unique: true, partialFilterExpression: { isDeleted: false } }
   );
   ApplicantSchema.index({ isDeleted: 1, status: 1, createdAt: -1 });
   ApplicantSchema.index({ isDeleted: 1, section1: 1, status: 1, createdAt: -1 });

@@ -7,7 +7,7 @@ const { publicInquiryLimiter, publicReviewLimiter } = require("../../middleware/
 const ctrl = require("../../controllers/platform/schoolsPublicController");
 const publicSearchController = require("../../controllers/platform/publicSearchController");
  
-router.get("/", (req, res) => res.render("platform/public/index"));
+router.get("/", ctrl.landing);
 router.get("/about", (req, res) => res.render("platform/public/about"));
 router.get("/features", (req, res) => res.render("platform/public/features"));
 router.get("/services", (req, res) => res.render("platform/public/services"));
@@ -35,6 +35,7 @@ router.get("/support", (req, res) => res.render("platform/public/support"));
 router.get("/status", (req, res) => res.render("platform/public/status"));
 
 router.get("/schools", ctrl.list);
+router.get("/schools/:code/apply", resolveTenantByCode, ctrl.applyRedirect);
 router.get("/schools/:code", resolveTenantByCode, ctrl.page);
 router.post("/schools/:code/inquiry", publicInquiryLimiter, resolveTenantByCode, ctrl.inquiry);
 router.post("/schools/:code/reviews", publicReviewLimiter, resolveTenantByCode, ctrl.review);

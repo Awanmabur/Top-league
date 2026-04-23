@@ -148,8 +148,8 @@ module.exports = (connection) => {
     {
       unique: true,
       partialFilterExpression: {
-        isDeleted: { $ne: true },
-        studentNo: { $exists: true, $type: "string", $ne: "" },
+        isDeleted: false,
+        studentNo: { $gt: "" },
       },
     }
   );
@@ -159,8 +159,8 @@ module.exports = (connection) => {
     {
       unique: true,
       partialFilterExpression: {
-        isDeleted: { $ne: true },
-        regNo: { $exists: true, $type: "string", $ne: "" },
+        isDeleted: false,
+        regNo: { $gt: "" },
       },
     }
   );

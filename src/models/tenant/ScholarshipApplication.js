@@ -73,7 +73,7 @@ module.exports = (connection) => {
 
   ScholarshipApplicationSchema.index(
     { applicationId: 1 },
-    { unique: true, partialFilterExpression: { isDeleted: { $ne: true } } }
+    { unique: true, partialFilterExpression: { isDeleted: false } }
   );
 
   ScholarshipApplicationSchema.index({ scholarship: 1, status: 1, createdAt: -1 });

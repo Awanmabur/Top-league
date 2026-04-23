@@ -24,8 +24,12 @@
   const termId = byId("termId");
   const academicYear = byId("academicYear");
   const uploadDraftUrl = byId("uploadDraftUrl")?.value || "/admissions/upload-draft";
+  const applyActionUrl = byId("applyActionUrl")?.value || "/admissions/apply";
   const csrfToken = form.querySelector('input[name="_csrf"]')?.value || "";
-  const DRAFT_KEY = "classic_academy_apply_draft_v3";
+  const selectedSchoolUnitId = form.querySelector('input[name="schoolUnitId"]')?.value || "";
+  const DRAFT_KEY = selectedSchoolUnitId
+    ? `classic_academy_apply_draft_v3_unit_${selectedSchoolUnitId}`
+    : "classic_academy_apply_draft_v3";
   const uploadPromises = new Set();
 
   function readJson(id, fallback) {
@@ -294,7 +298,10 @@
       renderOtherDocs();
     }, 0);
   });
-  btnNew?.addEventListener("click", () => { try { localStorage.removeItem(DRAFT_KEY); } catch (_) {} window.location.href = "/admissions/apply"; });
+  btnNew?.addEventListener("click", () => {
+    try { localStorage.removeItem(DRAFT_KEY); } catch (_) {}
+    window.location.href = applyActionUrl;
+  });
 
   form.addEventListener("submit", async (e) => {
     if (!uploadPromises.size) return;

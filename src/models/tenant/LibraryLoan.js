@@ -28,7 +28,7 @@ module.exports = (connection) => {
   // only one active loan for same book per borrower at a time
   LibraryLoanSchema.index(
     { book: 1, borrowerType: 1, borrowerId: 1, status: 1 },
-    { unique: true, partialFilterExpression: { isDeleted: { $ne: true }, status: "issued" } }
+    { unique: true, partialFilterExpression: { isDeleted: false, status: "issued" } }
   );
 
   LibraryLoanSchema.methods.softDelete = async function () {

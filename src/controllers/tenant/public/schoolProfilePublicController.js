@@ -8,8 +8,45 @@ function safeInt(n, def = 0) {
   return Number.isFinite(x) ? x : def;
 }
 
+function displayText(value, fallback = "") {
+  if (value === null || value === undefined) return fallback;
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+  if (value instanceof Date) return value.toISOString();
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => displayText(item, ""))
+      .filter(Boolean)
+      .join(", ");
+  }
+  if (typeof value === "object") {
+    const source = asPlain(value);
+    for (const key of [
+      "label",
+      "name",
+      "title",
+      "text",
+      "value",
+      "schoolType",
+      "category",
+      "type",
+      "shortName",
+      "code",
+    ]) {
+      const candidate = source[key];
+      const text = displayText(candidate, "");
+      if (text) return text;
+    }
+    return fallback;
+  }
+
+  return String(value || fallback);
+}
+
 function clean(s, max) {
-  return String(s || "")
+  return displayText(s, "")
     .trim()
     .slice(0, max);
 }
@@ -19,6 +56,101 @@ function parseWebsiteUrl(url) {
   if (!v) return "";
   if (!/^https?:\/\//i.test(v)) return "";
   return v;
+}
+
+function isHttpUrl(url) {
+  return /^https?:\/\//i.test(String(url || "").trim());
+}
+
+function getRequestOrigin(req) {
+  const host = typeof req.get === "function" ? req.get("host") || "" : "";
+  const proto = req.protocol || (req.secure ? "https" : "http");
+  return { host, proto };
+}
+
+function getMainSiteUrl(req) {
+  const configured =
+    process.env.PUBLIC_SITE_URL ||
+    process.env.MAIN_SITE_URL ||
+    process.env.PLATFORM_SITE_URL ||
+    "";
+
+  if (configured) return String(configured).replace(/\/+$/, "");
+
+  const { host, proto } = getRequestOrigin(req);
+  const [hostname, port] = String(host || "").split(":");
+  const portPart = port ? `:${port}` : "";
+  const baseDomain = String(process.env.BASE_DOMAIN || "classicacademy.app")
+    .trim()
+    .toLowerCase();
+
+  if (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname.endsWith(".localhost") ||
+    baseDomain === "localhost"
+  ) {
+    return `${proto}://localhost${portPart}`;
+  }
+
+  return `${proto}://${baseDomain}`;
+}
+
+function getSchoolUnitQueryValue(req, schoolUnit) {
+  return String(
+    req.query.schoolUnitId ||
+      req.query.unitId ||
+      req.query.schoolUnit ||
+      schoolUnit?._id ||
+      "",
+  ).trim();
+}
+
+function appendSchoolUnitQuery(target, schoolUnitId) {
+  const value = String(schoolUnitId || "").trim();
+  const url = String(target || "");
+
+  if (!value || !url || /[?&]schoolUnitId=/.test(url)) return url;
+
+  const hashIndex = url.indexOf("#");
+  const base = hashIndex >= 0 ? url.slice(0, hashIndex) : url;
+  const hash = hashIndex >= 0 ? url.slice(hashIndex) : "";
+  const join = base.includes("?") ? "&" : "?";
+
+  return `${base}${join}schoolUnitId=${encodeURIComponent(value)}${hash}`;
+}
+
+function isProfileApplyPath(pathname) {
+  return /^\/schools\/[^/]+\/apply\/?$/i.test(String(pathname || ""));
+}
+
+function normalizeApplyUrlForTenant(rawApplyUrl) {
+  const raw = String(rawApplyUrl || "").trim();
+  if (!raw) return "/apply";
+
+  if (isHttpUrl(raw)) {
+    try {
+      const parsed = new URL(raw);
+      if (isProfileApplyPath(parsed.pathname)) {
+        parsed.pathname = "/apply";
+        return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+      }
+    } catch (_) {
+      return raw;
+    }
+
+    return raw;
+  }
+
+  try {
+    const parsed = new URL(raw.startsWith("/") ? raw : `/${raw}`, "http://local");
+    if (isProfileApplyPath(parsed.pathname)) {
+      parsed.pathname = "/apply";
+    }
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch (_) {
+    return raw.startsWith("/") ? raw : `/${raw}`;
+  }
 }
 
 function sha256(s) {
@@ -188,11 +320,152 @@ function normalizeAdmissions(profile) {
   };
 }
 
-async function findTenantForPublicPage(req, code) {
-  if (req.tenant && String(req.tenant.code || "").toLowerCase() === code) {
-    return req.tenant;
+function asPlain(value) {
+  if (!value) return {};
+  if (typeof value.toObject === "function") {
+    return value.toObject({ depopulate: true });
+  }
+  return value;
+}
+
+function isMergeableObject(value) {
+  return (
+    value &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    !(value instanceof Date)
+  );
+}
+
+function mergeProfileData(base = {}, override = {}) {
+  const out = { ...asPlain(base) };
+
+  for (const [key, rawValue] of Object.entries(asPlain(override))) {
+    const value = asPlain(rawValue);
+
+    if (value === undefined || value === null) continue;
+    if (Array.isArray(value)) {
+      if (value.length) out[key] = value;
+      continue;
+    }
+    if (isMergeableObject(value)) {
+      out[key] = mergeProfileData(out[key] || {}, value);
+      continue;
+    }
+    if (typeof value === "string") {
+      if (value.trim()) out[key] = value;
+      continue;
+    }
+
+    out[key] = value;
   }
 
+  return out;
+}
+
+function profileHasContent(profile = {}, branding = {}) {
+  const p = asPlain(profile);
+  const b = asPlain(branding);
+
+  if (p.enabled === false) return true;
+
+  const scalarValues = [
+    p.shortName,
+    p.type,
+    p.tagline,
+    p.about,
+    p.mission,
+    p.vision,
+    p.contact?.phone,
+    p.contact?.email,
+    p.contact?.website,
+    p.location?.city,
+    p.location?.country,
+    b.logoUrl,
+    b.coverUrl,
+  ];
+
+  const arrayFields = [
+    "values",
+    "facilities",
+    "accreditations",
+    "clubs",
+    "scholarships",
+    "policies",
+    "highlights",
+    "whyChooseUs",
+    "gallery",
+    "awards",
+    "announcements",
+    "faqs",
+    "reviews",
+  ];
+
+  return (
+    scalarValues.some((value) => String(value || "").trim()) ||
+    arrayFields.some((field) => Array.isArray(p[field]) && p[field].length)
+  );
+}
+
+function getSchoolUnits(tenantDoc) {
+  const units = tenantDoc.settings?.academics?.schoolUnits;
+  return Array.isArray(units) ? units : [];
+}
+
+function findRequestedSchoolUnit(req, tenantDoc) {
+  const units = getSchoolUnits(tenantDoc);
+  const wanted = String(
+    req.query.schoolUnitId ||
+      req.query.unitId ||
+      req.query.schoolUnit ||
+      req.query.schoolUnitCode ||
+      req.query.unit ||
+      "",
+  )
+    .trim()
+    .toLowerCase();
+
+  if (wanted) {
+    const found = units.find((unit) =>
+      [
+        unit._id,
+        unit.code,
+        unit.slug,
+        unit.name,
+      ]
+        .map((value) => String(value || "").trim().toLowerCase())
+        .includes(wanted),
+    );
+
+    if (found) return found;
+  }
+
+  return (
+    units.find(
+      (unit) =>
+        unit.isActive !== false &&
+        profileHasContent(unit.profile, unit.branding),
+    ) ||
+    units.find((unit) => unit.isActive !== false) ||
+    null
+  );
+}
+
+function buildPublicProfile(req, tenantDoc) {
+  const schoolUnit = findRequestedSchoolUnit(req, tenantDoc);
+  const unitHasProfile =
+    schoolUnit && profileHasContent(schoolUnit.profile, schoolUnit.branding);
+  const profile = unitHasProfile
+    ? mergeProfileData(tenantDoc.settings?.profile || {}, schoolUnit.profile)
+    : tenantDoc.settings?.profile || {};
+  const branding = unitHasProfile
+    ? mergeProfileData(tenantDoc.settings?.branding || {}, schoolUnit.branding)
+    : tenantDoc.settings?.branding || {};
+
+  return { profile, branding, schoolUnit: unitHasProfile ? schoolUnit : null };
+}
+
+async function findTenantForPublicPage(req, code) {
   return Tenant.findOne({
     code,
     isDeleted: { $ne: true },
@@ -202,6 +475,42 @@ async function findTenantForPublicPage(req, code) {
 }
 
 module.exports = {
+  async applyRedirect(req, res) {
+    try {
+      const code = String(req.params.code || "")
+        .trim()
+        .toLowerCase();
+
+      const tenantDoc =
+        req.tenant && String(req.tenant.code || "").toLowerCase() === code
+          ? req.tenant
+          : await findTenantForPublicPage(req, code);
+
+      if (!tenantDoc) {
+        return res.status(404).render("errors/404");
+      }
+
+      const { profile, schoolUnit } = buildPublicProfile(req, tenantDoc);
+      const rawApplyUrl = normalizeApplyUrlForTenant(
+        profile.admissions?.applyUrl || profile.applyUrl || "/apply",
+      );
+      const schoolUnitId = getSchoolUnitQueryValue(req, schoolUnit);
+
+      if (isHttpUrl(rawApplyUrl)) {
+        return res.redirect(appendSchoolUnitQuery(rawApplyUrl, schoolUnitId));
+      }
+
+      const applyPath = String(rawApplyUrl || "/apply").startsWith("/")
+        ? rawApplyUrl
+        : `/${rawApplyUrl}`;
+
+      return res.redirect(appendSchoolUnitQuery(applyPath, schoolUnitId));
+    } catch (e) {
+      console.error("tenant public school apply redirect:", e);
+      return res.status(500).render("errors/500");
+    }
+  },
+
   // GET /schools/:code
   async page(req, res) {
     try {
@@ -209,14 +518,16 @@ module.exports = {
         .trim()
         .toLowerCase();
 
-      const tenantDoc = await findTenantForPublicPage(req, code);
+      const tenantDoc =
+        req.tenant && String(req.tenant.code || "").toLowerCase() === code
+          ? req.tenant
+          : await findTenantForPublicPage(req, code);
 
       if (!tenantDoc) {
         return res.status(404).render("errors/404");
       }
 
-      const profile = tenantDoc.settings?.profile || {};
-      const branding = tenantDoc.settings?.branding || {};
+      const { profile, branding, schoolUnit } = buildPublicProfile(req, tenantDoc);
 
       if (profile.enabled === false) {
         return res.status(404).render("errors/404");
@@ -232,12 +543,17 @@ module.exports = {
       const announcements = loadNewsFromProfile(profile);
       const reviews = loadApprovedReviewsFromProfile(profile);
       const admissions = normalizeAdmissions(profile);
+      const schoolUnitId = getSchoolUnitQueryValue(req, schoolUnit);
+      const profileApplyHref = appendSchoolUnitQuery("/apply", schoolUnitId);
 
       const stats = {
         students: safeInt(profile.stats?.students, counts.students),
         subjects: safeInt(profile.stats?.subjects ?? profile.stats?.programs, counts.subjects),
         staff: safeInt(profile.stats?.staff, counts.staff),
-        campuses: safeInt(profile.stats?.campuses, 0),
+        campuses: safeInt(
+          profile.stats?.campuses,
+          schoolUnit?.campuses?.length || 0,
+        ),
       };
 
       const whyChooseUsArr =
@@ -255,9 +571,12 @@ module.exports = {
         100,
       );
 
-      return res.render("tenant/public/schools/school-profile", {
+      return res.render("platform/public/school-profile", {
         tenant: {
           ...tenantDoc,
+          mainSiteUrl: getMainSiteUrl(req),
+          profileApplyHref,
+          selectedSchoolUnit: schoolUnit,
           settings: {
             ...tenantDoc.settings,
             branding: {
@@ -269,6 +588,9 @@ module.exports = {
               ...profile,
               enabled: profile.enabled !== false,
               verified: !!profile.verified,
+              type: clean(profile.type || profile.category || "", 120),
+              category: clean(profile.category || "", 120),
+              system: clean(profile.system || "", 120),
 
               city: normalizedCity,
               location: normalizedLocation,

@@ -56,6 +56,21 @@ function buildAcademicYears(terms) {
   return Array.from(years).sort();
 }
 
+function getRequestedSchoolUnitId(req) {
+  return norm(req?.body?.schoolUnitId || req?.query?.schoolUnitId || "");
+}
+
+function findRequestedSchoolUnit(req, schoolUnitId) {
+  const units = req?.tenant?.settings?.academics?.schoolUnits;
+  if (!schoolUnitId || !Array.isArray(units)) return null;
+
+  return (
+    units.find((unit) => String(unit._id || "") === String(schoolUnitId)) ||
+    units.find((unit) => String(unit.id || "") === String(schoolUnitId)) ||
+    null
+  );
+}
+
 function getUploadSession(req) {
   if (!req.session) return null;
   if (!req.session.admissionDraftUploads) req.session.admissionDraftUploads = {};
@@ -92,12 +107,55 @@ async function loadPlacementData(req) {
   const Intake = req.models ? req.models.Intake : null;
   const Stream = req.models ? req.models.Stream : null;
   const Section = req.models ? req.models.Section : null;
+  const selectedSchoolUnitId = getRequestedSchoolUnitId(req);
+  const selectedSchoolUnit = findRequestedSchoolUnit(req, selectedSchoolUnitId);
 
   const [terms, streams, sections] = await Promise.all([
     Intake ? Intake.find({ isDeleted: { $ne: true }, status: { $in: ["draft", "open", "closed"] } }).select("_id name year term code status isActive").sort({ isActive: -1, year: -1, name: 1 }).lean() : [],
-    Stream ? Stream.find({ status: { $ne: "archived" } }).select("_id name levelType classLevel classId className classStream campusName schoolUnitName").sort({ levelType: 1, classLevel: 1, name: 1 }).lean() : [],
-    Section ? Section.find({ status: { $ne: "archived" } }).select("_id name levelType classLevel classId className classStream campusName schoolUnitName").sort({ levelType: 1, classLevel: 1, classStream: 1, name: 1 }).lean() : [],
+    Stream ? Stream.find({ status: { $ne: "archived" } }).select("_id name levelType classLevel classId className classStream campusName campusCode schoolUnitId schoolUnitName schoolUnitCode").sort({ levelType: 1, classLevel: 1, name: 1 }).lean() : [],
+    Section ? Section.find({ status: { $ne: "archived" } }).select("_id name levelType classLevel classId className classStream campusName campusCode schoolUnitId schoolUnitName schoolUnitCode").sort({ levelType: 1, classLevel: 1, classStream: 1, name: 1 }).lean() : [],
   ]);
+
+  const mappedStreams = streams.map((s) => ({
+    _id: String(s._id),
+    name: norm(s.name),
+    levelType: normLower(s.levelType),
+    classLevel: normUpper(s.classLevel),
+    classId: s.classId ? String(s.classId) : "",
+    className: norm(s.className),
+    classStream: normUpper(s.classStream),
+    campusName: norm(s.campusName),
+    campusCode: norm(s.campusCode),
+    schoolUnitId: norm(s.schoolUnitId),
+    schoolUnitName: norm(s.schoolUnitName),
+    schoolUnitCode: norm(s.schoolUnitCode),
+  }));
+
+  const mappedSections = sections.map((s) => ({
+    _id: String(s._id),
+    name: norm(s.name),
+    levelType: normLower(s.levelType),
+    classLevel: normUpper(s.classLevel),
+    classId: s.classId ? String(s.classId) : "",
+    className: norm(s.className),
+    classStream: normUpper(s.classStream),
+    campusName: norm(s.campusName),
+    campusCode: norm(s.campusCode),
+    schoolUnitId: norm(s.schoolUnitId),
+    schoolUnitName: norm(s.schoolUnitName),
+    schoolUnitCode: norm(s.schoolUnitCode),
+  }));
+
+  const matchedStreams = selectedSchoolUnitId
+    ? mappedStreams.filter((s) => String(s.schoolUnitId || "") === selectedSchoolUnitId)
+    : mappedStreams;
+  const matchedSections = selectedSchoolUnitId
+    ? mappedSections.filter((s) => String(s.schoolUnitId || "") === selectedSchoolUnitId)
+    : mappedSections;
+  const unitScopedStreams =
+    selectedSchoolUnitId && matchedStreams.length ? matchedStreams : mappedStreams;
+  const unitScopedSections =
+    selectedSchoolUnitId && matchedSections.length ? matchedSections : mappedSections;
 
   return {
     terms: terms.map((t) => ({
@@ -109,28 +167,16 @@ async function loadPlacementData(req) {
       status: norm(t.status),
       isActive: !!t.isActive,
     })),
-    streams: streams.map((s) => ({
-      _id: String(s._id),
-      name: norm(s.name),
-      levelType: normLower(s.levelType),
-      classLevel: normUpper(s.classLevel),
-      classId: s.classId ? String(s.classId) : "",
-      className: norm(s.className),
-      classStream: normUpper(s.classStream),
-      campusName: norm(s.campusName),
-      schoolUnitName: norm(s.schoolUnitName),
-    })),
-    sections: sections.map((s) => ({
-      _id: String(s._id),
-      name: norm(s.name),
-      levelType: normLower(s.levelType),
-      classLevel: normUpper(s.classLevel),
-      classId: s.classId ? String(s.classId) : "",
-      className: norm(s.className),
-      classStream: normUpper(s.classStream),
-      campusName: norm(s.campusName),
-      schoolUnitName: norm(s.schoolUnitName),
-    })),
+    streams: unitScopedStreams,
+    sections: unitScopedSections,
+    selectedSchoolUnitId,
+    selectedSchoolUnit: selectedSchoolUnit
+      ? {
+          id: String(selectedSchoolUnit._id || selectedSchoolUnit.id || ""),
+          name: norm(selectedSchoolUnit.name),
+          code: norm(selectedSchoolUnit.code),
+        }
+      : null,
   };
 }
 function buildErrors(body, files, terms, streams, sections, storedDocs = {}) {
@@ -204,11 +250,18 @@ function buildViewData(req, placement, formData, errors, applicationId) {
   const terms = placement && Array.isArray(placement.terms) ? placement.terms : [];
   const streams = placement && Array.isArray(placement.streams) ? placement.streams : [];
   const sections = placement && Array.isArray(placement.sections) ? placement.sections : [];
+  const selectedSchoolUnitId = norm(placement?.selectedSchoolUnitId);
+  const schoolUnitQuery = selectedSchoolUnitId
+    ? `?schoolUnitId=${encodeURIComponent(selectedSchoolUnitId)}`
+    : "";
   return {
     tenant: req.tenant,
     terms,
     streams,
     sections,
+    selectedSchoolUnitId,
+    selectedSchoolUnit: placement?.selectedSchoolUnit || null,
+    applyAction: `/admissions/apply${schoolUnitQuery}`,
     academicYears: buildAcademicYears(terms),
     schoolLevels: getSchoolLevels(),
     classLevels: getClassLevels(),
@@ -293,6 +346,7 @@ module.exports = {
         const streamDoc = placement.streams.find((s) => String(s._id) === streamId) || null;
         const section1 = norm(req.body.section1);
         const section2 = norm(req.body.section2);
+        const selectedSchoolUnit = placement.selectedSchoolUnit || null;
         const doc = await Applicant.create({
           applicationId,
           firstName: norm(req.body.firstName),
@@ -310,6 +364,18 @@ module.exports = {
           academicYear: norm(termDoc ? termDoc.year : req.body.academicYear),
           schoolLevel: normLower(req.body.schoolLevel),
           classLevel: normUpper(req.body.classLevel),
+          schoolUnitId:
+            placement.selectedSchoolUnitId ||
+            streamDoc?.schoolUnitId ||
+            "",
+          schoolUnitName:
+            selectedSchoolUnit?.name ||
+            streamDoc?.schoolUnitName ||
+            "",
+          schoolUnitCode:
+            selectedSchoolUnit?.code ||
+            streamDoc?.schoolUnitCode ||
+            "",
           term: termDoc && /^\d+$/.test(norm(termDoc.term)) ? Number(termDoc.term) : Number(req.body.term || 1),
           intakeId: termDoc ? termDoc._id : null,
           intake: termDoc ? termDoc.name : "",

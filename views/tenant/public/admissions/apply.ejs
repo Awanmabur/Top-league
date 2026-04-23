@@ -176,6 +176,9 @@
   const schoolLevelsArr = (typeof schoolLevels !== "undefined" && Array.isArray(schoolLevels)) ? schoolLevels : [];
   const classLevelsArr = (typeof classLevels !== "undefined" && Array.isArray(classLevels)) ? classLevels : [];
   const termsArr = (typeof terms !== "undefined" && Array.isArray(terms)) ? terms : [];
+  const selectedSchoolUnitIdValue = (typeof selectedSchoolUnitId !== "undefined" && selectedSchoolUnitId) ? String(selectedSchoolUnitId) : "";
+  const selectedSchoolUnitObj = (typeof selectedSchoolUnit !== "undefined" && selectedSchoolUnit) ? selectedSchoolUnit : null;
+  const applyActionValue = (typeof applyAction !== "undefined" && applyAction) ? String(applyAction) : "/admissions/apply";
   const _appId = (typeof applicationId !== "undefined" && applicationId) ? applicationId : null;
   const _csrf = (typeof csrfToken !== "undefined" && csrfToken) ? csrfToken : null;
   const storedUploadsObj = (typeof storedUploads !== "undefined" && storedUploads) ? storedUploads : { passportPhoto: null, idDocument: null, transcript: null, otherDocs: [] };
@@ -239,6 +242,9 @@
         <div>
           <h2 class="title">Apply for Admission</h2>
           <div class="muted">Fill the form and upload required documents. Your application will appear in Admissions after submission.</div>
+          <% if (selectedSchoolUnitObj && selectedSchoolUnitObj.name) { %>
+            <div class="muted" style="margin-top:6px"><i class="fa-solid fa-school"></i> Applying to <strong><%= selectedSchoolUnitObj.name %></strong></div>
+          <% } %>
           <% if (err("general")) { %>
             <div class="error" style="display:block;margin-top:8px"><%= err("general") %></div>
           <% } %>
@@ -261,13 +267,16 @@
           </div>
         </div>
 
-        <form action="/admissions/apply"
+        <form action="<%= applyActionValue %>"
               method="post"
               id="applyForm"
               enctype="multipart/form-data"
               novalidate
               class="<%= _appId ? 'hidden' : '' %>">
           <% if (_csrf) { %><input type="hidden" name="_csrf" value="<%= _csrf %>"><% } %>
+          <% if (selectedSchoolUnitIdValue) { %>
+            <input type="hidden" name="schoolUnitId" value="<%= selectedSchoolUnitIdValue %>">
+          <% } %>
           <% if (err('general')) { %><div class="section" style="border-color:rgba(239,68,68,.28);background:#fef2f2;color:#991b1b"><%= err('general') %></div><% } %>
 
           <div class="section">
@@ -638,6 +647,7 @@
 <textarea id="sectionsData" class="hidden"><%- JSON.stringify(sectionsArr) %></textarea>
 <textarea id="qualificationMapData" class="hidden"><%- JSON.stringify(qualificationMapObj) %></textarea>
 <textarea id="storedUploadsData" class="hidden"><%- JSON.stringify(storedUploadsObj) %></textarea>
+<input type="hidden" id="applyActionUrl" value="<%= applyActionValue %>">
 <input type="hidden" id="uploadDraftUrl" value="/admissions/upload-draft">
 <script src="/js/apply.js" defer></script>
 </body>

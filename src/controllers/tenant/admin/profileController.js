@@ -442,6 +442,28 @@ function profileRedirectPath(schoolUnitId) {
     : "/admin/profile?success=1";
 }
 
+function shouldRefreshProfileStats(req) {
+  return (
+    process.env.ADMIN_PROFILE_LIVE_STATS === "1" ||
+    String(req?.query?.refreshStats || "") === "1"
+  );
+}
+
+function getProfileStatsSnapshot(tenantDoc, selectedSchoolUnit) {
+  const profile = selectedSchoolUnit?.profile || tenantDoc.settings?.profile || {};
+  const stats = profile.stats || {};
+
+  return {
+    students: Number(stats.students || 0),
+    subjects: Number(stats.subjects || stats.programs || 0),
+    staff: Number(stats.staff || 0),
+    campuses: selectedSchoolUnit
+      ? (selectedSchoolUnit.campuses || []).length
+      : Number(stats.campuses || 0),
+    alumni: Number(stats.alumni || 0),
+  };
+}
+
 async function getStatsFromTenantDB(tenantDoc) {
   try {
     const conn = await getTenantConnection(tenantDoc.dbName);
@@ -512,7 +534,9 @@ module.exports = {
         mirrorSchoolUnitToTenantSettings(tenantDoc, selectedSchoolUnit);
       }
 
-      const liveStats = await getStatsFromTenantDB(tenantDoc);
+      const liveStats = shouldRefreshProfileStats(req)
+        ? await getStatsFromTenantDB(tenantDoc)
+        : getProfileStatsSnapshot(tenantDoc, selectedSchoolUnit);
       tenantDoc.settings.profile.stats = {
         ...tenantDoc.settings.profile.stats,
         ...liveStats,
@@ -525,9 +549,11 @@ module.exports = {
         tenantDoc.settings.profile.reviews
       );
 
-      tenantDoc.markModified("settings.profile.stats");
-      tenantDoc.markModified("settings.profile.ratingSummary");
-      await tenantDoc.save();
+      if (shouldRefreshProfileStats(req)) {
+        tenantDoc.markModified("settings.profile.stats");
+        tenantDoc.markModified("settings.profile.ratingSummary");
+        await tenantDoc.save();
+      }
 
       const reviews = tenantDoc.settings.profile.reviews || [];
       const pending = reviews.filter((r) => r.status === "pending");

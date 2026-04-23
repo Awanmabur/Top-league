@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon src/index.js",
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "indexes": "node scripts/create-indexes.js",
+    "seed:school-profile": "node scripts/seed-school-profile.js"
   },
   "keywords": [],
   "author": "",

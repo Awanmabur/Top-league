@@ -16,6 +16,9 @@
     :root{
       --blue:<%= tenant?.settings?.branding?.primaryColor || '#0a3d62' %>;
       --accent:<%= tenant?.settings?.branding?.accentColor || '#0a6fbf' %>;
+      --primary:#4a90e2;
+      --ink:#0f172a;
+      --page-pad:clamp(1rem, 4vw, 6rem);
 
       --blue-2:#083454;
       --muted:#6b7280;
@@ -36,9 +39,10 @@
       font-family:PoppinsLocal, system-ui, -apple-system, Segoe UI, Roboto, Arial;
       background:var(--bg);
       color:#0f172a;
+      padding-top:104px;
     }
     a{color:inherit;text-decoration:none}
-    .container{width:min(1120px,92%);margin:0 auto}
+    .container{width:min(1300px,92%);margin:0 auto}
     .muted{color:var(--muted)}
     .small{font-size:12px}
 
@@ -322,12 +326,268 @@
       padding-top:12px;border-top:1px solid var(--border)
     }
 
+    .header {
+      position: fixed;
+      top: 14px;
+      left: var(--page-pad);
+      right: var(--page-pad);
+      padding: .65rem .85rem;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .70);
+      border: 1px solid rgba(255, 255, 255, .78);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 16px 46px rgba(15, 23, 42, .10);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .8rem;
+      z-index: 2000;
+    }
+
+    .header .brand {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      min-width: 0;
+      color: var(--ink);
+    }
+
+    .brand-mark {
+      width: 40px;
+      height: 40px;
+      border-radius: 14px;
+      object-fit: cover;
+      border: 1px solid rgba(15, 23, 42, .10);
+      background: rgba(255, 255, 255, .85);
+      flex: 0 0 auto;
+    }
+
+    .brand-txt {
+      display: grid;
+      line-height: 1.05;
+      min-width: 0;
+    }
+
+    .brand-name {
+      font-weight: 900;
+      letter-spacing: -.02em;
+      color: var(--ink);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .brand-sub {
+      font-size: .86rem;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .navbar {
+      display: flex;
+      align-items: center;
+      gap: .35rem;
+    }
+
+    .navbar a {
+      padding: .55rem .75rem;
+      border-radius: 999px;
+      color: #1d4ed8;
+      font-weight: 600;
+      font-size: 1.02rem;
+      transition: background .2s ease, transform .2s ease, color .2s ease;
+      white-space: nowrap;
+    }
+
+    .navbar a:hover {
+      background: rgba(74, 144, 226, .10);
+      transform: translateY(-1px);
+      color: var(--ink);
+    }
+
+    .nav-pill {
+      border: 1px solid rgba(74, 144, 226, .35);
+      background: rgba(74, 144, 226, .10);
+      color: #0f172a !important;
+      font-weight: 800;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: .55rem;
+      flex: 0 0 auto;
+    }
+
+    .header .btn {
+      justify-content: center;
+      gap: .45rem;
+      padding: 0.72rem 1rem;
+      background-color: var(--primary);
+      color: white;
+      border: 1px solid var(--primary);
+      border-radius: 999px;
+      font-weight: 800;
+      transition: background-color .25s ease, transform .2s ease, box-shadow .2s ease;
+      box-shadow: 0 10px 28px rgba(74, 144, 226, .18);
+      white-space: nowrap;
+    }
+
+    .header .btn:hover {
+      background-color: transparent;
+      color: var(--primary);
+      transform: translateY(-1px);
+      box-shadow: 0 14px 34px rgba(15, 23, 42, .12);
+    }
+
+    .btn-sm {
+      padding: .55rem .8rem !important;
+      font-size: .95rem !important;
+      box-shadow: none !important;
+    }
+
+    .menu-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 999px;
+      border: 1px solid rgba(15, 23, 42, .12);
+      background: rgba(255, 255, 255, .78);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 10px 26px rgba(15, 23, 42, .08);
+    }
+
+    .menu-btn i {
+      color: var(--ink);
+      font-size: 1.05rem;
+    }
+
+    .footer {
+      background-color: #f9f9f9;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      font-size: 0.95rem;
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(10px);
+      border-radius: 25px;
+      margin: 2rem var(--page-pad) 2.75rem;
+      padding: 0;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      gap: 0;
+    }
+
+    .footer div {
+      margin: 1rem;
+      flex: 1 1 220px;
+      min-width: 220px;
+    }
+
+    .footer .footer-inner {
+      display: none !important;
+    }
+
+    .footer h4 {
+      font-size: 1rem;
+      margin-bottom: 1rem;
+      color: var(--ink);
+    }
+
+    .footer ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .footer ul li {
+      margin-bottom: 0.5rem;
+    }
+
+    .footer ul li a {
+      color: #333;
+    }
+
+    .footer ul li a:hover {
+      text-decoration: underline;
+    }
+
+    #toTopBtn {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 1.5rem;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      display: none;
+      z-index: 1000;
+      transition: transform 0.2s ease;
+    }
+
+    #toTopBtn:hover {
+      transform: scale(1.08);
+    }
+
+    @media (max-width:1024px){
+      .brand-sub{display:none}
+      .menu-btn{display:inline-flex}
+      .navbar{
+        position:absolute;
+        top:calc(100% + .65rem);
+        left:0;
+        right:0;
+        margin:0 .25rem;
+        padding:.75rem;
+        background:rgba(74, 144, 226, .96);
+        border:1px solid rgba(255, 255, 255, .35);
+        border-radius:20px;
+        backdrop-filter:blur(12px);
+        display:grid;
+        gap:.4rem;
+        transform:translateY(-8px);
+        opacity:0;
+        pointer-events:none;
+        transition:transform .2s ease, opacity .2s ease;
+      }
+      .navbar.active{
+        transform:translateY(0);
+        opacity:1;
+        pointer-events:auto;
+      }
+      .navbar a{
+        color:#fff;
+        border-radius:16px;
+        padding:.85rem .85rem;
+        background:rgba(255, 255, 255, .08);
+      }
+      .navbar a:hover{
+        background:rgba(255, 255, 255, .14);
+        transform:none;
+        color:#fff;
+      }
+      .nav-pill{
+        background:rgba(255, 255, 255, .18);
+        border-color:rgba(255, 255, 255, .35);
+        color:#fff !important;
+      }
+    }
+
     @media (max-width:980px){
       .school-head{grid-template-columns:90px 1fr}
       .stats{grid-column:1/-1;grid-template-columns:repeat(4,1fr)}
     }
 
     @media (max-width:760px){
+      body{padding-top:96px}
       .topnav{display:none}
       .hamburger{display:block}
       .cover{height:260px}
@@ -360,6 +620,22 @@
   const faqs = Array.isArray(p.faqs) ? p.faqs : [];
   const reviews = Array.isArray(p.reviews) ? p.reviews : [];
   const adm = p.admissions || {};
+  const textOf = (value, fallback = "") => {
+    if (value === null || value === undefined) return fallback;
+    if (typeof value === "string") return value;
+    if (typeof value === "number" || typeof value === "boolean") return String(value);
+    if (Array.isArray(value)) return value.map(v => textOf(v, "")).filter(Boolean).join(", ") || fallback;
+    if (typeof value === "object") {
+      for (const key of ["label", "name", "title", "text", "value", "schoolType", "category", "type", "shortName", "code"]) {
+        const text = textOf(value[key], "");
+        if (text) return text;
+      }
+      return fallback;
+    }
+    return String(value || fallback);
+  };
+  const profileTypeLabel = textOf(p.type || p.category, "");
+  const profileSystemLabel = textOf(p.system, "");
 
   const ratingAvg = (p.ratingAvg ?? 0);
   const ratingCount = (p.ratingCount ?? 0);
@@ -388,33 +664,46 @@
         "Report card / Results slip",
         "Birth certificate / National ID",
       ];
+
+  const selectedSchoolUnit = tenant?.selectedSchoolUnit || {};
+  const selectedSchoolUnitId = selectedSchoolUnit?._id ? String(selectedSchoolUnit._id) : "";
+  const schoolUnitQuery = selectedSchoolUnitId ? ("?schoolUnitId=" + encodeURIComponent(selectedSchoolUnitId)) : "";
+  const applyHref = tenant?.profileApplyHref || ("/schools/" + encodeURIComponent(tenant.code) + "/apply" + schoolUnitQuery);
+  const mainSiteUrl = String(tenant?.mainSiteUrl || "https://classicacademy.app").replace(/\/+$/, "");
+  const mainUrl = (path) => {
+    const value = String(path || "/");
+    return mainSiteUrl + (value.startsWith("/") ? value : ("/" + value));
+  };
 %>
 
 <body data-school-code="<%= tenant.code %>">
 
-<header class="topbar">
-  <div class="container topbar-inner">
-    <a class="brand" href="#"><span class="brand-dot"></span> Classic Academy</a>
+<header class="header" id="siteHeader">
+  <a href="<%= mainUrl("/") %>" class="brand" aria-label="Classic Academy Home">
+    <img class="brand-mark" src="<%= mainUrl("/img/academylogo.png") %>" alt="Classic Academy logo">
+    <div class="brand-txt">
+      <span class="brand-name">Classic Academy</span>
+      <span class="brand-sub">School management + admissions</span>
+    </div>
+  </a>
 
-    <nav class="topnav" id="topnav">
-      <a href="/schools">Schools</a>
-      <a href="#subjects" data-go-tab="subjects">Subjects</a>
-      <a href="#admissions" data-go-tab="admissions">Admissions</a>
-      <a href="/login" class="btn btn-soft"><i class="fa fa-right-to-bracket"></i> Login</a>
-    </nav>
+  <nav class="navbar" aria-label="Primary">
+    <a href="<%= mainUrl("/") %>">Home</a>
+    <a href="<%= mainUrl("/about") %>">About</a>
+    <a href="<%= mainUrl("/features") %>">Features</a>
+    <a href="<%= mainUrl("/schools") %>">Schools</a>
+    <a href="<%= mainUrl("/#testimonials") %>">Benefits</a>
+    <a href="<%= mainUrl("/#contact") %>">Contact</a>
+    <a class="nav-pill" href="<%= mainUrl("/super-admin/login") %>">Login</a>
+  </nav>
 
-    <button class="hamburger" id="hamburger" aria-label="Open menu">
-      <span></span><span></span><span></span>
+  <div class="nav-actions">
+    <a href="<%= mainUrl("/schedule") %>" class="btn btn-sm"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
+    <button id="menu-btn" class="menu-btn" aria-label="Open menu" aria-expanded="false" type="button">
+      <i class="fa-solid fa-bars"></i>
     </button>
   </div>
 </header>
-
-<div class="mobile-menu" id="mobileMenu">
-  <a href="/schools"><i class="fa fa-school"></i> Schools</a>
-  <a href="#subjects" data-go-tab="subjects"><i class="fa fa-book"></i> Subjects</a>
-  <a href="#admissions" data-go-tab="admissions"><i class="fa fa-file-signature"></i> Admissions</a>
-  <a href="/login"><i class="fa fa-right-to-bracket"></i> Login</a>
-</div>
 
 <section class="hero">
   <div class="cover" id="cover" data-cover-url="<%= coverUrlRaw %>">
@@ -439,8 +728,8 @@
           <% if (p.verified) { %>
             <span class="badge badge-verified"><i class="fa fa-circle-check"></i> Verified</span>
           <% } %>
-          <% if (p.type) { %>
-            <span class="badge badge-soft"><i class="fa fa-building-columns"></i> <%= p.type %></span>
+          <% if (profileTypeLabel) { %>
+            <span class="badge badge-soft"><i class="fa fa-building-columns"></i> <%= profileTypeLabel %></span>
           <% } %>
         </div>
 
@@ -453,7 +742,7 @@
         </div>
 
         <div class="cta-row">
-          <a class="btn btn-primary" href="/apply" target="_blank" rel="noopener">
+          <a class="btn btn-primary" href="<%= applyHref %>">
             <i class="fa fa-file-circle-plus"></i> Apply Now
           </a>
 
@@ -525,7 +814,7 @@
 
         <div class="mini-grid">
           <div class="mini"><div class="mini-top"><i class="fa fa-clock"></i><b>Founded</b></div><div class="mini-val"><%= p.foundedYear || '—' %></div></div>
-          <div class="mini"><div class="mini-top"><i class="fa fa-chalkboard-user"></i><b>System</b></div><div class="mini-val"><%= p.system || '—' %></div></div>
+          <div class="mini"><div class="mini-top"><i class="fa fa-chalkboard-user"></i><b>System</b></div><div class="mini-val"><%= profileSystemLabel || '—' %></div></div>
           <div class="mini"><div class="mini-top"><i class="fa fa-language"></i><b>Language</b></div><div class="mini-val"><%= p.language || 'English' %></div></div>
           <div class="mini"><div class="mini-top"><i class="fa fa-shield"></i><b>Accredited</b></div><div class="mini-val"><%= (p.accredited ? 'Yes' : '—') %></div></div>
         </div>
@@ -611,7 +900,7 @@
         </div>
 
         <div class="cta-row">
-          <a class="btn btn-primary" href="/apply" target="_blank" rel="noopener">
+          <a class="btn btn-primary" href="<%= applyHref %>">
             <i class="fa fa-file-circle-plus"></i> Start Application
           </a>
 
@@ -896,12 +1185,55 @@
 </main>
 
 <footer class="footer">
-  <div class="container footer-inner">
-    <span class="muted">© 2026 Classic Academy</span>
-    <span class="muted">Powered by <b>Classic Technologies</b></span>
+  <div>
+    <h4>About Us</h4>
+    <p>We are excited to introduce our upcoming Classic Academy Plans, where schools will be categorized</p>
+    <a href="https://play.google.com/store" target="_blank" rel="noopener">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg"
+        style="height: 50px; width: 150px" alt="Google Play">
+    </a>
+    <a href="https://apps.apple.com/" target="_blank" rel="noopener">
+      <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg"
+        alt="Download on the App Store" style="height: 50px;">
+    </a>
+  </div>
+
+  <div>
+    <h4>Learn about our mission</h4>
+    <ul>
+      <li><a href="<%= mainUrl("/about") %>">Our Story</a></li>
+      <li><a href="<%= mainUrl("/features") %>">What We Offer</a></li>
+      <li><a href="<%= mainUrl("/plan?plan=standard") %>">Plans &amp; Pricing</a></li>
+      <li><a href="<%= mainUrl("/blog?slug=increase-admissions") %>">Press resources</a></li>
+      <li><a href="<%= mainUrl("/careers") %>">Careers</a></li>
+    </ul>
+  </div>
+
+  <div>
+    <h4>Get help with your account</h4>
+    <ul>
+      <li><a href="<%= mainUrl("/contact") %>">Customer Support</a></li>
+      <li><a href="<%= mainUrl("/schedule") %>">Book a Demo</a></li>
+      <li><a href="<%= mainUrl("/faq") %>">FAQ</a></li>
+      <li><a href="<%= mainUrl("/privacy") %>">Privacy Policy</a></li>
+      <li><a href="<%= mainUrl("/terms") %>">Terms</a></li>
+    </ul>
+  </div>
+
+  <div>
+    <h4>Join our school community</h4>
+    <ul>
+      <li><a href="<%= mainUrl("/schools") %>">Find Schools</a></li>
+      <li><a href="<%= mainUrl("/admissions") %>">Admissions</a></li>
+      <li><a href="<%= mainUrl("/search") %>">Search</a></li>
+      <li><a href="<%= mainUrl("/blog?slug=increase-admissions") %>">Blog</a></li>
+      <li><a href="https://chat.whatsapp.com/HRGoS3fMZoZGgXbz1HDw6a?mode=gi_t" target="_blank" rel="noopener">Join whatsapp group</a></li>
+    </ul>
   </div>
 </footer>
 
-<script defer src="/js/school-profile-public.js?v=20260421subjects1"></script>
+<button id="toTopBtn" aria-label="Scroll to top" type="button">&uarr;</button>
+
+<script defer src="/js/school-profile-public.js?v=20260421profileNav1"></script>
 </body>
 </html>

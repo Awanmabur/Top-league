@@ -19,6 +19,34 @@ function initHamburger() {
   const hamb = $("hamburger");
   const menu = $("mobileMenu");
   hamb?.addEventListener("click", () => menu?.classList.toggle("show"));
+
+  const mainBtn = $("menu-btn");
+  const navbar = document.querySelector(".header .navbar");
+  const header = $("siteHeader");
+
+  mainBtn?.addEventListener("click", () => {
+    const isOpen = navbar?.classList.toggle("active");
+    mainBtn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+  });
+
+  document.querySelectorAll(".header .navbar a").forEach((a) => {
+    a.addEventListener("click", () => {
+      navbar?.classList.remove("active");
+      mainBtn?.setAttribute("aria-expanded", "false");
+    });
+  });
+
+  document.addEventListener(
+    "click",
+    (e) => {
+      if (!header || !navbar?.classList.contains("active")) return;
+      if (!header.contains(e.target)) {
+        navbar.classList.remove("active");
+        mainBtn?.setAttribute("aria-expanded", "false");
+      }
+    },
+    { passive: true },
+  );
 }
 
 /**
@@ -31,7 +59,7 @@ function initTabs() {
   const tabs = document.querySelectorAll(".tab");
   const panels = document.querySelectorAll(".panel");
   const tabsBar = document.querySelector(".tabs");
-  const topbar = document.querySelector(".topbar");
+  const topbar = document.querySelector(".topbar, .header");
 
   if (!tabs.length || !panels.length) return;
 
@@ -280,6 +308,23 @@ function initForms() {
   });
 }
 
+function initToTop() {
+  const btn = $("toTopBtn");
+  if (!btn) return;
+
+  window.addEventListener(
+    "scroll",
+    () => {
+      btn.style.display = window.scrollY > 300 ? "block" : "none";
+    },
+    { passive: true },
+  );
+
+  btn.addEventListener("click", () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   initHamburger();
   initTabs();
@@ -288,4 +333,5 @@ document.addEventListener("DOMContentLoaded", () => {
   initSubjectSearch();
   initLightbox();
   initForms();
+  initToTop();
 });

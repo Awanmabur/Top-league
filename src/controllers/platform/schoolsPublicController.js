@@ -8,8 +8,47 @@ function safeInt(n, def = 0) {
   return Number.isFinite(x) ? x : def;
 }
 
+function displayText(value, fallback = "") {
+  if (value === null || value === undefined) return fallback;
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+  if (value instanceof Date) return value.toISOString();
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => displayText(item, ""))
+      .filter(Boolean)
+      .join(", ");
+  }
+  if (typeof value === "object") {
+    const source = asPlain(value);
+    for (const key of [
+      "label",
+      "name",
+      "title",
+      "text",
+      "value",
+      "schoolType",
+      "category",
+      "type",
+      "shortName",
+      "code",
+    ]) {
+      const candidate = source[key];
+      const text = displayText(candidate, "");
+      if (text) return text;
+    }
+    return fallback;
+  }
+
+  return String(value || fallback);
+}
+
 function clean(s, max) {
-  return String(s || "").trim().slice(0, max);
+  return displayText(s, "")
+    .trim()
+    .slice(0, max);
 }
 
 function parseWebsiteUrl(url) {
@@ -19,8 +58,139 @@ function parseWebsiteUrl(url) {
   return v;
 }
 
+function isHttpUrl(url) {
+  return /^https?:\/\//i.test(String(url || "").trim());
+}
+
+function getRequestOrigin(req) {
+  const host = req.get("host") || "";
+  const proto = req.protocol || (req.secure ? "https" : "http");
+  return { host, proto };
+}
+
+function getTenantPublicHost(req, tenantDoc) {
+  const { host } = getRequestOrigin(req);
+  const [hostname, port] = String(host || "").split(":");
+  const portPart = port ? `:${port}` : "";
+  const baseDomain = String(process.env.BASE_DOMAIN || "").trim().toLowerCase();
+
+  if (tenantDoc.customDomain) return tenantDoc.customDomain;
+
+  if (hostname === "localhost" || hostname === "127.0.0.1") {
+    return `${tenantDoc.code}.localhost${portPart}`;
+  }
+
+  if (tenantDoc.subdomain && String(tenantDoc.subdomain).includes(".")) {
+    return tenantDoc.subdomain;
+  }
+
+  if (baseDomain) {
+    return `${tenantDoc.subdomain || tenantDoc.code}.${baseDomain}`;
+  }
+
+  return `${tenantDoc.code}.${hostname}${portPart}`;
+}
+
+function buildTenantPublicUrl(req, tenantDoc, path = "/") {
+  const { proto } = getRequestOrigin(req);
+  const host = getTenantPublicHost(req, tenantDoc);
+  const cleanPath = String(path || "/").startsWith("/")
+    ? String(path || "/")
+    : `/${path}`;
+
+  return `${proto}://${host}${cleanPath}`;
+}
+
+function getMainSiteUrl(req) {
+  const configured =
+    process.env.PUBLIC_SITE_URL ||
+    process.env.MAIN_SITE_URL ||
+    process.env.PLATFORM_SITE_URL ||
+    "";
+
+  if (configured) return String(configured).replace(/\/+$/, "");
+
+  const { host, proto } = getRequestOrigin(req);
+  const [hostname, port] = String(host || "").split(":");
+  const portPart = port ? `:${port}` : "";
+  const baseDomain = String(process.env.BASE_DOMAIN || "classicacademy.app")
+    .trim()
+    .toLowerCase();
+
+  if (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname.endsWith(".localhost") ||
+    baseDomain === "localhost"
+  ) {
+    return `${proto}://localhost${portPart}`;
+  }
+
+  return `${proto}://${baseDomain}`;
+}
+
+function getSchoolUnitQueryValue(req, schoolUnit) {
+  return String(
+    req.query.schoolUnitId ||
+      req.query.unitId ||
+      req.query.schoolUnit ||
+      schoolUnit?._id ||
+      "",
+  ).trim();
+}
+
+function appendSchoolUnitQuery(target, schoolUnitId) {
+  const value = String(schoolUnitId || "").trim();
+  const url = String(target || "");
+
+  if (!value || !url || /[?&]schoolUnitId=/.test(url)) return url;
+
+  const hashIndex = url.indexOf("#");
+  const base = hashIndex >= 0 ? url.slice(0, hashIndex) : url;
+  const hash = hashIndex >= 0 ? url.slice(hashIndex) : "";
+  const join = base.includes("?") ? "&" : "?";
+
+  return `${base}${join}schoolUnitId=${encodeURIComponent(value)}${hash}`;
+}
+
+function isProfileApplyPath(pathname) {
+  return /^\/schools\/[^/]+\/apply\/?$/i.test(String(pathname || ""));
+}
+
+function normalizeApplyUrlForTenant(rawApplyUrl) {
+  const raw = String(rawApplyUrl || "").trim();
+  if (!raw) return "/apply";
+
+  if (isHttpUrl(raw)) {
+    try {
+      const parsed = new URL(raw);
+      if (isProfileApplyPath(parsed.pathname)) {
+        parsed.pathname = "/apply";
+        return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+      }
+    } catch (_) {
+      return raw;
+    }
+
+    return raw;
+  }
+
+  try {
+    const parsed = new URL(raw.startsWith("/") ? raw : `/${raw}`, "http://local");
+    if (isProfileApplyPath(parsed.pathname)) {
+      parsed.pathname = "/apply";
+    }
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch (_) {
+    return raw.startsWith("/") ? raw : `/${raw}`;
+  }
+}
+
 function sha256(s) {
-  return crypto.createHash("sha256").update(String(s || "")).digest("hex");
+  return crypto
+    .createHash("sha256")
+    .update(String(s || ""))
+    .digest("hex");
 }
 
 function ipHash(ip) {
@@ -28,12 +198,15 @@ function ipHash(ip) {
   return crypto.createHash("sha256").update(String(ip)).digest("hex");
 }
 
-function escapeRegex(s) {
-  return String(s || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+function useLiveTenantProfile(req) {
+  return (
+    process.env.PUBLIC_PROFILE_LIVE_TENANT_DB === "1" ||
+    String(req.query.live || "") === "1"
+  );
 }
 
-function useLiveTenantProfile(req) {
-  return process.env.PUBLIC_PROFILE_LIVE_TENANT_DB === "1" || String(req.query.live || "") === "1";
+function escapeRegex(s) {
+  return String(s || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 async function getTenantModels(req, tenantDoc) {
@@ -59,66 +232,123 @@ async function computeCounts(models = {}) {
 async function loadSubjects(models = {}, profile = {}) {
   const { Subject } = models || {};
 
-  if (!Subject) {
-    const items = Array.isArray(profile.subjects)
-      ? profile.subjects
-      : Array.isArray(profile.extraSubjects)
-        ? profile.extraSubjects
-        : [];
+  if (Subject) {
+    const rows = await Subject.find({ status: { $ne: "archived" } })
+      .sort({ title: 1, code: 1 })
+      .limit(80)
+      .select(
+        "title code shortTitle description objectives schoolUnitName campusName className classLevel category weeklyPeriods academicYear term",
+      )
+      .lean();
 
-    return items.map((subject) => ({
-      title: subject.title || subject.name || String(subject || "Subject"),
-      desc: subject.desc || subject.description || "",
-      level: subject.level || subject.className || subject.category || "-",
-      duration: subject.duration || subject.academicYear || "-",
-      hay: [
-        typeof subject === "string" ? subject : "",
-        subject.title,
-        subject.name,
-        subject.desc,
-        subject.description,
-        subject.level,
-        subject.className,
-        subject.category,
-        subject.academicYear,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase(),
-    }));
+    if (rows.length) {
+      return rows.map((subject) => ({
+        title: subject.title || subject.code || "Subject",
+        desc: subject.description || subject.objectives || "",
+        level:
+          [subject.classLevel, subject.className].filter(Boolean).join(" - ") ||
+          subject.category ||
+          "-",
+        duration:
+          [
+            subject.academicYear,
+            subject.term ? `Term ${subject.term}` : "",
+            subject.weeklyPeriods
+              ? `${subject.weeklyPeriods} periods/week`
+              : "",
+          ]
+            .filter(Boolean)
+            .join(" - ") || "-",
+        hay: [
+          subject.title,
+          subject.code,
+          subject.shortTitle,
+          subject.description,
+          subject.objectives,
+          subject.schoolUnitName,
+          subject.campusName,
+          subject.className,
+          subject.classLevel,
+          subject.category,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase(),
+      }));
+    }
   }
 
-  const rows = await Subject.find({ status: { $ne: "archived" } })
-    .sort({ title: 1, code: 1 })
-    .limit(80)
-    .select("title code shortTitle description objectives schoolUnitName campusName className classLevel category weeklyPeriods academicYear term")
-    .lean();
+  const rawItems = [
+    ...(Array.isArray(profile.subjects) ? profile.subjects : []),
+    ...(Array.isArray(profile.extraSubjects) ? profile.extraSubjects : []),
+  ];
 
-  return rows.map((subject) => ({
-    title: subject.title || subject.code || "Subject",
-    desc: subject.description || subject.objectives || "",
-    level: [subject.classLevel, subject.className].filter(Boolean).join(" - ") || subject.category || "-",
-    duration: [
-      subject.academicYear,
-      subject.term ? `Term ${subject.term}` : "",
-      subject.weeklyPeriods ? `${subject.weeklyPeriods} periods/week` : "",
-    ].filter(Boolean).join(" - ") || "-",
-    hay: [
-      subject.title,
-      subject.code,
-      subject.shortTitle,
-      subject.description,
-      subject.objectives,
-      subject.schoolUnitName,
-      subject.campusName,
-      subject.className,
-      subject.classLevel,
-      subject.category,
-    ]
-      .filter(Boolean)
-      .join(" ")
-      .toLowerCase(),
-  }));
+  const seen = new Set();
+
+  return rawItems
+    .map((subject) => {
+      if (typeof subject === "string") {
+        return {
+          title: subject.trim() || "Subject",
+          desc: "",
+          level: "-",
+          duration: "-",
+          hay: String(subject || "").toLowerCase(),
+        };
+      }
+
+      return {
+        title: subject?.title || subject?.name || subject?.code || "Subject",
+        desc:
+          subject?.desc || subject?.description || subject?.objectives || "",
+        level:
+          subject?.level ||
+          subject?.className ||
+          subject?.classLevel ||
+          subject?.category ||
+          subject?.schoolUnitName ||
+          "-",
+        duration:
+          [
+            subject?.duration,
+            subject?.academicYear,
+            subject?.term ? `Term ${subject.term}` : "",
+            subject?.weeklyPeriods
+              ? `${subject.weeklyPeriods} periods/week`
+              : "",
+          ]
+            .filter(Boolean)
+            .join(" - ") || "-",
+        hay: [
+          subject?.title,
+          subject?.name,
+          subject?.code,
+          subject?.shortTitle,
+          subject?.desc,
+          subject?.description,
+          subject?.objectives,
+          subject?.level,
+          subject?.className,
+          subject?.classLevel,
+          subject?.category,
+          subject?.schoolUnitName,
+          subject?.campusName,
+          subject?.academicYear,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase(),
+      };
+    })
+    .filter((item) => {
+      const key = String(item.title || "")
+        .trim()
+        .toLowerCase();
+      if (!key) return false;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
 }
 
 function loadFaqFromProfile(profile) {
@@ -130,7 +360,6 @@ function loadNewsFromProfile(profile) {
   const anns = Array.isArray(profile.announcements)
     ? profile.announcements
     : [];
-
   return anns
     .slice()
     .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
@@ -171,7 +400,10 @@ function normalizeAdmissions(profile) {
       ? a.requiredDocs.filter(Boolean)
       : [],
     feesRange: clean(a.feesRange || profile.feesRange || "", 120),
-    paymentOptions: clean(a.paymentOptions || profile.paymentOptions || "", 200),
+    paymentOptions: clean(
+      a.paymentOptions || profile.paymentOptions || "",
+      200,
+    ),
     applyUrl: parseWebsiteUrl(a.applyUrl || profile.applyUrl || ""),
     requirements: clean(a.requirements || profile.requirements || "", 2000),
     officeHours: clean(a.officeHours || profile.officeHours || "", 200),
@@ -190,18 +422,333 @@ function normalizeAdmissions(profile) {
   };
 }
 
+function asPlain(value) {
+  if (!value) return {};
+  if (typeof value.toObject === "function") {
+    return value.toObject({ depopulate: true });
+  }
+  return value;
+}
+
+function isMergeableObject(value) {
+  return (
+    value &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    !(value instanceof Date)
+  );
+}
+
+function mergeProfileData(base = {}, override = {}) {
+  const out = { ...asPlain(base) };
+
+  for (const [key, rawValue] of Object.entries(asPlain(override))) {
+    const value = asPlain(rawValue);
+
+    if (value === undefined || value === null) continue;
+    if (Array.isArray(value)) {
+      if (value.length) out[key] = value;
+      continue;
+    }
+    if (isMergeableObject(value)) {
+      out[key] = mergeProfileData(out[key] || {}, value);
+      continue;
+    }
+    if (typeof value === "string") {
+      if (value.trim()) out[key] = value;
+      continue;
+    }
+
+    out[key] = value;
+  }
+
+  return out;
+}
+
+function profileHasContent(profile = {}, branding = {}) {
+  const p = asPlain(profile);
+  const b = asPlain(branding);
+
+  if (p.enabled === false) return true;
+
+  const scalarValues = [
+    p.shortName,
+    p.type,
+    p.tagline,
+    p.about,
+    p.mission,
+    p.vision,
+    p.contact?.phone,
+    p.contact?.email,
+    p.contact?.website,
+    p.location?.city,
+    p.location?.country,
+    b.logoUrl,
+    b.coverUrl,
+  ];
+
+  const arrayFields = [
+    "values",
+    "facilities",
+    "accreditations",
+    "clubs",
+    "scholarships",
+    "policies",
+    "highlights",
+    "whyChooseUs",
+    "gallery",
+    "awards",
+    "announcements",
+    "faqs",
+    "reviews",
+  ];
+
+  return (
+    scalarValues.some((value) => String(value || "").trim()) ||
+    arrayFields.some((field) => Array.isArray(p[field]) && p[field].length)
+  );
+}
+
+function getSchoolUnits(tenantDoc) {
+  const units = tenantDoc.settings?.academics?.schoolUnits;
+  return Array.isArray(units) ? units : [];
+}
+
+function findRequestedSchoolUnit(req, tenantDoc) {
+  const units = getSchoolUnits(tenantDoc);
+  const wanted = String(
+    req.query.schoolUnitId ||
+      req.query.unitId ||
+      req.query.schoolUnit ||
+      req.query.schoolUnitCode ||
+      req.query.unit ||
+      "",
+  )
+    .trim()
+    .toLowerCase();
+
+  if (wanted) {
+    const found = units.find((unit) =>
+      [
+        unit._id,
+        unit.code,
+        unit.slug,
+        unit.name,
+      ]
+        .map((value) => String(value || "").trim().toLowerCase())
+        .includes(wanted),
+    );
+
+    if (found) return found;
+  }
+
+  return (
+    units.find(
+      (unit) =>
+        unit.isActive !== false &&
+        profileHasContent(unit.profile, unit.branding),
+    ) ||
+    units.find((unit) => unit.isActive !== false) ||
+    null
+  );
+}
+
+function buildPublicProfile(req, tenantDoc) {
+  const schoolUnit = findRequestedSchoolUnit(req, tenantDoc);
+  const unitHasProfile =
+    schoolUnit && profileHasContent(schoolUnit.profile, schoolUnit.branding);
+  const profile = unitHasProfile
+    ? mergeProfileData(tenantDoc.settings?.profile || {}, schoolUnit.profile)
+    : tenantDoc.settings?.profile || {};
+  const branding = unitHasProfile
+    ? mergeProfileData(tenantDoc.settings?.branding || {}, schoolUnit.branding)
+    : tenantDoc.settings?.branding || {};
+
+  return { profile, branding, schoolUnit: unitHasProfile ? schoolUnit : null };
+}
+
 function buildSchoolListBaseFilter() {
   return {
     isDeleted: { $ne: true },
-    "settings.profile.enabled": { $ne: false },
+    $or: [
+      { "settings.profile.enabled": { $ne: false } },
+      {
+        "settings.academics.schoolUnits": {
+          $elemMatch: {
+            isActive: { $ne: false },
+            "profile.enabled": { $ne: false },
+          },
+        },
+      },
+    ],
   };
 }
 
-async function findTenantForPublicPage(req, code) {
-  if (req.tenant && String(req.tenant.code || "").toLowerCase() === code) {
-    return req.tenant;
+function addAndFilter(filter, condition) {
+  filter.$and = filter.$and || [];
+  filter.$and.push(condition);
+}
+
+const FEATURED_SCHOOLS_CACHE_MS = 2 * 60 * 1000;
+let featuredSchoolsCache = {
+  expiresAt: 0,
+  items: [],
+};
+
+function schoolUnitQueryFromUnit(schoolUnit) {
+  return schoolUnit?._id
+    ? `?schoolUnitId=${encodeURIComponent(String(schoolUnit._id))}`
+    : "";
+}
+
+function buildLandingFeaturedSchoolCard(tenantDoc, schoolUnit = null) {
+  const unitHasProfile =
+    schoolUnit &&
+    schoolUnit.profile?.enabled !== false &&
+    profileHasContent(schoolUnit.profile, schoolUnit.branding);
+  const profile = unitHasProfile
+    ? mergeProfileData(tenantDoc.settings?.profile || {}, schoolUnit.profile)
+    : tenantDoc.settings?.profile || {};
+  const branding = unitHasProfile
+    ? mergeProfileData(tenantDoc.settings?.branding || {}, schoolUnit.branding)
+    : tenantDoc.settings?.branding || {};
+  const unitQuery = schoolUnitQueryFromUnit(schoolUnit);
+  const stats = profile.stats || {};
+  const rating = profile.ratingSummary || {};
+  const awards = Array.isArray(profile.awards) ? profile.awards : [];
+  const location = profile.location || {};
+  const code = encodeURIComponent(tenantDoc.code || "");
+
+  return {
+    name: clean(
+      profile.shortName || schoolUnit?.name || tenantDoc.name || "School",
+      120,
+    ),
+    type: clean(
+      profile.type ||
+        profile.category ||
+        schoolUnit?.schoolType ||
+        schoolUnit?.category ||
+        "School",
+      80,
+    ),
+    description: clean(
+      profile.tagline ||
+        profile.about ||
+        "Explore this school's profile, subjects, admissions and public updates.",
+      180,
+    ),
+    image:
+      branding.coverUrl ||
+      branding.logoUrl ||
+      "https://images.unsplash.com/photo-1580582932707-520aed937b7b?q=80&w=900&auto=format&fit=crop",
+    href: `/schools/${code}${unitQuery}`,
+    applyHref: `/schools/${code}/apply${unitQuery}`,
+    location: clean(
+      [location.city, location.country].filter(Boolean).join(", "),
+      120,
+    ),
+    students: safeInt(stats.students, 0),
+    subjects: safeInt(stats.subjects ?? stats.programs, 0),
+    rating: Number(rating.avg || 0),
+    badge: profile.verified
+      ? "Verified"
+      : awards.length
+        ? "Awarded"
+        : Number(rating.avg || 0) >= 4.5
+          ? "Top Rated"
+          : "Featured",
+  };
+}
+
+function buildLandingFeaturedSchools(tenantDoc) {
+  const units = getSchoolUnits(tenantDoc).filter(
+    (unit) => unit.isActive !== false && unit.profile?.enabled !== false,
+  );
+
+  if (units.length) {
+    return units
+      .map((unit) => buildLandingFeaturedSchoolCard(tenantDoc, unit))
+      .filter((school) => school.name && school.href);
   }
 
+  if (tenantDoc.settings?.profile?.enabled === false) return [];
+
+  return [buildLandingFeaturedSchoolCard(tenantDoc)].filter(
+    (school) => school.name && school.href,
+  );
+}
+
+async function loadFeaturedSchoolsForLanding(limit = 8) {
+  if (Date.now() < featuredSchoolsCache.expiresAt) {
+    return featuredSchoolsCache.items;
+  }
+
+  const projection = {
+    name: 1,
+    code: 1,
+    "settings.branding.logoUrl": 1,
+    "settings.branding.coverUrl": 1,
+    "settings.profile.enabled": 1,
+    "settings.profile.verified": 1,
+    "settings.profile.shortName": 1,
+    "settings.profile.type": 1,
+    "settings.profile.category": 1,
+    "settings.profile.tagline": 1,
+    "settings.profile.about": 1,
+    "settings.profile.location": 1,
+    "settings.profile.stats": 1,
+    "settings.profile.ratingSummary": 1,
+    "settings.profile.awards": 1,
+    "settings.profile.admissions.applyUrl": 1,
+    "settings.academics.schoolUnits._id": 1,
+    "settings.academics.schoolUnits.name": 1,
+    "settings.academics.schoolUnits.code": 1,
+    "settings.academics.schoolUnits.slug": 1,
+    "settings.academics.schoolUnits.schoolType": 1,
+    "settings.academics.schoolUnits.category": 1,
+    "settings.academics.schoolUnits.isActive": 1,
+    "settings.academics.schoolUnits.profile.enabled": 1,
+    "settings.academics.schoolUnits.profile.verified": 1,
+    "settings.academics.schoolUnits.profile.shortName": 1,
+    "settings.academics.schoolUnits.profile.type": 1,
+    "settings.academics.schoolUnits.profile.category": 1,
+    "settings.academics.schoolUnits.profile.tagline": 1,
+    "settings.academics.schoolUnits.profile.about": 1,
+    "settings.academics.schoolUnits.profile.location": 1,
+    "settings.academics.schoolUnits.profile.stats": 1,
+    "settings.academics.schoolUnits.profile.ratingSummary": 1,
+    "settings.academics.schoolUnits.profile.awards": 1,
+    "settings.academics.schoolUnits.profile.admissions.applyUrl": 1,
+    "settings.academics.schoolUnits.branding.logoUrl": 1,
+    "settings.academics.schoolUnits.branding.coverUrl": 1,
+  };
+
+  const rows = await Tenant.find(buildSchoolListBaseFilter())
+    .select(projection)
+    .sort({
+      "settings.profile.verified": -1,
+      "settings.profile.ratingSummary.avg": -1,
+      "settings.profile.stats.students": -1,
+      createdAt: -1,
+    })
+    .limit(limit)
+    .lean();
+
+  const items = rows
+    .flatMap(buildLandingFeaturedSchools)
+    .filter((school) => school.name && school.href)
+    .slice(0, limit);
+
+  featuredSchoolsCache = {
+    expiresAt: Date.now() + FEATURED_SCHOOLS_CACHE_MS,
+    items,
+  };
+
+  return items;
+}
+
+async function findTenantForPublicPage(req, code) {
   return Tenant.findOne({
     code,
     isDeleted: { $ne: true },
@@ -214,18 +761,11 @@ function buildChipFilter(chip) {
   const normalized = clean(chip, 40).toLowerCase();
 
   if (!normalized || normalized === "all") return null;
-
-  if (normalized === "verified") {
-    return { "settings.profile.verified": true };
-  }
-
-  if (normalized === "boarding") {
+  if (normalized === "verified") return { "settings.profile.verified": true };
+  if (normalized === "boarding")
     return { "settings.profile.system": { $regex: /boarding/i } };
-  }
-
-  if (normalized === "day") {
+  if (normalized === "day")
     return { "settings.profile.system": { $regex: /day/i } };
-  }
 
   if (normalized === "science") {
     return {
@@ -241,10 +781,24 @@ function buildChipFilter(chip) {
   if (normalized === "ict") {
     return {
       $or: [
-        { "settings.academics.extraSubjects": { $regex: /(ict|computer|technology)/i } },
-        { "settings.profile.tagline": { $regex: /(ict|computer|technology)/i } },
-        { "settings.profile.highlights": { $regex: /(ict|computer|technology)/i } },
-        { "settings.profile.facilities": { $regex: /(ict|computer|technology)/i } },
+        {
+          "settings.academics.extraSubjects": {
+            $regex: /(ict|computer|technology)/i,
+          },
+        },
+        {
+          "settings.profile.tagline": { $regex: /(ict|computer|technology)/i },
+        },
+        {
+          "settings.profile.highlights": {
+            $regex: /(ict|computer|technology)/i,
+          },
+        },
+        {
+          "settings.profile.facilities": {
+            $regex: /(ict|computer|technology)/i,
+          },
+        },
       ],
     };
   }
@@ -253,7 +807,16 @@ function buildChipFilter(chip) {
 }
 
 module.exports = {
-  // GET /schools
+  async landing(req, res) {
+    try {
+      const featuredSchools = await loadFeaturedSchoolsForLanding();
+      return res.render("platform/public/index", { featuredSchools });
+    } catch (e) {
+      console.error("public landing featured schools:", e);
+      return res.render("platform/public/index", { featuredSchools: [] });
+    }
+  },
+
   async list(req, res) {
     try {
       const q = clean(req.query.q, 120);
@@ -273,40 +836,39 @@ module.exports = {
 
       const filter = buildSchoolListBaseFilter();
 
-      if (city) {
-        filter["settings.profile.location.city"] = city;
-      }
-
-      if (type) {
-        filter["settings.profile.type"] = type;
-      }
-
-      if (verified) {
-        filter["settings.profile.verified"] = true;
-      }
+      if (city) filter["settings.profile.location.city"] = city;
+      if (type) filter["settings.profile.type"] = type;
+      if (verified) filter["settings.profile.verified"] = true;
 
       if (q) {
         const rx = new RegExp(escapeRegex(q), "i");
-        filter.$or = [
-          { name: rx },
-          { code: rx },
-          { "settings.profile.shortName": rx },
-          { "settings.profile.type": rx },
-          { "settings.profile.tagline": rx },
-          { "settings.profile.system": rx },
-          { "settings.profile.location.city": rx },
-          { "settings.profile.location.country": rx },
-          { "settings.profile.highlights": rx },
-          { "settings.profile.facilities": rx },
-          { "settings.profile.clubs": rx },
-          { "settings.academics.extraSubjects": rx },
-        ];
+        addAndFilter(filter, {
+          $or: [
+            { name: rx },
+            { code: rx },
+            { "settings.profile.shortName": rx },
+            { "settings.profile.type": rx },
+            { "settings.profile.tagline": rx },
+            { "settings.profile.system": rx },
+            { "settings.profile.location.city": rx },
+            { "settings.profile.location.country": rx },
+            { "settings.profile.highlights": rx },
+            { "settings.profile.facilities": rx },
+            { "settings.profile.clubs": rx },
+            { "settings.academics.extraSubjects": rx },
+            { "settings.academics.schoolUnits.name": rx },
+            { "settings.academics.schoolUnits.code": rx },
+            { "settings.academics.schoolUnits.slug": rx },
+            { "settings.academics.schoolUnits.profile.shortName": rx },
+            { "settings.academics.schoolUnits.profile.type": rx },
+            { "settings.academics.schoolUnits.profile.tagline": rx },
+          ],
+        });
       }
 
       const chipFilter = buildChipFilter(chip);
       if (chipFilter) {
-        filter.$and = filter.$and || [];
-        filter.$and.push(chipFilter);
+        addAndFilter(filter, chipFilter);
       }
 
       let sortObj = { createdAt: -1 };
@@ -314,10 +876,7 @@ module.exports = {
       if (sort === "name") {
         sortObj = { name: 1 };
       } else if (sort === "students") {
-        sortObj = {
-          "settings.profile.stats.students": -1,
-          name: 1,
-        };
+        sortObj = { "settings.profile.stats.students": -1, name: 1 };
       } else if (sort === "subjects") {
         sortObj = {
           "settings.profile.stats.subjects": -1,
@@ -352,8 +911,10 @@ module.exports = {
         "settings.profile.ratingSummary": 1,
         "settings.profile.awards": 1,
         "settings.profile.highlights": 1,
-        "settings.profile.stats.subjects": 1,
         "settings.academics.extraSubjects": 1,
+        "settings.academics.schoolUnits._id": 1,
+        "settings.academics.schoolUnits.isActive": 1,
+        "settings.academics.schoolUnits.profile.enabled": 1,
       };
 
       const baseFilter = buildSchoolListBaseFilter();
@@ -365,13 +926,9 @@ module.exports = {
           .skip(skip)
           .limit(limit)
           .lean(),
-
         Tenant.countDocuments(filter),
-
         Tenant.countDocuments(baseFilter),
-
         Tenant.distinct("settings.profile.location.city", baseFilter),
-
         Tenant.distinct("settings.profile.type", baseFilter),
       ]);
 
@@ -398,42 +955,104 @@ module.exports = {
     }
   },
 
-  // GET /schools/:code
-  async page(req, res) {
+  async applyRedirect(req, res) {
     try {
       const code = String(req.params.code || "")
         .trim()
         .toLowerCase();
-
-      const tenantDoc = await findTenantForPublicPage(req, code);
+      const tenantDoc =
+        req.tenant && String(req.tenant.code || "").toLowerCase() === code
+          ? req.tenant
+          : await findTenantForPublicPage(req, code);
 
       if (!tenantDoc) {
         return res.status(404).render("errors/404");
       }
 
-      const profile = tenantDoc.settings?.profile || {};
-      const branding = tenantDoc.settings?.branding || {};
+      const { profile, schoolUnit } = buildPublicProfile(req, tenantDoc);
+      const rawApplyUrl = normalizeApplyUrlForTenant(
+        profile.admissions?.applyUrl || profile.applyUrl || "/apply",
+      );
+      const schoolUnitId = getSchoolUnitQueryValue(req, schoolUnit);
+
+      if (isHttpUrl(rawApplyUrl)) {
+        return res.redirect(appendSchoolUnitQuery(rawApplyUrl, schoolUnitId));
+      }
+
+      const applyPath = String(rawApplyUrl || "/apply").startsWith("/")
+        ? rawApplyUrl
+        : `/${rawApplyUrl}`;
+
+      return res.redirect(
+        appendSchoolUnitQuery(
+          buildTenantPublicUrl(req, tenantDoc, applyPath),
+          schoolUnitId,
+        ),
+      );
+    } catch (e) {
+      console.error("public school apply redirect:", e);
+      return res.status(500).render("errors/500");
+    }
+  },
+
+  async page(req, res) {
+    try {
+      const code = String(req.params.code || "")
+        .trim()
+        .toLowerCase();
+      const tenantDoc =
+        req.tenant && String(req.tenant.code || "").toLowerCase() === code
+          ? req.tenant
+          : await findTenantForPublicPage(req, code);
+
+      if (!tenantDoc) {
+        return res.status(404).render("errors/404");
+      }
+
+      const { profile, branding, schoolUnit } = buildPublicProfile(req, tenantDoc);
 
       if (profile.enabled === false) {
         return res.status(404).render("errors/404");
       }
 
-      const tenantModels = useLiveTenantProfile(req) ? await getTenantModels(req, tenantDoc) : {};
+      let tenantModels = {};
+      if (useLiveTenantProfile(req)) {
+        try {
+          tenantModels = await getTenantModels(req, tenantDoc);
+        } catch (err) {
+          console.error("public school profile tenant model load failed:", err);
+          tenantModels = {};
+        }
+      }
+
       const counts = await computeCounts(tenantModels);
+
       const subjects = await loadSubjects(tenantModels, {
         ...profile,
         extraSubjects: tenantDoc.settings?.academics?.extraSubjects,
       });
+
       const faqs = loadFaqFromProfile(profile);
       const announcements = loadNewsFromProfile(profile);
       const reviews = loadApprovedReviewsFromProfile(profile);
       const admissions = normalizeAdmissions(profile);
+      const schoolUnitId = getSchoolUnitQueryValue(req, schoolUnit);
+      const profileApplyHref = appendSchoolUnitQuery(
+        `/schools/${encodeURIComponent(tenantDoc.code)}/apply`,
+        schoolUnitId,
+      );
 
       const stats = {
         students: safeInt(profile.stats?.students, counts.students),
-        subjects: safeInt(profile.stats?.subjects ?? profile.stats?.programs, counts.subjects),
+        subjects: safeInt(
+          profile.stats?.subjects ?? profile.stats?.programs,
+          subjects.length || counts.subjects,
+        ),
         staff: safeInt(profile.stats?.staff, counts.staff),
-        campuses: safeInt(profile.stats?.campuses, 0),
+        campuses: safeInt(
+          profile.stats?.campuses,
+          schoolUnit?.campuses?.length || 0,
+        ),
       };
 
       const whyChooseUsArr =
@@ -454,6 +1073,9 @@ module.exports = {
       return res.render("platform/public/school-profile", {
         tenant: {
           ...tenantDoc,
+          mainSiteUrl: getMainSiteUrl(req),
+          profileApplyHref,
+          selectedSchoolUnit: schoolUnit,
           settings: {
             ...tenantDoc.settings,
             branding: {
@@ -465,6 +1087,9 @@ module.exports = {
               ...profile,
               enabled: profile.enabled !== false,
               verified: !!profile.verified,
+              type: clean(profile.type || profile.category || "", 120),
+              category: clean(profile.category || "", 120),
+              system: clean(profile.system || "", 120),
               city: normalizedCity,
               location: normalizedLocation,
               contact: normalizedContact,
@@ -502,33 +1127,37 @@ module.exports = {
     }
   },
 
-  // POST /schools/:code/inquiry
   async inquiry(req, res) {
     try {
       const { SchoolInquiry } = req.models || {};
-      const code = String(req.params.code || "").trim().toLowerCase();
+      const code = String(req.params.code || "")
+        .trim()
+        .toLowerCase();
 
       const name = clean(req.body.name, 100);
       const contact = clean(req.body.contact, 120);
       const message = clean(req.body.message, 2000);
 
       if (!name) {
-        return res.status(400).json({ ok: false, message: "Full name is required." });
+        return res
+          .status(400)
+          .json({ ok: false, message: "Full name is required." });
       }
 
       if (!contact) {
-        return res.status(400).json({ ok: false, message: "Phone/Email is required." });
+        return res
+          .status(400)
+          .json({ ok: false, message: "Phone/Email is required." });
       }
 
       if (!message) {
-        return res.status(400).json({ ok: false, message: "Message is required." });
+        return res
+          .status(400)
+          .json({ ok: false, message: "Message is required." });
       }
 
       if (!SchoolInquiry) {
-        return res.json({
-          ok: true,
-          message: "Message submitted ✅",
-        });
+        return res.json({ ok: true, message: "Message submitted ✅" });
       }
 
       const saved = await SchoolInquiry.create({
@@ -552,10 +1181,11 @@ module.exports = {
     }
   },
 
-  // POST /schools/:code/reviews
   async review(req, res) {
     try {
-      const code = String(req.params.code || "").trim().toLowerCase();
+      const code = String(req.params.code || "")
+        .trim()
+        .toLowerCase();
 
       const tenant = await Tenant.findOne({
         code,
@@ -563,7 +1193,9 @@ module.exports = {
       });
 
       if (!tenant) {
-        return res.status(404).json({ ok: false, message: "School not found." });
+        return res
+          .status(404)
+          .json({ ok: false, message: "School not found." });
       }
 
       const name = clean(req.body.name, 80);
@@ -573,11 +1205,15 @@ module.exports = {
       const message = clean(req.body.message, 1200);
 
       if (!name) {
-        return res.status(400).json({ ok: false, message: "Name is required." });
+        return res
+          .status(400)
+          .json({ ok: false, message: "Name is required." });
       }
 
       if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
-        return res.status(400).json({ ok: false, message: "Rating must be 1–5." });
+        return res
+          .status(400)
+          .json({ ok: false, message: "Rating must be 1–5." });
       }
 
       tenant.settings = tenant.settings || {};
