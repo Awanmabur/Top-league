@@ -53,7 +53,7 @@ module.exports = {
       );
       log("children:", children.length);
 
-      return res.render("tenant/parent/children", {
+      return res.render("parents/children", {
         tenant: req.tenant,
         user,
         parent,

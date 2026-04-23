@@ -145,7 +145,7 @@ module.exports = {
 
       const kpis = computeKpis(data);
 
-      return res.render("tenant/admin/staff/leave", {
+      return res.render("tenant/staff/leave", {
         tenant: req.tenant,
         csrfToken: req.csrfToken?.(),
         leave: data,
@@ -159,7 +159,7 @@ module.exports = {
       });
     } catch (error) {
       console.error("leaveController.index error:", error);
-      return res.status(500).render("tenant/admin/error", {
+      return res.status(500).render("platform/public/500", {
         tenant: req.tenant,
         message: error.message || "Failed to load leave requests.",
       });

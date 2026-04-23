@@ -44,7 +44,7 @@ module.exports = {
           currentPath: req.originalUrl,
           pageTitle: "Student Dashboard",
         },
-        "tenant/student/dashboard"
+        "students/dashboard"
       );
       if (blocked) return blocked;
 
@@ -158,7 +158,7 @@ module.exports = {
 
       const studentName = getStudentDisplayName(student, user);
 
-      return renderView(req, res, "tenant/student/dashboard", {
+      return renderView(req, res, "students/dashboard", {
         pageTitle: "Student Dashboard",
         user,
         student,

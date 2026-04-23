@@ -26,7 +26,7 @@ module.exports = {
           currentPath: req.originalUrl,
           pageTitle: "Profile",
         },
-        "tenant/student/profile"
+        "students/profile"
       );
       if (blocked) return blocked;
 
@@ -51,7 +51,7 @@ module.exports = {
         studentNumber: meta.studentNumber,
       };
 
-      return renderView(req, res, "tenant/student/profile", {
+      return renderView(req, res, "students/profile", {
         pageTitle: "Profile",
         user,
         student,

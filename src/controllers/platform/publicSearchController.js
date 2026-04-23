@@ -343,7 +343,7 @@ module.exports = {
       });
     } catch (error) {
       console.error("public search page:", error);
-      return res.status(500).render("errors/500");
+      return res.status(500).render("platform/public/500");
     }
   },
 };

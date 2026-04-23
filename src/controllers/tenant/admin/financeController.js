@@ -472,7 +472,7 @@ module.exports = {
       },
     };
 
-    return res.render("tenant/admin/finance/index", {
+    return res.render("tenant/finance/index", {
       tenant: req.tenant,
       csrfToken: req.csrfToken?.(),
       finance: financeData,

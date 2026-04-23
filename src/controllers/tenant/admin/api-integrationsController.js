@@ -130,7 +130,7 @@ module.exports = {
       providers: [...new Set(allDocs.map((x) => x.provider).filter(Boolean))].sort(),
     };
 
-    return res.render("tenant/admin/api-integrations/index", {
+    return res.render("tenant/api-integrations/index", {
       tenant: req.tenant,
       csrfToken: req.csrfToken?.(),
       integrations,

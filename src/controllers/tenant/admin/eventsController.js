@@ -104,7 +104,7 @@ module.exports = {
 
     const data = events.map(serializeEvent);
 
-    return res.render("tenant/admin/events/index", {
+    return res.render("tenant/events/index", {
       tenant: req.tenant,
       csrfToken: req.csrfToken?.(),
       events: data,

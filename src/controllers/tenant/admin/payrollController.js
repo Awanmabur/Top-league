@@ -218,7 +218,7 @@ module.exports = {
 
     const yearSet = Array.from(new Set(runs.map((r) => String(r.year || "")).filter(Boolean))).sort().reverse();
 
-    return res.render("tenant/admin/staff/payroll", {
+    return res.render("tenant/staff/payroll", {
       tenant: req.tenant,
       csrfToken: req.csrfToken?.(),
       payrollRuns: runs,

@@ -5,7 +5,7 @@ function num(v) {
 }
 
 function fmtDate(v) {
-  if (!v) return "â€”";
+  if (!v) return "—";
   try {
     return new Date(v).toLocaleDateString();
   } catch {
@@ -23,8 +23,8 @@ function normalizeInvoiceRows(rows = []) {
       ...r,
       title: r.title || r.name || r.feeItem || r.description || "Fee Item",
       category: r.category || r.type || r.feeType || "General",
-      academicYear: r.academicYear || "â€”",
-      semester: r.semester || "â€”",
+      academicYear: r.academicYear || "—",
+      semester: r.semester || "—",
       dueDate: fmtDate(r.dueDate || r.deadline || r.dateDue),
       amount,
       paid,
@@ -32,8 +32,8 @@ function normalizeInvoiceRows(rows = []) {
       status:
         r.status ||
         (balance <= 0 ? "paid" : paid > 0 ? "partial" : "unpaid"),
-      reference: r.reference || r.invoiceNo || r.invoiceNumber || r.code || "â€”",
-      notes: r.notes || r.remarks || "â€”",
+      reference: r.reference || r.invoiceNo || r.invoiceNumber || r.code || "—",
+      notes: r.notes || r.remarks || "—",
     };
   });
 }
@@ -45,10 +45,10 @@ function normalizePayments(rows = []) {
       ...r,
       amount,
       date: fmtDate(r.paymentDate || r.date || r.createdAt),
-      method: r.method || r.paymentMethod || "â€”",
-      reference: r.reference || r.receiptNo || r.transactionId || r.paymentRef || "â€”",
+      method: r.method || r.paymentMethod || "—",
+      reference: r.reference || r.receiptNo || r.transactionId || r.paymentRef || "—",
       status: r.status || "completed",
-      notes: r.notes || r.remarks || "â€”",
+      notes: r.notes || r.remarks || "—",
     };
   });
 }
@@ -62,7 +62,7 @@ function buildFeeSummary(invoices = [], payments = []) {
   const balance = Math.max(0, billed - paid);
 
   const overdueCount = invoices.filter(
-    (x) => String(x.status || "").toLowerCase() !== "paid" && x.dueDate && x.dueDate !== "â€”"
+    (x) => String(x.status || "").toLowerCase() !== "paid" && x.dueDate && x.dueDate !== "—"
   ).length;
 
   const paidItems = invoices.filter((x) => String(x.status || "").toLowerCase() === "paid").length;
@@ -120,7 +120,7 @@ module.exports = {
       if (!student && children.length) student = children[0];
 
       if (!student) {
-        return res.render("tenant/parent/fees", {
+        return res.render("parents/fees", {
           tenant: req.tenant,
           user,
           parent,
@@ -185,7 +185,7 @@ module.exports = {
       log("invoices:", invoices.length);
       log("payments:", payments.length);
 
-      return res.render("tenant/parent/fees", {
+      return res.render("parents/fees", {
         tenant: req.tenant,
         user,
         parent,

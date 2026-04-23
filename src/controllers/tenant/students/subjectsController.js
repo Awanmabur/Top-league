@@ -24,7 +24,7 @@ module.exports = {
       const blocked = mustHaveStudent(
         res,
         { tenant: req.tenant, user, student, currentPath: req.originalUrl, pageTitle: "My Subjects" },
-        "tenant/student/subjects"
+        "students/subjects"
       );
       if (blocked) return blocked;
 
@@ -135,7 +135,7 @@ module.exports = {
         examsScheduled: exams.length,
       };
 
-      return renderView(req, res, "tenant/student/subjects", {
+      return renderView(req, res, "students/subjects", {
         pageTitle: "My Subjects",
         user,
         student,

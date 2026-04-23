@@ -178,7 +178,7 @@ module.exports = {
 
       const totalPages = Math.max(1, Math.ceil(total / limit));
 
-      return res.render("tenant/admin/promotions/index", {
+      return res.render("tenant/promotions/index", {
         tenant: req.tenant || null,
         students,
         programs: [],

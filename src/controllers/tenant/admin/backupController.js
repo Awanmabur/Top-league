@@ -155,7 +155,7 @@ module.exports = {
     const docs = await BackupJob.find(query).sort({ createdAt: -1 }).lean();
     const backups = docs.map(serializeBackup);
 
-    return res.render("tenant/admin/backup/index", {
+    return res.render("tenant/backup/index", {
       tenant: req.tenant,
       csrfToken: req.csrfToken?.(),
       backups,

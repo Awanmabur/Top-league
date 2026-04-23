@@ -117,7 +117,7 @@ exports.index = async (req, res) => {
       totalValue,
     };
 
-    return res.render("tenant/admin/assets/index", {
+    return res.render("tenant/assets/index", {
       title: "Assets",
       tenant: req.tenant || null,
       csrfToken: req.csrfToken ? req.csrfToken() : "",
@@ -133,7 +133,7 @@ exports.index = async (req, res) => {
   } catch (error) {
     console.error("assetsController.index error:", error);
     req.flash?.("error", "Failed to load assets page.");
-    return res.redirect("/tenant/admin/dashboard");
+    return res.redirect("/tenant/dashboard");
   }
 };
 

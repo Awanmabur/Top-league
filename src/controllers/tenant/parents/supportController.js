@@ -1,7 +1,7 @@
 const { getParent, canAccessChild } = require("./_helpers");
 
 function fmtDate(v) {
-  if (!v) return "â€”";
+  if (!v) return "—";
   try {
     return new Date(v).toLocaleString();
   } catch {
@@ -114,7 +114,7 @@ module.exports = {
       log("children:", children.length);
       log("tickets:", tickets.length);
 
-      return res.render("tenant/parent/support", {
+      return res.render("parents/support", {
         tenant: req.tenant,
         user,
         parent,

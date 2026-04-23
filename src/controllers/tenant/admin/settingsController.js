@@ -71,7 +71,7 @@ module.exports = {
     let settings = await Setting.findOne({ key: "system", isDeleted: { $ne: true } }).lean();
     settings = settings?.value || buildDefaultSettings();
 
-    return res.render("tenant/admin/settings/index", {
+    return res.render("tenant/settings/index", {
       tenant: req.tenant,
       csrfToken: req.csrfToken?.(),
       settings,

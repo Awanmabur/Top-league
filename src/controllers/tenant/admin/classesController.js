@@ -226,7 +226,7 @@ module.exports = {
         archived: archivedCount,
       };
 
-      return res.render("tenant/admin/classes/index", {
+      return res.render("tenant/classes/index", {
         tenant: req.tenant || null,
         classes,
         staffList,

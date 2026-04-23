@@ -263,7 +263,7 @@ module.exports = {
 
     const kpis = computeKpis(invoices);
 
-    return res.render("tenant/admin/finance/invoices", {
+    return res.render("tenant/finance/invoices", {
       tenant: req.tenant,
       csrfToken: req.csrfToken?.(),
       invoices,

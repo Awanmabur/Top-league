@@ -68,6 +68,52 @@ function getRequestOrigin(req) {
   return { host, proto };
 }
 
+function cleanHost(value) {
+  return String(value || "")
+    .trim()
+    .replace(/^https?:\/\//i, "")
+    .replace(/\/.*$/, "")
+    .replace(/\/+$/, "");
+}
+
+function hostnameOf(value) {
+  const host = cleanHost(value);
+  return host.split(":")[0].toLowerCase();
+}
+
+function getConfiguredMainHostnames(req) {
+  const { host } = getRequestOrigin(req);
+  const baseDomain = String(process.env.BASE_DOMAIN || "")
+    .trim()
+    .toLowerCase();
+  return new Set(
+    [
+      hostnameOf(host),
+      baseDomain,
+      baseDomain && `www.${baseDomain}`,
+      hostnameOf(process.env.PUBLIC_SITE_URL),
+      hostnameOf(process.env.MAIN_SITE_URL),
+      hostnameOf(process.env.PLATFORM_SITE_URL),
+    ].filter(Boolean),
+  );
+}
+
+function isLocalPublicRequest(req) {
+  const { host } = getRequestOrigin(req);
+  const hostname = hostnameOf(host);
+  const baseDomain = String(process.env.BASE_DOMAIN || "")
+    .trim()
+    .toLowerCase();
+
+  return (
+    process.env.NODE_ENV !== "production" ||
+    baseDomain === "localhost" ||
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname.endsWith(".localhost")
+  );
+}
+
 function getMainSiteUrl(req) {
   const configured =
     process.env.PUBLIC_SITE_URL ||
@@ -122,6 +168,37 @@ function appendSchoolUnitQuery(target, schoolUnitId) {
 
 function isProfileApplyPath(pathname) {
   return /^\/schools\/[^/]+\/apply\/?$/i.test(String(pathname || ""));
+}
+
+function isPlainApplyPath(pathname) {
+  return /^\/apply\/?$/i.test(String(pathname || ""));
+}
+
+function absoluteApplyUrlToTenantPath(rawApplyUrl, req) {
+  if (!isHttpUrl(rawApplyUrl)) return "";
+
+  try {
+    const parsed = new URL(String(rawApplyUrl).trim());
+    const isTenantApplyPath =
+      isPlainApplyPath(parsed.pathname) || isProfileApplyPath(parsed.pathname);
+
+    if (!isTenantApplyPath) return "";
+
+    const parsedHostname = String(parsed.hostname || "").toLowerCase();
+    const mainHostnames = getConfiguredMainHostnames(req);
+
+    if (!isLocalPublicRequest(req) && !mainHostnames.has(parsedHostname)) {
+      return "";
+    }
+
+    if (isProfileApplyPath(parsed.pathname)) {
+      parsed.pathname = "/apply";
+    }
+
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch (_) {
+    return "";
+  }
 }
 
 function normalizeApplyUrlForTenant(rawApplyUrl) {
@@ -487,13 +564,14 @@ module.exports = {
           : await findTenantForPublicPage(req, code);
 
       if (!tenantDoc) {
-        return res.status(404).render("errors/404");
+        return res.status(404).render("platform/public/404");
       }
 
       const { profile, schoolUnit } = buildPublicProfile(req, tenantDoc);
-      const rawApplyUrl = normalizeApplyUrlForTenant(
+      let rawApplyUrl = normalizeApplyUrlForTenant(
         profile.admissions?.applyUrl || profile.applyUrl || "/apply",
       );
+      rawApplyUrl = absoluteApplyUrlToTenantPath(rawApplyUrl, req) || rawApplyUrl;
       const schoolUnitId = getSchoolUnitQueryValue(req, schoolUnit);
 
       if (isHttpUrl(rawApplyUrl)) {
@@ -507,7 +585,7 @@ module.exports = {
       return res.redirect(appendSchoolUnitQuery(applyPath, schoolUnitId));
     } catch (e) {
       console.error("tenant public school apply redirect:", e);
-      return res.status(500).render("errors/500");
+      return res.status(500).render("platform/public/500");
     }
   },
 
@@ -524,13 +602,13 @@ module.exports = {
           : await findTenantForPublicPage(req, code);
 
       if (!tenantDoc) {
-        return res.status(404).render("errors/404");
+        return res.status(404).render("platform/public/404");
       }
 
       const { profile, branding, schoolUnit } = buildPublicProfile(req, tenantDoc);
 
       if (profile.enabled === false) {
-        return res.status(404).render("errors/404");
+        return res.status(404).render("platform/public/404");
       }
 
       const tenantModels = useLiveTenantProfile(req) ? await getTenantModels(req, tenantDoc) : {};
@@ -629,7 +707,7 @@ module.exports = {
       });
     } catch (e) {
       console.error("public school profile:", e);
-      return res.status(500).render("errors/500");
+      return res.status(500).render("platform/public/500");
     }
   },
 

@@ -246,7 +246,7 @@ module.exports = {
     const invoices = invoiceDocs.map(serializeInvoice);
     const kpis = computeKpis(payments);
 
-    return res.render("tenant/admin/finance/payments", {
+    return res.render("tenant/finance/payments", {
       tenant: req.tenant,
       csrfToken: req.csrfToken?.(),
       payments,

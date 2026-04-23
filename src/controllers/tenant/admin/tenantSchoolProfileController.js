@@ -165,7 +165,7 @@ module.exports = {
       const pending = reviews.filter((r) => r.status === "pending");
       const approved = reviews.filter((r) => r.status === "approved");
 
-      return res.render("tenant/admin/settings/school-profile", {
+      return res.render("tenant/settings/school-profile", {
         tenant: tenantDoc.toObject(),
         pending,
         approved,

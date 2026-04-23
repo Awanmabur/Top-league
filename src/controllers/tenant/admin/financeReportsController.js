@@ -487,7 +487,7 @@ module.exports = {
         .sort((a, b) => b.ts - a.ts)
         .slice(0, 30);
 
-      return res.render("tenant/admin/finance/finance-reports", {
+      return res.render("tenant/finance/finance-reports", {
         tenant: req.tenant,
         csrfToken: req.csrfToken?.(),
         reports: {
@@ -518,7 +518,7 @@ module.exports = {
       });
     } catch (error) {
       console.error("financeReportsController.index error:", error);
-      return res.status(500).render("tenant/admin/error", {
+      return res.status(500).render("platform/public/500", {
         tenant: req.tenant,
         message: error.message || "Failed to load finance reports.",
       });

@@ -1,4 +1,4 @@
-// src/controllers/tenant/admin/admissions/intakeController.js
+// src/controllers/tenant/admissions/intakeController.js
 function parseDate(v) {
   if (!v) return null;
   const d = new Date(v);
@@ -129,7 +129,7 @@ module.exports = {
 
       const csrfToken = (typeof req.csrfToken === "function") ? req.csrfToken() : "";
 
-      return res.render("tenant/admin/intakes/index", {
+      return res.render("tenant/intakes/index", {
         tenant: req.tenant,
         items,
         programs,
@@ -150,7 +150,7 @@ module.exports = {
       const programs = await Section.find({ status: { $ne: "archived" } }).sort({ levelType: 1, classLevel: 1, classStream: 1, name: 1 }).lean();
       const csrfToken = (typeof req.csrfToken === "function") ? req.csrfToken() : "";
 
-      return res.render("tenant/admin/intakes/new", {
+      return res.render("tenant/intakes/new", {
         tenant: req.tenant,
         programs,
         csrfToken,
@@ -222,7 +222,7 @@ module.exports = {
       const programs = await Section.find({ status: { $ne: "archived" } }).sort({ levelType: 1, classLevel: 1, classStream: 1, name: 1 }).lean();
       const csrfToken = (typeof req.csrfToken === "function") ? req.csrfToken() : "";
 
-      return res.render("tenant/admin/intakes/edit", {
+      return res.render("tenant/intakes/edit", {
         tenant: req.tenant,
         item,
         programs,

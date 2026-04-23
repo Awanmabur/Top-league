@@ -87,7 +87,7 @@ module.exports = {
       const rows = inquiries.map(normalizeRow);
       const kpis = buildKpis(allRows);
 
-      return res.render("tenant/admin/inquiries/index", {
+      return res.render("tenant/inquiries/index", {
         title: "Inquiries",
         inquiries: rows,
         kpis,

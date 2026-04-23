@@ -150,7 +150,7 @@ module.exports = {
         })),
       };
 
-      return res.render("tenant/admin/discipline/index", {
+      return res.render("tenant/discipline/index", {
         tenant: req.tenant || null,
         cases: rows,
         students,

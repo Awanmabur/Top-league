@@ -112,7 +112,7 @@ module.exports = {
     const data = announcements.map(serializeAnnouncement);
     const kpis = computeKpis(data);
 
-    return res.render("tenant/admin/announcements/index", {
+    return res.render("tenant/announcements/index", {
       tenant: req.tenant,
       csrfToken: req.csrfToken?.(),
       announcements: data,

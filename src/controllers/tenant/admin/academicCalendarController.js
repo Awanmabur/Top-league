@@ -147,7 +147,7 @@ module.exports = {
 
       const kpis = await kpiAgg(AcademicEvent, { isDeleted: { $ne: true } });
 
-      return res.render("tenant/admin/academic-calendar/index", {
+      return res.render("tenant/academic-calendar/index", {
         tenant: req.tenant || null,
         events,
         years: years.length ? years : ["2025/2026", "2026/2027"],

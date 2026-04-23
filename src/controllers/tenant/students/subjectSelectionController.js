@@ -25,7 +25,7 @@ module.exports = {
       const blocked = mustHaveStudent(
         res,
         { tenant: req.tenant, user, student, currentPath: req.originalUrl, pageTitle: "Subject Selection" },
-        "tenant/student/subject-selection"
+        "students/subject-selection"
       );
       if (blocked) return blocked;
 
@@ -125,7 +125,7 @@ module.exports = {
         holds: holds.length,
       };
 
-      return renderView(req, res, "tenant/student/subject-selection", {
+      return renderView(req, res, "students/subject-selection", {
         pageTitle: "Subject Selection",
         user,
         student,

@@ -102,7 +102,7 @@ module.exports = {
 
     const data = messages.map(serializeMessage);
 
-    return res.render("tenant/admin/messaging/index", {
+    return res.render("tenant/messaging/index", {
       tenant: req.tenant,
       csrfToken: req.csrfToken?.(),
       messages: data,

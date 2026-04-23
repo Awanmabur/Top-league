@@ -99,7 +99,7 @@ module.exports = {
 
     const data = tickets.map(serializeTicket);
 
-    return res.render("tenant/admin/helpdesk/index", {
+    return res.render("tenant/helpdesk/index", {
       tenant: req.tenant,
       csrfToken: req.csrfToken?.(),
       tickets: data,

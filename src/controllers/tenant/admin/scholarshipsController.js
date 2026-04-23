@@ -155,7 +155,7 @@ module.exports = {
     const scholarships = scholarshipDocs.map(serializeScholarship);
     const kpis = computeKpis(scholarships);
 
-    return res.render("tenant/admin/finance/scholarships", {
+    return res.render("tenant/finance/scholarships", {
       tenant: req.tenant,
       csrfToken: req.csrfToken?.(),
       scholarships,

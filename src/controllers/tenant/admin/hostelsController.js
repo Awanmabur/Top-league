@@ -128,7 +128,7 @@ exports.index = async (req, res) => {
       applications: applications.filter((a) => a.status === "Pending").length,
     };
 
-    return res.render("tenant/admin/hostels/index", {
+    return res.render("tenant/hostels/index", {
       title: "Hostels",
       tenant: req.tenant || null,
       csrfToken: req.csrfToken ? req.csrfToken() : "",
@@ -146,7 +146,7 @@ exports.index = async (req, res) => {
   } catch (error) {
     console.error("hostelsController.index error:", error);
     req.flash?.("error", "Failed to load hostels page.");
-    return res.redirect("/tenant/admin/dashboard");
+    return res.redirect("/tenant/dashboard");
   }
 };
 

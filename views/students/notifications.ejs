@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title><%= pageTitle %> — <%= tenant?.name || "Classic Academy" %></title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/navbar.css"/>
+  <link rel="stylesheet" href="/css/student-portal.css" />
+</head>
+<body>
+<%- include("./navbar") %>
+
+<main class="main">
+  <div class="topbar">
+    <div>
+      <div class="title">Notifications</div>
+      <div class="subtitle">Your alerts, system messages, and announcements.</div>
+    </div>
+  </div>
+
+  <%-include("../tenant/partials/flash") %>
+  
+  <div class="kpi-row">
+    <div class="card"><div class="section-title">Total</div><div style="font-size:22px;font-weight:800;"><%= stats.total %></div></div>
+    <div class="card"><div class="section-title">Unread</div><div style="font-size:22px;font-weight:800;"><%= stats.unread %></div></div>
+    <div class="card"><div class="section-title">Announcements</div><div style="font-size:22px;font-weight:800;"><%= stats.announcements %></div></div>
+  </div>
+
+  <section class="card" style="margin-top:16px;">
+    <div class="section-title">Recent Notifications</div>
+    <div class="section-sub">Latest activity in your student portal.</div>
+
+    <div class="notif-list" style="margin-top:10px;">
+      <% if (notifications?.length) { %>
+        <% notifications.forEach(function(item){ %>
+          <div class="notif-item">
+            <div class="notif-icon">
+              <i class="fa-solid <%= item.source === 'announcement' ? 'fa-bullhorn' : 'fa-bell' %>"></i>
+            </div>
+            <div>
+              <div class="notif-title">
+                <%= item.title %>
+                <% if (!item.read) { %>
+                  <span class="badge-mode" style="margin-left:8px;">New</span>
+                <% } %>
+              </div>
+              <div class="notif-meta">
+                <%= item.createdAt ? new Date(item.createdAt).toDateString() : "-" %> • <%= item.category %>
+              </div>
+              <div class="small-muted" style="margin-top:4px;"><%= item.message %></div>
+            </div>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <div class="small-muted">No notifications found.</div>
+      <% } %>
+    </div>
+  </section>
+</main>
+</div>
+<script src="/js/navbar.js"></script>
+</body>
+</html>

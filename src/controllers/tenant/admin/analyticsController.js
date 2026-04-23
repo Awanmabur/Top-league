@@ -420,7 +420,7 @@ module.exports = {
 
       res.set("Cache-Control", "private, max-age=60");
 
-      return res.render("tenant/admin/analytics/index", {
+      return res.render("tenant/analytics/index", {
         tenant: req.tenant || null,
         csrfToken: res.locals.csrfToken || null,
         query: { range, campus, year, search },

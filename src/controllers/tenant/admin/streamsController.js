@@ -144,7 +144,7 @@ module.exports = {
         archived: await Stream.countDocuments({ ...filter, status: "archived" }),
       };
 
-      return res.render("tenant/admin/streams/index", {
+      return res.render("tenant/streams/index", {
         tenant: req.tenant || null,
         streams,
         classes,

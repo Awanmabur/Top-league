@@ -16,11 +16,7 @@ function getHostParts(req) {
 }
 
 function shouldSkipHost(host) {
-  const skipHosts = new Set([
-    "localhost",
-    "127.0.0.1",
-  ]);
-
+  const skipHosts = new Set(["localhost", "127.0.0.1"]);
   return skipHosts.has(host);
 }
 
@@ -30,7 +26,7 @@ function extractTenantCodeFromHost(host) {
   if (!host || shouldSkipHost(host)) return "";
 
   if (baseDomain && host.endsWith(`.${baseDomain}`)) {
-    return host.slice(0, -1 * (`.${baseDomain}`.length));
+    return host.slice(0, -1 * `.${baseDomain}`.length);
   }
 
   return "";
@@ -41,7 +37,9 @@ const ACCESS_TTL_MS = 5 * 60 * 1000;
 
 function accessCacheKey(tenant) {
   const tenantId = tenant?._id ? String(tenant._id) : "";
-  const planId = tenant?.planId?._id ? String(tenant.planId._id) : String(tenant?.planId || "");
+  const planId = tenant?.planId?._id
+    ? String(tenant.planId._id)
+    : String(tenant?.planId || "");
   const updatedAt = tenant?.updatedAt ? new Date(tenant.updatedAt).getTime() : "";
   return tenantId && planId ? `${tenantId}:${planId}:${updatedAt}` : "";
 }
@@ -98,8 +96,11 @@ module.exports = async function resolveTenantAccess(req, res, next) {
       }
     }
 
-    const explicitTenantCode =
-      String(req.tenantCode || req.params?.tenantCode || "").trim().toLowerCase();
+    const explicitTenantCode = String(
+      req.tenantCode || req.params?.tenantCode || "",
+    )
+      .trim()
+      .toLowerCase();
 
     if (!tenant) {
       const { host } = getHostParts(req);
@@ -119,7 +120,7 @@ module.exports = async function resolveTenantAccess(req, res, next) {
     }
 
     if (!tenant) {
-      return res.status(404).render("tenant/errors/tenant-not-found", {
+      return res.status(404).render("platform/public/404", {
         error: "Tenant not found.",
       });
     }
@@ -127,7 +128,7 @@ module.exports = async function resolveTenantAccess(req, res, next) {
     const plan = await loadTenantPlan(tenant);
 
     if (!plan) {
-      return res.status(500).render("tenant/errors/tenant-not-found", {
+      return res.status(500).render("platform/public/500", {
         error: "Tenant plan is not assigned.",
       });
     }
@@ -154,7 +155,7 @@ module.exports = async function resolveTenantAccess(req, res, next) {
     return next();
   } catch (err) {
     console.error("resolveTenantAccess error:", err.message || err);
-    return res.status(500).render("tenant/errors/tenant-not-found", {
+    return res.status(500).render("platform/public/500", {
       error: "Failed to resolve tenant access.",
     });
   }

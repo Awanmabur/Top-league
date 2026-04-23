@@ -40,7 +40,7 @@ module.exports = {
             .catch(() => [])
         : [];
 
-      return renderView(req, res, "tenant/student/jobs", {
+      return renderView(req, res, "students/jobs", {
         pageTitle: "Jobs & Opportunities",
         user,
         student,

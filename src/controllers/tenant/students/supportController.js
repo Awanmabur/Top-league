@@ -59,7 +59,7 @@ module.exports = {
         closed: mapped.filter((t) => ["resolved", "closed"].includes(t.status)).length,
       };
 
-      return renderView(req, res, "tenant/student/support", {
+      return renderView(req, res, "students/support", {
         pageTitle: "Support Tickets",
         user,
         student,

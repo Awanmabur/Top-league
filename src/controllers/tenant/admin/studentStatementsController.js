@@ -358,7 +358,7 @@ module.exports = {
         { students: 0, invoiced: 0, paid: 0, balance: 0, invoices: 0, payments: 0 }
       );
 
-      return res.render("tenant/admin/finance/student-statements", {
+      return res.render("tenant/finance/student-statements", {
         tenant: req.tenant || null,
         csrfToken: req.csrfToken?.() || null,
         statements,
@@ -372,7 +372,7 @@ module.exports = {
       });
     } catch (error) {
       console.error("studentStatementsController.index error:", error);
-      return res.status(500).render("tenant/admin/error", {
+      return res.status(500).render("platform/public/500", {
         tenant: req.tenant || null,
         message: error.message || "Failed to load student statements.",
       });

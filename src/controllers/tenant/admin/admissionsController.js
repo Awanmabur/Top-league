@@ -430,7 +430,7 @@ module.exports = {
     try {
       const listing = await getApplicantListing(req);
 
-      return res.render("tenant/admin/admissions/applicants", {
+      return res.render("tenant/admissions/applicants", {
         tenant: req.tenant || null,
         applicants: listing.applicants,
         programs: listing.programs,
@@ -685,7 +685,7 @@ module.exports = {
       by: x.actorName || x.actorEmail || "System",
     }));
 
-    return res.render("tenant/admin/admissions/applicant-view", {
+    return res.render("tenant/admissions/applicant-view", {
       tenant: req.tenant,
       applicant,
       classes,

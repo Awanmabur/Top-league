@@ -154,7 +154,7 @@ module.exports = {
         }
       ]);
 
-      return res.render("tenant/admin/requirements/index", {
+      return res.render("tenant/requirements/index", {
         tenant: req.tenant || null,
         items,
         programs,

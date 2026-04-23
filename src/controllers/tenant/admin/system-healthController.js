@@ -121,7 +121,7 @@ module.exports = {
       regions: [...new Set(allDocs.map((x) => x.region).filter(Boolean))].sort(),
     };
 
-    return res.render("tenant/admin/system-health/index", {
+    return res.render("tenant/system-health/index", {
       tenant: req.tenant,
       csrfToken: req.csrfToken?.(),
       services,

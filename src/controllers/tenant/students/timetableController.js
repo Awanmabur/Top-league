@@ -23,7 +23,7 @@ module.exports = {
       const blocked = mustHaveStudent(
         res,
         { tenant: req.tenant, user, student, currentPath: req.originalUrl, pageTitle: "My Timetable" },
-        "tenant/student/timetable"
+        "students/timetable"
       );
       if (blocked) return blocked;
 
@@ -68,14 +68,14 @@ module.exports = {
       const week = timetableRows.map((t) => ({
         day: String(t.dayOfWeek || t.day || "").toLowerCase().slice(0, 3),
         dayLabel: t.dayLabel || t.dayOfWeek || t.day || "Day",
-        time: `${t.startTime || ""}${t.endTime ? `â€“${t.endTime}` : ""}`,
+        time: `${t.startTime || ""}${t.endTime ? `–${t.endTime}` : ""}`,
         courseCode: courseCodeFromAny(t),
         courseTitle: courseTitleFromAny(t),
         location: t.room || t.venue || t.location || "TBA",
         type: t.type || t.sessionType || "Class",
       }));
 
-      return renderView(req, res, "tenant/student/timetable", {
+      return renderView(req, res, "students/timetable", {
         pageTitle: "My Timetable",
         user,
         student,

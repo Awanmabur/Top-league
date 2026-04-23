@@ -574,7 +574,7 @@ module.exports = {
           : Promise.resolve([]),
       ]);
 
-      return res.render("tenant/admin/reports/index", {
+      return res.render("tenant/reports/index", {
         tenant: req.tenant || null,
         csrfToken: res.locals.csrfToken || (req.csrfToken ? req.csrfToken() : ""),
         filters,

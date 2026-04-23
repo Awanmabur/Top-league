@@ -28,7 +28,7 @@ module.exports = {
           currentPath: req.originalUrl,
           pageTitle: "Student Finance",
         },
-        "tenant/student/finance"
+        "students/finance"
       );
       if (blocked) return blocked;
 
@@ -120,7 +120,7 @@ module.exports = {
         amount: num(r.amount ?? r.total),
       }));
 
-      return renderView(req, res, "tenant/student/finance", {
+      return renderView(req, res, "students/finance", {
         pageTitle: "Student Finance",
         user,
         student,

@@ -135,7 +135,7 @@ module.exports = {
         certificate: await StudentDoc.countDocuments({ ...baseKpiFilter, type: "certificate" }),
       };
 
-      return res.render("tenant/admin/student-docs/index", {
+      return res.render("tenant/student-docs/index", {
         tenant: req.tenant || null,
         docs: docs.map((row) => ({
           ...row,

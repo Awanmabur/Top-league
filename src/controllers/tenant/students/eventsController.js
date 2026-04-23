@@ -44,12 +44,12 @@ module.exports = {
         location: e.location || e.venue || "Campus",
         time:
           e.time ||
-          `${e.startTime || ""}${e.endTime ? `â€“${e.endTime}` : ""}`.trim() ||
+          `${e.startTime || ""}${e.endTime ? `–${e.endTime}` : ""}`.trim() ||
           "TBA",
         description: e.description || e.summary || "",
       }));
 
-      return renderView(req, res, "tenant/student/events", {
+      return renderView(req, res, "students/events", {
         pageTitle: "Events",
         user,
         student,

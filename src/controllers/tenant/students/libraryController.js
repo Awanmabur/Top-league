@@ -28,7 +28,7 @@ module.exports = {
           currentPath: req.originalUrl,
           pageTitle: "Library",
         },
-        "tenant/student/library"
+        "students/library"
       );
       if (blocked) return blocked;
 
@@ -65,7 +65,7 @@ module.exports = {
             .catch(() => [])
         : [];
 
-      return renderView(req, res, "tenant/student/library", {
+      return renderView(req, res, "students/library", {
         pageTitle: "Library",
         user,
         student,

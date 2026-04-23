@@ -1,7 +1,7 @@
 const { getParent, canAccessChild } = require("./_helpers");
 
 function fmtTime(v) {
-  if (!v) return "â€”";
+  if (!v) return "—";
   return String(v);
 }
 
@@ -16,11 +16,11 @@ function normalizeSlot(row = {}) {
     startTime: fmtTime(row.startTime || row.start || row.fromTime),
     endTime: fmtTime(row.endTime || row.end || row.toTime),
     subject: row.subjectName || row.subject || row.courseName || row.course || "Class",
-    teacher: row.teacherName || row.teacher || row.lecturerName || "â€”",
-    room: row.room || row.location || row.venue || "â€”",
+    teacher: row.teacherName || row.teacher || row.lecturerName || "—",
+    room: row.room || row.location || row.venue || "—",
     mode: row.mode || row.deliveryMode || "On-campus",
-    classGroup: row.classGroupName || row.className || "â€”",
-    notes: row.notes || row.remarks || "â€”",
+    classGroup: row.classGroupName || row.className || "—",
+    notes: row.notes || row.remarks || "—",
   };
 }
 
@@ -119,7 +119,7 @@ module.exports = {
       if (!student && children.length) student = children[0];
 
       if (!student) {
-        return res.render("tenant/parent/timetable", {
+        return res.render("parents/timetable", {
           tenant: req.tenant,
           user,
           parent,
@@ -176,7 +176,7 @@ module.exports = {
       log("selectedStudent:", student ? String(student._id) : null);
       log("timetableRows:", timetableRows.length);
 
-      return res.render("tenant/parent/timetable", {
+      return res.render("parents/timetable", {
         tenant: req.tenant,
         user,
         parent,

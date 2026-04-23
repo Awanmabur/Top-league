@@ -48,7 +48,7 @@ module.exports = {
           : null
       );
 
-      return res.render("tenant/parent/profile", {
+      return res.render("parents/profile", {
         tenant: req.tenant,
         user,
         parent,

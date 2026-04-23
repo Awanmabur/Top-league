@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title><%= pageTitle %> — <%= tenant?.name || "Classic Academy" %></title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/navbar.css"/>
+  <link rel="stylesheet" href="/css/student-portal.css" />
+</head>
+<body>
+<%- include("./navbar") %>
+
+<main class="main">
+  <div class="topbar">
+    <div>
+      <div class="title">Hostels & Accommodation</div>
+      <div class="subtitle">
+        View your current hostel allocation, application status, and available options.
+      </div>
+    </div>
+    <div class="top-actions">
+      <a class="btn light" href="/student/dashboard">
+        <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+      </a>
+      <button class="btn primary" type="button" disabled>
+        <i class="fa-solid fa-bed"></i> Apply / Change Hostel
+      </button>
+    </div>
+  </div>
+
+  <%-include("../tenant/partials/flash") %>
+
+  <div class="kpi-row">
+    <div class="card">
+      <div class="section-title">Allocation status</div>
+      <div class="section-sub">Current accommodation</div>
+      <div style="margin-top:8px;font-size:22px;font-weight:700;">
+        <%= allocation ? "Allocated" : "Not allocated" %>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-title">Application</div>
+      <div class="section-sub">Latest request</div>
+      <div style="margin-top:8px;font-size:22px;font-weight:700;">
+        <%= application?.status || "No active application" %>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-title">Hostel billed</div>
+      <div class="section-sub">Accommodation finance</div>
+      <div style="margin-top:8px;font-size:22px;font-weight:700;">
+        UGX <%= Number(hostelFinance?.billed || 0).toLocaleString() %>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-title">Hostel balance</div>
+      <div class="section-sub">Outstanding</div>
+      <div style="margin-top:8px;font-size:22px;font-weight:700;">
+        UGX <%= Number(hostelFinance?.balance || 0).toLocaleString() %>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+    <section class="card">
+      <div class="section-title">Current hostel allocation</div>
+      <div class="section-sub">Your latest confirmed room assignment.</div>
+
+      <% if (allocation) { %>
+        <div class="mini-list" style="margin-top:10px;">
+          <div class="mini-item"><span>Hostel</span><span><%= allocation.hostelName %></span></div>
+          <div class="mini-item"><span>Block</span><span><%= allocation.block %></span></div>
+          <div class="mini-item"><span>Room</span><span><%= allocation.room %></span></div>
+          <div class="mini-item"><span>Bed</span><span><%= allocation.bed %></span></div>
+          <div class="mini-item"><span>Status</span><span><%= allocation.status %></span></div>
+          <div class="mini-item"><span>Start date</span><span><%= allocation.startDate ? new Date(allocation.startDate).toDateString() : "-" %></span></div>
+        </div>
+      <% } else { %>
+        <div class="small-muted" style="margin-top:10px;">No hostel allocation found.</div>
+      <% } %>
+
+      <div style="margin-top:16px;">
+        <div class="section-title" style="font-size:13px;">Application status</div>
+        <% if (application) { %>
+          <div class="mini-list" style="margin-top:8px;">
+            <div class="mini-item"><span>Status</span><span><%= application.status %></span></div>
+            <div class="mini-item"><span>Preferred room type</span><span><%= application.preferredRoomType %></span></div>
+            <div class="mini-item"><span>Applied at</span><span><%= application.appliedAt ? new Date(application.appliedAt).toDateString() : "-" %></span></div>
+          </div>
+          <% if (application.notes) { %>
+            <p class="small-muted" style="margin-top:8px;"><%= application.notes %></p>
+          <% } %>
+        <% } else { %>
+          <div class="small-muted" style="margin-top:8px;">No current hostel application found.</div>
+        <% } %>
+      </div>
+    </section>
+
+    <aside>
+      <section class="card">
+        <div class="section-title">Available hostel options</div>
+        <div class="section-sub">Configured hostel choices.</div>
+
+        <div class="notif-list" style="margin-top:10px;">
+          <% if (options?.length) { %>
+            <% options.forEach(function(h){ %>
+              <div class="notif-item">
+                <div class="notif-icon"><i class="fa-solid fa-bed"></i></div>
+                <div>
+                  <div class="notif-title"><%= h.name %></div>
+                  <div class="notif-meta"><%= h.roomType %> • <%= h.gender %> • <%= h.location %></div>
+                  <div class="small-muted">Fee: UGX <%= Number(h.fee || 0).toLocaleString() %> • Available: <%= h.available %></div>
+                </div>
+              </div>
+            <% }) %>
+          <% } else { %>
+            <div class="small-muted">No hostel options found.</div>
+          <% } %>
+        </div>
+      </section>
+    </aside>
+  </div>
+</main>
+</div>
+
+<script src="/js/navbar.js"></script>
+</body>
+</html>

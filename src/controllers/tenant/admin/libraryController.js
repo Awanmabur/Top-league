@@ -136,7 +136,7 @@ exports.index = async (req, res) => {
       fineRate: 1000,
     };
 
-    return res.render("tenant/admin/library/index", {
+    return res.render("tenant/library/index", {
       title: "Library",
       tenant: req.tenant || null,
       csrfToken: req.csrfToken ? req.csrfToken() : "",
@@ -153,7 +153,7 @@ exports.index = async (req, res) => {
   } catch (error) {
     console.error("libraryController.index error:", error);
     req.flash?.("error", "Failed to load library page.");
-    return res.redirect("/tenant/admin/dashboard");
+    return res.redirect("/tenant/dashboard");
   }
 };
 

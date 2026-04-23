@@ -1,4 +1,4 @@
-// src/controllers/tenant/admin/dashboard.controller.js
+// src/controllers/tenant/dashboard.controller.js
 
 const { getSchoolUi } = require("../../../utils/school-ui");
 
@@ -458,7 +458,7 @@ module.exports = {
         finance,
       };
 
-      res.render("tenant/admin/dashboard/index", {
+      res.render("tenant/dashboard/index", {
         tenant,
         user,
         stats,
@@ -472,7 +472,7 @@ module.exports = {
       const schoolLevel = tenantAccess.schoolLevel || "high";
       const ui = getSchoolUi(schoolLevel);
 
-      res.status(500).render("tenant/admin/dashboard/index", {
+      res.status(500).render("tenant/dashboard/index", {
         tenant: req.tenant,
         user: req.user,
         ui,

@@ -17,8 +17,18 @@ module.exports = function errorHandler(err, req, res, next) {
     console.warn(err.message || err);
   }
 
-  if (req.path.startsWith("/platform") || req.path.startsWith("/super-admin")) {
-    return res.status(status).send(message);
+  const view =
+    status === 404
+      ? "platform/public/404"
+      : status >= 500
+        ? "platform/public/500"
+        : "";
+
+  if (view) {
+    return res.status(status).render(view, { message }, (renderErr, html) => {
+      if (renderErr) return res.status(status).send(message);
+      return res.send(html);
+    });
   }
 
   return res.status(status).send(message);

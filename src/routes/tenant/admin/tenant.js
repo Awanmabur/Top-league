@@ -2,12 +2,11 @@ const express = require("express");
 const router = express.Router();
 
 router.get("/", (req, res) => {
-  const tenant = req.tenant;
-
-  if (!tenant)
+  if (!req.tenant) {
     return res.status(404).send("School not found (tenant missing)");
+  }
 
-  res.render("tenant/admin/index", { tenant }); 
+  return res.redirect("/tenant/admin/dashboard");
 });
 
 module.exports = router;

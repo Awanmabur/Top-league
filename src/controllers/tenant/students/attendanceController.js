@@ -24,7 +24,7 @@ module.exports = {
       const blocked = mustHaveStudent(
         res,
         { tenant: req.tenant, user, student, currentPath: req.originalUrl, pageTitle: "Attendance" },
-        "tenant/student/attendance"
+        "students/attendance"
       );
       if (blocked) return blocked;
 
@@ -83,7 +83,7 @@ module.exports = {
 
       const atRiskCourses = courseSummary.filter((c) => c.percentage < 80);
 
-      return renderView(req, res, "tenant/student/attendance", {
+      return renderView(req, res, "students/attendance", {
         pageTitle: "Attendance",
         user,
         student,

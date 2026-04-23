@@ -74,7 +74,7 @@ module.exports = {
       );
       log("children:", children.length);
 
-      return res.render("tenant/parent/index", {
+      return res.render("parents/dashboard", {
         tenant: req.tenant,
         user,
         parent,

@@ -144,7 +144,7 @@ module.exports = {
         archived: await Section.countDocuments({ ...filter, status: "archived" }),
       };
 
-      return res.render("tenant/admin/sections/index", {
+      return res.render("tenant/sections/index", {
         tenant: req.tenant || null,
         sections,
         classes,

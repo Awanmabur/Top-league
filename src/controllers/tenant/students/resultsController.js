@@ -30,7 +30,7 @@ module.exports = {
           currentPath: req.originalUrl,
           pageTitle: "Results",
         },
-        "tenant/student/results"
+        "students/results"
       );
       if (blocked) return blocked;
 
@@ -64,7 +64,7 @@ module.exports = {
         average: rows.length ? Math.round(rows.reduce((s, r) => s + num(r.total), 0) / rows.length) : 0,
       };
 
-      return renderView(req, res, "tenant/student/results", {
+      return renderView(req, res, "students/results", {
         pageTitle: "Results",
         user,
         student,

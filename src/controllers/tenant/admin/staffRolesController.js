@@ -20,7 +20,7 @@ module.exports = {
 
     const roles = await StaffRole.find(query).sort({ sort: 1, title: 1 }).lean();
 
-    return res.render("tenant/admin/staff/roles", {
+    return res.render("tenant/staff/roles", {
       tenant: req.tenant,
       roles,
       csrfToken: req.csrfToken ? req.csrfToken() : "",

@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title><%= pageTitle %> — <%= tenant?.name || "Classic Academy" %></title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/navbar.css"/>
+  <link rel="stylesheet" href="/css/student-portal.css" />
+</head>
+<body>
+
+<%- include("./navbar") %>
+
+<main class="main">
+  <div class="topbar">
+    <div>
+      <div class="title">My Timetable</div>
+      <div class="subtitle">
+        Weekly timetable for your registered courses, plus a focused view of today’s classes.
+      </div>
+    </div>
+    <div class="top-actions">
+      <a class="btn light" href="/student/dashboard">
+        <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+      </a>
+      <button class="btn primary" onclick="window.print()">
+        <i class="fa-solid fa-print"></i> Print Timetable
+      </button>
+    </div>
+  </div>
+
+  <%-include("../tenant/partials/flash") %>
+
+  <section class="card">
+    <div class="section-title">Timetable filters</div>
+    <div class="section-sub">Switch between week view and day view.</div>
+
+    <div class="filters-row" style="margin-top:10px;">
+      <div>
+        <label class="small-muted">Semester</label><br/>
+        <select id="ttSemester" class="select">
+          <option selected><%= meta.semester %></option>
+        </select>
+      </div>
+      <div>
+        <label class="small-muted">View</label><br/>
+        <div class="view-toggle">
+          <button type="button" class="btn-xs active" id="btnViewWeek">
+            <i class="fa-solid fa-table-cells-large"></i> Week view
+          </button>
+          <button type="button" class="btn-xs" id="btnViewDay">
+            <i class="fa-solid fa-calendar-day"></i> Day view
+          </button>
+        </div>
+      </div>
+      <div>
+        <label class="small-muted">Day (for day view)</label><br/>
+        <select id="ttDay" class="select">
+          <option value="auto" selected>Today (auto)</option>
+          <option value="mon">Monday</option>
+          <option value="tue">Tuesday</option>
+          <option value="wed">Wednesday</option>
+          <option value="thu">Thursday</option>
+          <option value="fri">Friday</option>
+        </select>
+      </div>
+      <div style="flex:1;min-width:220px;">
+        <label class="small-muted">Info</label>
+        <p class="small-muted" style="margin-top:4px;">
+          Your timetable is generated from live timetable records.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <div class="content">
+    <section class="card">
+      <div class="section-title">Timetable</div>
+      <div class="section-sub"><span id="ttSubtitle">Week view (Mon–Fri)</span></div>
+
+      <div id="ttWeekWrapper" style="margin-top:10px;overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;" id="ttWeekTable">
+          <thead>
+            <tr style="border-bottom:1px solid #e5edff;">
+              <th style="text-align:left;padding:6px 4px;">Day</th>
+              <th style="text-align:left;padding:6px 4px;">Time</th>
+              <th style="text-align:left;padding:6px 4px;">Course</th>
+              <th style="text-align:left;padding:6px 4px;">Location</th>
+              <th style="text-align:left;padding:6px 4px;">Type</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (week?.length) { %>
+              <% week.forEach(function(row) { %>
+                <tr data-day="<%= row.day %>">
+                  <td><%= row.dayLabel %></td>
+                  <td><%= row.time %></td>
+                  <td><%= row.courseCode %> - <%= row.courseTitle %></td>
+                  <td><%= row.location %></td>
+                  <td><%= row.type %></td>
+                </tr>
+              <% }) %>
+            <% } else { %>
+              <tr><td colspan="5">No timetable data found.</td></tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+
+      <div id="ttDayWrapper" style="margin-top:10px;overflow-x:auto;display:none;">
+        <div style="margin-bottom:6px;">
+          <span class="timetable-day-badge">
+            <i class="fa-solid fa-calendar-day"></i>
+            <span id="ttDayLabel">Today</span>
+          </span>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:13px;" id="ttDayTable">
+          <thead>
+            <tr style="border-bottom:1px solid #e5edff;">
+              <th style="text-align:left;padding:6px 4px;">Time</th>
+              <th style="text-align:left;padding:6px 4px;">Course</th>
+              <th style="text-align:left;padding:6px 4px;">Location</th>
+              <th style="text-align:left;padding:6px 4px;">Type</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <aside>
+      <section class="card">
+        <div class="section-title">Today’s classes</div>
+        <div class="section-sub">Based on your timetable and today’s date.</div>
+        <div id="todayClassesList" class="course-list" style="margin-top:10px;"></div>
+      </section>
+
+      <section class="card" style="margin-top:16px;">
+        <div class="section-title">Exam & deadline summary</div>
+        <div class="section-sub">Quick view for this semester.</div>
+
+        <div class="mini-list" style="margin-top:8px;">
+          <% if (exams?.length) { %>
+            <% exams.forEach(function(exam) { %>
+              <div class="mini-item">
+                <span><%= exam.title %></span>
+                <span><%= exam.date ? new Date(exam.date).toDateString() : "-" %></span>
+              </div>
+            <% }) %>
+          <% } else { %>
+            <div class="small-muted">No exam items found.</div>
+          <% } %>
+        </div>
+      </section>
+    </aside>
+  </div>
+</main>
+</div>
+
+<script src="/js/navbar.js"></script>
+<script>
+(function(){
+  const btnWeek = document.getElementById("btnViewWeek");
+  const btnDay = document.getElementById("btnViewDay");
+  const weekWrapper = document.getElementById("ttWeekWrapper");
+  const dayWrapper = document.getElementById("ttDayWrapper");
+  const ttSubtitle = document.getElementById("ttSubtitle");
+  const ttDaySelect = document.getElementById("ttDay");
+  const ttDayLabel = document.getElementById("ttDayLabel");
+  const weekTable = document.getElementById("ttWeekTable");
+  const dayTableBody = document.querySelector("#ttDayTable tbody");
+  const todayClassesList = document.getElementById("todayClassesList");
+
+  const dayNames = { mon:"Monday", tue:"Tuesday", wed:"Wednesday", thu:"Thursday", fri:"Friday" };
+  const jsDays = ["sun","mon","tue","wed","thu","fri","sat"];
+
+  function getSelectedDay() {
+    if (ttDaySelect.value !== "auto") return ttDaySelect.value;
+    const d = jsDays[new Date().getDay()];
+    if (d === "sat" || d === "sun") return "mon";
+    return d;
+  }
+
+  function renderDay() {
+    const selected = getSelectedDay();
+    const label = dayNames[selected] || "Today";
+    ttDayLabel.textContent = label;
+    dayTableBody.innerHTML = "";
+    todayClassesList.innerHTML = "";
+
+    const rows = weekTable.querySelectorAll("tbody tr[data-day]");
+    let matches = 0;
+
+    rows.forEach((row) => {
+      if (row.getAttribute("data-day") === selected) {
+        matches++;
+        const cells = row.querySelectorAll("td");
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${cells[1].innerHTML}</td>
+          <td>${cells[2].innerHTML}</td>
+          <td>${cells[3].innerHTML}</td>
+          <td>${cells[4].innerHTML}</td>
+        `;
+        dayTableBody.appendChild(tr);
+
+        const item = document.createElement("div");
+        item.className = "course-item";
+        item.innerHTML = `
+          <div>
+            <div class="course-title">${cells[2].innerHTML}</div>
+            <div class="course-meta">${cells[1].innerHTML} • ${cells[3].innerHTML}</div>
+          </div>
+          <div class="course-actions"><span class="badge-mode">${cells[4].innerHTML}</span></div>
+        `;
+        todayClassesList.appendChild(item);
+      }
+    });
+
+    if (!matches) {
+      dayTableBody.innerHTML = '<tr><td colspan="4">No classes found for this day.</td></tr>';
+      todayClassesList.innerHTML = '<div class="small-muted">No classes scheduled for this day.</div>';
+    }
+  }
+
+  btnWeek.addEventListener("click", function(){
+    btnWeek.classList.add("active");
+    btnDay.classList.remove("active");
+    weekWrapper.style.display = "";
+    dayWrapper.style.display = "none";
+    ttSubtitle.textContent = "Week view (Mon–Fri)";
+  });
+
+  btnDay.addEventListener("click", function(){
+    btnDay.classList.add("active");
+    btnWeek.classList.remove("active");
+    weekWrapper.style.display = "none";
+    dayWrapper.style.display = "";
+    ttSubtitle.textContent = "Day view";
+    renderDay();
+  });
+
+  ttDaySelect.addEventListener("change", renderDay);
+  renderDay();
+})();
+</script>
+</body>
+</html>

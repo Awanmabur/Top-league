@@ -171,7 +171,7 @@ module.exports = {
 
       const kpis = await kpiAgg(Assignment, { isDeleted: { $ne: true } });
 
-      return res.render("tenant/admin/assignments/index", {
+      return res.render("tenant/assignments/index", {
         tenant: req.tenant || null,
         assignments,
         courses,

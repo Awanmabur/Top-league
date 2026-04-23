@@ -29,7 +29,7 @@ module.exports = {
           currentPath: req.originalUrl,
           pageTitle: "Exams",
         },
-        "tenant/student/exams"
+        "students/exams"
       );
       if (blocked) return blocked;
 
@@ -62,7 +62,7 @@ module.exports = {
       const today = new Date();
       const upcoming = rows.filter((r) => r.date && new Date(r.date) >= today).length;
 
-      return renderView(req, res, "tenant/student/exams", {
+      return renderView(req, res, "students/exams", {
         pageTitle: "Exams",
         user,
         student,

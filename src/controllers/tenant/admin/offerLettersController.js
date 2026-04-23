@@ -197,7 +197,7 @@ module.exports = {
         sent: letters.filter((x) => String(x.status || "") === "sent").length,
       };
 
-      return res.render("tenant/admin/offerLetters/index", {
+      return res.render("tenant/offerLetters/index", {
         tenant: req.tenant,
         csrfToken: typeof req.csrfToken === "function" ? req.csrfToken() : "",
         template,

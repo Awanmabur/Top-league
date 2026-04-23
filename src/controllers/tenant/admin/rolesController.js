@@ -102,7 +102,7 @@ module.exports = {
     const roles = roleDocs.map(serializeRole);
     const kpis = computeKpis(roles);
 
-    return res.render("tenant/admin/staff/roles", {
+    return res.render("tenant/staff/roles", {
       tenant: req.tenant,
       csrfToken: req.csrfToken?.(),
       roles,

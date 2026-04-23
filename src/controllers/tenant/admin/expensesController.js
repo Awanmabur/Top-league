@@ -122,7 +122,7 @@ module.exports = {
     const expenses = expenseDocs.map(serializeExpense);
     const kpis = computeKpis(expenses);
 
-    return res.render("tenant/admin/finance/expenses", {
+    return res.render("tenant/finance/expenses", {
       tenant: req.tenant,
       csrfToken: req.csrfToken?.(),
       expenses,

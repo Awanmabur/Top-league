@@ -159,7 +159,7 @@ module.exports = {
         Notification.countDocuments({ ...baseKpiFilter, isRead: true }),
       ]);
 
-      return res.render("tenant/admin/notifications/index", {
+      return res.render("tenant/notifications/index", {
         tenant: req.tenant || null,
         csrfToken: res.locals.csrfToken || (req.csrfToken ? req.csrfToken() : ""),
         items,

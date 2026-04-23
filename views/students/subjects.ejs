@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title><%= pageTitle %> — <%= tenant?.name || "Classic Academy" %></title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/navbar.css"/>
+  <link rel="stylesheet" href="/css/student-portal.css" />
+</head>
+<body>
+
+<%- include("./navbar") %>
+
+<main class="main">
+  <div class="topbar">
+    <div>
+      <div class="title">My Subjects</div>
+      <div class="subtitle">
+        Your current subjects, activities, attendance, and upcoming work.
+      </div>
+    </div>
+    <div class="top-actions">
+      <a class="btn light" href="/student/subject-selection">
+        <i class="fa-solid fa-list-check"></i> Subject Selection
+      </a>
+      <a class="btn primary" href="/student/timetable">
+        <i class="fa-solid fa-calendar-week"></i> Timetable
+      </a>
+    </div>
+  </div>
+
+  <%-include("../tenant/partials/flash") %>
+
+  <div class="kpi-row">
+    <div class="card">
+      <div class="section-title">Total subjects</div>
+      <div class="section-sub">Based on active class records</div>
+      <div style="margin-top:8px;"><div style="font-size:22px;font-weight:800;"><%= kpis.totalSubjects %></div></div>
+    </div>
+    <div class="card">
+      <div class="section-title">Average progress</div>
+      <div class="section-sub">Across active subjects</div>
+      <div style="margin-top:8px;"><div style="font-size:22px;font-weight:800;"><%= kpis.averageProgress %>%</div></div>
+    </div>
+    <div class="card">
+      <div class="section-title">Assignments due (7 days)</div>
+      <div class="section-sub">All subjects</div>
+      <div style="margin-top:8px;"><div style="font-size:22px;font-weight:800;"><%= kpis.dueAssignments %></div></div>
+    </div>
+    <div class="card">
+      <div class="section-title">Exams scheduled</div>
+      <div class="section-sub">This semester</div>
+      <div style="margin-top:8px;"><div style="font-size:22px;font-weight:800;"><%= kpis.examsScheduled %></div></div>
+    </div>
+  </div>
+
+  <div class="content">
+    <section class="card">
+      <div class="section-title">Subjects</div>
+      <div class="section-sub">Your active subjects.</div>
+
+      <div class="courses-grid" id="coursesGrid">
+        <% if (subjects?.length) { %>
+          <% subjects.forEach(function(c) { %>
+            <div class="course-card">
+              <div class="course-header">
+                <div>
+                  <div class="course-code"><%= c.subjectCode %></div>
+                  <div class="course-name"><%= c.subjectTitle %></div>
+                  <div class="small-muted">Teacher: <%= c.teacher %></div>
+                </div>
+                <span class="pill-small"><i class="fa-solid fa-laptop-code"></i> <%= c.mode %></span>
+              </div>
+
+              <div>
+                <div class="small-muted">Progress: <span class="course-progress-text"><%= c.progress %>%</span></div>
+                <div class="progress-bar"><div class="progress-fill" style="width:<%= c.progress %>%;"></div></div>
+              </div>
+
+              <div class="course-footer">
+                <span>Next: <%= c.nextItem %></span>
+                <span>Current grade: <%= c.currentGrade %></span>
+              </div>
+
+              <div class="course-actions-row">
+                <button class="btn-xs" type="button" disabled>
+                  <i class="fa-solid fa-book-open"></i> Open
+                </button>
+                <a class="btn-xs" href="/student/attendance">
+                  <i class="fa-solid fa-user-check"></i> Attendance
+                </a>
+              </div>
+            </div>
+          <% }) %>
+        <% } else { %>
+          <div class="small-muted">No subjects found.</div>
+        <% } %>
+      </div>
+    </section>
+
+    <aside>
+      <section class="card">
+        <div class="section-title">Subject summary</div>
+        <div class="section-sub">Quick view by subject.</div>
+        <div class="mini-list" style="margin-top:8px;">
+          <% if (subjects?.length) { %>
+            <% subjects.forEach(function(c) { %>
+              <div class="mini-item">
+                <span><%= c.subjectCode %></span>
+                <span><%= c.attendancePct %>% attendance</span>
+              </div>
+            <% }) %>
+          <% } else { %>
+            <div class="small-muted">No subject data found.</div>
+          <% } %>
+        </div>
+      </section>
+    </aside>
+  </div>
+</main>
+</div>
+
+<script src="/js/navbar.js"></script>
+</body>
+</html>

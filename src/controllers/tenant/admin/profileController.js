@@ -559,7 +559,7 @@ module.exports = {
       const pending = reviews.filter((r) => r.status === "pending");
       const approved = reviews.filter((r) => r.status === "approved");
 
-      return res.render("tenant/admin/profile/index", {
+      return res.render("tenant/profile/index", {
         tenant: tenantDoc.toObject(),
         pending,
         approved,

@@ -209,7 +209,7 @@ module.exports = function requireTenantAuth(requiredRole = null) {
         if (wantsJson(req)) {
           return res.status(403).json({ message: "Forbidden" });
         }
-        req.flash?.("error", "You donâ€™t have permission to access that page.");
+        req.flash?.("error", "You don’t have permission to access that page.");
         return res.status(403).send("Forbidden");
       }
       perf("role check", roleStartedAt);

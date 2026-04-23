@@ -4,7 +4,7 @@ module.exports = {
 
     const pendingUsers = await User.find({ status: "pending" });
 
-    res.render("tenant/admin/pending-users", { pendingUsers });
+    res.render("tenant/pending-users", { pendingUsers });
   },
 
   async approve(req, res) {

@@ -114,7 +114,7 @@ module.exports = {
     const data = staff.map(serializeStaff);
     const kpis = computeKpis(data);
 
-    return res.render("tenant/admin/staff/index", {
+    return res.render("tenant/staff/index", {
       tenant: req.tenant,
       csrfToken: req.csrfToken?.(),
       staff: data,

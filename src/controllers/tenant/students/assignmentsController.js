@@ -30,7 +30,7 @@ module.exports = {
           currentPath: req.originalUrl,
           pageTitle: "Assignments",
         },
-        "tenant/student/assignments"
+        "students/assignments"
       );
       if (blocked) return blocked;
 
@@ -69,7 +69,7 @@ module.exports = {
         return diff >= 0 && diff <= 7 * 24 * 60 * 60 * 1000;
       }).length;
 
-      return renderView(req, res, "tenant/student/assignments", {
+      return renderView(req, res, "students/assignments", {
         pageTitle: "Assignments",
         user,
         student,

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title><%= pageTitle %> — <%= tenant?.name || "Classic Academy" %></title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/navbar.css"/>
+  <link rel="stylesheet" href="/css/student-portal.css" />
+</head>
+<body>
+<%- include("./navbar") %>
+
+<main class="main">
+  <div class="topbar">
+    <div>
+      <div class="title">Examinations</div>
+      <div class="subtitle">Scheduled exams, venues, and exam instructions.</div>
+    </div>
+  </div>
+
+  <%-include("../tenant/partials/flash") %>
+
+  <div class="kpi-row">
+    <div class="card"><div class="section-title">Total Exams</div><div style="font-size:22px;font-weight:800;"><%= kpis.total %></div></div>
+    <div class="card"><div class="section-title">Upcoming</div><div style="font-size:22px;font-weight:800;"><%= kpis.upcoming %></div></div>
+    <div class="card">
+      <div class="section-title">Next Exam</div>
+      <div class="small-muted" style="margin-top:8px;">
+        <% if (kpis.nextExam) { %>
+          <strong><%= kpis.nextExam.courseCode || kpis.nextExam.courseTitle %></strong><br/>
+          <%= kpis.nextExam.date ? new Date(kpis.nextExam.date).toDateString() : "-" %>
+        <% } else { %>
+          No upcoming exam
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <section class="card" style="margin-top:16px;">
+    <div class="section-title">Exam Schedule</div>
+    <div class="section-sub">Upcoming and published exam schedule.</div>
+
+    <div style="overflow-x:auto;margin-top:12px;">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead>
+          <tr style="border-bottom:1px solid #e5edff;">
+            <th style="text-align:left;padding:6px 4px;">Course</th>
+            <th style="text-align:left;padding:6px 4px;">Date</th>
+            <th style="text-align:left;padding:6px 4px;">Time</th>
+            <th style="text-align:left;padding:6px 4px;">Venue</th>
+            <th style="text-align:left;padding:6px 4px;">Type</th>
+            <th style="text-align:left;padding:6px 4px;">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (exams?.length) { %>
+            <% exams.forEach(function(exam) { %>
+              <tr>
+                <td><%= exam.courseCode %> - <%= exam.courseTitle %></td>
+                <td><%= exam.date ? new Date(exam.date).toDateString() : "-" %></td>
+                <td><%= exam.time %></td>
+                <td><%= exam.venue %></td>
+                <td><%= exam.type %></td>
+                <td><%= exam.status %></td>
+              </tr>
+            <% }) %>
+          <% } else { %>
+            <tr><td colspan="6">No exam schedule found.</td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+</div>
+<script src="/js/navbar.js"></script>
+</body>
+</html>

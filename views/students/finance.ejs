@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title><%= pageTitle %> — <%= tenant?.name || "Classic Academy" %></title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/navbar.css"/>
+  <link rel="stylesheet" href="/css/student-portal.css" />
+</head>
+<body>
+<%- include("./navbar") %>
+
+<main class="main">
+  <div class="topbar">
+    <div>
+      <div class="title">Student Finance</div>
+      <div class="subtitle">
+        View your fees, invoices, payments, and receipts for all semesters.
+      </div>
+    </div>
+    <div class="top-actions">
+      <a class="btn light" href="/student/dashboard">
+        <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+      </a>
+      <button class="btn primary" type="button" disabled>
+        <i class="fa-solid fa-credit-card"></i> Pay Online
+      </button>
+    </div>
+  </div>
+
+ <%-include("../tenant/partials/flash") %>
+
+  <section class="card">
+    <div class="section-title">Fees summary</div>
+    <div class="section-sub">Select academic year & semester to view detailed breakdown.</div>
+
+    <div class="filters-row" style="margin-top:10px;">
+      <div>
+        <label class="small-muted">Academic year</label><br/>
+        <select class="select">
+          <option selected><%= meta.academicYear %></option>
+        </select>
+      </div>
+      <div>
+        <label class="small-muted">Semester</label><br/>
+        <select class="select">
+          <option selected><%= meta.semester %></option>
+        </select>
+      </div>
+      <div style="flex:1;min-width:220px;">
+        <label class="small-muted">Summary</label>
+        <div class="mini-list" style="margin-top:4px;">
+          <div class="mini-item">
+            <span>Total billed</span>
+            <span>UGX <%= Number(totals.billed || 0).toLocaleString() %></span>
+          </div>
+          <div class="mini-item">
+            <span>Total paid</span>
+            <span>UGX <%= Number(totals.paid || 0).toLocaleString() %></span>
+          </div>
+          <div class="mini-item">
+            <span>Outstanding</span>
+            <span style="color:#f59e0b;">UGX <%= Number(totals.balance || 0).toLocaleString() %></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="content">
+    <section class="card">
+      <div class="section-title">Fees breakdown</div>
+      <div class="section-sub">Per semester line items.</div>
+
+      <div style="margin-top:10px;overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead>
+            <tr style="border-bottom:1px solid #e5edff;">
+              <th style="text-align:left;padding:6px 4px;">Item</th>
+              <th style="text-align:left;padding:6px 4px;">Description</th>
+              <th style="text-align:left;padding:6px 4px;">Amount</th>
+              <th style="text-align:left;padding:6px 4px;">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (breakdown?.length) { %>
+              <% breakdown.forEach(function(item){ %>
+                <tr>
+                  <td><%= item.item %></td>
+                  <td><%= item.description %></td>
+                  <td>UGX <%= Number(item.amount || 0).toLocaleString() %></td>
+                  <td><%= item.status %></td>
+                </tr>
+              <% }) %>
+            <% } else { %>
+              <tr><td colspan="4">No finance breakdown found.</td></tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <aside>
+      <section class="card">
+        <div class="section-title">Invoices</div>
+        <div class="section-sub">Recent fee invoices.</div>
+
+        <div style="margin-top:8px;overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:13px;">
+            <thead>
+              <tr style="border-bottom:1px solid #e5edff;">
+                <th style="text-align:left;padding:6px 4px;">Invoice #</th>
+                <th style="text-align:left;padding:6px 4px;">Date</th>
+                <th style="text-align:left;padding:6px 4px;">Amount</th>
+                <th style="text-align:left;padding:6px 4px;">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (recentInvoices?.length) { %>
+                <% recentInvoices.forEach(function(inv){ %>
+                  <tr>
+                    <td><%= inv.number %></td>
+                    <td><%= inv.date ? new Date(inv.date).toDateString() : "-" %></td>
+                    <td>UGX <%= Number(inv.amount || 0).toLocaleString() %></td>
+                    <td><%= inv.status %></td>
+                  </tr>
+                <% }) %>
+              <% } else { %>
+                <tr><td colspan="4">No invoices found.</td></tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card" style="margin-top:16px;">
+        <div class="section-title">Payments &amp; receipts</div>
+        <div class="section-sub">History of payments made.</div>
+
+        <div style="margin-top:8px;overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:13px;">
+            <thead>
+              <tr style="border-bottom:1px solid #e5edff;">
+                <th style="text-align:left;padding:6px 4px;">Date</th>
+                <th style="text-align:left;padding:6px 4px;">Amount</th>
+                <th style="text-align:left;padding:6px 4px;">Method</th>
+                <th style="text-align:left;padding:6px 4px;">Reference</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (paymentHistory?.length) { %>
+                <% paymentHistory.forEach(function(p){ %>
+                  <tr>
+                    <td><%= p.date ? new Date(p.date).toDateString() : "-" %></td>
+                    <td>UGX <%= Number(p.amount || 0).toLocaleString() %></td>
+                    <td><%= p.method %></td>
+                    <td><%= p.reference %></td>
+                  </tr>
+                <% }) %>
+              <% } else { %>
+                <tr><td colspan="4">No payments found.</td></tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+
+        <% if (recentReceipts?.length) { %>
+          <div style="margin-top:12px;">
+            <div class="section-title" style="font-size:13px;">Receipts</div>
+            <div class="mini-list" style="margin-top:8px;">
+              <% recentReceipts.forEach(function(r){ %>
+                <div class="mini-item">
+                  <span><%= r.number %></span>
+                  <span>UGX <%= Number(r.amount || 0).toLocaleString() %></span>
+                </div>
+              <% }) %>
+            </div>
+          </div>
+        <% } %>
+      </section>
+    </aside>
+  </div>
+</main>
+</div>
+
+<script src="/js/navbar.js"></script>
+</body>
+</html>

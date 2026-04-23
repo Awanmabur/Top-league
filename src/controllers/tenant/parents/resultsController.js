@@ -16,9 +16,9 @@ function buildTermSummary(rows = []) {
   const normalized = rows.map((r) => ({
     ...r,
     score: Number(r.totalScore ?? r.score ?? r.mark ?? r.marks ?? 0),
-    grade: r.grade || "â€”",
+    grade: r.grade || "—",
     subject: r.subjectName || r.subject || r.courseName || r.course || "Subject",
-    remarks: r.remarks || r.comment || "â€”",
+    remarks: r.remarks || r.comment || "—",
     passMark: Number(r.passMark ?? 50),
   }));
 
@@ -48,13 +48,13 @@ function buildRecentPerformance(rows = []) {
       exam: r.examTitle || r.assessment || r.exam || "Assessment",
       subject: r.subjectName || r.subject || r.courseName || r.course || "Subject",
       score: Number(r.totalScore ?? r.score ?? r.mark ?? r.marks ?? 0),
-      grade: r.grade || "â€”",
+      grade: r.grade || "—",
       date: r.publishedAt
         ? new Date(r.publishedAt).toLocaleDateString()
         : r.createdAt
           ? new Date(r.createdAt).toLocaleDateString()
-          : "â€”",
-      remarks: r.remarks || r.comment || "â€”",
+          : "—",
+      remarks: r.remarks || r.comment || "—",
     }));
 }
 
@@ -98,7 +98,7 @@ module.exports = {
       if (!student && children.length) student = children[0];
 
       if (!student) {
-        return res.render("tenant/parent/results", {
+        return res.render("parents/results", {
           tenant: req.tenant,
           user,
           parent,
@@ -174,7 +174,7 @@ module.exports = {
       log("selectedStudent:", student ? String(student._id) : null);
       log("results:", resultRows.length);
 
-      return res.render("tenant/parent/results", {
+      return res.render("parents/results", {
         tenant: req.tenant,
         user,
         parent,

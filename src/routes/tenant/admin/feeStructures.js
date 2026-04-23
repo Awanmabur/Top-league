@@ -13,4 +13,3 @@ router.post("/:id/delete", feesController.remove);
 router.post("/bulk", feesController.bulk);
 
 module.exports = router;
-

@@ -28,7 +28,7 @@ module.exports = {
           currentPath: req.originalUrl,
           pageTitle: "Hostels & Accommodation",
         },
-        "tenant/student/hostel"
+        "students/hostel"
       );
       if (blocked) return blocked;
 
@@ -80,7 +80,7 @@ module.exports = {
         location: h.location || h.campus || "Campus",
       }));
 
-      return renderView(req, res, "tenant/student/hostel", {
+      return renderView(req, res, "students/hostel", {
         pageTitle: "Hostels & Accommodation",
         user,
         student,

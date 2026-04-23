@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Admin • Students — Discipline | <%= (tenant && tenant.name) ? tenant.name : "Classic Academy" %></title>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <% if (csrfToken) { %><meta name="csrf-token" content="<%= csrfToken %>"><% } %>
+
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer"/>
+  <link rel="stylesheet" href="/css/navbar.css" />
+  <link rel="stylesheet" href="/css/student-portal.css" />
+
+  <style>
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
+    .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+    .input,.select,.textarea,.view-input{
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(13,64,96,.16);
+      background:#fff;
+      outline:none;
+    }
+
+    .input{min-width:220px}
+    .textarea{width:100%;min-height:100px;resize:vertical}
+    .input:focus,.select:focus,.textarea:focus{
+      border-color:rgba(10,111,191,.45);
+      box-shadow:0 0 0 3px rgba(10,111,191,.12);
+    }
+
+    .view-input{
+      min-height:44px;
+      display:flex;
+      align-items:center;
+      font-weight:800;
+      color:#0f172a;
+      background:#fbfdff;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+
+    .view-input.multiline{
+      display:block;
+      min-height:96px;
+      align-items:flex-start;
+      white-space:pre-wrap;
+      overflow:auto;
+      text-overflow:unset;
+      line-height:1.55;
+    }
+
+    .muted{font-size:12px;color:#6b7280}
+    .strong{font-weight:900}
+    .grid-4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+    .right{text-align:right}
+
+    .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:900}
+    .pill.open{background:#fff7ed;color:#92400e}
+    .pill.investigating{background:#eef2ff;color:#3730a3}
+    .pill.hearing{background:#eef2ff;color:#3730a3}
+    .pill.resolved{background:#ecfdf3;color:#15803d}
+    .pill.dismissed{background:#fee2e2;color:#b91c1c}
+
+    .flash-wrap{display:grid;gap:10px;margin-bottom:12px}
+    .flash{padding:12px 14px;border-radius:12px;font-weight:700}
+    .flash-success{background:#ecfdf3;color:#166534;border:1px solid #bbf7d0}
+    .flash-error{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:14px;
+      flex-wrap:nowrap;
+    }
+
+    .topbar > div:first-child{min-width:0;flex:1 1 auto}
+    .top-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;align-items:center;flex:0 0 auto;margin-left:auto}
+
+    .table-wrap{
+      overflow-x:auto;
+      overflow-y:hidden;
+      border:1px solid rgba(13,64,96,.10);
+      border-radius:12px;
+      max-width:100%;
+      -webkit-overflow-scrolling:touch;
+    }
+
+    table{
+      width:100%;
+      min-width:1120px;
+      border-collapse:separate;
+      border-spacing:0;
+      background:#fff;
+      table-layout:fixed;
+    }
+
+    th,td{
+      padding:10px 12px;
+      border-bottom:1px solid rgba(13,64,96,.08);
+      vertical-align:middle;
+    }
+
+    th{
+      font-size:12px;
+      color:#6b7280;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+      text-align:left;
+      background:rgba(13,64,96,.03);
+      position:sticky;
+      top:0;
+      z-index:1;
+      white-space:nowrap;
+    }
+
+    tr:hover td{background:rgba(10,111,191,.04)}
+    .col-case{width:150px}
+    .col-student{width:260px}
+    .col-incident{width:250px}
+    .col-category{width:150px}
+    .col-status{width:130px}
+    .col-files{width:150px}
+    .col-actions{width:180px}
+    .actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:nowrap;overflow:hidden}
+    .btn-xs{
+      padding:6px 8px;
+      border-radius:10px;
+      border:1px solid rgba(13,64,96,.14);
+      background:#fff;
+      cursor:pointer;
+      font-size:12px;
+      position:relative;
+      z-index:2;
+      flex:0 0 auto;
+    }
+    .btn-xs:hover{background:rgba(10,111,191,.06)}
+
+    .modal-backdrop{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.45);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      z-index:9999;
+      overflow-y:auto;
+    }
+
+    .modal-backdrop.show{display:flex}
+
+    .modal{
+      width:min(980px,100%);
+      max-height:calc(100dvh - 60px);
+      background:#fff;
+      border-radius:22px;
+      box-shadow:0 24px 70px rgba(0,0,0,.25);
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .modal.sm{width:min(760px,100%)}
+    .modal > form{display:flex;flex-direction:column;flex:1 1 auto;min-height:0;overflow:hidden}
+    .modal-header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid rgba(13,64,96,.10);background:#fff}
+    .modal-title{font-weight:900;font-size:18px}
+    .modal-body{padding:16px 18px;overflow-y:auto;min-height:0;flex:1 1 auto}
+    .modal-footer{display:flex;justify-content:flex-end;gap:10px;padding:14px 18px;border-top:1px solid rgba(13,64,96,.10);background:#fff;flex-wrap:wrap}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .field label{display:block;font-size:12px;color:#6b7280;margin-bottom:6px}
+    .field input,.field select,.field textarea{width:100%}
+    .divider{height:1px;background:rgba(13,64,96,.10);margin:12px 0}
+    .mini-list{display:grid;gap:10px}
+    .mini-item{padding:10px 12px;border:1px solid rgba(13,64,96,.10);border-radius:12px;background:#fff}
+    .link-inline{color:#0a6fbf;text-decoration:none;font-weight:800}
+    .link-inline:hover{text-decoration:underline}
+
+    .pagination{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      margin-top:14px;
+      flex-wrap:wrap;
+    }
+
+    .pagination-links{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    .page-link{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:38px;
+      height:38px;
+      padding:0 12px;
+      border-radius:10px;
+      border:1px solid rgba(13,64,96,.14);
+      background:#fff;
+      color:#0f172a;
+      text-decoration:none;
+      font-weight:800;
+    }
+
+    .page-link.active{
+      background:#0a6fbf;
+      color:#fff;
+      border-color:#0a6fbf;
+    }
+
+    .page-link.disabled{
+      pointer-events:none;
+      opacity:.45;
+    }
+
+    @media(max-width:1100px){ .grid-4{grid-template-columns:repeat(2,minmax(0,1fr))} }
+    @media(max-width:900px){ .grid2{grid-template-columns:1fr} .topbar{flex-wrap:wrap} .top-actions{width:100%;justify-content:flex-start} }
+    @media(max-width:650px){ .toolbar .left,.toolbar .right{width:100%}.toolbar .left > *,.toolbar .right > *{max-width:100%}.input{min-width:160px}table{min-width:1120px} }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <%- include("../partials/navbar") %>
+
+    <main class="main">
+      <% const disciplineStatusLabels = { open: "Open", investigating: "Investigating", hearing: "Hearing", resolved: "Resolved", dismissed: "Dismissed" }; %>
+      <% if (typeof messages !== "undefined" && (messages.success?.length || messages.error?.length)) { %>
+        <div class="flash-wrap">
+          <% (messages.success || []).forEach(function(msg){ %>
+            <div class="flash flash-success"><%= msg %></div>
+          <% }) %>
+          <% (messages.error || []).forEach(function(msg){ %>
+            <div class="flash flash-error"><%= msg %></div>
+          <% }) %>
+        </div>
+      <% } %>
+
+      <div class="topbar">
+        <div>
+          <div class="title">Discipline</div>
+          <div class="subtitle">Open cases, manage actions, upload statements & attachments, and resolve outcomes.</div>
+        </div>
+        <div class="top-actions">
+          <button class="btn primary" type="button" data-open="mCase" data-mode="create">
+            <i class="fa-solid fa-plus"></i> Open Case
+          </button>
+        </div>
+      </div>
+
+      <div class="grid-4">
+        <div class="card">
+          <div class="section-title">Total</div>
+          <div class="kpi-value"><%= kpis?.total || 0 %></div>
+          <div class="muted">All cases</div>
+        </div>
+        <div class="card">
+          <div class="section-title">Open</div>
+          <div class="kpi-value" style="color:#92400e"><%= kpis?.open || 0 %></div>
+          <div class="muted">Awaiting action</div>
+        </div>
+        <div class="card">
+          <div class="section-title">Investigating</div>
+          <div class="kpi-value" style="color:#3730a3"><%= kpis?.investigating || 0 %></div>
+          <div class="muted">Under review</div>
+        </div>
+        <div class="card">
+          <div class="section-title">Resolved</div>
+          <div class="kpi-value" style="color:#15803d"><%= kpis?.resolved || 0 %></div>
+          <div class="muted">Closed properly</div>
+        </div>
+      </div>
+
+      <section class="card" style="margin-top:12px;">
+        <div class="card-body">
+          <form class="toolbar" method="GET" action="/admin/discipline">
+            <div class="left">
+              <input class="input" name="q" value="<%= query?.q || '' %>" placeholder="Search case no, student, category..." />
+              <select class="select" name="status">
+                <option value="">All Statuses</option>
+                <% ["open","investigating","hearing","resolved","dismissed"].forEach(function(s){ %>
+                  <option value="<%= s %>" <%= String(query?.status || '') === s ? 'selected' : '' %>><%= disciplineStatusLabels[s] || s %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="right">
+              <a class="btn light" href="/admin/discipline"><i class="fa-solid fa-rotate-left"></i> Reset</a>
+              <button class="btn primary" type="submit"><i class="fa-solid fa-filter"></i> Filter</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <section class="card" style="margin-top:12px;">
+        <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;">
+          <div>
+            <div class="section-title">Discipline Cases</div>
+            <div class="section-sub">Showing <%= (cases || []).length %> of <%= query?.total || 0 %> records.</div>
+          </div>
+          <div class="muted">Page <%= query?.page || 1 %> of <%= query?.totalPages || 1 %></div>
+        </div>
+
+        <div style="margin-top:10px;">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th class="col-case">Case</th>
+                  <th class="col-student">Student</th>
+                  <th class="col-incident">Incident</th>
+                  <th class="col-category">Category</th>
+                  <th class="col-status">Status</th>
+                  <th class="col-files">Files</th>
+                  <th class="col-actions right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (!(cases || []).length) { %>
+                  <tr><td colspan="7" class="muted">No discipline cases found.</td></tr>
+                <% } %>
+
+                <% (cases || []).forEach(function(c){ %>
+                  <tr>
+                    <td>
+                      <div class="strong"><%= c.caseNo || '—' %></div>
+                      <div class="muted">Opened: <%= c.createdAt ? new Date(c.createdAt).toLocaleDateString() : '-' %></div>
+                    </td>
+                    <td>
+                      <div class="strong"><%= c.student ? (c.student.fullName || c.student.regNo || '—') : '—' %></div>
+                      <div class="muted"><%= c.student ? (c.student.regNo || '') : '' %> <%= c.student?.email ? ('• ' + c.student.email) : '' %></div>
+                    </td>
+                    <td>
+                      <div class="strong"><%= c.incidentDate ? new Date(c.incidentDate).toLocaleDateString() : '-' %></div>
+                      <div class="muted"><%= (c.description || '').slice(0, 70) %><%= (c.description || '').length > 70 ? '…' : '' %></div>
+                    </td>
+                    <td><%= c.category || '—' %></td>
+                    <td>
+                      <span class="pill <%= c.status || 'open' %>">
+                        <%= disciplineStatusLabels[c.status || 'open'] || c.status || 'open' %>
+                      </span>
+                    </td>
+                    <td class="muted">
+                      Statement: <%= (c.studentStatement && c.studentStatement.url) ? "Yes" : "No" %><br/>
+                      Attachments: <%= Array.isArray(c.attachments) ? c.attachments.length : 0 %><br/>
+                      Actions: <%= Array.isArray(c.actions) ? c.actions.length : 0 %>
+                    </td>
+                    <td class="right">
+                      <div class="actions">
+                        <button class="btn-xs" type="button" title="View" data-case-action="view" data-id="<%= c._id %>">
+                          <i class="fa-solid fa-eye"></i>
+                        </button>
+                        <button class="btn-xs" type="button" title="Edit" data-open="mCase" data-mode="edit" data-id="<%= c._id %>">
+                          <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <button class="btn-xs" type="button" title="More" data-case-action="more" data-id="<%= c._id %>">
+                          <i class="fa-solid fa-ellipsis"></i>
+                        </button>
+                        <button class="btn-xs" type="button" title="Delete" data-open="mDelete" data-id="<%= c._id %>" data-name="<%= c.caseNo || 'Case' %>">
+                          <i class="fa-solid fa-trash"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+
+                  <% if (false && Array.isArray(c.actions) && c.actions.length) { %>
+                    <tr>
+                      <td colspan="7" class="muted">
+                        <b>Actions:</b>
+                        <%= c.actions.map(a => (a.action || '') + (a.details ? (' — ' + a.details) : '')).join(' | ') %>
+                      </td>
+                    </tr>
+                  <% } %>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="pagination">
+            <div class="muted">Rows per page: <strong><%= query?.limit || 20 %></strong></div>
+
+            <div class="pagination-links">
+              <%
+                const currentPage = Number(query?.page || 1);
+                const totalPages = Number(query?.totalPages || 1);
+                function buildPageUrl(targetPage) {
+                  const params = new URLSearchParams();
+                  if (query?.q) params.set("q", query.q);
+                  if (query?.status) params.set("status", query.status);
+                  if (query?.limit) params.set("limit", String(query.limit));
+                  params.set("page", String(targetPage));
+                  return "/admin/discipline?" + params.toString();
+                }
+                const startPage = Math.max(1, currentPage - 2);
+                const endPage = Math.min(totalPages, currentPage + 2);
+              %>
+
+              <a class="page-link <%= currentPage <= 1 ? 'disabled' : '' %>" href="<%= buildPageUrl(Math.max(1, currentPage - 1)) %>">
+                <i class="fa-solid fa-angle-left"></i>
+              </a>
+
+              <% for (let p = startPage; p <= endPage; p++) { %>
+                <a class="page-link <%= p === currentPage ? 'active' : '' %>" href="<%= buildPageUrl(p) %>"><%= p %></a>
+              <% } %>
+
+              <a class="page-link <%= currentPage >= totalPages ? 'disabled' : '' %>" href="<%= buildPageUrl(Math.min(totalPages, currentPage + 1)) %>">
+                <i class="fa-solid fa-angle-right"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="mCase">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title" id="mTitle"><i class="fa-solid fa-plus"></i> Open Discipline Case</div>
+        <button class="btn light small" type="button" data-close="mCase"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <form id="caseForm" method="POST" action="/admin/discipline">
+        <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>"/>
+        <div class="modal-body">
+          <div class="grid2" id="caseMainFields">
+            <div class="field" style="grid-column:1/-1">
+              <label>Student *</label>
+              <select class="select" name="student" id="fStudent" required>
+                <option value="">— select student —</option>
+                <% (students || []).forEach(function(s){ %>
+                  <option value="<%= s._id %>"><%= (s.regNo ? s.regNo + ' — ' : '') + (s.fullName || 'Student') + (s.email ? (' (' + s.email + ')') : '') %></option>
+                <% }) %>
+              </select>
+            </div>
+
+            <div class="field">
+              <label>Incident Date *</label>
+              <input class="input" type="date" name="incidentDate" id="fIncidentDate" required>
+            </div>
+
+            <div class="field">
+              <label>Status</label>
+              <select class="select" name="status" id="fStatus">
+                <option value="open">Open</option>
+                <option value="investigating">Investigating</option>
+                <option value="hearing">Hearing</option>
+                <option value="resolved">Resolved</option>
+                <option value="dismissed">Dismissed</option>
+              </select>
+            </div>
+
+            <div class="field" style="grid-column:1/-1">
+              <label>Category *</label>
+              <input class="input" name="category" id="fCategory" placeholder="Misconduct, Fraud, Violence..." required>
+            </div>
+
+            <div class="field" style="grid-column:1/-1">
+              <label>Description *</label>
+              <textarea class="textarea" name="description" id="fDescription" placeholder="Full description..." required></textarea>
+            </div>
+
+            <div class="field" style="grid-column:1/-1">
+              <label>Note (internal)</label>
+              <textarea class="textarea" name="note" id="fNote" placeholder="Internal note (optional)"></textarea>
+            </div>
+
+            <input type="hidden" id="caseId" value="">
+          </div>
+
+          <div id="editOnly" style="display:none">
+            <div style="height:1px;background:rgba(13,64,96,.12);margin:12px 0"></div>
+
+            <div class="strong"><i class="fa-solid fa-toolbox"></i> Case Actions & Files</div>
+            <div class="muted">Use the buttons below after saving edits.</div>
+
+            <div style="height:1px;background:rgba(13,64,96,.12);margin:12px 0"></div>
+
+            <div class="grid2">
+              <div class="field">
+                <label>Add Action</label>
+                <input class="input" id="aAction" placeholder="e.g Warning">
+              </div>
+              <div class="field">
+                <label>Details</label>
+                <input class="input" id="aDetails" placeholder="e.g Written warning issued">
+              </div>
+              <div class="field" style="grid-column:1/-1">
+                <button class="btn light" type="button" id="btnAddAction"><i class="fa-solid fa-plus"></i> Add Action</button>
+              </div>
+            </div>
+
+            <div style="height:1px;background:rgba(13,64,96,.12);margin:12px 0"></div>
+
+            <div class="grid2">
+              <div class="field" style="grid-column:1/-1">
+                <label>Upload / Replace Student Statement</label>
+                <input class="input" type="file" name="file" form="statementForm" required>
+                <div style="margin-top:8px;">
+                  <button class="btn success" type="submit" form="statementForm"><i class="fa-solid fa-upload"></i> Upload Statement</button>
+                </div>
+              </div>
+            </div>
+
+            <div style="height:1px;background:rgba(13,64,96,.12);margin:12px 0"></div>
+
+            <div class="grid2">
+              <div class="field" style="grid-column:1/-1">
+                <label>Upload Attachments (up to 5)</label>
+                <input class="input" type="file" name="files" form="attachForm" multiple>
+                <div style="margin-top:8px;">
+                  <button class="btn success" type="submit" form="attachForm"><i class="fa-solid fa-paperclip"></i> Upload Attachments</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="muted" style="margin-top:10px" id="fileSummary">—</div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn light" type="button" data-close="mCase">Close</button>
+          <button class="btn primary" type="submit" id="caseSaveBtn"><i class="fa-solid fa-check"></i> Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="mView">
+    <div class="modal sm">
+      <div class="modal-header">
+        <div class="modal-title">Case Details</div>
+        <button class="btn-xs" type="button" data-close="mView"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="grid2">
+          <div class="field">
+            <label>Case No</label>
+            <div class="view-input" id="vCaseNo">&mdash;</div>
+          </div>
+
+          <div class="field">
+            <label>Status</label>
+            <div class="view-input" id="vStatus">&mdash;</div>
+          </div>
+
+          <div class="field" style="grid-column:1/-1">
+            <label>Student</label>
+            <div class="view-input" id="vStudent">&mdash;</div>
+          </div>
+
+          <div class="field">
+            <label>Incident Date</label>
+            <div class="view-input" id="vIncidentDate">&mdash;</div>
+          </div>
+
+          <div class="field">
+            <label>Category</label>
+            <div class="view-input" id="vCategory">&mdash;</div>
+          </div>
+
+          <div class="field" style="grid-column:1/-1">
+            <label>Description</label>
+            <div class="view-input multiline" id="vDescription">&mdash;</div>
+          </div>
+
+          <div class="field" style="grid-column:1/-1">
+            <label>Note</label>
+            <div class="view-input multiline" id="vNote">&mdash;</div>
+          </div>
+
+          <div class="field" style="grid-column:1/-1">
+            <label>Files</label>
+            <div class="view-input multiline" id="vFiles">&mdash;</div>
+          </div>
+
+          <div class="field" style="grid-column:1/-1">
+            <label>Actions Taken</label>
+            <div class="mini-list" id="vActions"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn light" type="button" data-close="mView">Close</button>
+        <button class="btn light" type="button" id="viewMoreBtn"><i class="fa-solid fa-ellipsis"></i> More</button>
+        <button class="btn primary" type="button" id="viewEditBtn"><i class="fa-solid fa-pen"></i> Edit</button>
+      </div>
+    </div>
+  </div>
+
+  <form id="statementForm" method="POST" action="#" enctype="multipart/form-data" style="display:none;">
+    <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>"/>
+  </form>
+
+  <form id="attachForm" method="POST" action="#" enctype="multipart/form-data" style="display:none;">
+    <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>"/>
+  </form>
+
+  <div class="modal-backdrop" id="mDelete">
+    <div class="modal" style="max-width:520px;">
+      <div class="modal-header">
+        <div class="modal-title"><i class="fa-solid fa-triangle-exclamation"></i> Delete Case</div>
+        <button class="btn light small" type="button" data-close="mDelete"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="muted">This deletes the case and removes cloud files. Continue?</div>
+        <div style="margin-top:10px" class="muted">Target: <b id="delName">—</b></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn light" type="button" data-close="mDelete">Cancel</button>
+        <form id="delForm" method="POST" action="#">
+          <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>"/>
+          <button class="btn danger" type="submit"><i class="fa-solid fa-trash"></i> Delete</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script type="application/json" nonce="<%= cspNonce || '' %>" id="disciplineData"><%- JSON.stringify(meta).replace(/</g,"\\u003c") %></script>
+  <script defer src="/js/navbar.js"></script>
+  <script defer src="/js/discipline.js"></script>
+</body>
+</html>

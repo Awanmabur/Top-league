@@ -1,7 +1,7 @@
 const { getParent } = require("./_helpers");
 
 function fmtDate(v) {
-  if (!v) return "â€”";
+  if (!v) return "—";
   try {
     return new Date(v).toLocaleDateString();
   } catch {
@@ -79,7 +79,7 @@ module.exports = {
       );
       log("announcements:", announcements.length);
 
-      return res.render("tenant/parent/announcements", {
+      return res.render("parents/announcements", {
         tenant: req.tenant,
         user,
         parent,

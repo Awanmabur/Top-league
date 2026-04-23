@@ -18,7 +18,7 @@ module.exports = function requireTenantFeature(featureName, options = {}) {
         });
       }
 
-      return res.status(403).render("tenant/errors/access-denied", {
+      return res.status(403).render("platform/public/404", {
         error: "This tenant is not active for operational access.",
       });
     }
@@ -31,7 +31,7 @@ module.exports = function requireTenantFeature(featureName, options = {}) {
         });
       }
 
-      return res.status(403).render("tenant/errors/access-denied", {
+      return res.status(403).render("platform/public/404", {
         error: `${featureName} is not enabled in your current plan.`,
       });
     }

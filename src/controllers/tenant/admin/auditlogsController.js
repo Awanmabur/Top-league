@@ -226,7 +226,7 @@ module.exports = {
     const { AuditLog } = req.models;
 
     if (!AuditLog) {
-      return res.render("tenant/admin/auditlogs/index", {
+      return res.render("tenant/auditlogs/index", {
         tenant: req.tenant,
         csrfToken: req.csrfToken?.(),
         logs: [],
@@ -251,7 +251,7 @@ module.exports = {
       modules: modules.filter(Boolean).sort(),
     };
 
-    return res.render("tenant/admin/auditlogs/index", {
+    return res.render("tenant/auditlogs/index", {
       tenant: req.tenant,
       csrfToken: req.csrfToken?.(),
       logs,

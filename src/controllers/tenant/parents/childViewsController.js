@@ -5,7 +5,7 @@ function num(v) {
 }
 
 function fmtDate(v) {
-  if (!v) return "â€”";
+  if (!v) return "—";
   try {
     return new Date(v).toLocaleDateString();
   } catch {
@@ -135,7 +135,7 @@ module.exports = {
         subject: r.subjectName || r.subject || r.courseName || r.course || "Subject",
         exam: r.examTitle || r.assessment || r.exam || "Assessment",
         score: num(r.totalScore ?? r.score ?? r.mark ?? r.marks),
-        grade: r.grade || "â€”",
+        grade: r.grade || "—",
         date: fmtDate(r.publishedAt || r.createdAt),
       }));
 
@@ -169,8 +169,8 @@ module.exports = {
         ...r,
         amount: num(r.amount || r.amountPaid || r.total),
         date: fmtDate(r.paymentDate || r.date || r.createdAt),
-        method: r.method || r.paymentMethod || "â€”",
-        reference: r.reference || r.receiptNo || r.transactionId || r.paymentRef || "â€”",
+        method: r.method || r.paymentMethod || "—",
+        reference: r.reference || r.receiptNo || r.transactionId || r.paymentRef || "—",
       }));
 
       const feesSummary = {
@@ -191,7 +191,7 @@ module.exports = {
       );
       log("student:", student ? { id: student._id, regNo: student.regNo, name: fullName(student) } : null);
 
-      return res.render("tenant/parent/child-show", {
+      return res.render("parents/child-show", {
         tenant: req.tenant,
         user,
         parent,
@@ -203,9 +203,9 @@ module.exports = {
           ...r,
           date: fmtDate(r.date || r.createdAt),
           subject: r.subjectName || r.subject || r.courseName || r.course || "Class",
-          teacher: r.teacherName || r.teacher || "â€”",
+          teacher: r.teacherName || r.teacher || "—",
           status: String(r.status || "present").toLowerCase(),
-          note: r.note || r.remarks || "â€”",
+          note: r.note || r.remarks || "—",
         })),
         attendanceSummary,
         resultRows: normalizedResults,

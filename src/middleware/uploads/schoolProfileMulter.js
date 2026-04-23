@@ -8,5 +8,5 @@ const base = multer({
 module.exports = {
   logoUpload: base.single("logo"),
   coverUpload: base.single("cover"),
-  galleryUpload: base.array("gallery", 24), // ✅ matches fd.append("gallery", file)
+  galleryUpload: base.array("gallery", 24), // ? matches fd.append("gallery", file)
 };

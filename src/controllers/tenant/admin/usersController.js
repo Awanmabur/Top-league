@@ -1,4 +1,4 @@
-// src/controllers/tenant/admin/usersController.js
+// src/controllers/tenant/usersController.js
 const mongoose = require("mongoose");
 const crypto = require("crypto");
 
@@ -87,7 +87,7 @@ async function loadUsersPageData(req) {
 
 async function renderIndex(req, res, extra = {}) {
   const base = await loadUsersPageData(req);
-  return res.render("tenant/admin/users/index", {
+  return res.render("tenant/users/index", {
     ...base,
     error: null,
     values: {},

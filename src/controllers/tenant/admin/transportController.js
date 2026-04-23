@@ -60,7 +60,7 @@ exports.index = async (req, res) => {
     capacity: allRoutes.reduce((sum, r) => sum + Number(r.capacity || 0), 0),
   };
 
-  return res.render("tenant/admin/transport/index", {
+  return res.render("tenant/transport/index", {
     tenant: req.tenant,
     query: { q, status },
     routes,

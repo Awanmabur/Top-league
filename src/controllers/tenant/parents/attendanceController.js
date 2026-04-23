@@ -5,15 +5,15 @@ function normalizeAttendanceRows(rows = []) {
     ...r,
     course: r.courseName || r.course || r.subject || "Class",
     subject: r.subject || r.courseName || r.course || "Class",
-    teacher: r.teacherName || r.teacher || "â€”",
-    time: r.time || r.sessionTime || "â€”",
-    note: r.note || r.remarks || "â€”",
+    teacher: r.teacherName || r.teacher || "—",
+    time: r.time || r.sessionTime || "—",
+    note: r.note || r.remarks || "—",
     status: String(r.status || "present").toLowerCase(),
     date: r.date
       ? new Date(r.date).toLocaleDateString()
       : r.createdAt
         ? new Date(r.createdAt).toLocaleDateString()
-        : "â€”",
+        : "—",
   }));
 }
 
@@ -29,7 +29,7 @@ function buildAttendanceSummary(entries = []) {
     ? Math.round((countedPresent / totalSessions) * 100)
     : 0;
 
-  const lastUpdated = entries.length ? entries[0]?.date || "â€”" : "â€”";
+  const lastUpdated = entries.length ? entries[0]?.date || "—" : "—";
 
   let riskNote = "Attendance is on track.";
   if (rate < 50) riskNote = "Attendance is critically low and needs immediate follow-up.";
@@ -56,7 +56,7 @@ function summarizeAttendanceByCourse(entries = []) {
     if (!map.has(title)) {
       map.set(title, {
         title,
-        teacher: row.teacher || "â€”",
+        teacher: row.teacher || "—",
         sessions: 0,
         presentWeighted: 0,
       });
@@ -97,7 +97,7 @@ function buildAttendanceAlerts(summary, entries = []) {
   recentAbsences.forEach((a) => {
     alerts.push({
       title: "Recent absence recorded",
-      date: a.date || "â€”",
+      date: a.date || "—",
       message: `${a.course || a.subject || "Class"} was marked absent.`,
     });
   });
@@ -202,7 +202,7 @@ module.exports = {
       log("children:", children.length);
       log("selectedStudent:", student ? String(student._id) : null);
 
-      return res.render("tenant/parent/attendance", {
+      return res.render("parents/attendance", {
         tenant: req.tenant,
         user,
         parent,

@@ -30,7 +30,7 @@ module.exports = {
           currentPath: req.originalUrl,
           pageTitle: "Transcripts & Official Letters",
         },
-        "tenant/student/transcript"
+        "students/transcript"
       );
       if (blocked) return blocked;
 
@@ -155,7 +155,7 @@ module.exports = {
         };
       });
 
-      return renderView(req, res, "tenant/student/transcript", {
+      return renderView(req, res, "students/transcript", {
         pageTitle: "Transcripts & Official Letters",
         user,
         student,

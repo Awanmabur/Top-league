@@ -7,7 +7,7 @@ const TERMS = [1, 2, 3];
 const CATEGORIES = ["core", "practical", "language", "religious", "co-curricular", "general"];
 const STATUSES = ["active", "draft", "archived"];
 const BASE_PATH = "/admin/subjects";
-const VIEW_PATH = "tenant/admin/subjects/index";
+const VIEW_PATH = "tenant/subjects/index";
 
 function slugCode(input) {
   return String(input || "")

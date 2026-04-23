@@ -230,7 +230,7 @@ module.exports = {
         archived: await Parent.countDocuments({ ...filter, status: "archived" }),
       };
 
-      return res.render("tenant/admin/parents/index", {
+      return res.render("tenant/parents/index", {
         tenant: req.tenant || null,
         parents,
         csrfToken: res.locals.csrfToken || null,

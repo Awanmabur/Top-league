@@ -27,7 +27,7 @@
     .warn{background:#fef9c3;color:#92400e}
     .bad{background:#fee2e2;color:#b91c1c}
     .table-wrap{overflow-x:auto;overflow-y:hidden;border:1px solid rgba(13,64,96,.10);border-radius:12px;max-width:100%;-webkit-overflow-scrolling:touch}
-    table{width:100%;min-width:1950px;border-collapse:separate;border-spacing:0;background:#fff;table-layout:fixed}
+    table{width:100%;min-width:1700px;border-collapse:separate;border-spacing:0;background:#fff;table-layout:fixed}
     th,td{padding:10px 12px;border-bottom:1px solid rgba(13,64,96,.08);vertical-align:middle}
     th{font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;text-align:left;background:rgba(13,64,96,.03);position:sticky;top:0;z-index:1;white-space:nowrap}
     tr:hover td{background:rgba(10,111,191,.04)}
@@ -35,8 +35,6 @@
     .col-check{width:48px}
     .col-subject{width:280px}
     .col-class{width:180px}
-    .col-section{width:150px}
-    .col-stream{width:150px}
     .col-teacher{width:180px}
     .col-day{width:100px}
     .col-time{width:150px}
@@ -103,7 +101,7 @@
     @media (max-width: 1100px){.grid-2{grid-template-columns:1fr}}
     @media (max-width: 900px){.form-grid{grid-template-columns:1fr}.topbar{flex-wrap:wrap}.top-actions{width:100%;justify-content:flex-start}}
     @media (max-width: 680px){.grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}.input{min-width:160px}}
-    @media (max-width: 520px){.toolbar .left,.toolbar .right{width:100%}.toolbar .left > *,.toolbar .right > *{max-width:100%}table{min-width:1950px}}
+    @media (max-width: 520px){.toolbar .left,.toolbar .right{width:100%}.toolbar .left > *,.toolbar .right > *{max-width:100%}table{min-width:1700px}}
     @media print{body *{visibility:hidden !important}#printArea, #printArea *{visibility:visible !important}#printArea{position:absolute;inset:0;background:#fff;padding:20px}}
   </style>
 </head>
@@ -161,7 +159,7 @@
       </div>
 
       <section class="card" style="margin-top:12px;">
-        <form class="toolbar" method="GET" action="/admin/timetable" data-academic-selector>
+        <form class="toolbar" method="GET" action="/tenant/timetable">
           <div class="left">
             <input class="input" name="q" value="<%= query?.q || '' %>" placeholder="Search room, campus, note..." />
 
@@ -179,19 +177,11 @@
               <option value="3" <%= String(query?.term || '') === '3' ? 'selected' : '' %>>Term 3</option>
             </select>
 
-            <select class="select" name="classGroup" data-role="class" data-placeholder="All Classes">
+            <select class="select" name="classGroup">
               <option value="">All Classes</option>
               <% (classes || []).forEach(function(c){ %>
                 <option value="<%= String(c._id) %>" <%= String(query?.classGroup || '') === String(c._id) ? 'selected' : '' %>><%= c.name %></option>
               <% }) %>
-            </select>
-
-            <select class="select" name="sectionId" data-role="section" data-placeholder="All Sections" data-selected="<%= query?.sectionId || '' %>">
-              <option value="">All Sections</option>
-            </select>
-
-            <select class="select" name="streamId" data-role="stream" data-placeholder="All Streams" data-selected="<%= query?.streamId || '' %>">
-              <option value="">All Streams</option>
             </select>
 
             <select class="select" name="teacher">
@@ -220,7 +210,7 @@
 
           <div class="right">
             <button class="btn light" id="btnBulk" type="button"><i class="fa-solid fa-layer-group"></i> Bulk</button>
-            <a class="btn light" href="/admin/timetable"><i class="fa-solid fa-rotate-left"></i> Reset</a>
+            <a class="btn light" href="/tenant/timetable"><i class="fa-solid fa-rotate-left"></i> Reset</a>
             <button class="btn primary" type="submit"><i class="fa-solid fa-magnifying-glass"></i> Filter</button>
           </div>
         </form>
@@ -267,8 +257,6 @@
                       <th class="col-check"><input type="checkbox" id="checkAll" /></th>
                       <th class="col-subject">Subject</th>
                       <th class="col-class">Class</th>
-                      <th class="col-section">Section</th>
-                      <th class="col-stream">Stream</th>
                       <th class="col-teacher">Teacher</th>
                       <th class="col-day">Day</th>
                       <th class="col-time">Time</th>
@@ -299,13 +287,11 @@
                     if (query?.academicYear) params.set("academicYear", query.academicYear);
                     if (query?.term) params.set("term", query.term);
                     if (query?.classGroup) params.set("classGroup", query.classGroup);
-                    if (query?.sectionId) params.set("sectionId", query.sectionId);
-                    if (query?.streamId) params.set("streamId", query.streamId);
                     if (query?.teacher) params.set("teacher", query.teacher);
                     if (query?.dayOfWeek) params.set("dayOfWeek", query.dayOfWeek);
                     if (query?.status) params.set("status", query.status);
                     params.set("page", String(targetPage));
-                    return "/admin/timetable?" + params.toString();
+                    return "/tenant/timetable?" + params.toString();
                   }
 
                   const startPage = Math.max(1, currentPage - 2);
@@ -370,10 +356,10 @@
 
           <div class="section-title">CSV Import Format</div>
           <div class="note" style="margin-top:10px;">
-            <div class="strong">Required columns</div>
-            <div style="margin-top:6px;"><code>classCode, subjectCode, dayOfWeek, startTime, endTime</code></div>
-            <div class="strong" style="margin-top:10px;">Optional columns</div>
-            <div class="muted" style="margin-top:6px;">sectionCode, streamCode, academicYear, term, teacherEmail, room, campus, weekPattern, status, note</div>
+            Required columns:<br>
+            <strong>classCode,subjectCode,dayOfWeek,startTime,endTime</strong><br><br>
+            Optional:<br>
+            academicYear, term, teacherEmail, room, campus, weekPattern, status, note
           </div>
         </aside>
       </div>
@@ -387,14 +373,14 @@
         <button class="btn-xs" type="button" data-close-modal="mEdit"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
-      <form id="entryForm" method="POST" action="/admin/timetable" data-academic-selector>
+      <form id="entryForm" method="POST" action="/tenant/timetable">
         <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
 
         <div class="modal-body">
           <div class="form-grid">
             <div class="field">
               <label>Class</label>
-              <select class="select" id="mClass" name="classGroup" data-role="class" data-placeholder="Select Class" required>
+              <select class="select" id="mClass" name="classGroup" required>
                 <option value="">— Select Class —</option>
                 <% (classes || []).forEach(function(c){ %>
                   <option value="<%= String(c._id) %>"><%= c.name %></option>
@@ -403,22 +389,8 @@
             </div>
 
             <div class="field">
-              <label>Section</label>
-              <select class="select" id="mSection" name="sectionId" data-role="section" data-placeholder="Whole Class">
-                <option value="">â€” Whole Class â€”</option>
-              </select>
-            </div>
-
-            <div class="field">
-              <label>Stream</label>
-              <select class="select" id="mStream" name="streamId" data-role="stream" data-placeholder="All Streams">
-                <option value="">â€” All Streams â€”</option>
-              </select>
-            </div>
-
-            <div class="field">
               <label>Subject</label>
-              <select class="select" id="mSubject" name="subject" data-role="subject" data-placeholder="Select Subject" required>
+              <select class="select" id="mSubject" name="subject" required>
                 <option value="">— Select Subject —</option>
                 <% (subjects || []).forEach(function(s){ %>
                   <option value="<%= String(s._id) %>"><%= s.code %> — <%= s.title %></option>
@@ -457,12 +429,12 @@
 
             <div class="field">
               <label>Academic Year</label>
-              <input class="input" id="mAY" name="academicYear" data-role="academicYear" placeholder="e.g. 2026" />
+              <input class="input" id="mAY" name="academicYear" placeholder="e.g. 2026" />
             </div>
 
             <div class="field">
               <label>Term</label>
-              <select class="select" id="mTerm" name="term" data-role="term">
+              <select class="select" id="mTerm" name="term">
                 <option value="1">Term 1</option>
                 <option value="2">Term 2</option>
                 <option value="3">Term 3</option>
@@ -545,16 +517,6 @@
           </div>
 
           <div class="field">
-            <label>Section</label>
-            <div class="view-input" id="vSection">â€”</div>
-          </div>
-
-          <div class="field">
-            <label>Stream</label>
-            <div class="view-input" id="vStream">â€”</div>
-          </div>
-
-          <div class="field">
             <label>Teacher</label>
             <div class="view-input" id="vTeacher">—</div>
           </div>
@@ -612,7 +574,7 @@
         <button class="btn-xs" type="button" data-close-modal="mImport"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
-      <form id="importForm" method="POST" action="/admin/timetable/import" enctype="multipart/form-data">
+      <form id="importForm" method="POST" action="/tenant/timetable/import" enctype="multipart/form-data">
         <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
 
         <div class="modal-body">
@@ -622,9 +584,8 @@
           </div>
 
           <div class="note" style="margin-top:12px;">
-            <div class="strong">Required columns</div>
-            <div style="margin-top:6px;"><code>classCode, subjectCode, dayOfWeek, startTime, endTime</code></div>
-            <div class="muted" style="margin-top:8px;">Optional: sectionCode, streamCode, academicYear, term, teacherEmail, room, campus, weekPattern, status, note</div>
+            Required columns:<br>
+            <strong>classCode,subjectCode,dayOfWeek,startTime,endTime</strong>
           </div>
         </div>
 
@@ -641,7 +602,7 @@
     <input type="hidden" name="status" id="rowStatusValue">
   </form>
 
-  <form id="bulkForm" method="POST" action="/admin/timetable/bulk" style="display:none;">
+  <form id="bulkForm" method="POST" action="/tenant/timetable/bulk" style="display:none;">
     <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
     <input type="hidden" name="action" id="bulkActionValue">
     <input type="hidden" name="ids" id="bulkIdsValue">
@@ -654,10 +615,6 @@
       term: Number(e.term ?? 1),
       classId: e.classGroup?._id ? String(e.classGroup._id) : '',
       className: e.classGroup?.name || '',
-      sectionId: e.sectionId?._id ? String(e.sectionId._id) : String(e.sectionId || ''),
-      sectionName: e.sectionName || e.sectionId?.name || '',
-      streamId: e.streamId?._id ? String(e.streamId._id) : String(e.streamId || ''),
-      streamName: e.streamName || e.streamId?.name || '',
       subjectId: e.subject?._id ? String(e.subject._id) : '',
       subjectCode: e.subject?.code || '',
       subjectTitle: e.subject?.title || '',
@@ -676,13 +633,7 @@
     };
   })) %></textarea>
 
-  <textarea id="classesData" class="json-data" aria-hidden="true"><%- JSON.stringify(classes || []) %></textarea>
-  <textarea id="sectionsData" class="json-data" aria-hidden="true"><%- JSON.stringify(sections || []) %></textarea>
-  <textarea id="streamsData" class="json-data" aria-hidden="true"><%- JSON.stringify(streams || []) %></textarea>
-  <textarea id="subjectOptionsData" class="json-data" aria-hidden="true"><%- JSON.stringify(subjectOptions || subjects || []) %></textarea>
-
   <script src="/js/navbar.js"></script>
-  <script src="/js/academic-selector.js"></script>
   <script src="/js/timetable.js"></script>
 </body>
 </html>

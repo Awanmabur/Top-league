@@ -28,7 +28,7 @@
     .bad{background:#fee2e2;color:#b91c1c}
     .info{background:#eef2ff;color:#3730a3}
     .table-wrap{overflow-x:auto;overflow-y:hidden;border:1px solid rgba(13,64,96,.10);border-radius:12px;max-width:100%;-webkit-overflow-scrolling:touch}
-    table{width:100%;min-width:1780px;border-collapse:separate;border-spacing:0;background:#fff;table-layout:fixed}
+    table{width:100%;min-width:1500px;border-collapse:separate;border-spacing:0;background:#fff;table-layout:fixed}
     th,td{padding:10px 12px;border-bottom:1px solid rgba(13,64,96,.08);vertical-align:middle}
     th{font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;text-align:left;background:rgba(13,64,96,.03);position:sticky;top:0;z-index:1;white-space:nowrap}
     tr:hover td{background:rgba(10,111,191,.04)}
@@ -37,8 +37,6 @@
     .col-student{width:260px}
     .col-reg{width:140px}
     .col-class{width:180px}
-    .col-section{width:150px}
-    .col-stream{width:150px}
     .col-subject{width:200px}
     .col-session{width:180px}
     .col-status{width:140px}
@@ -90,7 +88,7 @@
     @media (max-width: 1100px){.grid-2{grid-template-columns:1fr}}
     @media (max-width: 900px){.form-grid{grid-template-columns:1fr}.topbar{flex-wrap:wrap}.top-actions{width:100%;justify-content:flex-start}}
     @media (max-width: 680px){.grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}.input{min-width:160px}}
-    @media (max-width: 520px){.toolbar .left,.toolbar .right{width:100%}.toolbar .left > *,.toolbar .right > *{max-width:100%}table{min-width:1780px}}
+    @media (max-width: 520px){.toolbar .left,.toolbar .right{width:100%}.toolbar .left > *,.toolbar .right > *{max-width:100%}table{min-width:1500px}}
     @media print{body *{visibility:hidden !important}#printArea, #printArea *{visibility:visible !important}#printArea{position:absolute;inset:0;background:#fff;padding:20px}}
   </style>
 </head>
@@ -127,9 +125,7 @@
             academicYear: query?.academicYear || '',
             term: query?.term || '',
             from: query?.from || '',
-            to: query?.to || '',
-            sectionId: query?.sectionId || '',
-            streamId: query?.streamId || ''
+            to: query?.to || ''
           }).toString() %>"><i class="fa-solid fa-file-arrow-down"></i> Export CSV</a>
           <button class="btn light" id="btnImport" type="button"><i class="fa-solid fa-file-import"></i> Import CSV</button>
           <button class="btn light" id="btnPrint" type="button"><i class="fa-solid fa-print"></i> Print</button>
@@ -161,26 +157,18 @@
       </div>
 
       <section class="card" style="margin-top:12px;">
-        <form class="toolbar" method="GET" action="/tenant/attendance" data-academic-selector>
+        <form class="toolbar" method="GET" action="/tenant/attendance">
           <div class="left">
             <input class="input" name="q" value="<%= query?.q || '' %>" placeholder="Search student, reg no, email..." />
 
-            <select class="select" name="classGroup" data-role="class" data-placeholder="All Classes">
+            <select class="select" name="classGroup">
               <option value="">All Classes</option>
               <% (classes || []).forEach(function(c){ %>
                 <option value="<%= String(c._id) %>" <%= String(query?.classGroup || '') === String(c._id) ? 'selected' : '' %>><%= c.name || c.code || 'Class' %></option>
               <% }) %>
             </select>
 
-            <select class="select" name="sectionId" data-role="section" data-placeholder="All Sections" data-selected="<%= query?.sectionId || '' %>">
-              <option value="">All Sections</option>
-            </select>
-
-            <select class="select" name="streamId" data-role="stream" data-placeholder="All Streams" data-selected="<%= query?.streamId || '' %>">
-              <option value="">All Streams</option>
-            </select>
-
-            <select class="select" name="subject" data-role="subject" data-placeholder="All Subjects">
+            <select class="select" name="subject">
               <option value="">All Subjects</option>
               <% (subjects || []).forEach(function(s){ %>
                 <option value="<%= String(s._id) %>" <%= String(query?.subject || '') === String(s._id) ? 'selected' : '' %>><%= s.title || s.code || 'Subject' %></option>
@@ -253,8 +241,6 @@
                     <th class="col-student">Student</th>
                     <th class="col-reg">Reg No</th>
                     <th class="col-class">Class</th>
-                    <th class="col-section">Section</th>
-                    <th class="col-stream">Stream</th>
                     <th class="col-subject">Subject</th>
                     <th class="col-session">Session</th>
                     <th class="col-status">Status</th>
@@ -282,8 +268,6 @@
                   if (query?.q) params.set("q", query.q);
                   if (query?.subject) params.set("subject", query.subject);
                   if (query?.classGroup) params.set("classGroup", query.classGroup);
-                  if (query?.sectionId) params.set("sectionId", query.sectionId);
-                  if (query?.streamId) params.set("streamId", query.streamId);
                   if (query?.status) params.set("status", query.status);
                   if (query?.academicYear) params.set("academicYear", query.academicYear);
                   if (query?.term) params.set("term", query.term);
@@ -363,14 +347,14 @@
         <button class="btn-xs" type="button" data-close-modal="mEdit"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
-      <form id="attendanceForm" method="POST" action="/tenant/attendance" data-academic-selector>
+      <form id="attendanceForm" method="POST" action="/tenant/attendance">
         <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
 
         <div class="modal-body">
           <div class="form-grid">
             <div class="field">
               <label>Student</label>
-              <select class="select" id="mStudent" name="student" data-role="student" data-placeholder="Select Student">
+              <select class="select" id="mStudent" name="student">
                 <option value="">— Select Student —</option>
                 <% (students || []).forEach(function(s){ %>
                   <option value="<%= String(s._id) %>"><%= s.fullName || 'Student' %><%= s.regNo ? (' — ' + s.regNo) : '' %></option>
@@ -385,7 +369,7 @@
 
             <div class="field">
               <label>Class</label>
-              <select class="select" id="mClassGroup" name="classGroup" data-role="class" data-placeholder="Select Class" required>
+              <select class="select" id="mClassGroup" name="classGroup">
                 <option value="">— Select Class —</option>
                 <% (classes || []).forEach(function(c){ %>
                   <option value="<%= String(c._id) %>"><%= c.name || c.code || 'Class' %></option>
@@ -394,22 +378,8 @@
             </div>
 
             <div class="field">
-              <label>Section</label>
-              <select class="select" id="mSection" name="sectionId" data-role="section" data-placeholder="Whole Class">
-                <option value="">Whole Class</option>
-              </select>
-            </div>
-
-            <div class="field">
-              <label>Stream</label>
-              <select class="select" id="mStream" name="streamId" data-role="stream" data-placeholder="All Streams">
-                <option value="">All Streams</option>
-              </select>
-            </div>
-
-            <div class="field">
               <label>Subject</label>
-              <select class="select" id="mSubject" name="subject" data-role="subject" data-placeholder="Select Subject" required>
+              <select class="select" id="mSubject" name="subject" required>
                 <option value="">— Select Subject —</option>
                 <% (subjects || []).forEach(function(s){ %>
                   <option value="<%= String(s._id) %>"><%= s.title || s.code || 'Subject' %></option>
@@ -429,12 +399,12 @@
 
             <div class="field">
               <label>Academic Year</label>
-              <input class="input" id="mAcademicYear" name="academicYear" data-role="academicYear" placeholder="e.g. 2026" />
+              <input class="input" id="mAcademicYear" name="academicYear" placeholder="e.g. 2026" />
             </div>
 
             <div class="field">
               <label>Term</label>
-              <select class="select" id="mTerm" name="term" data-role="term">
+              <select class="select" id="mTerm" name="term">
                 <option value="1">Term 1</option>
                 <option value="2">Term 2</option>
                 <option value="3">Term 3</option>
@@ -502,16 +472,6 @@
           <div class="field">
             <label>Class</label>
             <div class="view-input" id="vClassGroup">—</div>
-          </div>
-
-          <div class="field">
-            <label>Section</label>
-            <div class="view-input" id="vSection">â€”</div>
-          </div>
-
-          <div class="field">
-            <label>Stream</label>
-            <div class="view-input" id="vStream">â€”</div>
           </div>
 
           <div class="field">
@@ -587,8 +547,6 @@
   <form id="rowActionForm" method="POST" style="display:none;">
     <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
     <input type="hidden" name="classGroup" id="hsClassGroup">
-    <input type="hidden" name="sectionId" id="hsSection">
-    <input type="hidden" name="streamId" id="hsStream">
     <input type="hidden" name="subject" id="hsSubject">
     <input type="hidden" name="teacher" id="hsTeacher">
     <input type="hidden" name="student" id="hsStudent">
@@ -622,10 +580,6 @@
       email: r.student?.email || '',
       classGroupId: r.classGroup?._id ? String(r.classGroup._id) : '',
       className: r.classGroup?.name || '',
-      sectionId: r.sectionId?._id ? String(r.sectionId._id) : String(r.sectionId || ''),
-      sectionName: r.sectionName || r.sectionId?.name || '',
-      streamId: r.streamId?._id ? String(r.streamId._id) : String(r.streamId || ''),
-      streamName: r.streamName || r.streamId?.name || '',
       subjectId: r.subject?._id ? String(r.subject._id) : '',
       subjectName: r.subject?.title || r.subject?.code || '',
       teacherId: r.teacher?._id ? String(r.teacher._id) : '',
@@ -639,14 +593,7 @@
     };
   })) %></textarea>
 
-  <textarea id="classesData" class="json-data" aria-hidden="true"><%- JSON.stringify(classes || []) %></textarea>
-  <textarea id="sectionsData" class="json-data" aria-hidden="true"><%- JSON.stringify(sections || []) %></textarea>
-  <textarea id="streamsData" class="json-data" aria-hidden="true"><%- JSON.stringify(streams || []) %></textarea>
-  <textarea id="subjectOptionsData" class="json-data" aria-hidden="true"><%- JSON.stringify(subjectOptions || subjects || []) %></textarea>
-  <textarea id="studentsData" class="json-data" aria-hidden="true"><%- JSON.stringify(studentOptions || students || []) %></textarea>
-
   <script src="/js/navbar.js"></script>
-  <script src="/js/academic-selector.js"></script>
   <script src="/js/attendance.js"></script>
 </body>
 </html>
