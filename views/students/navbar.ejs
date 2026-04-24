@@ -1,6 +1,82 @@
 <!-- ======================
      MOBILE GLASS TOP NAV
 ======================= -->
+<%
+  const currentPath =
+    (typeof originalUrl !== "undefined" && originalUrl) ||
+    (typeof url !== "undefined" && url) ||
+    "";
+  const tenantAccess = locals.tenantAccess || {};
+  const modelList = Array.isArray(locals.availableModels) ? locals.availableModels : [];
+  const modelSet = new Set(modelList);
+
+  function isActive(path, exact = false) {
+    if (!currentPath) return false;
+    if (exact) return currentPath === path;
+    return currentPath === path || currentPath.startsWith(path + "/");
+  }
+
+  function navClass(path, options = {}) {
+    return isActive(path, !!options.exact) ? "navbutton active" : "navbutton";
+  }
+
+  function hasAnyModel() {
+    return Array.from(arguments).some((name) => modelSet.has(name));
+  }
+
+  function visibleItems(items) {
+    return items.filter((item) => !item.hidden);
+  }
+
+  const showSubjectSelection = hasAnyModel("Subject", "CourseRegistration", "RegistrationWindow");
+  const showSubjects = hasAnyModel("Subject", "CourseRegistration");
+  const showTimetable = hasAnyModel("Timetable", "TimetableEntry", "ClassTimetable", "Schedule");
+  const showAssignments = hasAnyModel("Assignment");
+  const showExams = hasAnyModel("Exam");
+  const showResults = hasAnyModel("Result");
+  const showTranscript = hasAnyModel("Transcript", "Result");
+  const showFinance = hasAnyModel("Invoice", "Payment", "FeeStructure", "Receipt");
+  const showAttendance = hasAnyModel("Attendance");
+  const showHostel = hasAnyModel("Hostel", "HostelAllocation", "HostelApplication");
+  const showLibrary = hasAnyModel("LibraryBook", "LibraryLoan", "LibraryReservation");
+  const showJobs = hasAnyModel("Job", "Opportunity");
+  const showEvents = hasAnyModel("Event");
+  const showNotifications = hasAnyModel("Notification", "Announcement");
+  const showSupport =
+    tenantAccess?.featureFlags?.helpdesk !== false &&
+    hasAnyModel("SupportTicket", "Ticket");
+
+  const learningItems = visibleItems([
+    { label: "Dashboard", icon: "fa-house", href: "/student/dashboard", hidden: false },
+    { label: "Subject Selection", icon: "fa-list-check", href: "/student/subject-selection", hidden: !showSubjectSelection },
+    { label: "My Subjects", icon: "fa-book-open-reader", href: "/student/subjects", hidden: !showSubjects },
+    { label: "Timetable", icon: "fa-calendar-week", href: "/student/timetable", hidden: !showTimetable },
+    { label: "Assignments", icon: "fa-file-pen", href: "/student/assignments", hidden: !showAssignments },
+    { label: "Exams", icon: "fa-clipboard-list", href: "/student/exams", hidden: !showExams },
+  ]);
+
+  const recordItems = visibleItems([
+    { label: "Results", icon: "fa-award", href: "/student/results", hidden: !showResults },
+    { label: "Transcript", icon: "fa-file-pdf", href: "/student/transcript", hidden: !showTranscript },
+    { label: "Attendance", icon: "fa-user-check", href: "/student/attendance", hidden: !showAttendance },
+    { label: "Finance", icon: "fa-sack-dollar", href: "/student/finance", hidden: !showFinance },
+  ]);
+
+  const campusItems = visibleItems([
+    { label: "Hostel", icon: "fa-bed", href: "/student/hostel", hidden: !showHostel },
+    { label: "Library", icon: "fa-book", href: "/student/library", hidden: !showLibrary },
+    { label: "Events", icon: "fa-calendar-days", href: "/student/events", hidden: !showEvents },
+    { label: "Jobs", icon: "fa-briefcase", href: "/student/jobs", hidden: !showJobs },
+    { label: "Notifications", icon: "fa-bell", href: "/student/notifications", hidden: !showNotifications },
+    { label: "Support", icon: "fa-headset", href: "/student/support", hidden: !showSupport },
+  ]);
+
+  const accountItems = visibleItems([
+    { label: "Profile", icon: "fa-user", href: "/student/profile", hidden: false },
+    { label: "Logout", icon: "fa-right-from-bracket", href: "/logout", exact: true, hidden: false },
+  ]);
+%>
+
 <header class="mglass-nav" id="mglassNav">
   <div class="mglass-left">
     <a class="mglass-home" href="/student/dashboard" aria-label="Home">
@@ -15,12 +91,8 @@
 </header>
 
 <div class="app">
-  <!-- transparent click-catcher for mobile -->
   <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
 
-  <!-- ======================
-       SIDEBAR
-  ======================= -->
   <aside class="sidebar" id="sidebar">
     <button type="button" id="sbToggle" class="sbToggle" aria-label="Toggle sidebar">
       <i class="fa fa-angle-left"></i>
@@ -29,56 +101,61 @@
     <div class="brand">
       <div class="brand-logo">CS</div>
       <div class="brand-meta">
-        <h1 class="brand-title">
-          <%= tenant?.name || "Classic Academy" %>
-        </h1>
-        <div class="brand-sub">Classic Academy</div>
+        <h1 class="brand-title"><%= tenant?.name || "Classic Academy" %></h1>
+        <div class="brand-sub">Student Portal</div>
       </div>
     </div>
 
     <nav class="nav">
-      <div class="navcat">MAIN</div>
-      <div class="group">
-        <a class="navbutton" href="/student/dashboard" data-label="Dashboard"><i
-            class="fa fa-house"></i><span>Dashboard</span></a>
-        <a class="navbutton" href="/student/subject-selection" data-label="Subject Selection"><i
-            class="fa fa-list-check"></i><span>Subject Selection</span></a>
-        <a class="navbutton" href="/student/subjects" data-label="My Subjects"><i class="fa fa-book-open-reader"></i><span>My
-            Subjects</span></a>
-        <a class="navbutton" href="/student/timetable" data-label="My Timetable"><i class="fa fa-calendar-week"></i><span>My
-            Timetable</span></a>
-        <a class="navbutton" href="/student/assignments" data-label="Assignments"><i
-            class="fa fa-file-pen"></i><span>Assignments</span></a>
-        <a class="navbutton" href="/student/exams" data-label="Exams"><i
-            class="fa fa-clipboard-list"></i><span>Exams</span></a>
-      </div>
-    
-      <div class="navcat">RECORDS</div>
-      <div class="group">
-        <a class="navbutton" href="/student/transcript" data-label="Transcript"><i
-            class="fa fa-file-pdf"></i><span>Transcript</span></a>
-        <a class="navbutton" href="/student/results" data-label="Results"><i
-            class="fa fa-award"></i><span>Results</span></a>
-        <a class="navbutton" href="/student/finance" data-label="Finance"><i
-            class="fa fa-sack-dollar"></i><span>Finance</span></a>
-        <a class="navbutton" href="/student/attendance" data-label="Attendance"><i
-            class="fa fa-user-check"></i><span>Attendance</span></a>
-      </div>
-    
-      <div class="navcat">SERVICES</div>
-      <div class="group">
-        <a class="navbutton" href="/student/hostel" data-label="Hostel"><i class="fa fa-bed"></i><span>Hostel</span></a>
-        <a class="navbutton" href="/student/library" data-label="Library"><i class="fa fa-book"></i><span>Library</span></a>
-        <a class="navbutton" href="/student/jobs" data-label="Jobs"><i class="fa fa-briefcase"></i><span>Jobs</span></a>
-        <a class="navbutton" href="/student/notifications" data-label="Notifications"><i
-            class="fa fa-bell"></i><span>Notifications</span></a>
-        <a class="navbutton" href="/student/support" data-label="Support"><i class="fa fa-headset"></i><span>Support
-            Tickets</span></a>
-        <a class="navbutton" href="/student/profile" data-label="Profile"><i class="fa fa-user"></i><span>Profile</span></a>
-        <a class="navbutton" href="/logout" data-label="Logout"><i class="fa fa-right-from-bracket"></i><span>Logout</span></a>
-      </div>
+      <% if (learningItems.length) { %>
+        <div class="navcat">LEARNING</div>
+        <div class="group">
+          <% learningItems.forEach(function(item) { %>
+            <a class="<%= navClass(item.href, { exact: item.exact }) %>" href="<%= item.href %>" data-label="<%= item.label %>">
+              <i class="fa <%= item.icon %>"></i>
+              <span><%= item.label %></span>
+            </a>
+          <% }) %>
+        </div>
+      <% } %>
+
+      <% if (recordItems.length) { %>
+        <div class="navcat">RECORDS</div>
+        <div class="group">
+          <% recordItems.forEach(function(item) { %>
+            <a class="<%= navClass(item.href, { exact: item.exact }) %>" href="<%= item.href %>" data-label="<%= item.label %>">
+              <i class="fa <%= item.icon %>"></i>
+              <span><%= item.label %></span>
+            </a>
+          <% }) %>
+        </div>
+      <% } %>
+
+      <% if (campusItems.length) { %>
+        <div class="navcat">CAMPUS</div>
+        <div class="group">
+          <% campusItems.forEach(function(item) { %>
+            <a class="<%= navClass(item.href, { exact: item.exact }) %>" href="<%= item.href %>" data-label="<%= item.label %>">
+              <i class="fa <%= item.icon %>"></i>
+              <span><%= item.label %></span>
+            </a>
+          <% }) %>
+        </div>
+      <% } %>
+
+      <% if (accountItems.length) { %>
+        <div class="navcat">ACCOUNT</div>
+        <div class="group">
+          <% accountItems.forEach(function(item) { %>
+            <a class="<%= navClass(item.href, { exact: item.exact }) %>" href="<%= item.href %>" data-label="<%= item.label %>">
+              <i class="fa <%= item.icon %>"></i>
+              <span><%= item.label %></span>
+            </a>
+          <% }) %>
+        </div>
+      <% } %>
+
       <div class="navfoot">Portal: <strong>Student</strong></div>
     </nav>
-    </aside>
+  </aside>
 
-  <!-- ✅ IMPORTANT: The dashboard page must close this .app by rendering MAIN and then closing tags -->

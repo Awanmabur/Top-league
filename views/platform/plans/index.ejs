@@ -30,6 +30,7 @@
 </head>
 <body>
   <%- include("./navbar") %>
+  <% const canManagePlans = platformAccess?.can("plans.manage"); %>
 
   <main class="main">
     <div class="topbar">
@@ -37,11 +38,13 @@
         <div class="title">Plans</div>
         <div class="subtitle">Manage billing models, enabled modules, platform pricing, and feature limits.</div>
       </div>
-      <div>
-        <a href="/super-admin/plans/create" class="btn primary">
-          <i class="fa-solid fa-layer-group"></i> Create Plan
-        </a>
-      </div>
+      <% if (canManagePlans) { %>
+        <div>
+          <a href="/super-admin/plans/create" class="btn primary">
+            <i class="fa-solid fa-layer-group"></i> Create Plan
+          </a>
+        </div>
+      <% } %>
     </div>
 
     <% if (error) { %>
@@ -74,12 +77,14 @@
                 <%= Array.isArray(plan.enabledModules) && plan.enabledModules.length ? plan.enabledModules.join(", ") : "None" %>
               </div>
 
-              <div class="actions">
-                <a href="/super-admin/plans/<%= plan._id %>/edit" class="btn">Edit</a>
-                <form action="/super-admin/plans/<%= plan._id %>/delete" method="POST" onsubmit="return confirm('Delete this plan?');">
-                  <button class="btn" type="submit">Delete</button>
-                </form>
-              </div>
+              <% if (canManagePlans) { %>
+                <div class="actions">
+                  <a href="/super-admin/plans/<%= plan._id %>/edit" class="btn">Edit</a>
+                  <form action="/super-admin/plans/<%= plan._id %>/delete" method="POST" onsubmit="return confirm('Delete this plan?');">
+                    <button class="btn" type="submit">Delete</button>
+                  </form>
+                </div>
+              <% } %>
             </div>
           <% }) %>
         </div>

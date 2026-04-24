@@ -11,11 +11,12 @@ module.exports = {
         ? await Announcement.find({}).sort({ createdAt: -1 }).lean().catch(() => [])
         : [];
 
-      return res.render("tenant/staff/announcements", {
+      return res.render("staff/announcements", {
         tenant: req.tenant,
         user,
         staff,
         items,
+        pageTitle: "Announcements",
         error: null
       });
     } catch (err) {

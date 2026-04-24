@@ -10,12 +10,6 @@ function lower(v) {
 
 module.exports = {
   async index(req, res) {
-    const log = (...a) =>
-      console.log(
-        `[PARENT-PROFILE] tenant=${req.tenant?.code || req.tenant?._id || "?"}`,
-        ...a
-      );
-
     try {
       const { Student } = req.models || {};
 
@@ -36,17 +30,6 @@ module.exports = {
               .lean()
               .catch(() => [])
           : [];
-
-      log(
-        "user:",
-        user ? { id: user._id, email: user.email, roles: user.roles } : null
-      );
-      log(
-        "parent:",
-        parent
-          ? { id: parent._id, email: parent.email, kids: (parent.childrenStudentIds || []).length }
-          : null
-      );
 
       return res.render("parents/profile", {
         tenant: req.tenant,

@@ -1,21 +1,18 @@
 const bcrypt = require("bcrypt");
 const { hashRawToken } = require("../../../utils/inviteToken");
+const { validatePasswordStrength } = require("../../../utils/passwordPolicy");
 
-function isStrongPassword(pw) {
-  return (
-    typeof pw === "string" &&
-    pw.length >= 8 &&
-    /[a-z]/.test(pw) &&
-    /[A-Z]/.test(pw) &&
-    /[0-9]/.test(pw) &&
-    /[^A-Za-z0-9]/.test(pw)
-  );
+function renderSetPassword(res, locals = {}, statusCode = 200) {
+  return res.status(statusCode).render("tenant/auth/set-password", {
+    error: null,
+    token: "",
+    email: "",
+    csrfToken: "",
+    ...locals,
+  });
 }
 
 module.exports = {
-  /**
-   * GET /set-password?token=RAW
-   */
   async setPasswordForm(req, res) {
     try {
       const { InviteToken, User } = req.models || {};
@@ -23,14 +20,16 @@ module.exports = {
 
       const rawToken = String(req.query.token || "").trim();
       if (!rawToken) {
-        return res.status(400).render("tenant/auth/set-password", {
-          error: "Missing token",
-          token: "",
-          email: "",
-        });
+        return renderSetPassword(
+          res,
+          {
+            error: "Missing token.",
+            csrfToken: res.locals.csrfToken || "",
+          },
+          400,
+        );
       }
 
-      // ✅ hash INSIDE handler
       const tokenHash = hashRawToken(rawToken);
 
       const record = await InviteToken.findOne({
@@ -42,11 +41,14 @@ module.exports = {
       }).lean();
 
       if (!record) {
-        return res.status(400).render("tenant/auth/set-password", {
-          error: "This link is invalid or expired. Ask admin to resend an invite.",
-          token: "",
-          email: "",
-        });
+        return renderSetPassword(
+          res,
+          {
+            error: "This link is invalid or expired. Ask admin to resend an invite.",
+            csrfToken: res.locals.csrfToken || "",
+          },
+          400,
+        );
       }
 
       const user = await User.findOne({ _id: record.userId, deletedAt: null })
@@ -54,17 +56,20 @@ module.exports = {
         .lean();
 
       if (!user) {
-        return res.status(400).render("tenant/auth/set-password", {
-          error: "User not found for this invite.",
-          token: "",
-          email: "",
-        });
+        return renderSetPassword(
+          res,
+          {
+            error: "User not found for this invite.",
+            csrfToken: res.locals.csrfToken || "",
+          },
+          400,
+        );
       }
 
-      return res.render("tenant/auth/set-password", {
-        error: null,
-        token: rawToken, // raw token only lives in the page hidden input
+      return renderSetPassword(res, {
+        token: rawToken,
         email: user.email,
+        csrfToken: res.locals.csrfToken || "",
       });
     } catch (err) {
       console.error("SET PASSWORD FORM ERROR:", err);
@@ -72,9 +77,6 @@ module.exports = {
     }
   },
 
-  /**
-   * POST /set-password
-   */
   async setPasswordSubmit(req, res) {
     try {
       const { InviteToken, User } = req.models || {};
@@ -85,76 +87,114 @@ module.exports = {
       const confirmPassword = String(req.body.confirmPassword || "");
 
       if (!rawToken) {
-        return res.status(400).render("tenant/auth/set-password", {
-          error: "Missing token.",
-          token: "",
-          email: "",
-        });
+        return renderSetPassword(
+          res,
+          {
+            error: "Missing token.",
+            csrfToken: res.locals.csrfToken || "",
+          },
+          400,
+        );
       }
 
       const tokenHash = hashRawToken(rawToken);
+      const now = new Date();
 
       const record = await InviteToken.findOne({
         tokenHash,
         purpose: "set_password",
         usedAt: null,
         revokedAt: null,
-        expiresAt: { $gt: new Date() },
-      });
+        expiresAt: { $gt: now },
+      }).lean();
 
       if (!record) {
-        return res.status(400).render("tenant/auth/set-password", {
-          error: "This link is invalid or expired. Ask admin to resend an invite.",
-          token: "",
-          email: "",
-        });
+        return renderSetPassword(
+          res,
+          {
+            error: "This link is invalid or expired. Ask admin to resend an invite.",
+            csrfToken: res.locals.csrfToken || "",
+          },
+          400,
+        );
       }
 
       const user = await User.findOne({ _id: record.userId, deletedAt: null });
       if (!user) {
-        return res.status(400).render("tenant/auth/set-password", {
-          error: "User not found for this invite.",
-          token: "",
-          email: "",
-        });
+        return renderSetPassword(
+          res,
+          {
+            error: "User not found for this invite.",
+            csrfToken: res.locals.csrfToken || "",
+          },
+          400,
+        );
       }
 
       if (password !== confirmPassword) {
-        return res.status(400).render("tenant/auth/set-password", {
-          error: "Passwords do not match.",
-          token: rawToken,
-          email: user.email,
-        });
+        return renderSetPassword(
+          res,
+          {
+            error: "Passwords do not match.",
+            token: rawToken,
+            email: user.email,
+            csrfToken: res.locals.csrfToken || "",
+          },
+          400,
+        );
       }
 
-      if (!isStrongPassword(password)) {
-        return res.status(400).render("tenant/auth/set-password", {
-          error: "Password must be 8+ and include uppercase, lowercase, number, and symbol.",
-          token: rawToken,
-          email: user.email,
-        });
+      const passwordError = validatePasswordStrength(password, { minLength: 10 });
+      if (passwordError) {
+        return renderSetPassword(
+          res,
+          {
+            error: passwordError,
+            token: rawToken,
+            email: user.email,
+            csrfToken: res.locals.csrfToken || "",
+          },
+          400,
+        );
       }
 
-      // ✅ Save password + activate + invalidate old JWTs
+      const claimedInvite = await InviteToken.findOneAndUpdate(
+        {
+          _id: record._id,
+          usedAt: null,
+          revokedAt: null,
+          expiresAt: { $gt: now },
+        },
+        { $set: { usedAt: now } },
+        { new: true },
+      );
+
+      if (!claimedInvite) {
+        return renderSetPassword(
+          res,
+          {
+            error: "This link has already been used. Ask admin to resend an invite.",
+            email: user.email,
+            csrfToken: res.locals.csrfToken || "",
+          },
+          400,
+        );
+      }
+
       user.passwordHash = await bcrypt.hash(password, 12);
       user.status = "active";
       user.tokenVersion = Number(user.tokenVersion || 0) + 1;
       await user.save();
 
-      // ✅ Mark THIS token used
-      record.usedAt = new Date();
-      await record.save();
-
-      // ✅ Revoke any other active invites (optional)
       await InviteToken.updateMany(
         {
           userId: user._id,
           purpose: "set_password",
           usedAt: null,
           revokedAt: null,
-          _id: { $ne: record._id },
+          _id: { $ne: claimedInvite._id },
         },
-        { $set: { revokedAt: new Date() } }
+        { $set: { revokedAt: now } },
       );
 
       return res.redirect("/login");

@@ -5,7 +5,7 @@ function isValidId(id) {
 }
 
 async function getUser(req) {
-  const id = req.session?.tenantUser?.id;
+  const id = req.user?.userId || req.user?.id || req.user?._id;
   const { User } = req.models || {};
   if (!id || !User) return null;
   return User.findOne({ _id: id, deletedAt: null }).lean();

@@ -3,19 +3,20 @@ const { getStaffProfile } = require("./_helpers");
 module.exports = {
   async timetable(req, res) {
     try {
-      const { Timetable } = req.models || {};
+      const { TimetableEntry } = req.models || {};
       const { user, staff } = await getStaffProfile(req);
       if (!user) return res.redirect("/login");
 
-      const items = (staff && Timetable)
-        ? await Timetable.find({ staffId: staff._id }).sort({ day: 1, startTime: 1 }).lean().catch(() => [])
+      const items = (staff && TimetableEntry)
+        ? await TimetableEntry.find({ staffId: staff._id }).sort({ day: 1, startTime: 1 }).lean().catch(() => [])
         : [];
 
-      return res.render("tenant/staff/timetable", {
+      return res.render("staff/timetable", {
         tenant: req.tenant,
         user,
         staff,
         items,
+        pageTitle: "Timetable",
         error: null
       });
     } catch (err) {

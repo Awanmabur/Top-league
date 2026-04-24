@@ -3,9 +3,22 @@
 
 <%
   const tenantAccess = locals.tenantAccess || {};
+  const roleAccess = locals.roleAccess || { role: "admin", can: () => true };
   const schoolLevel = tenantAccess.schoolLevel || "high";
   const isHigh = schoolLevel === "high";
   const ui = locals.ui || {};
+  const isTenantAdmin = roleAccess.role === "admin";
+  const canAdmissions = roleAccess.can("admissions.view");
+  const canStudents = roleAccess.can("students.view");
+  const canFinance = roleAccess.can("finance.view");
+  const canReports = roleAccess.can("reports.view");
+  const canNotifications = roleAccess.can("notifications.view");
+  const canAnnouncements = roleAccess.can("announcements.view");
+  const canSubjects = roleAccess.can("subjects.view");
+  const focusCardsData = Array.isArray(focusCards) ? focusCards : [];
+  const dashboardModuleCards = Array.isArray(dashboardModules) ? dashboardModules : [];
+  const shortcutCards = Array.isArray(dashboardShortcuts) ? dashboardShortcuts : [];
+  const workspaceAnnouncements = Array.isArray(roleWorkspace?.announcements) ? roleWorkspace.announcements : [];
 %>
 
 <main class="main">
@@ -14,7 +27,14 @@
       <div class="topbar-left">
         <div class="page-title">
           <h2>Dashboard Overview</h2>
-          <p>Welcome back, <%= user?.name || user?.fullName || "Admin" %> - here's what's happening across your <%= ui.schoolWord %></p>
+          <p>
+            Welcome back, <%= user?.name || user?.fullName || "Admin" %>.
+            <% if (roleWorkspace?.subtitle) { %>
+              <%= roleWorkspace.subtitle %>
+            <% } else { %>
+              Here's what's happening across your <%= ui.schoolWord %> as <%= roleAccess.role %>.
+            <% } %>
+          </p>
         </div>
 
         <div class="topbar-right">
@@ -23,10 +43,12 @@
             <input id="searchInput" name="q" placeholder="<%= ui.searchPlaceholder %>" />
           </form>
 
-          <a class="notif-pill" href="/admin/notifications">
-            <span>Notifications</span>
-            <span class="chip" id="notifCount"><%= dashboardData?.notificationsCount || 0 %></span>
-          </a>
+          <% if (canNotifications) { %>
+            <a class="notif-pill" href="/admin/notifications">
+              <span>Notifications</span>
+              <span class="chip" id="notifCount"><%= dashboardData?.notificationsCount || 0 %></span>
+            </a>
+          <% } %>
 
           <div class="avatar">
             <div class="avatar-circle">
@@ -42,69 +64,91 @@
     </div>
 
     <section class="grid grid-4">
-      <article class="card stat">
-        <div class="stat-head">
-          <div>
-            <div class="label"><%= ui.totalLearnersLabel %></div>
-            <div class="value" id="totalStudents"><%= (stats?.totalStudents || 0).toLocaleString() %></div>
-          </div>
-          <div class="stat-meta">
-            <span>New this month</span>
-            <strong class="accent">+<%= (stats?.newStudentsThisMonth || 0).toLocaleString() %></strong>
-          </div>
-        </div>
-        <div class="spark-wrap"><canvas id="studentsTrend"></canvas></div>
-      </article>
-
-      <article class="card stat">
-        <div class="stat-head">
-          <div>
-            <div class="label">Pending Applications</div>
-            <div class="value" id="pendingApps"><%= (stats?.pendingApps || 0).toLocaleString() %></div>
-          </div>
-          <div class="stat-meta">
-            <span>Avg. review time</span>
-            <strong class="warn"><%= stats?.avgReviewTime || "48 hrs" %></strong>
-          </div>
-        </div>
-        <div class="spark-wrap"><canvas id="appsTrend"></canvas></div>
-      </article>
-
-      <article class="card stat">
-        <div class="stat-head">
-          <div>
-            <div class="label">Outstanding Fees</div>
-            <div class="value" id="outstandingFees">
-              <%= new Intl.NumberFormat("en-US", {
-                style: "currency",
-                currency: tenant?.currency || "USD",
-                maximumFractionDigits: 0
-              }).format(stats?.outstandingFees || 0) %>
+      <% focusCardsData.forEach(function(card) { %>
+        <article class="card stat">
+          <div class="stat-head">
+            <div>
+              <div class="label"><%= card.label %></div>
+              <div class="value"><%= card.value %></div>
             </div>
+            <% if (card.note) { %>
+              <div class="stat-meta">
+                <span><%= card.note %></span>
+              </div>
+            <% } %>
           </div>
-          <div class="stat-meta">
-            <span><%= ui.owingLearnersLabel %></span>
-            <strong class="danger"><%= (stats?.studentsOwing || 0).toLocaleString() %></strong>
-          </div>
-        </div>
-        <div class="spark-wrap"><canvas id="feesTrend"></canvas></div>
-      </article>
-
-      <article class="card stat">
-        <div class="stat-head">
-          <div>
-            <div class="label">Portal Health</div>
-            <div class="value" id="portalUptime"><%= stats?.portalUptime ?? 98 %>%</div>
-          </div>
-          <div class="stat-meta">
-            <span>Active users</span>
-            <strong class="accent"><%= (stats?.activeUsers || 0).toLocaleString() %></strong>
-          </div>
-        </div>
-        <div class="spark-wrap"><canvas id="uptimeTrend"></canvas></div>
-      </article>
+        </article>
+      <% }) %>
     </section>
 
+    <section class="workspace-grid">
+      <section class="card workspace-card">
+        <div class="card-head">
+          <div>
+            <h3><%= roleWorkspace?.title || "My Modules" %></h3>
+            <p><%= roleWorkspace?.subtitle || "Only the modules available to your role are shown here." %></p>
+          </div>
+        </div>
+
+        <% if (dashboardModuleCards.length) { %>
+          <div class="module-grid">
+            <% dashboardModuleCards.forEach(function(module) { %>
+              <a class="module-card" href="<%= module.href %>">
+                <div class="module-card-top">
+                  <i class="fa-solid <%= module.icon %>"></i>
+                  <span class="module-card-title"><%= module.title %></span>
+                </div>
+                <div class="module-card-meta"><%= module.meta %></div>
+              </a>
+            <% }) %>
+          </div>
+        <% } else { %>
+          <div class="empty-state">No tenant modules are available for this role right now.</div>
+        <% } %>
+      </section>
+
+      <aside class="card workspace-card">
+        <div class="card-head">
+          <div>
+            <h3>Quick Access</h3>
+            <p>Shortcuts and updates for the work your role can do right now.</p>
+          </div>
+        </div>
+
+        <% if (shortcutCards.length) { %>
+          <div class="shortcut-grid">
+            <% shortcutCards.forEach(function(shortcut) { %>
+              <a class="shortcut-chip" href="<%= shortcut.href %>">
+                <i class="fa-solid <%= shortcut.icon %>"></i>
+                <span><%= shortcut.label %></span>
+              </a>
+            <% }) %>
+          </div>
+        <% } else { %>
+          <div class="empty-state">No quick actions are available for this role.</div>
+        <% } %>
+
+        <% if (workspaceAnnouncements.length) { %>
+          <div class="workspace-block">
+            <div class="softhead">
+              <h4>Latest Updates</h4>
+              <span>shared announcements</span>
+            </div>
+
+            <div class="list compact-list">
+              <% workspaceAnnouncements.forEach(function(item) { %>
+                <div class="list-item">
+                  <span><%= item.title || "Announcement" %></span>
+                  <span class="muted"><%= item.status || "Live" %></span>
+                </div>
+              <% }) %>
+            </div>
+          </div>
+        <% } %>
+      </aside>
+    </section>
+
+    <% if (canAdmissions) { %>
     <section class="card">
       <div class="card-head">
         <div>
@@ -157,6 +201,7 @@
         </div>
       </div>
     </section>
+    <% } %>
 
     <section class="grid grid-3">
       <section class="card">
@@ -166,8 +211,8 @@
             <p>Last 10 actions</p>
           </div>
           <div class="card-actions">
-            <a class="btn secondary" href="/admin/helpdesk">Helpdesk</a>
-            <a class="btn" href="/admin/auditlogs">Audit Logs</a>
+            <% if (isTenantAdmin) { %><a class="btn secondary" href="/admin/helpdesk">Helpdesk</a><% } %>
+            <% if (isTenantAdmin) { %><a class="btn" href="/admin/auditlogs">Audit Logs</a><% } %>
           </div>
         </div>
 
@@ -192,8 +237,8 @@
             <p>Internal updates</p>
           </div>
           <div class="card-actions">
-            <a class="btn" href="/admin/announcements">New</a>
-            <a class="btn secondary" href="/admin/announcements">Manage</a>
+            <% if (canAnnouncements) { %><a class="btn" href="/admin/announcements">Open</a><% } %>
+            <% if (canAnnouncements && isTenantAdmin) { %><a class="btn secondary" href="/admin/announcements">Manage</a><% } %>
           </div>
         </div>
 
@@ -211,6 +256,7 @@
         </div>
       </section>
 
+      <% if (isTenantAdmin) { %>
       <section class="card">
         <div class="card-head">
           <div>
@@ -245,9 +291,11 @@
           </div>
         </div>
       </section>
+      <% } %>
     </section>
 
     <section class="grid grid-3">
+      <% if (canStudents) { %>
       <section class="card">
         <div class="card-head">
           <div>
@@ -274,7 +322,9 @@
           </table>
         </div>
       </section>
+      <% } %>
 
+      <% if (canAdmissions) { %>
       <section class="card">
         <div class="card-head">
           <div>
@@ -301,7 +351,9 @@
           </table>
         </div>
       </section>
+      <% } %>
 
+      <% if (canFinance) { %>
       <section class="card">
         <div class="card-head">
           <div>
@@ -364,8 +416,10 @@
           <canvas id="revenueChart"></canvas>
         </div>
       </section>
+      <% } %>
     </section>
 
+    <% if (canStudents || canSubjects || canFinance || canAnnouncements || isTenantAdmin) { %>
     <section class="card">
       <div class="card-head">
         <div>
@@ -375,16 +429,17 @@
       </div>
 
       <div class="shortcuts">
-        <a class="btn" href="/admin/students"><%= ui.addLearner %></a>
-        <a class="btn" href="/admin/staff">+ Add Staff</a>
-        <a class="btn" href="<%= isHigh ? '/admin/sections' : '/admin/classes' %>"><%= ui.addGroup %></a>
-        <a class="btn" href="/admin/subjects"><%= ui.addSubject %></a>
-        <a class="btn secondary" href="/admin/settings">Settings</a>
-        <a class="btn secondary" href="/admin/invoices">Billing</a>
-        <a class="btn secondary" href="/admin/student-docs">Storage</a>
-        <a class="btn" href="/admin/announcements">New Announcement</a>
+        <% if (canStudents) { %><a class="btn" href="/admin/students"><%= ui.addLearner %></a><% } %>
+        <% if (isTenantAdmin) { %><a class="btn" href="/admin/staff">+ Add Staff</a><% } %>
+        <% if (canAdmissions) { %><a class="btn" href="<%= isHigh ? '/admin/sections' : '/admin/classes' %>"><%= ui.addGroup %></a><% } %>
+        <% if (canSubjects) { %><a class="btn" href="/admin/subjects"><%= ui.addSubject %></a><% } %>
+        <% if (isTenantAdmin) { %><a class="btn secondary" href="/admin/settings">Settings</a><% } %>
+        <% if (canFinance) { %><a class="btn secondary" href="/admin/invoices">Billing</a><% } %>
+        <% if (roleAccess.can("studentDocs.view")) { %><a class="btn secondary" href="/admin/student-docs">Storage</a><% } %>
+        <% if (canAnnouncements) { %><a class="btn" href="/admin/announcements">Announcements</a><% } %>
       </div>
     </section>
+    <% } %>
   </section>
 </main>
 

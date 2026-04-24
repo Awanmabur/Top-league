@@ -1,0 +1,89 @@
+<%
+  const path = (typeof currentPath !== "undefined" && currentPath) || "";
+  const access = platformAccess || { role: "Support", can: () => false };
+  const platformUserName = platformUser?.name || user?.name || "Platform User";
+
+  function isActive(prefix) {
+    return path === prefix || path.startsWith(prefix + "/");
+  }
+
+  function navClass(prefix) {
+    return isActive(prefix) ? "navbutton active" : "navbutton";
+  }
+
+  const navItems = [
+    { label: "Dashboard", icon: "fa-gauge-high", href: "/super-admin/dashboard", permission: "dashboard.view" },
+    { label: "Schools", icon: "fa-school", href: "/super-admin/schools", permission: "schools.view" },
+    { label: "Plans", icon: "fa-layer-group", href: "/super-admin/plans", permission: "plans.view" },
+    { label: "Billing", icon: "fa-credit-card", href: "/super-admin/billing-subscriptions", permission: "billing.view" },
+    { label: "Announcements", icon: "fa-bullhorn", href: "/super-admin/announcements", permission: "announcements.view" },
+    { label: "Reports", icon: "fa-chart-line", href: "/super-admin/reports", permission: "reports.view" },
+    { label: "Support", icon: "fa-headset", href: "/super-admin/support-tickets", permission: "support.view" },
+    { label: "Settings", icon: "fa-gear", href: "/super-admin/settings", permission: "settings.view" },
+    { label: "Audit Logs", icon: "fa-shield-halved", href: "/super-admin/audit-logs", permission: "audit.view" },
+  ].filter((item) => access.can(item.permission));
+%>
+
+<header class="mglass-nav" id="mglassNav">
+  <div class="mglass-left">
+    <a class="mglass-home" href="/super-admin/dashboard" aria-label="Home">
+      <i class="fa fa-house"></i>
+    </a>
+    <div class="mglass-title">PLATFORM</div>
+  </div>
+
+  <button class="mglass-menu" id="mobileMenuBtn" type="button" aria-label="Open menu">
+    <i class="fa fa-bars"></i>
+  </button>
+</header>
+
+<div class="app">
+  <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <button type="button" id="sbToggle" class="sbToggle" aria-label="Toggle sidebar">
+      <i class="fa fa-angle-left"></i>
+    </button>
+
+    <div class="brand">
+      <div class="brand-logo">CA</div>
+      <div class="brand-meta">
+        <h1 class="brand-title">Classic Academy Platform</h1>
+        <div class="brand-sub"><%= access.role %> - <%= platformUserName %></div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <div class="navcat">PLATFORM</div>
+      <div class="group">
+        <% navItems.forEach(function(item) { %>
+          <a class="<%= navClass(item.href) %>" href="<%= item.href %>" data-label="<%= item.label %>">
+            <i class="fa-solid <%= item.icon %>"></i>
+            <span><%= item.label %></span>
+          </a>
+        <% }) %>
+      </div>
+
+      <div class="navcat">ACCOUNT</div>
+      <div class="group">
+        <% if (access.role === "SuperAdmin") { %>
+          <a class="<%= navClass('/super-admin/platform-users/create') %>" href="/super-admin/platform-users/create" data-label="Platform Users">
+            <i class="fa-solid fa-user-shield"></i>
+            <span>Platform Users</span>
+          </a>
+        <% } %>
+
+        <form method="post" action="/logout" style="display:block;">
+          <% if (typeof csrfToken !== "undefined" && csrfToken) { %>
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+          <% } %>
+          <button class="navbutton" type="submit" style="width:100%;">
+            <i class="fa-solid fa-right-from-bracket"></i>
+            <span>Logout</span>
+          </button>
+        </form>
+      </div>
+
+      <div class="navfoot">Role: <strong><%= access.role %></strong></div>
+    </nav>
+  </aside>

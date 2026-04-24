@@ -1,8 +1,15 @@
 // src/services/tenancy/seedTenant.js
-const bcrypt = require('bcryptjs');
 const { getTenantConnection } = require('../../config/db');
-const TenantModelFactory = require('../../models/platform/Tenant');
 const UserModelFactory = require('../../models/tenant/User');
+const { normalizeEmail, singleRoleUpdate } = require('../../utils/tenantUserAccounts');
+
+function splitName(fullName = "") {
+  const parts = String(fullName || "").trim().split(/\s+/).filter(Boolean);
+  return {
+    firstName: parts[0] || "Admin",
+    lastName: parts.slice(1).join(" ") || "User",
+  };
+}
 
 async function seedTenant(tenant, platformConnection) {
   // tenant is a Tenant document from platform_db
@@ -12,23 +19,23 @@ async function seedTenant(tenant, platformConnection) {
   const User = UserModelFactory(tenantConn);
 
   // 1. Create initial school admin user if not exists
-  const adminEmail = tenant.ownerEmail || `admin@${tenant.code}.edu`;
+  const adminEmail = normalizeEmail(tenant.ownerEmail || `admin@${tenant.code}.edu`);
 
   const existingAdmin = await User.findOne({ email: adminEmail });
   if (!existingAdmin) {
-    const password = 'Admin123!'; // you can mail/reset later
-    const passwordHash = await bcrypt.hash(password, 10);
+    const { firstName, lastName } = splitName(tenant.ownerName || `${tenant.name} Admin`);
 
     await User.create({
-      name: tenant.ownerName || `${tenant.name} Admin`,
+      firstName,
+      lastName,
       email: adminEmail,
-      passwordHash,
-      roles: ['admin']
+      ...singleRoleUpdate('admin', {
+        status: 'invited',
+        passwordHash: null,
+      }),
     });
 
-    console.log(
-      `Seeded school admin for ${tenant.name}: ${adminEmail} / ${password}`
-    );
+    console.log(`Seeded school admin placeholder for ${tenant.name}: ${adminEmail}`);
   } else {
     console.log(`Admin already exists for ${tenant.name}`);
   }

@@ -1,0 +1,54 @@
+<header class="mglass-nav" id="mglassNav">
+  <div class="mglass-left">
+    <a class="mglass-home" href="/staff/dashboard" aria-label="Home">
+      <i class="fa fa-house"></i>
+    </a>
+    <div class="mglass-title"><%= tenant?.name || "Classic Academy" %></div>
+  </div>
+
+  <button class="mglass-menu" id="mobileMenuBtn" type="button" aria-label="Open menu">
+    <i class="fa fa-bars"></i>
+  </button>
+</header>
+
+<div class="app">
+  <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <button type="button" id="sbToggle" class="sbToggle" aria-label="Toggle sidebar">
+      <i class="fa fa-angle-left"></i>
+    </button>
+
+    <div class="brand">
+      <div class="brand-logo">CS</div>
+      <div class="brand-meta">
+        <h1 class="brand-title"><%= tenant?.name || "Classic Academy" %></h1>
+        <div class="brand-sub">Staff Portal</div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <div class="navcat">WORKSPACE</div>
+      <div class="group">
+        <a class="navbutton" href="/staff/dashboard" data-label="Dashboard"><i class="fa fa-house"></i><span>Dashboard</span></a>
+        <a class="navbutton" href="/staff/timetable" data-label="Timetable"><i class="fa fa-calendar-week"></i><span>Timetable</span></a>
+        <a class="navbutton" href="/staff/announcements" data-label="Announcements"><i class="fa fa-bullhorn"></i><span>Announcements</span></a>
+        <a class="navbutton" href="/staff/notifications" data-label="Notifications"><i class="fa fa-bell"></i><span>Notifications</span></a>
+      </div>
+
+      <div class="navcat">SERVICES</div>
+      <div class="group">
+        <a class="navbutton" href="/staff/leave" data-label="Leave"><i class="fa fa-person-walking-arrow-right"></i><span>Leave</span></a>
+        <a class="navbutton" href="/staff/payroll" data-label="Payroll"><i class="fa fa-money-check-dollar"></i><span>Payroll</span></a>
+        <a class="navbutton" href="/staff/support" data-label="Support"><i class="fa fa-headset"></i><span>Support</span></a>
+      </div>
+
+      <div class="navcat">ACCOUNT</div>
+      <div class="group">
+        <a class="navbutton" href="/staff/profile" data-label="Profile"><i class="fa fa-user"></i><span>Profile</span></a>
+        <a class="navbutton" href="/logout" data-label="Logout"><i class="fa fa-right-from-bracket"></i><span>Logout</span></a>
+      </div>
+
+      <div class="navfoot">Portal: <strong>Staff</strong></div>
+    </nav>
+  </aside>

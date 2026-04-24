@@ -19,6 +19,20 @@ const MongoStore = require("connect-mongo");
 const flash = require("connect-flash");
 
 const { platformConnection, waitForPlatform } = require("./config/db");
+const {
+  isProduction,
+  SESSION_TTL_SECONDS,
+  SESSION_TOUCH_AFTER_SECONDS,
+  getTrustedProxySetting,
+  getSessionCookieOptions,
+  getCorsOptions,
+  validateRuntimeConfig,
+} = require("./config/runtime");
+const {
+  rejectPoisonedPayload,
+  enforceSameOrigin,
+  disableSensitiveCaching,
+} = require("./middleware/security/requestHardening");
 
 // Middlewares
 const tenantResolver = require("./middleware/tenant/tenantResolver");
@@ -29,10 +43,16 @@ const platformRoutes = require("./routes/platform");
 const tenantRouter = require("./routes/tenant/tenant");
 
 const app = express();
-const isProd = process.env.NODE_ENV === "production";
-const PLATFORM_PATHS = ["/platform", "/super-admin"];
-const SESSION_TTL_SECONDS = 7 * 24 * 60 * 60;
-const SESSION_TOUCH_AFTER_SECONDS = 24 * 60 * 60;
+const isProd = isProduction;
+const PLATFORM_PATHS = [
+  "/platform",
+  "/super-admin",
+  "/login",
+  "/logout",
+  "/forgot-password",
+  "/reset-password",
+];
+const TRUST_PROXY = getTrustedProxySetting();
 
 function isReadOnlyPublicSchoolPage(req) {
   const method = String(req.method || "GET").toUpperCase();
@@ -56,31 +76,16 @@ function logStartup(port) {
   console.log("Tenant DBs: connect on demand");
 }
 
-function requireEnv(name, options = {}) {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`Missing required environment variable: ${name}`);
-  }
-
-  if (options.minLength && String(value).length < options.minLength) {
-    throw new Error(`${name} must be at least ${options.minLength} characters.`);
-  }
-
-  return value;
-}
-
-function validateCoreEnv() {
-  requireEnv("SESSION_SECRET", { minLength: isProd ? 32 : 12 });
-  requireEnv("JWT_SECRET", { minLength: isProd ? 32 : 12 });
-}
-
-validateCoreEnv();
+validateRuntimeConfig();
 app.disable("x-powered-by");
 
 const sessionStore = MongoStore.create({
   client: platformConnection.getClient(),
   ttl: SESSION_TTL_SECONDS,
   touchAfter: SESSION_TOUCH_AFTER_SECONDS,
+});
+sessionStore.on("error", (err) => {
+  console.error("Session store error:", err?.message || err);
 });
 
 // ======================================
@@ -92,7 +97,7 @@ app.set("views", path.join(__dirname, "..", "views"));
 // ======================================
 // TRUST PROXY
 // ======================================
-app.set("trust proxy", 1);
+app.set("trust proxy", TRUST_PROXY);
 
 // ======================================
 // STATIC FILES
@@ -109,7 +114,10 @@ app.use(
 // ======================================
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
-app.use(cookieParser());
+app.use(cookieParser(process.env.SESSION_SECRET));
+app.use(rejectPoisonedPayload);
+app.use(disableSensitiveCaching);
+app.use(enforceSameOrigin);
 
 app.use((req, res, next) => {
   res.locals.cspNonce = crypto.randomBytes(16).toString("base64");
@@ -168,12 +176,7 @@ app.use(
 
 app.use(compression());
 
-app.use(
-  cors({
-    origin: isProd ? false : true,
-    credentials: true,
-  }),
-);
+app.use(cors(getCorsOptions()));
 
 if (!isProd && process.env.HTTP_LOGS === "1") {
   app.use(morgan("dev"));
@@ -208,14 +211,11 @@ app.use(
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
+    rolling: true,
+    unset: "destroy",
+    proxy: Boolean(TRUST_PROXY),
     store: sessionStore,
-    cookie: {
-      path: "/",
-      secure: isProd,
-      httpOnly: true,
-      sameSite: "lax",
-      maxAge: SESSION_TTL_SECONDS * 1000,
-    },
+    cookie: getSessionCookieOptions(),
   }),
 );
 
@@ -247,14 +247,11 @@ const tenantSession = session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
+    rolling: true,
+    unset: "destroy",
+    proxy: Boolean(TRUST_PROXY),
     store: sessionStore,
-    cookie: {
-      path: "/",
-      secure: isProd,
-      httpOnly: true,
-      sameSite: "lax",
-      maxAge: SESSION_TTL_SECONDS * 1000,
-    },
+    cookie: getSessionCookieOptions(),
   });
 
 tenantStack.use((req, res, next) => {
@@ -310,12 +307,26 @@ app.use(errorHandler);
     await waitForPlatform();
     const port = process.env.PORT || 3000;
 
-    app.listen(port, () => {
+    const server = app.listen(port, () => {
       logStartup(port);
     });
+
+    const shutdown = (signal) => {
+      console.log(`${signal} received, shutting down gracefully...`);
+      server.close(async () => {
+        try {
+          await platformConnection.close();
+        } catch (_) {}
+        process.exit(0);
+      });
+    };
+
+    process.on("SIGINT", () => shutdown("SIGINT"));
+    process.on("SIGTERM", () => shutdown("SIGTERM"));
   } catch (err) {
     console.error(`Platform DB: ${dbStateLabel(platformConnection)}`);
     console.error("Failed to start server:", err.message || err);
     process.exit(1);
   }
 })();
+

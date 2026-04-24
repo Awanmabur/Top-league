@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title><%= pageTitle || "Timetable" %> - <%= tenant?.name || "Classic Academy" %></title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/navbar.css" />
+  <link rel="stylesheet" href="/css/student-portal.css" />
+</head>
+<body>
+  <%- include("./navbar") %>
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="title">Timetable</div>
+        <div class="subtitle">Your assigned teaching or duty schedule.</div>
+      </div>
+    </div>
+
+    <section class="card">
+      <div class="mini-list">
+        <% if (items?.length) { %>
+          <% items.forEach(function(item) { %>
+            <div class="mini-item">
+              <span><%= item.day || "-" %> - <%= item.subjectName || item.subject || item.title || "Session" %></span>
+              <span><%= item.startTime || "-" %> to <%= item.endTime || "-" %></span>
+            </div>
+          <% }) %>
+        <% } else { %>
+          <div class="small-muted">No timetable entries found.</div>
+        <% } %>
+      </div>
+    </section>
+  </main>
+  </div>
+  <script src="/js/navbar.js"></script>
+</body>
+</html>

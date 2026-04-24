@@ -8,6 +8,7 @@
     "";
 
   const tenantAccess = locals.tenantAccess || {};
+  const roleAccess = locals.roleAccess || { role: "admin", can: () => true };
   const allowedModules = Array.isArray(tenantAccess.modules) ? tenantAccess.modules : [];
   const featureFlags = tenantAccess.featureFlags || {};
   const planName = tenantAccess.planName || "School Profile";
@@ -47,91 +48,96 @@
     return !!featureFlags[name];
   }
 
+  function can(permission) {
+    return typeof roleAccess.can === "function" ? roleAccess.can(permission) : true;
+  }
+
   function visibleItems(items) {
     return items.filter(item => !item.hidden);
   }
 
   const isNursery = schoolLevel === "nursery";
   const isHigh = schoolLevel === "high";
+  const isTenantAdmin = roleAccess.role === "admin";
 
   const coreItems = visibleItems([
-    { label: "Dashboard", icon: "fa-house", href: "/admin/dashboard", exact: false },
-    { label: "Analytics", icon: "fa-chart-line", href: "/admin/analytics", hidden: !hasFeature("advancedReports") },
-    { label: "Reports", icon: "fa-chart-pie", href: "/admin/reports", hidden: !hasModule("ReportExport") },
-    { label: "Notifications", icon: "fa-bell", href: "/admin/notifications", hidden: !hasModule("Notification") },
+    { label: "Dashboard", icon: "fa-house", href: "/admin/dashboard", exact: false, hidden: !can("dashboard.view") },
+    { label: "Analytics", icon: "fa-chart-line", href: "/admin/analytics", hidden: !hasFeature("advancedReports") || !can("reports.view") },
+    { label: "Reports", icon: "fa-chart-pie", href: "/admin/reports", hidden: !hasModule("ReportExport") || !can("reports.view") },
+    { label: "Notifications", icon: "fa-bell", href: "/admin/notifications", hidden: !hasModule("Notification") || !can("notifications.view") },
   ]);
 
   const admissionsItems = visibleItems([
-    { label: "Admissions", icon: "fa-file-signature", href: "/admin/admissions", hidden: !hasModule("Applicant") },
-    { label: "Applicants", icon: "fa-user-check", href: "/admin/admissions/applicants", hidden: !hasModule("Applicant") },
-    { label: "Intakes", icon: "fa-calendar-plus", href: "/admin/admissions/intakes", hidden: !hasModule("Applicant") && !hasModule("Intake") },
-    { label: "Requirements", icon: "fa-file-lines", href: "/admin/admissions/requirements", hidden: !hasModule("AdmissionRequirement") },
-    { label: "Offer Letters", icon: "fa-envelope-open-text", href: "/admin/admissions/offer-letters", hidden: !hasModule("OfferLetter") },
+    { label: "Admissions", icon: "fa-file-signature", href: "/admin/admissions", hidden: !hasModule("Applicant") || !can("admissions.view") },
+    { label: "Applicants", icon: "fa-user-check", href: "/admin/admissions/applicants", hidden: !hasModule("Applicant") || !can("admissions.view") },
+    { label: "Intakes", icon: "fa-calendar-plus", href: "/admin/admissions/intakes", hidden: (!hasModule("Applicant") && !hasModule("Intake")) || !can("admissions.view") },
+    { label: "Requirements", icon: "fa-file-lines", href: "/admin/admissions/requirements", hidden: !hasModule("AdmissionRequirement") || !can("admissions.view") },
+    { label: "Offer Letters", icon: "fa-envelope-open-text", href: "/admin/admissions/offer-letters", hidden: !hasModule("OfferLetter") || !can("admissions.view") },
   ]);
 
   const studentItems = visibleItems([
-    { label: ui.learners, icon: "fa-user-graduate", href: "/admin/students", hidden: !hasModule("Student") },
-    { label: ui.guardians, icon: "fa-people-roof", href: "/admin/parents", hidden: !hasModule("Parent") },
-    { label: "Promotions", icon: "fa-arrow-up-right-dots", href: "/admin/promotions", hidden: !hasModule("PromotionLog") || isNursery },
-    { label: ui.records, icon: "fa-folder-open", href: "/admin/student-docs", hidden: !hasModule("StudentDoc") },
-    { label: "Discipline", icon: "fa-gavel", href: "/admin/discipline", hidden: !hasModule("DisciplineCase") || isNursery },
+    { label: ui.learners, icon: "fa-user-graduate", href: "/admin/students", hidden: !hasModule("Student") || !can("students.view") },
+    { label: ui.guardians, icon: "fa-people-roof", href: "/admin/parents", hidden: !hasModule("Parent") || !can("parents.view") },
+    { label: "Promotions", icon: "fa-arrow-up-right-dots", href: "/admin/promotions", hidden: !hasModule("PromotionLog") || isNursery || !can("promotions.view") },
+    { label: ui.records, icon: "fa-folder-open", href: "/admin/student-docs", hidden: !hasModule("StudentDoc") || !can("studentDocs.view") },
+    { label: "Discipline", icon: "fa-gavel", href: "/admin/discipline", hidden: !hasModule("DisciplineCase") || isNursery || !can("discipline.view") },
   ]);
 
   const academicItems = visibleItems([
-    { label: "Classes", icon: "fa-layer-group", href: "/admin/classes", hidden: !hasModule("Class") },
-    { label: "Sections", icon: "fa-code-branch", href: "/admin/sections", hidden: !hasModule("Section") && !hasModule("Stream") },
-    { label: "Streams", icon: "fa-diagram-project", href: "/admin/streams", hidden: !hasModule("Stream") && !hasModule("Section") },
-    { label: ui.subjects, icon: "fa-book-open", href: "/admin/subjects", hidden: !hasModule("Subject") },
-    { label: "Timetable", icon: "fa-clock", href: "/admin/timetable", hidden: !hasModule("TimetableEntry") },
-    { label: "Attendance", icon: "fa-user-clock", href: "/admin/attendance", hidden: !hasModule("Attendance") },
-    { label: ui.assignments, icon: "fa-file-pen", href: "/admin/assignments", hidden: !hasModule("Assignment") && !isNursery },
-    { label: ui.exams, icon: "fa-clipboard-list", href: "/admin/exams", hidden: !hasModule("Exam") && !isNursery },
-    { label: ui.results, icon: "fa-award", href: "/admin/results", hidden: !hasModule("Result") && !isNursery },
-    { label: ui.reports, icon: "fa-scroll", href: "/admin/transcripts", hidden: !hasModule("Transcript") && !hasModule("ReportCard") },
-    { label: "Academic Calendar", icon: "fa-calendar-days", href: "/admin/academic-calendar", hidden: !hasModule("AcademicEvent") },
+    { label: "Classes", icon: "fa-layer-group", href: "/admin/classes", hidden: !hasModule("Class") || !can("classes.view") },
+    { label: "Sections", icon: "fa-code-branch", href: "/admin/sections", hidden: (!hasModule("Section") && !hasModule("Stream")) || !can("sections.view") },
+    { label: "Streams", icon: "fa-diagram-project", href: "/admin/streams", hidden: (!hasModule("Stream") && !hasModule("Section")) || !can("streams.view") },
+    { label: ui.subjects, icon: "fa-book-open", href: "/admin/subjects", hidden: !hasModule("Subject") || !can("subjects.view") },
+    { label: "Timetable", icon: "fa-clock", href: "/admin/timetable", hidden: !hasModule("TimetableEntry") || !can("timetable.view") },
+    { label: "Attendance", icon: "fa-user-clock", href: "/admin/attendance", hidden: !hasModule("Attendance") || !can("attendance.view") },
+    { label: ui.assignments, icon: "fa-file-pen", href: "/admin/assignments", hidden: (!hasModule("Assignment") && !isNursery) || !can("assignments.view") },
+    { label: ui.exams, icon: "fa-clipboard-list", href: "/admin/exams", hidden: (!hasModule("Exam") && !isNursery) || !can("exams.view") },
+    { label: ui.results, icon: "fa-award", href: "/admin/results", hidden: (!hasModule("Result") && !isNursery) || !can("results.view") },
+    { label: ui.reports, icon: "fa-scroll", href: "/admin/transcripts", hidden: (!hasModule("Transcript") && !hasModule("ReportCard")) || !can("transcripts.view") },
+    { label: "Academic Calendar", icon: "fa-calendar-days", href: "/admin/academic-calendar", hidden: !hasModule("AcademicEvent") || !can("academicCalendar.view") },
   ]);
 
   const hrItems = visibleItems([
-    { label: "Staff", icon: "fa-users", href: "/admin/staff", hidden: !hasModule("Staff") },
-    { label: "Users", icon: "fa-user-shield", href: "/admin/users", hidden: !hasModule("User") },
-    { label: "Staff Roles", icon: "fa-key", href: "/admin/roles", hidden: !hasModule("StaffRole") },
-    { label: "Leave", icon: "fa-person-walking-arrow-right", href: "/admin/staff-leave", hidden: !hasModule("LeaveRequest") },
-    { label: "Payroll", icon: "fa-money-check-dollar", href: "/admin/payroll", hidden: !hasModule("PayrollRun") && !hasModule("PayrollItem") },
+    { label: "Staff", icon: "fa-users", href: "/admin/staff", hidden: !hasModule("Staff") || !isTenantAdmin },
+    { label: "Users", icon: "fa-user-shield", href: "/admin/users", hidden: !hasModule("User") || !isTenantAdmin },
+    { label: "Staff Roles", icon: "fa-key", href: "/admin/roles", hidden: !hasModule("StaffRole") || !isTenantAdmin },
+    { label: "Leave", icon: "fa-person-walking-arrow-right", href: "/admin/staff-leave", hidden: !hasModule("LeaveRequest") || !isTenantAdmin },
+    { label: "Payroll", icon: "fa-money-check-dollar", href: "/admin/payroll", hidden: (!hasModule("PayrollRun") && !hasModule("PayrollItem")) || !isTenantAdmin },
   ]);
 
   const facilityItems = visibleItems([
-    { label: "Library", icon: "fa-book-reader", href: "/admin/library", hidden: !hasModule("LibraryBook") || isNursery },
-    { label: "Hostels", icon: "fa-building", href: "/admin/hostels", hidden: !hasModule("Hostel") || !isHigh },
-    { label: "Transport", icon: "fa-bus", href: "/admin/transport", hidden: !hasModule("Transport") },
-    { label: "Assets", icon: "fa-boxes-stacked", href: "/admin/assets", hidden: !hasModule("Asset") },
-    { label: "Events", icon: "fa-calendar", href: "/admin/events", hidden: !hasModule("Event") },
+    { label: "Library", icon: "fa-book-reader", href: "/admin/library", hidden: !hasModule("LibraryBook") || isNursery || !can("library.view") },
+    { label: "Hostels", icon: "fa-building", href: "/admin/hostels", hidden: !hasModule("Hostel") || !isHigh || !can("hostels.view") },
+    { label: "Transport", icon: "fa-bus", href: "/admin/transport", hidden: !hasModule("Transport") || !isTenantAdmin },
+    { label: "Assets", icon: "fa-boxes-stacked", href: "/admin/assets", hidden: !hasModule("Asset") || !isTenantAdmin },
+    { label: "Events", icon: "fa-calendar", href: "/admin/events", hidden: !hasModule("Event") || !isTenantAdmin },
   ]);
 
   const financeItems = visibleItems([
-    { label: "Finance", icon: "fa-credit-card", href: "/admin/finance", hidden: !hasModule("Payment") },
-    { label: "Invoices", icon: "fa-file-invoice-dollar", href: "/admin/invoices", hidden: !hasModule("Invoice") },
-    { label: "Payments", icon: "fa-money-bill-wave", href: "/admin/payments", hidden: !hasModule("Payment") },
-    { label: ui.statements, icon: "fa-receipt", href: "/admin/student-statements", hidden: !hasModule("Payment") },
-    { label: "Fee Structure", icon: "fa-list-check", href: "/admin/fees", hidden: !hasModule("FeeStructure") },
-    { label: ui.bursaries, icon: "fa-hand-holding-heart", href: "/admin/scholarships", hidden: !hasModule("Scholarship") },
-    { label: "Finance Reports", icon: "fa-chart-column", href: "/admin/finance-reports", hidden: !hasModule("Payment") },
-    { label: "Expenses", icon: "fa-money-check-dollar", href: "/admin/expenses", hidden: !hasModule("Expense") && !hasModule("Payment") },
+    { label: "Finance", icon: "fa-credit-card", href: "/admin/finance", hidden: !hasModule("Payment") || !can("finance.view") },
+    { label: "Invoices", icon: "fa-file-invoice-dollar", href: "/admin/invoices", hidden: !hasModule("Invoice") || !can("finance.view") },
+    { label: "Payments", icon: "fa-money-bill-wave", href: "/admin/payments", hidden: !hasModule("Payment") || !can("finance.view") },
+    { label: ui.statements, icon: "fa-receipt", href: "/admin/student-statements", hidden: !hasModule("Payment") || !can("finance.view") },
+    { label: "Fee Structure", icon: "fa-list-check", href: "/admin/fees", hidden: !hasModule("FeeStructure") || !can("finance.view") },
+    { label: ui.bursaries, icon: "fa-hand-holding-heart", href: "/admin/scholarships", hidden: !hasModule("Scholarship") || !can("finance.view") },
+    { label: "Finance Reports", icon: "fa-chart-column", href: "/admin/finance-reports", hidden: !hasModule("Payment") || !can("finance.view") },
+    { label: "Expenses", icon: "fa-money-check-dollar", href: "/admin/expenses", hidden: (!hasModule("Expense") && !hasModule("Payment")) || !can("finance.view") },
   ]);
 
   const commItems = visibleItems([
-    { label: "Announcements", icon: "fa-bullhorn", href: "/admin/announcements", hidden: !hasModule("Announcement") },
-    { label: "Messaging", icon: "fa-comments", href: "/admin/messaging", hidden: !hasModule("Notification") },
-    { label: "Helpdesk", icon: "fa-headset", href: "/admin/tickets", hidden: !hasFeature("helpdesk") },
-    { label: "Inquiries", icon: "fa-circle-question", href: "/admin/inquiries", hidden: false },
+    { label: "Announcements", icon: "fa-bullhorn", href: "/admin/announcements", hidden: !hasModule("Announcement") || !can("announcements.view") },
+    { label: "Messaging", icon: "fa-comments", href: "/admin/messaging", hidden: !hasModule("Notification") || !can("messaging.view") },
+    { label: "Helpdesk", icon: "fa-headset", href: "/admin/tickets", hidden: !hasFeature("helpdesk") || !isTenantAdmin },
+    { label: "Inquiries", icon: "fa-circle-question", href: "/admin/inquiries", hidden: !can("inquiries.view") },
   ]);
 
   const systemItems = visibleItems([
-    { label: "Settings", icon: "fa-gear", href: "/admin/settings", hidden: !hasModule("Setting") },
-    { label: "Profile", icon: "fa-user-circle", href: "/admin/profile", hidden: false },
-    { label: "Integrations", icon: "fa-plug", href: "/admin/integrations", hidden: !hasFeature("apiAccess") },
-    { label: "Audit Logs", icon: "fa-clipboard-list", href: "/admin/auditlogs", hidden: false },
-    { label: "Backups", icon: "fa-database", href: "/admin/backups", hidden: !hasFeature("backups") },
-    { label: "System Health", icon: "fa-server", href: "/admin/system", hidden: !hasFeature("systemHealth") },
+    { label: "Settings", icon: "fa-gear", href: "/admin/settings", hidden: !hasModule("Setting") || !isTenantAdmin },
+    { label: "Profile", icon: "fa-user-circle", href: "/admin/profile", hidden: !can("profile.view") },
+    { label: "Integrations", icon: "fa-plug", href: "/admin/integrations", hidden: !hasFeature("apiAccess") || !isTenantAdmin },
+    { label: "Audit Logs", icon: "fa-clipboard-list", href: "/admin/auditlogs", hidden: !isTenantAdmin },
+    { label: "Backups", icon: "fa-database", href: "/admin/backups", hidden: !hasFeature("backups") || !isTenantAdmin },
+    { label: "System Health", icon: "fa-server", href: "/admin/system", hidden: !hasFeature("systemHealth") || !isTenantAdmin },
     { label: "Logout", icon: "fa-right-from-bracket", href: "/logout", exact: true, hidden: false },
   ]);
 %>

@@ -1,20 +1,9 @@
 const crypto = require("crypto");
 const bcrypt = require("bcrypt");
+const { validatePasswordStrength } = require("../../../utils/passwordPolicy");
 
 function sha256(input) {
   return crypto.createHash("sha256").update(String(input)).digest("hex");
-}
-
-function isStrongPassword(pw) {
-  // production-ready baseline: 8+, upper, lower, number, symbol
-  return (
-    typeof pw === "string" &&
-    pw.length >= 8 &&
-    /[a-z]/.test(pw) &&
-    /[A-Z]/.test(pw) &&
-    /[0-9]/.test(pw) &&
-    /[^A-Za-z0-9]/.test(pw)
-  );
 }
 
 module.exports = {
@@ -118,9 +107,10 @@ module.exports = {
         });
       }
 
-      if (!isStrongPassword(password)) {
+      const passwordError = validatePasswordStrength(password, { minLength: 10 });
+      if (passwordError) {
         return res.status(400).render("tenant/auth/set-password", {
-          error: "Password must be 8+ and include uppercase, lowercase, number, and symbol.",
+          error: passwordError,
           token: rawToken,
           email: user.email
         });

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title><%= (tenant && tenant.name) ? tenant.name : "Classic Academy" %> — Parent Profile</title>
+  <title><%= (tenant && tenant.name) ? tenant.name : "Classic Academy" %> - Parent Profile</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
 
   <link rel="stylesheet"
@@ -238,15 +238,18 @@
     }
   </style>
 </head>
-<body>
+<body data-portal="parent">
   <%
     const t = tenant || {};
     const u = user || {};
     const p = parent || null;
     const kids = Array.isArray(children) ? children : [];
     const form = formData || {};
-    const tenantName = t.name || "Classic Academy";
-    const tenantCode = (t.code || "CC").toString();
+    const tenantAccess = locals.tenantAccess || {};
+    const modelSet = new Set(Array.isArray(locals.availableModels) ? locals.availableModels : []);
+    const showSupport =
+      tenantAccess?.featureFlags?.helpdesk !== false &&
+      (modelSet.has("SupportTicket") || modelSet.has("Ticket"));
 
     function initials(name) {
       const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
@@ -287,9 +290,11 @@
             <b><%= kids.length %></b>
           </div>
 
-          <button class="btn light" type="button" onclick="window.location.href='/parent/support'">
-            <i class="fa-solid fa-headset"></i> Support
-          </button>
+          <% if (showSupport) { %>
+            <button class="btn light" type="button" onclick="window.location.href='/parent/support'">
+              <i class="fa-solid fa-headset"></i> Support
+            </button>
+          <% } %>
         </div>
       </div>
 
@@ -319,7 +324,7 @@
         </div>
         <div class="summary-box">
           <div class="summary-label">Primary Email</div>
-          <div class="summary-value" style="font-size:16px;"><%= form.email || "—" %></div>
+          <div class="summary-value" style="font-size:16px;"><%= form.email || "-" %></div>
         </div>
       </div>
 
@@ -417,8 +422,8 @@
               <div>
                 <div class="profile-name"><%= parentFullName %></div>
                 <div class="profile-meta">
-                  <div><i class="fa-solid fa-envelope"></i> <%= form.email || "—" %></div>
-                  <div><i class="fa-solid fa-phone"></i> <%= form.phone || "—" %></div>
+                  <div><i class="fa-solid fa-envelope"></i> <%= form.email || "-" %></div>
+                  <div><i class="fa-solid fa-phone"></i> <%= form.phone || "-" %></div>
                   <div><i class="fa-solid fa-people-roof"></i> <%= form.relationship || "Guardian" %></div>
                 </div>
               </div>
@@ -435,15 +440,15 @@
               </div>
               <div class="metric-item">
                 <span>City</span>
-                <strong><%= form.city || "—" %></strong>
+                <strong><%= form.city || "-" %></strong>
               </div>
               <div class="metric-item">
                 <span>Country</span>
-                <strong><%= form.country || "—" %></strong>
+                <strong><%= form.country || "-" %></strong>
               </div>
               <div class="metric-item">
                 <span>Occupation</span>
-                <strong><%= form.occupation || "—" %></strong>
+                <strong><%= form.occupation || "-" %></strong>
               </div>
             </div>
           </div>
@@ -464,11 +469,11 @@
                   <div class="child-card">
                     <div class="child-title"><%= fullNameOfStudent(c) %></div>
                     <div class="child-meta">
-                      Reg No: <strong><%= c.regNo || "—" %></strong>
-                      <span class="dot">•</span>
-                      Class: <strong><%= (c.classGroup && (c.classGroup.title || c.classGroup.name)) || "—" %></strong>
-                      <span class="dot">•</span>
-                      Program: <strong><%= (c.program && (c.program.title || c.program.name)) || "—" %></strong>
+                      Reg No: <strong><%= c.regNo || "-" %></strong>
+                      <span class="dot">-</span>
+                      Class: <strong><%= (c.classGroup && (c.classGroup.title || c.classGroup.name)) || "-" %></strong>
+                      <span class="dot">-</span>
+                      Program: <strong><%= (c.program && (c.program.title || c.program.name)) || "-" %></strong>
                     </div>
                   </div>
                 <% }); %>

@@ -10,13 +10,13 @@
     <h1>Classic Academy - Platform Admin</h1>
     <% if (typeof user !== 'undefined' && user) { %>
       <div>
-        Logged in as <%= user.name %> | <a href="/platform/logout">Logout</a>
+        Logged in as <%= user.name %> | <a href="/login">Platform Login</a>
       </div>
     <% } %>
     <nav>
-      <a href="/platform/dashboard">Dashboard</a> |
-      <a href="/platform/tenants">Tenants</a> |
-      <a href="/platform/plans">Plans</a>
+      <a href="/super-admin/dashboard">Dashboard</a> |
+      <a href="/super-admin/schools">Schools</a> |
+      <a href="/super-admin/plans">Plans</a>
     </nav>
     <hr/>
   </header>

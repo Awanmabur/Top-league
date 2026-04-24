@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Create Platform User - Classic Academy</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer"/>
+  <style>
+    :root{--blue:#0a3d62;--accent:#0a6fbf;--bg:#f4f8ff;--card:#fff;--line:rgba(13,64,96,.12);--muted:#6b7280;--radius:18px;--shadow:0 12px 40px rgba(0,0,0,.10)}
+    *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:#0f172a}
+    .wrap{min-height:100vh;display:grid;place-items:center;padding:18px}.card{width:min(760px,100%);background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--line);padding:24px}
+    .title{font-size:22px;font-weight:800;color:var(--blue)} .muted{color:var(--muted);font-size:13px;line-height:1.6;margin-top:6px}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:18px}.field{display:grid;gap:6px}
+    .input,.select{padding:12px 14px;border-radius:14px;border:1px solid var(--line);width:100%;font:inherit}
+    .btn{margin-top:18px;border:none;border-radius:14px;padding:12px 14px;font-weight:800;cursor:pointer;background:var(--accent);color:#fff}
+    .msg{margin-top:14px;font-size:13px;font-weight:700;color:#b91c1c}
+    @media(max-width:720px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="title">Create Platform User</div>
+      <div class="muted">Create a platform account with one clear role and a strong password.</div>
+
+      <% if (error) { %><div class="msg"><%= error %></div><% } %>
+
+      <form method="post" action="/super-admin/platform-users/create">
+        <% if (typeof csrfToken !== "undefined" && csrfToken) { %>
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <% } %>
+        <div class="grid">
+          <div class="field">
+            <label for="firstName">First Name</label>
+            <input class="input" id="firstName" type="text" name="firstName" value="<%= old?.firstName || '' %>" required />
+          </div>
+          <div class="field">
+            <label for="lastName">Last Name</label>
+            <input class="input" id="lastName" type="text" name="lastName" value="<%= old?.lastName || '' %>" required />
+          </div>
+          <div class="field">
+            <label for="email">Email</label>
+            <input class="input" id="email" type="email" name="email" value="<%= old?.email || '' %>" required />
+          </div>
+          <div class="field">
+            <label for="phone">Phone</label>
+            <input class="input" id="phone" type="text" name="phone" value="<%= old?.phone || '' %>" />
+          </div>
+          <div class="field">
+            <label for="role">Role</label>
+            <select class="select" id="role" name="role">
+              <% ["SuperAdmin", "Operations", "Support", "Sales", "Finance"].forEach(function(role) { %>
+                <option value="<%= role %>" <%= old?.role === role ? 'selected' : '' %>><%= role %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <input class="input" id="password" type="password" name="password" required />
+          </div>
+        </div>
+
+        <label style="display:flex;gap:8px;align-items:center;margin-top:16px;">
+          <input type="checkbox" name="isActive" value="true" <%= old?.isActive === 'true' || old?.isActive === 'on' ? 'checked' : '' %> />
+          <span>Active account</span>
+        </label>
+
+        <button class="btn" type="submit">Create User</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

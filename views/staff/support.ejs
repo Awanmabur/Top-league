@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title><%= pageTitle || "Support" %> - <%= tenant?.name || "Classic Academy" %></title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/navbar.css" />
+  <link rel="stylesheet" href="/css/student-portal.css" />
+</head>
+<body>
+  <%- include("./navbar") %>
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="title">Support</div>
+        <div class="subtitle">Open tickets, raise a new issue, and follow up on replies.</div>
+      </div>
+      <% if (mode !== "new") { %>
+        <div class="top-actions">
+          <a class="btn primary" href="/staff/support/new"><i class="fa-solid fa-plus"></i> New Ticket</a>
+        </div>
+      <% } %>
+    </div>
+
+    <% if (error) { %><div class="small-muted" style="color:#b91c1c;"><%= error %></div><% } %>
+
+    <% if (mode === "new") { %>
+      <section class="card">
+        <form method="post" action="/staff/support" style="display:grid;gap:12px;">
+          <input style="padding:12px;border:1px solid #dbe3f6;border-radius:12px;" type="text" name="subject" placeholder="Subject" value="<%= values?.subject || '' %>" required />
+          <textarea style="padding:12px;border:1px solid #dbe3f6;border-radius:12px;min-height:180px;" name="message" placeholder="Describe the issue" required><%= values?.message || '' %></textarea>
+          <button class="btn primary" style="width:max-content;" type="submit">Submit Ticket</button>
+        </form>
+      </section>
+    <% } else if (mode === "view") { %>
+      <section class="card">
+        <div class="section-title"><%= ticket?.subject || "Support Ticket" %></div>
+        <div class="notif-list" style="margin-top:14px;">
+          <% (ticket?.messages || []).forEach(function(message) { %>
+            <div class="notif-item">
+              <div class="notif-icon"><i class="fa-solid fa-comments"></i></div>
+              <div>
+                <div class="notif-title"><%= message.from || "Message" %></div>
+                <div class="notif-meta"><%= message.message || "" %></div>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+
+        <form method="post" action="/staff/support/<%= ticket?._id %>/reply" style="display:grid;gap:12px;margin-top:16px;">
+          <textarea style="padding:12px;border:1px solid #dbe3f6;border-radius:12px;min-height:140px;" name="message" placeholder="Write your reply" required></textarea>
+          <button class="btn primary" style="width:max-content;" type="submit">Reply</button>
+        </form>
+      </section>
+    <% } else { %>
+      <section class="card">
+        <div class="notif-list">
+          <% if (tickets?.length) { %>
+            <% tickets.forEach(function(ticket) { %>
+              <a class="notif-item" style="text-decoration:none;color:inherit;" href="/staff/support/<%= ticket._id %>">
+                <div class="notif-icon"><i class="fa-solid fa-headset"></i></div>
+                <div>
+                  <div class="notif-title"><%= ticket.subject || "Support Ticket" %></div>
+                  <div class="notif-meta"><%= ticket.status || "open" %></div>
+                </div>
+              </a>
+            <% }) %>
+          <% } else { %>
+            <div class="small-muted">No support tickets yet.</div>
+          <% } %>
+        </div>
+      </section>
+    <% } %>
+  </main>
+  </div>
+  <script src="/js/navbar.js"></script>
+</body>
+</html>

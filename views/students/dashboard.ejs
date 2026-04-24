@@ -3,9 +3,7 @@
 
 <head>
   <meta charset="utf-8" />
-  <title>
-    <%= pageTitle %> — <%= tenant?.name || "Classic Academy" %>
-  </title>
+  <title><%= pageTitle %> - <%= tenant?.name || "Classic Academy" %></title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
     crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -13,265 +11,309 @@
   <link rel="stylesheet" href="/css/student-portal.css" />
 </head>
 
-<body>
-
+<body data-portal="student">
   <%- include("./navbar") %>
 
-    <main class="main">
-      <div class="topbar">
-        <div>
-          <div class="title">Student Dashboard</div>
-          <div class="subtitle">
-            High-level overview of your academics, timetable, attendance and campus status.
-          </div>
-        </div>
-        <div class="top-actions">
-          <a class="btn light" href="/student/subject-selection">
-            <i class="fa-solid fa-list-check"></i> Subject Selection
-          </a>
-          <a class="btn primary" href="/student/subjects">
-            <i class="fa-solid fa-book-open-reader"></i> Go to My Subjects
-          </a>
+  <%
+    const tenantAccess = locals.tenantAccess || {};
+    const modelSet = new Set(Array.isArray(locals.availableModels) ? locals.availableModels : []);
+    const hasAnyModel = (...names) => names.some((name) => modelSet.has(name));
+    const statsData = stats || {};
+    const metaInfo = meta || {};
+    const subjectRows = Array.isArray(registeredCourses) ? registeredCourses : [];
+    const resultRows = Array.isArray(currentResults) ? currentResults : [];
+    const assignmentRows = Array.isArray(upcomingAssignments) ? upcomingAssignments : [];
+    const announcementRows = Array.isArray(announcements) ? announcements : [];
+    const showSubjectSelection = hasAnyModel("Subject", "CourseRegistration", "RegistrationWindow");
+    const showSubjects = hasAnyModel("Subject", "CourseRegistration");
+    const showFinance = hasAnyModel("Invoice", "Payment", "FeeStructure", "Receipt");
+    const showAttendance = hasAnyModel("Attendance");
+    const showResults = hasAnyModel("Result");
+    const showHostel = hasAnyModel("Hostel", "HostelAllocation", "HostelApplication");
+    const showLibrary = hasAnyModel("LibraryBook", "LibraryLoan", "LibraryReservation");
+    const showEvents = hasAnyModel("Event");
+    const showSupport =
+      tenantAccess?.featureFlags?.helpdesk !== false &&
+      hasAnyModel("SupportTicket", "Ticket");
+    const academicSummary = [metaInfo.program, metaInfo.level].filter(Boolean).join(" - ");
+  %>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="title">Student Dashboard</div>
+        <div class="subtitle">
+          Quick view of your studies, timetable, attendance, and campus updates.
         </div>
       </div>
 
-       
-      <%-include("../tenant/partials/flash") %>
+      <div class="top-actions">
+        <% if (showSubjectSelection) { %>
+          <a class="btn light" href="/student/subject-selection">
+            <i class="fa-solid fa-list-check"></i> Subject Selection
+          </a>
+        <% } %>
+        <% if (showSubjects) { %>
+          <a class="btn primary" href="/student/subjects">
+            <i class="fa-solid fa-book-open-reader"></i> My Subjects
+          </a>
+        <% } else { %>
+          <a class="btn primary" href="/student/profile">
+            <i class="fa-solid fa-user"></i> Profile
+          </a>
+        <% } %>
+      </div>
+    </div>
 
-        <div class="kpi-row">
-          <div class="card">
-            <div class="section-title">Open Invoices</div>
-            <div class="section-sub">Pending finance items</div>
-            <div style="margin-top:8px;">
-              <div style="font-size:22px;font-weight:800;">
-                <%= stats.invoicesOpen %>
-              </div>
-              <div class="small-muted">Outstanding student finance items</div>
-            </div>
+    <%- include("../tenant/partials/flash") %>
+
+    <% if (error) { %>
+      <div class="alert warn" style="margin-top:12px;">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <div>
+          <div class="alert-title">Action needed</div>
+          <div class="alert-text"><%= error %></div>
+        </div>
+      </div>
+    <% } %>
+
+    <div class="kpi-row">
+      <div class="card">
+        <div class="section-title"><%= showFinance ? "Open Invoices" : "Registered Subjects" %></div>
+        <div class="section-sub"><%= showFinance ? "Pending finance items" : "Subjects in your current registration" %></div>
+        <div style="margin-top:8px;">
+          <div style="font-size:22px;font-weight:800;">
+            <%= showFinance ? statsData.invoicesOpen : subjectRows.length %>
           </div>
-
-          <div class="card">
-            <div class="section-title">Fees Status</div>
-            <div class="section-sub">Student Finance</div>
-            <div style="margin-top:8px;">
-              <div style="font-size:22px;font-weight:800;">UGX <%= Number(stats.feesDue || 0).toLocaleString() %>
-              </div>
-              <div class="small-muted">Outstanding balance</div>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="section-title">Attendance (Recent)</div>
-            <div class="section-sub">All registered courses</div>
-            <div style="margin-top:8px;">
-              <div style="font-size:22px;font-weight:800;">
-                <%= stats.attendanceRate %>%
-              </div>
-              <div class="small-muted">
-                Target: 75% •
-                <span style="color:<%= stats.attendanceRate >= 75 ? '#16a34a' : '#dc2626' %>;">
-                  <%= stats.attendanceRate>= 75 ? 'On track' : 'Needs attention' %>
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="section-title">Campus Status</div>
-            <div class="section-sub">Services overview</div>
-            <div style="margin-top:8px;">
-              <div style="font-size:22px;font-weight:800;">
-                <%= stats.upcomingEvents %>
-              </div>
-              <div class="small-muted">Upcoming events</div>
-            </div>
+          <div class="small-muted">
+            <%= showFinance ? "Outstanding student finance items" : "Current subject registrations" %>
           </div>
         </div>
+      </div>
 
-        <div class="content" style="margin-top:4px;">
-          <section class="card">
-            <div class="profile-top">
-              <div class="avatar">
-                <%= studentName.split(" ").map(v => v[0]).slice(0,2).join("").toUpperCase() %></div>
-        <div>
-          <div class=" profile-name">
-                  <%= studentName %>
-              </div>
-              <div class="profile-id">Student ID: <%= meta.studentNumber %>
-              </div>
-              <div class="profile-row">
-                <span>
-                  <%= meta.program %> • <%= meta.level %>
-                </span>
-                <span class="pill-status">
-                  <i class="fa-solid fa-circle-check"></i>
-                  <%= student?.status || "Good standing" %>
-                </span>
-              </div>
+      <div class="card">
+        <div class="section-title"><%= showFinance ? "Fees Status" : "Recent Results" %></div>
+        <div class="section-sub"><%= showFinance ? "Student finance" : "Latest published grades" %></div>
+        <div style="margin-top:8px;">
+          <div style="font-size:22px;font-weight:800;">
+            <% if (showFinance) { %>
+              UGX <%= Number(statsData.feesDue || 0).toLocaleString() %>
+            <% } else { %>
+              <%= resultRows.length %>
+            <% } %>
+          </div>
+          <div class="small-muted">
+            <%= showFinance ? "Outstanding balance" : "Results currently visible in your portal" %>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title"><%= showAttendance ? "Attendance" : "Announcements" %></div>
+        <div class="section-sub"><%= showAttendance ? "Recent attendance trend" : "School communication" %></div>
+        <div style="margin-top:8px;">
+          <div style="font-size:22px;font-weight:800;">
+            <%= showAttendance ? statsData.attendanceRate + "%" : announcementRows.length %>
+          </div>
+          <div class="small-muted">
+            <% if (showAttendance) { %>
+              Target: 75% -
+              <span style="color:<%= statsData.attendanceRate >= 75 ? '#16a34a' : '#dc2626' %>;">
+                <%= statsData.attendanceRate >= 75 ? "On track" : "Needs attention" %>
+              </span>
+            <% } else { %>
+              Recent notices shared with students
+            <% } %>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title"><%= showEvents ? "Upcoming Events" : "Campus Status" %></div>
+        <div class="section-sub">Services and upcoming activity</div>
+        <div style="margin-top:8px;">
+          <div style="font-size:22px;font-weight:800;">
+            <%= showEvents ? statsData.upcomingEvents : (showHostel && statsData.hostelAssigned ? "Allocated" : (showLibrary ? statsData.libraryBorrowed : "Live")) %>
+          </div>
+          <div class="small-muted">
+            <% if (showEvents) { %>
+              Events coming up on the school calendar
+            <% } else if (showHostel) { %>
+              <%= statsData.hostelAssigned ? "Hostel placement confirmed" : "No hostel placement yet" %>
+            <% } else if (showLibrary) { %>
+              Library items currently borrowed
+            <% } else { %>
+              Portal access is active
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content" style="margin-top:4px;">
+      <section class="card">
+        <div class="profile-top">
+          <div class="avatar"><%= studentName.split(" ").map(v => v[0]).slice(0,2).join("").toUpperCase() %></div>
+          <div>
+            <div class="profile-name"><%= studentName %></div>
+            <div class="profile-id">Student ID: <%= metaInfo.studentNumber || "N/A" %></div>
+            <div class="profile-row">
+              <span><%= academicSummary || "Academic details pending" %></span>
+              <span class="pill-status">
+                <i class="fa-solid fa-circle-check"></i>
+                <%= student?.status || "Good standing" %>
+              </span>
             </div>
+          </div>
         </div>
 
         <div class="profile-row" style="margin-top:10px;">
-          <span><i class="fa-solid fa-calendar-days"></i>
-            <%= meta.academicYear %> • <%= meta.semester %>
-          </span>
-          <span><i class="fa-solid fa-location-dot"></i>
-            <%= tenant?.name || "Main Campus" %>
-          </span>
+          <span><i class="fa-solid fa-calendar-days"></i> <%= metaInfo.academicYear || "Current Year" %> - <%= metaInfo.semester || "Current Term" %></span>
+          <span><i class="fa-solid fa-location-dot"></i> <%= tenant?.name || "Main Campus" %></span>
           <span><i class="fa-solid fa-clock"></i> Local time: <span id="localTimeLabel">--:--</span></span>
         </div>
 
         <div style="margin-top:14px;">
-          <div class="section-title">Current courses</div>
-          <div class="section-sub">Enrolled this semester.</div>
+          <div class="section-title">Current Subjects</div>
+          <div class="section-sub">Registered for your current term.</div>
           <div class="course-list">
-            <% if (registeredCourses?.length) { %>
-              <% registeredCourses.forEach(function(c) { %>
+            <% if (subjectRows.length) { %>
+              <% subjectRows.forEach(function(c) { %>
                 <div class="course-item">
                   <div>
-                    <div class="course-title">
-                      <%= c.courseCode %> - <%= c.courseTitle %>
-                    </div>
-                    <div class="course-meta">
-                      <%= c.schedule %>
-                    </div>
+                    <div class="course-title"><%= c.courseCode %> - <%= c.courseTitle %></div>
+                    <div class="course-meta"><%= c.schedule %></div>
                   </div>
                   <div class="course-actions">
-                    <span class="badge-mode">
-                      <%= c.mode %>
-                    </span>
+                    <span class="badge-mode"><%= c.mode %></span>
                     <span>Progress: <%= c.progress %>%</span>
                   </div>
                 </div>
-                <% }) %>
-                  <% } else { %>
-                    <div class="small-muted">No active registered courses found.</div>
-                    <% } %>
+              <% }) %>
+            <% } else { %>
+              <div class="small-muted">No active subject registrations found.</div>
+            <% } %>
           </div>
         </div>
 
         <div style="margin-top:14px;">
-          <div class="section-title">Upcoming tasks</div>
-          <div class="section-sub">From your LMS courses.</div>
+          <div class="section-title">Upcoming Tasks</div>
+          <div class="section-sub">Tasks from your registered subjects.</div>
           <div class="notif-list">
-            <% if (upcomingAssignments?.length) { %>
-              <% upcomingAssignments.forEach(function(task) { %>
+            <% if (assignmentRows.length) { %>
+              <% assignmentRows.forEach(function(task) { %>
                 <div class="notif-item">
                   <div class="notif-icon"><i class="fa-solid fa-file-pen"></i></div>
                   <div>
                     <div class="notif-title">
-                      <%= task.courseCode ? task.courseCode + " • " : "" %>
-                        <%= task.title %>
+                      <%= task.courseCode ? task.courseCode + " - " : "" %><%= task.title %>
                     </div>
                     <div class="notif-meta">
                       Due: <%= task.dueDate ? new Date(task.dueDate).toDateString() : "Not set" %>
-                        <%= task.weight ? " • Weight: " + task.weight : "" %>
+                      <%= task.weight ? " - Weight: " + task.weight : "" %>
                     </div>
                   </div>
                 </div>
-                <% }) %>
-                  <% } else { %>
-                    <div class="small-muted">No upcoming tasks found.</div>
-                    <% } %>
+              <% }) %>
+            <% } else { %>
+              <div class="small-muted">No upcoming tasks found.</div>
+            <% } %>
           </div>
         </div>
+      </section>
+
+      <aside>
+        <section class="card">
+          <div class="section-title">Announcements</div>
+          <div class="section-sub">Latest updates from school.</div>
+
+          <div class="notif-list" style="margin-top:10px;">
+            <% if (announcementRows.length) { %>
+              <% announcementRows.forEach(function(item) { %>
+                <div class="notif-item">
+                  <div class="notif-icon"><i class="fa-solid fa-bullhorn"></i></div>
+                  <div>
+                    <div class="notif-title"><%= item.title || "Announcement" %></div>
+                    <div class="notif-meta"><%= item.createdAt ? new Date(item.createdAt).toDateString() : "" %></div>
+                  </div>
+                </div>
+              <% }) %>
+            <% } else { %>
+              <div class="small-muted">No announcements available.</div>
+            <% } %>
+          </div>
         </section>
 
-        <aside>
-          <section class="card">
-            <div class="section-title">Announcements</div>
-            <div class="section-sub">Latest campus updates.</div>
+        <section class="card" style="margin-top:16px;">
+          <div class="section-title">Status Overview</div>
+          <div class="section-sub">Quick view of your current portal status.</div>
 
-            <div class="notif-list" style="margin-top:10px;">
-              <% if (announcements?.length) { %>
-                <% announcements.forEach(function(item) { %>
-                  <div class="notif-item">
-                    <div class="notif-icon"><i class="fa-solid fa-bullhorn"></i></div>
-                    <div>
-                      <div class="notif-title">
-                        <%= item.title || "Announcement" %>
-                      </div>
-                      <div class="notif-meta">
-                        <%= item.createdAt ? new Date(item.createdAt).toDateString() : "" %>
-                      </div>
-                    </div>
-                  </div>
-                  <% }) %>
-                    <% } else { %>
-                      <div class="small-muted">No announcements available.</div>
-                      <% } %>
-            </div>
-          </section>
+          <div class="mini-list" style="margin-top:8px;">
+            <div class="mini-item"><span>Academic status</span><span><%= student?.status || "Active" %></span></div>
+            <div class="mini-item"><span>Registration</span><span><%= subjectRows.length ? "Registered" : "Pending" %></span></div>
+            <% if (showFinance) { %>
+              <div class="mini-item"><span>Finance</span><span><%= statsData.feesDue > 0 ? "Outstanding balance" : "Cleared" %></span></div>
+            <% } %>
+            <% if (showHostel) { %>
+              <div class="mini-item"><span>Hostel</span><span><%= statsData.hostelAssigned ? "Allocated" : "Not allocated" %></span></div>
+            <% } %>
+            <% if (showLibrary) { %>
+              <div class="mini-item"><span>Library</span><span><%= statsData.libraryBorrowed %> borrowed</span></div>
+            <% } %>
+          </div>
 
-          <section class="card" style="margin-top:16px;">
-            <div class="section-title">Status Overview</div>
-            <div class="section-sub">Quick view of your campus-wide status.</div>
+          <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;">
+            <% if (showFinance) { %>
+              <a class="btn-xs" href="/student/finance"><i class="fa-solid fa-sack-dollar"></i> Finance</a>
+            <% } %>
+            <% if (showHostel) { %>
+              <a class="btn-xs" href="/student/hostel"><i class="fa-solid fa-bed"></i> Hostel</a>
+            <% } %>
+            <% if (showSupport) { %>
+              <a class="btn-xs" href="/student/support"><i class="fa-solid fa-headset"></i> Support</a>
+            <% } %>
+            <% if (!showFinance && !showHostel && !showSupport) { %>
+              <a class="btn-xs" href="/student/profile"><i class="fa-solid fa-user"></i> Profile</a>
+            <% } %>
+          </div>
+        </section>
 
-            <div class="mini-list" style="margin-top:8px;">
-              <div class="mini-item"><span>Academic status</span><span>
-                  <%= student?.status || "Active" %>
-                </span></div>
-              <div class="mini-item"><span>Registration</span><span>
-                  <%= registeredCourses?.length ? "Registered" : "Pending" %>
-                </span></div>
-              <div class="mini-item"><span>Finance</span><span>
-                  <%= stats.feesDue> 0 ? "Outstanding balance" : "Cleared" %>
-                </span></div>
-              <div class="mini-item"><span>Hostel</span><span>
-                  <%= stats.hostelAssigned ? "Allocated" : "Not allocated" %>
-                </span></div>
-              <div class="mini-item"><span>Library</span><span>
-                  <%= stats.libraryBorrowed %> borrowed
-                </span></div>
-            </div>
+        <section class="card" style="margin-top:16px;">
+          <div class="section-title">Recent Results</div>
+          <div class="section-sub">Latest published assessment results.</div>
 
-            <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;">
-              <a class="btn-xs" href="/student/finance"><i class="fa-solid fa-sack-dollar"></i> Go to Finance</a>
-              <a class="btn-xs" href="/student/hostel"><i class="fa-solid fa-bed"></i> Hostel details</a>
-              <a class="btn-xs" href="/student/support"><i class="fa-solid fa-headset"></i> Contact support</a>
-            </div>
-          </section>
-
-          <section class="card" style="margin-top:16px;">
-            <div class="section-title">Recent results</div>
-            <div class="section-sub">Latest published results.</div>
-
-            <div class="mini-list" style="margin-top:8px;">
-              <% if (currentResults?.length) { %>
-                <% currentResults.forEach(function(r) { %>
-                  <div class="mini-item">
-                    <span>
-                      <%= r.courseCode || r.courseTitle %>
-                    </span>
-                    <span>
-                      <%= r.grade || r.score %>
-                    </span>
-                  </div>
-                  <% }) %>
-                    <% } else { %>
-                      <div class="small-muted">No results published yet.</div>
-                      <% } %>
-            </div>
-          </section>
-        </aside>
-        </div>
-    </main>
+          <div class="mini-list" style="margin-top:8px;">
+            <% if (resultRows.length) { %>
+              <% resultRows.forEach(function(r) { %>
+                <div class="mini-item">
+                  <span><%= r.courseCode || r.courseTitle %></span>
+                  <span><%= r.grade || r.score %></span>
+                </div>
+              <% }) %>
+            <% } else { %>
+              <div class="small-muted">No results published yet.</div>
+            <% } %>
+          </div>
+        </section>
+      </aside>
     </div>
+  </main>
+</div>
 
-    <script src="/js/navbar.js"></script>
-    <script>
-      (function () {
-        const timeLabel = document.getElementById("localTimeLabel");
-        function updateClock() {
-          const now = new Date();
-          const hh = String(now.getHours()).padStart(2, "0");
-          const mm = String(now.getMinutes()).padStart(2, "0");
-          if (timeLabel) timeLabel.textContent = hh + ":" + mm;
-        }
-        updateClock();
-        setInterval(updateClock, 60000);
-      })();
-    </script>
+<script src="/js/navbar.js"></script>
+<script>
+  (function () {
+    const timeLabel = document.getElementById("localTimeLabel");
+    function updateClock() {
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, "0");
+      const mm = String(now.getMinutes()).padStart(2, "0");
+      if (timeLabel) timeLabel.textContent = hh + ":" + mm;
+    }
+    updateClock();
+    setInterval(updateClock, 60000);
+  })();
+</script>
 </body>
 
 </html>

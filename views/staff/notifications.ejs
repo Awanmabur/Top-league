@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title><%= pageTitle || "Notifications" %> - <%= tenant?.name || "Classic Academy" %></title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/navbar.css" />
+  <link rel="stylesheet" href="/css/student-portal.css" />
+</head>
+<body>
+  <%- include("./navbar") %>
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="title">Notifications</div>
+        <div class="subtitle">Recent account and school updates for you.</div>
+      </div>
+    </div>
+
+    <section class="card">
+      <div class="notif-list">
+        <% if (items?.length) { %>
+          <% items.forEach(function(item) { %>
+            <div class="notif-item">
+              <div class="notif-icon"><i class="fa-solid fa-bell"></i></div>
+              <div style="flex:1;">
+                <div class="notif-title"><%= item.title || item.subject || "Notification" %></div>
+                <div class="notif-meta"><%= item.message || item.body || "" %></div>
+              </div>
+              <% if (!item.readAt) { %>
+                <form method="post" action="/staff/notifications/<%= item._id %>/read">
+                  <button class="btn light" type="submit">Mark Read</button>
+                </form>
+              <% } %>
+            </div>
+          <% }) %>
+        <% } else { %>
+          <div class="small-muted">No notifications found.</div>
+        <% } %>
+      </div>
+    </section>
+  </main>
+  </div>
+  <script src="/js/navbar.js"></script>
+</body>
+</html>

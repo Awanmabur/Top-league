@@ -11,11 +11,12 @@ module.exports = {
         ? await Notification.find({ userId: user._id }).sort({ createdAt: -1 }).limit(200).lean().catch(() => [])
         : [];
 
-      return res.render("tenant/staff/notifications", {
+      return res.render("staff/notifications", {
         tenant: req.tenant,
         user,
         staff,
         items,
+        pageTitle: "Notifications",
         error: null
       });
     } catch (err) {

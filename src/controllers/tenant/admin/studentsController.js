@@ -5,6 +5,10 @@ const { createSetPasswordInvite } = require("../../../utils/inviteService");
 const { setupPasswordEmail } = require("../../../utils/emailTemplates");
 const { uploadBuffer, safeDestroy } = require("../../../utils/cloudinaryUpload");
 const {
+  ensureSingleRoleForUser,
+  singleRoleUpdate,
+} = require("../../../utils/tenantUserAccounts");
+const {
   REQUIRED_STUDENT_DOC_TYPES,
   normalizeStudentDocType,
   titleForStudentDocType,
@@ -66,12 +70,6 @@ const normalizeStatus = (value) => {
 const actorObjectId = (req) => {
   const raw = req.user?.userId || req.user?._id || req.session?.tenantUser?.id || null;
   return raw && isObjId(raw) ? new mongoose.Types.ObjectId(String(raw)) : null;
-};
-
-const uniqRolesAdd = (existingRoles, role) => {
-  const roles = new Set(Array.isArray(existingRoles) ? existingRoles : []);
-  if (role) roles.add(role);
-  return Array.from(roles);
 };
 
 function modelHasPath(Model, path) {
@@ -376,12 +374,12 @@ async function findOrCreateStudentUser({ req, StudentDoc, User }) {
 
   if (StudentDoc?.userId && isObjId(StudentDoc.userId)) {
     const existing = await User.findOne({ _id: StudentDoc.userId, deletedAt: null }).select("+passwordHash roles status tokenVersion email firstName lastName studentId");
-    if (existing) return existing;
+    if (existing) return ensureSingleRoleForUser(existing, "student", email);
   }
 
   if (email) {
     const existing = await User.findOne({ email, deletedAt: null }).select("+passwordHash roles status tokenVersion email firstName lastName studentId");
-    if (existing) return existing;
+    if (existing) return ensureSingleRoleForUser(existing, "student", email);
   }
 
   if (!email) return null;
@@ -412,12 +410,12 @@ async function findOrCreateParentUser({ req, StudentDoc, User }) {
 
   if (StudentDoc?.guardianUserId && isObjId(StudentDoc.guardianUserId)) {
     const existing = await User.findOne({ _id: StudentDoc.guardianUserId, deletedAt: null }).select("+passwordHash roles status tokenVersion email firstName lastName childrenStudentIds");
-    if (existing) return existing;
+    if (existing) return ensureSingleRoleForUser(existing, "parent", guardianEmail);
   }
 
   if (guardianEmail) {
     const existing = await User.findOne({ email: guardianEmail, deletedAt: null }).select("+passwordHash roles status tokenVersion email firstName lastName childrenStudentIds");
-    if (existing) return existing;
+    if (existing) return ensureSingleRoleForUser(existing, "parent", guardianEmail);
   }
 
   if (!guardianEmail) return null;
@@ -1130,7 +1128,7 @@ module.exports = {
             { _id: studentUser._id, deletedAt: null },
             {
               $set: {
-                roles: uniqRolesAdd(studentUser.roles, "student"),
+                ...singleRoleUpdate("student"),
                 status: studentUser.passwordHash ? studentUser.status : "invited",
                 studentId: studentUser.studentId || createdStudent._id,
               },
@@ -1146,7 +1144,7 @@ module.exports = {
             { _id: parentUser._id, deletedAt: null },
             {
               $set: {
-                roles: uniqRolesAdd(parentUser.roles, "parent"),
+                ...singleRoleUpdate("parent"),
                 status: parentUser.passwordHash ? parentUser.status : "invited",
                 childrenStudentIds: Array.from(children),
               },

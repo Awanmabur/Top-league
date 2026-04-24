@@ -9,6 +9,10 @@ const { sendMail } = require("../../../utils/mailer");
 const { createSetPasswordInvite } = require("../../../utils/inviteService");
 const { setupPasswordEmail } = require("../../../utils/emailTemplates");
 const { syncApplicantDocsToStudentDocs } = require("../../../utils/studentDocs");
+const {
+  ensureSingleRoleForUser,
+  singleRoleUpdate,
+} = require("../../../utils/tenantUserAccounts");
 
 const ALLOWED_STATUSES = ["submitted", "under_review", "accepted", "rejected", "converted"];
 const MAX_IMPORT_ROWS = 2000;
@@ -116,12 +120,6 @@ function buildErrors(body, files) {
   return e;
 }
 
-function uniqRolesAdd(existingRoles, role) {
-  const roles = new Set(Array.isArray(existingRoles) ? existingRoles : []);
-  if (role) roles.add(role);
-  return Array.from(roles);
-}
-
 function modelHasPath(Model, path) {
   try {
     return !!Model?.schema?.path(path);
@@ -153,19 +151,19 @@ async function findOrCreateStudentUser({ req, StudentDoc, User }) {
     const u = await User.findOne({ _id: StudentDoc.userId, deletedAt: null }).select(
       "+passwordHash roles status tokenVersion email firstName lastName studentId",
     );
-    if (u) return u;
+    if (u) return ensureSingleRoleForUser(u, "student", email);
   }
 
   let u = await User.findOne({ studentId: StudentDoc._id, deletedAt: null }).select(
     "+passwordHash roles status tokenVersion email firstName lastName studentId",
   );
-  if (u) return u;
+  if (u) return ensureSingleRoleForUser(u, "student", email);
 
   if (email) {
     u = await User.findOne({ email, deletedAt: null }).select(
       "+passwordHash roles status tokenVersion email firstName lastName studentId",
     );
-    if (u) return u;
+    if (u) return ensureSingleRoleForUser(u, "student", email);
   }
 
   if (!email) return null;
@@ -199,14 +197,14 @@ async function findOrCreateParentUser({ req, StudentDoc, User }) {
     const u = await User.findOne({ _id: StudentDoc.guardianUserId, deletedAt: null }).select(
       "+passwordHash roles status tokenVersion email firstName lastName childrenStudentIds",
     );
-    if (u) return u;
+    if (u) return ensureSingleRoleForUser(u, "parent", guardianEmail);
   }
 
   if (guardianEmail) {
     const u = await User.findOne({ email: guardianEmail, deletedAt: null }).select(
       "+passwordHash roles status tokenVersion email firstName lastName childrenStudentIds",
     );
-    if (u) return u;
+    if (u) return ensureSingleRoleForUser(u, "parent", guardianEmail);
   }
 
   if (!guardianEmail) return null;
@@ -330,7 +328,7 @@ async function provisionAccountsForStudent({ req, studentDoc }) {
     { _id: studentUser._id, deletedAt: null },
     {
       $set: {
-        roles: uniqRolesAdd(studentUser.roles, "student"),
+        ...singleRoleUpdate("student"),
         status: stHasPw ? studentUser.status : "invited",
         studentId: studentUser.studentId || studentDoc._id,
       },
@@ -349,7 +347,7 @@ async function provisionAccountsForStudent({ req, studentDoc }) {
     { _id: parentUser._id, deletedAt: null },
     {
       $set: {
-        roles: uniqRolesAdd(parentUser.roles, "parent"),
+        ...singleRoleUpdate("parent"),
         status: paHasPw ? parentUser.status : "invited",
         childrenStudentIds: Array.from(kids),
       },

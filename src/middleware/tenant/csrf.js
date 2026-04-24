@@ -1,10 +1,11 @@
 const csrf = require("csurf");
+const { isProduction } = require("../../config/runtime");
 
 const csrfProtection = csrf({
   cookie: {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: isProduction,
   },
 });
 

@@ -11,10 +11,12 @@ module.exports = {
         ? await LeaveRequest.find({ staffId: staff._id }).sort({ createdAt: -1 }).lean().catch(() => [])
         : [];
 
-      return res.render("tenant/staff/leave/list", {
+      return res.render("staff/leave", {
         tenant: req.tenant,
         user,
         staff,
+        pageTitle: "Leave",
+        mode: "list",
         items,
         error: null
       });
@@ -27,10 +29,12 @@ module.exports = {
   async newForm(req, res) {
     const { user, staff } = await getStaffProfile(req);
     if (!user) return res.redirect("/login");
-    return res.render("tenant/staff/leave/new", {
+    return res.render("staff/leave", {
       tenant: req.tenant,
       user,
       staff,
+      pageTitle: "Leave",
+      mode: "new",
       error: null,
       values: {}
     });
@@ -48,7 +52,7 @@ module.exports = {
       const reason = String(req.body.reason || "").trim();
 
       if (!from || !to || !reason) {
-        return renderError(res, "tenant/staff/leave/new", { tenant: req.tenant, user, staff, values: req.body }, "From, To and Reason are required.");
+        return renderError(res, "staff/leave", { tenant: req.tenant, user, staff, pageTitle: "Leave", mode: "new", values: req.body }, "From, To and Reason are required.");
       }
 
       await LeaveRequest.create({

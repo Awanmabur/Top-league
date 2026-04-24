@@ -106,7 +106,7 @@
         <p style="color:red;"><%= error %></p>
       <% } %>
 
-      <form method="post" action="/super-admin/login" id="loginForm" class="grid" novalidate>
+      <form method="post" action="/login" id="loginForm" class="grid" novalidate>
         <% if (typeof csrfToken !== "undefined" && csrfToken) { %>
           <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
         <% } %>
@@ -135,7 +135,7 @@
           <label style="display:flex;gap:8px;align-items:center;margin:0">
             <input type="checkbox" id="remember"/> <span class="tiny">Remember me</span>
           </label>
-          <div class="help"><a href="/super-admin/forgot-password">Forgot password?</a></div>
+          <div class="help"><a href="/forgot-password">Forgot password?</a></div>
         </div>
 
         <button class="btn primary" type="submit"><i class="fa-solid fa-right-to-bracket"></i> Login</button>

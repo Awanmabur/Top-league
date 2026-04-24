@@ -1,6 +1,7 @@
 // src/controllers/tenant/dashboard.controller.js
 
 const { getSchoolUi } = require("../../../utils/school-ui");
+const { getPrimaryTenantRole, getTenantRoleAccess } = require("../../../utils/tenantRoles");
 
 module.exports = {
   dashboard: async (req, res) => {
@@ -8,10 +9,13 @@ module.exports = {
       const tenant = req.tenant;
       const user = req.user;
       const models = req.models || {};
+      const role = getPrimaryTenantRole(user?.role || user?.roles || "");
 
       const tenantAccess = res.locals.tenantAccess || {};
+      const roleAccess = res.locals.roleAccess || getTenantRoleAccess(role);
       const schoolLevel = tenantAccess.schoolLevel || "high";
       const ui = getSchoolUi(schoolLevel);
+      const availableModels = new Set(Object.keys(models).filter((key) => models[key]));
 
       const {
         Student,
@@ -458,12 +462,48 @@ module.exports = {
         finance,
       };
 
+      const roleWorkspace = ["finance", "librarian", "hostel"].includes(role)
+        ? await buildRoleWorkspace({
+            role,
+            models,
+            stats,
+            dashboardData,
+            tenant,
+          })
+        : null;
+      const focusCards = buildTenantFocusCards({
+        role,
+        tenant,
+        stats,
+        dashboardData,
+        roleWorkspace,
+      });
+      const dashboardModules = buildTenantDashboardModules({
+        roleAccess,
+        tenantAccess,
+        availableModels,
+        stats,
+        dashboardData,
+        tenant,
+      });
+      const dashboardShortcuts = buildTenantDashboardShortcuts({
+        roleAccess,
+        availableModels,
+        tenantAccess,
+        roleWorkspace,
+        dashboardModules,
+      });
+
       res.render("tenant/dashboard/index", {
         tenant,
         user,
         stats,
         dashboardData,
         ui,
+        focusCards,
+        dashboardModules,
+        dashboardShortcuts,
+        roleWorkspace,
       });
     } catch (error) {
       console.error("Dashboard controller error:", error);
@@ -471,54 +511,94 @@ module.exports = {
       const tenantAccess = res.locals.tenantAccess || {};
       const schoolLevel = tenantAccess.schoolLevel || "high";
       const ui = getSchoolUi(schoolLevel);
+      const role = getPrimaryTenantRole(req.user?.role || req.user?.roles || "");
+      const roleAccess = res.locals.roleAccess || getTenantRoleAccess(role);
+      const availableModels = new Set(Object.keys(req.models || {}).filter((key) => req.models?.[key]));
+      const stats = {
+        totalStudents: 0,
+        newStudentsThisMonth: 0,
+        pendingApps: 0,
+        avgReviewTime: "0 hrs",
+        outstandingFees: 0,
+        studentsOwing: 0,
+        portalUptime: 0,
+        activeUsers: 0,
+        finance: {
+          collected: 0,
+          pending: 0,
+          refunds: 0,
+          offlinePayments: 0,
+        },
+      };
+      const dashboardData = {
+        studentsTrend: [],
+        appsTrend: [],
+        feesTrend: [],
+        uptimeTrend: [],
+        countries: [],
+        departments: [],
+        recentStudents: [],
+        pendingApps: [],
+        revenue: [],
+        recentActivity: [],
+        announcements: [],
+        notificationsCount: 0,
+        systemStatus: {
+          uptime: 0,
+          errors24h: 0,
+          dbLag: "0s",
+          storage: 0,
+        },
+        admissions: {
+          submitted: 0,
+          verified: 0,
+          accepted: 0,
+          submittedPct: 0,
+          verifiedPct: 0,
+          acceptedPct: 0,
+        },
+      };
+      const roleWorkspace = ["finance", "librarian", "hostel"].includes(role)
+        ? {
+            title: "Workspace",
+            subtitle: "Your role-specific workspace could not be loaded.",
+            cards: [],
+            shortcuts: [],
+            announcements: [],
+          }
+        : null;
+      const dashboardModules = buildTenantDashboardModules({
+        roleAccess,
+        tenantAccess,
+        availableModels,
+        stats,
+        dashboardData,
+        tenant: req.tenant,
+      });
+      const dashboardShortcuts = buildTenantDashboardShortcuts({
+        roleAccess,
+        availableModels,
+        tenantAccess,
+        roleWorkspace,
+        dashboardModules,
+      });
 
       res.status(500).render("tenant/dashboard/index", {
         tenant: req.tenant,
         user: req.user,
         ui,
-        stats: {
-          totalStudents: 0,
-          newStudentsThisMonth: 0,
-          pendingApps: 0,
-          avgReviewTime: "0 hrs",
-          outstandingFees: 0,
-          studentsOwing: 0,
-          portalUptime: 0,
-          activeUsers: 0,
-          finance: {
-            collected: 0,
-            pending: 0,
-            refunds: 0,
-            offlinePayments: 0,
-          },
-        },
-        dashboardData: {
-          studentsTrend: [],
-          appsTrend: [],
-          feesTrend: [],
-          uptimeTrend: [],
-          countries: [],
-          departments: [],
-          recentStudents: [],
-          pendingApps: [],
-          revenue: [],
-          recentActivity: [],
-          announcements: [],
-          systemStatus: {
-            uptime: 0,
-            errors24h: 0,
-            dbLag: "0s",
-            storage: 0,
-          },
-          admissions: {
-            submitted: 0,
-            verified: 0,
-            accepted: 0,
-            submittedPct: 0,
-            verifiedPct: 0,
-            acceptedPct: 0,
-          },
-        },
+        stats,
+        dashboardData,
+        focusCards: buildTenantFocusCards({
+          role,
+          tenant: req.tenant,
+          stats,
+          dashboardData,
+          roleWorkspace,
+        }),
+        dashboardModules,
+        dashboardShortcuts,
+        roleWorkspace,
       });
     }
   },
@@ -665,4 +745,543 @@ function buildMonthlySeries(agg = [], now = new Date()) {
   }
 
   return series;
+}
+
+async function safeCount(Model, filter = {}) {
+  if (!Model) return 0;
+  return Model.countDocuments(filter).catch(() => 0);
+}
+
+async function safeRecentAnnouncements(Announcement) {
+  if (!Announcement) return [];
+  return Announcement.find({ isDeleted: { $ne: true } })
+    .select("title status createdAt")
+    .sort({ createdAt: -1 })
+    .limit(5)
+    .lean()
+    .catch(() => []);
+}
+
+function buildTenantFocusCards({ role, tenant, stats, dashboardData, roleWorkspace }) {
+  if (roleWorkspace?.cards?.length) {
+    return roleWorkspace.cards.map((card) => ({
+      label: card.label,
+      value: card.value,
+      note: card.note,
+    }));
+  }
+
+  if (role === "registrar") {
+    return [
+      {
+        label: "Pending Applications",
+        value: (stats?.pendingApps || 0).toLocaleString(),
+        note: `Average review time: ${stats?.avgReviewTime || "N/A"}`,
+      },
+      {
+        label: "Students",
+        value: (stats?.totalStudents || 0).toLocaleString(),
+        note: `+${(stats?.newStudentsThisMonth || 0).toLocaleString()} new this month`,
+      },
+      {
+        label: "Admissions Reviewed",
+        value: ((dashboardData?.admissions?.verified || 0) + (dashboardData?.admissions?.accepted || 0)).toLocaleString(),
+        note: `${dashboardData?.admissions?.submitted || 0} submitted this month`,
+      },
+      {
+        label: "Unread Notifications",
+        value: (dashboardData?.notificationsCount || 0).toLocaleString(),
+        note: `${(dashboardData?.announcements || []).length} announcement items`,
+      },
+    ];
+  }
+
+  return [
+    {
+      label: "Students",
+      value: (stats?.totalStudents || 0).toLocaleString(),
+      note: `+${(stats?.newStudentsThisMonth || 0).toLocaleString()} new this month`,
+    },
+    {
+      label: "Pending Applications",
+      value: (stats?.pendingApps || 0).toLocaleString(),
+      note: `Average review time: ${stats?.avgReviewTime || "N/A"}`,
+    },
+    {
+      label: "Outstanding Fees",
+      value: formatMoney(stats?.outstandingFees || 0, tenant?.currency || "USD"),
+      note: `${(stats?.studentsOwing || 0).toLocaleString()} learners owing`,
+    },
+    {
+      label: "Portal Health",
+      value: `${Number(stats?.portalUptime || 0)}%`,
+      note: `${(stats?.activeUsers || 0).toLocaleString()} active users`,
+    },
+  ];
+}
+
+function buildTenantDashboardModules({
+  roleAccess,
+  tenantAccess,
+  availableModels,
+  stats,
+  dashboardData,
+  tenant,
+}) {
+  const hasAnyModel = (...names) => names.some((name) => availableModels.has(name));
+  const hasFeature = (name) => tenantAccess?.featureFlags?.[name] !== false;
+  const schoolLevel = tenantAccess?.schoolLevel || "high";
+
+  const items = [
+    {
+      permission: "admissions.view",
+      title: "Admissions",
+      href: "/admin/admissions",
+      icon: "fa-user-plus",
+      meta: `${(stats?.pendingApps || 0).toLocaleString()} pending`,
+      available: hasAnyModel("Applicant"),
+    },
+    {
+      permission: "students.view",
+      title: "Students",
+      href: "/admin/students",
+      icon: "fa-user-graduate",
+      meta: `${(stats?.totalStudents || 0).toLocaleString()} enrolled`,
+      available: hasAnyModel("Student"),
+    },
+    {
+      permission: "parents.view",
+      title: "Parents",
+      href: "/admin/parents",
+      icon: "fa-people-roof",
+      meta: "Parent records",
+      available: hasAnyModel("Parent"),
+    },
+    {
+      permission: "subjects.view",
+      title: "Subjects",
+      href: "/admin/subjects",
+      icon: "fa-book-open",
+      meta: "Curriculum setup",
+      available: hasAnyModel("Subject"),
+    },
+    {
+      permission: "classes.view",
+      title: "Classes",
+      href: "/admin/classes",
+      icon: "fa-chalkboard",
+      meta: schoolLevel === "high" ? "Class structures" : "Learning groups",
+      available: hasAnyModel("Class"),
+    },
+    {
+      permission: "sections.view",
+      title: "Sections",
+      href: "/admin/sections",
+      icon: "fa-layer-group",
+      meta: "Streams and sections",
+      available: hasAnyModel("Section"),
+    },
+    {
+      permission: "timetable.view",
+      title: "Timetable",
+      href: "/admin/timetable",
+      icon: "fa-calendar-week",
+      meta: "Schedules and periods",
+      available: hasAnyModel("TimetableEntry"),
+    },
+    {
+      permission: "attendance.view",
+      title: "Attendance",
+      href: "/admin/attendance",
+      icon: "fa-user-check",
+      meta: "Daily attendance tracking",
+      available: hasAnyModel("Attendance"),
+    },
+    {
+      permission: "results.view",
+      title: "Results",
+      href: "/admin/results",
+      icon: "fa-square-poll-vertical",
+      meta: "Assessments and grades",
+      available: hasAnyModel("Result"),
+    },
+    {
+      permission: "transcripts.view",
+      title: "Transcripts",
+      href: "/admin/transcripts",
+      icon: "fa-file-lines",
+      meta: "Official records",
+      available: hasAnyModel("Transcript"),
+    },
+    {
+      permission: "finance.view",
+      title: "Finance",
+      href: "/admin/finance",
+      icon: "fa-sack-dollar",
+      meta: formatMoney(stats?.finance?.collected || 0, tenant?.currency || "USD"),
+      available: hasAnyModel("Invoice", "Payment", "FeeStructure"),
+    },
+    {
+      permission: "finance.view",
+      title: "Invoices",
+      href: "/admin/invoices",
+      icon: "fa-file-invoice-dollar",
+      meta: `${(stats?.studentsOwing || 0).toLocaleString()} owing`,
+      available: hasAnyModel("Invoice"),
+    },
+    {
+      permission: "finance.view",
+      title: "Payments",
+      href: "/admin/payments",
+      icon: "fa-money-bill-wave",
+      meta: "Collections log",
+      available: hasAnyModel("Payment"),
+    },
+    {
+      permission: "library.view",
+      title: "Library",
+      href: "/admin/library",
+      icon: "fa-book",
+      meta: "Books and loans",
+      available: hasAnyModel("LibraryBook"),
+    },
+    {
+      permission: "hostels.view",
+      title: "Hostels",
+      href: "/admin/hostels",
+      icon: "fa-bed",
+      meta: "Rooms and allocations",
+      available: hasAnyModel("Hostel"),
+    },
+    {
+      permission: "messaging.view",
+      title: "Messaging",
+      href: "/admin/messaging",
+      icon: "fa-comments",
+      meta: "Direct communication",
+      available: hasAnyModel("Message", "Notification"),
+    },
+    {
+      permission: "inquiries.view",
+      title: "Inquiries",
+      href: "/admin/inquiries",
+      icon: "fa-envelope-open-text",
+      meta: "Public contact submissions",
+      available: true,
+    },
+    {
+      permission: "announcements.view",
+      title: "Announcements",
+      href: "/admin/announcements",
+      icon: "fa-bullhorn",
+      meta: `${(dashboardData?.announcements || []).length} updates`,
+      available: hasAnyModel("Announcement"),
+    },
+    {
+      permission: "notifications.view",
+      title: "Notifications",
+      href: "/admin/notifications",
+      icon: "fa-bell",
+      meta: `${(dashboardData?.notificationsCount || 0).toLocaleString()} unread`,
+      available: hasAnyModel("Notification"),
+    },
+    {
+      permission: "reports.view",
+      title: "Reports",
+      href: "/admin/reports",
+      icon: "fa-chart-line",
+      meta: "Exports and summaries",
+      available: hasAnyModel("ReportExport"),
+    },
+    {
+      permission: "profile.view",
+      title: "Profile",
+      href: "/admin/profile",
+      icon: "fa-id-badge",
+      meta: "School profile and public page",
+      available: true,
+    },
+    {
+      permission: "staff.view",
+      title: "Staff",
+      href: "/admin/staff",
+      icon: "fa-chalkboard-user",
+      meta: "Staff records",
+      available: hasAnyModel("Staff"),
+    },
+    {
+      permission: "users.view",
+      title: "Users",
+      href: "/admin/users",
+      icon: "fa-users-gear",
+      meta: "Portal accounts",
+      available: hasAnyModel("User"),
+    },
+    {
+      permission: "roles.view",
+      title: "Roles",
+      href: "/admin/roles",
+      icon: "fa-user-shield",
+      meta: "Staff roles and permissions",
+      available: hasAnyModel("StaffRole"),
+    },
+    {
+      permission: "payroll.view",
+      title: "Payroll",
+      href: "/admin/payroll",
+      icon: "fa-wallet",
+      meta: "Payroll runs",
+      available: hasAnyModel("PayrollRun", "PayrollItem", "LeaveRequest"),
+    },
+    {
+      permission: "transport.view",
+      title: "Transport",
+      href: "/admin/transport",
+      icon: "fa-bus",
+      meta: "Routes and buses",
+      available: hasAnyModel("Transport"),
+    },
+    {
+      permission: "assets.view",
+      title: "Assets",
+      href: "/admin/assets",
+      icon: "fa-boxes-stacked",
+      meta: "Inventory and equipment",
+      available: hasAnyModel("Asset"),
+    },
+    {
+      permission: "events.view",
+      title: "Events",
+      href: "/admin/events",
+      icon: "fa-calendar-days",
+      meta: "School events",
+      available: hasAnyModel("Event"),
+    },
+    {
+      permission: "helpdesk.view",
+      title: "Helpdesk",
+      href: "/admin/helpdesk",
+      icon: "fa-headset",
+      meta: "Support tickets",
+      available: hasFeature("helpdesk"),
+    },
+    {
+      permission: "audit.view",
+      title: "Audit Logs",
+      href: "/admin/auditlogs",
+      icon: "fa-shield-halved",
+      meta: "Security and admin activity",
+      available: hasAnyModel("AuditLog"),
+    },
+    {
+      permission: "system.view",
+      title: "System",
+      href: "/admin/system",
+      icon: "fa-heart-pulse",
+      meta: "Health and diagnostics",
+      available: hasFeature("systemHealth"),
+    },
+    {
+      permission: "settings.view",
+      title: "Settings",
+      href: "/admin/settings",
+      icon: "fa-gear",
+      meta: "Tenant configuration",
+      available: true,
+    },
+    {
+      permission: "integrations.view",
+      title: "Integrations",
+      href: "/admin/integrations",
+      icon: "fa-plug",
+      meta: "Connected services",
+      available: hasFeature("apiAccess"),
+    },
+    {
+      permission: "api.view",
+      title: "API Access",
+      href: "/admin/api",
+      icon: "fa-code",
+      meta: "API tools",
+      available: hasFeature("apiAccess"),
+    },
+  ];
+
+  return items.filter((item) => item.available && roleAccess.can(item.permission));
+}
+
+function buildTenantDashboardShortcuts({
+  roleAccess,
+  availableModels,
+  tenantAccess,
+  roleWorkspace,
+  dashboardModules,
+}) {
+  if (roleWorkspace?.shortcuts?.length) {
+    return roleWorkspace.shortcuts;
+  }
+
+  const hasAnyModel = (...names) => names.some((name) => availableModels.has(name));
+  const hasFeature = (name) => tenantAccess?.featureFlags?.[name] !== false;
+
+  const items = [
+    {
+      permission: "students.manage",
+      href: "/admin/students",
+      label: "Students",
+      icon: "fa-user-graduate",
+      available: hasAnyModel("Student"),
+    },
+    {
+      permission: "admissions.manage",
+      href: "/admin/admissions/applicants",
+      label: "Applicants",
+      icon: "fa-user-plus",
+      available: hasAnyModel("Applicant"),
+    },
+    {
+      permission: "finance.manage",
+      href: "/admin/invoices",
+      label: "Billing",
+      icon: "fa-file-invoice-dollar",
+      available: hasAnyModel("Invoice", "Payment"),
+    },
+    {
+      permission: "messaging.manage",
+      href: "/admin/messaging",
+      label: "Messaging",
+      icon: "fa-comments",
+      available: hasAnyModel("Message", "Notification"),
+    },
+    {
+      permission: "announcements.manage",
+      href: "/admin/announcements",
+      label: "Announcements",
+      icon: "fa-bullhorn",
+      available: hasAnyModel("Announcement"),
+    },
+    {
+      permission: "reports.view",
+      href: "/admin/reports",
+      label: "Reports",
+      icon: "fa-chart-line",
+      available: hasAnyModel("ReportExport"),
+    },
+    {
+      permission: "staff.view",
+      href: "/admin/staff",
+      label: "Staff",
+      icon: "fa-chalkboard-user",
+      available: hasAnyModel("Staff"),
+    },
+    {
+      permission: "settings.view",
+      href: "/admin/settings",
+      label: "Settings",
+      icon: "fa-gear",
+      available: true,
+    },
+    {
+      permission: "helpdesk.view",
+      href: "/admin/helpdesk",
+      label: "Helpdesk",
+      icon: "fa-headset",
+      available: hasFeature("helpdesk"),
+    },
+  ];
+
+  const filtered = items.filter((item) => item.available && roleAccess.can(item.permission));
+  if (filtered.length) return filtered.slice(0, 6);
+
+  return (dashboardModules || []).slice(0, 6).map((item) => ({
+    href: item.href,
+    label: item.title,
+    icon: item.icon,
+  }));
+}
+
+async function buildRoleWorkspace({ role, models, stats, dashboardData, tenant }) {
+  const {
+    Announcement,
+    Notification,
+    LibraryBook,
+    LibraryLoan,
+    Hostel,
+    HostelRoom,
+    HostelAllocation,
+  } = models || {};
+
+  const announcements = await safeRecentAnnouncements(Announcement);
+
+  if (role === "finance") {
+    return {
+      title: "Finance Workspace",
+      subtitle: "Track collections, balances, refunds, and finance operations.",
+      cards: [
+        { label: "Collected", value: formatMoney(stats?.finance?.collected || 0, tenant?.currency || "USD"), note: "Month to date", icon: "fa-sack-dollar" },
+        { label: "Outstanding", value: formatMoney(stats?.outstandingFees || 0, tenant?.currency || "USD"), note: `${stats?.studentsOwing || 0} students owing`, icon: "fa-file-invoice-dollar" },
+        { label: "Refunds", value: formatMoney(stats?.finance?.refunds || 0, tenant?.currency || "USD"), note: "Processed this month", icon: "fa-rotate-left" },
+        { label: "Offline Payments", value: formatMoney(stats?.finance?.offlinePayments || 0, tenant?.currency || "USD"), note: "Cash, bank, cheque, transfer", icon: "fa-building-columns" },
+      ],
+      shortcuts: [
+        { href: "/admin/finance", label: "Finance", icon: "fa-credit-card" },
+        { href: "/admin/invoices", label: "Invoices", icon: "fa-file-invoice-dollar" },
+        { href: "/admin/payments", label: "Payments", icon: "fa-money-bill-wave" },
+        { href: "/admin/finance-reports", label: "Finance Reports", icon: "fa-chart-column" },
+        { href: "/admin/expenses", label: "Expenses", icon: "fa-money-check-dollar" },
+      ],
+      announcements,
+    };
+  }
+
+  if (role === "librarian") {
+    const [books, activeLoans, notifications] = await Promise.all([
+      safeCount(LibraryBook, { isDeleted: { $ne: true } }),
+      safeCount(LibraryLoan, { isDeleted: { $ne: true }, returnedAt: null }),
+      safeCount(Notification, { isDeleted: { $ne: true }, isRead: { $ne: true }, audience: { $in: ["admin", "all"] } }),
+    ]);
+
+    return {
+      title: "Library Workspace",
+      subtitle: "Monitor books, active loans, announcements, and library communication.",
+      cards: [
+        { label: "Books", value: books, note: "Available library records", icon: "fa-book" },
+        { label: "Active Loans", value: activeLoans, note: "Not yet returned", icon: "fa-book-reader" },
+        { label: "Unread Notices", value: notifications, note: "Admin and all-user notices", icon: "fa-bell" },
+        { label: "Announcements", value: announcements.length, note: "Recent school updates", icon: "fa-bullhorn" },
+      ],
+      shortcuts: [
+        { href: "/admin/library", label: "Library", icon: "fa-book-reader" },
+        { href: "/admin/announcements", label: "Announcements", icon: "fa-bullhorn" },
+        { href: "/admin/notifications", label: "Notifications", icon: "fa-bell" },
+        { href: "/admin/profile", label: "Profile", icon: "fa-user-circle" },
+      ],
+      announcements,
+    };
+  }
+
+  const [hostels, rooms, allocations, notifications] = await Promise.all([
+    safeCount(Hostel, { isDeleted: { $ne: true } }),
+    safeCount(HostelRoom, { isDeleted: { $ne: true } }),
+    safeCount(HostelAllocation, { isDeleted: { $ne: true } }),
+    safeCount(Notification, { isDeleted: { $ne: true }, isRead: { $ne: true }, audience: { $in: ["admin", "all"] } }),
+  ]);
+
+  return {
+    title: "Hostel Workspace",
+    subtitle: "Stay on top of hostels, rooms, allocations, and current announcements.",
+    cards: [
+      { label: "Hostels", value: hostels, note: "Configured hostel blocks", icon: "fa-building" },
+      { label: "Rooms", value: rooms, note: "Available room records", icon: "fa-door-open" },
+      { label: "Allocations", value: allocations, note: "Student hostel allocations", icon: "fa-bed" },
+      { label: "Unread Notices", value: notifications, note: "Latest shared operational notices", icon: "fa-bell" },
+    ],
+    shortcuts: [
+      { href: "/admin/hostels", label: "Hostels", icon: "fa-building" },
+      { href: "/admin/announcements", label: "Announcements", icon: "fa-bullhorn" },
+      { href: "/admin/notifications", label: "Notifications", icon: "fa-bell" },
+      { href: "/admin/profile", label: "Profile", icon: "fa-user-circle" },
+    ],
+    announcements,
+  };
 }

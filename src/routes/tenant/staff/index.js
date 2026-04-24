@@ -7,13 +7,9 @@ const setLocals = require("../../../middleware/tenant/setLocals");
 
 /**
  * ✅ Protect ALL staff portal routes
- * NOTE:
- * - If your tenantAuth only accepts a single role string, change this to the role you want
- *   e.g. tenantAuth("registrar") or tenantAuth("staff")
- * - Recommended: allow all staff-type roles into /staff portal
  */
 router.use(resolveTenantAccess);
-router.use(tenantAuth(["staff", "registrar", "finance", "librarian", "hostel", "admin"]));
+router.use(tenantAuth(["staff", "lecturer"]));
 router.use(setLocals);
 
 // Core pages

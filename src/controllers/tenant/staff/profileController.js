@@ -6,10 +6,11 @@ module.exports = {
       const { user, staff } = await getStaffProfile(req);
       if (!user) return res.redirect("/login");
 
-      return res.render("tenant/staff/profile", {
+      return res.render("staff/profile", {
         tenant: req.tenant,
         user,
         staff,
+        pageTitle: "My Profile",
         error: staff ? null : "Staff profile not found. Contact admin."
       });
     } catch (err) {
@@ -29,7 +30,7 @@ module.exports = {
       const phone     = String(req.body.phone || "").trim();
 
       if (!firstName || !lastName) {
-        return renderError(res, "tenant/staff/profile", { tenant: req.tenant, user, staff }, "First name and last name are required.");
+        return renderError(res, "staff/profile", { tenant: req.tenant, user, staff, pageTitle: "My Profile" }, "First name and last name are required.");
       }
 
       await User?.updateOne({ _id: user._id, deletedAt: null }, {

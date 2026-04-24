@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title><%= pageTitle || "Leave" %> - <%= tenant?.name || "Classic Academy" %></title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/navbar.css" />
+  <link rel="stylesheet" href="/css/student-portal.css" />
+</head>
+<body>
+  <%- include("./navbar") %>
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="title">Leave Requests</div>
+        <div class="subtitle">Submit leave and track current request status.</div>
+      </div>
+      <% if (mode !== "new") { %>
+        <div class="top-actions">
+          <a class="btn primary" href="/staff/leave/new"><i class="fa-solid fa-plus"></i> New Request</a>
+        </div>
+      <% } %>
+    </div>
+
+    <% if (error) { %><div class="small-muted" style="color:#b91c1c;"><%= error %></div><% } %>
+
+    <% if (mode === "new") { %>
+      <section class="card">
+        <form method="post" action="/staff/leave" style="display:grid;gap:12px;">
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;">
+            <input style="padding:12px;border:1px solid #dbe3f6;border-radius:12px;" type="date" name="from" value="<%= values?.from || '' %>" required />
+            <input style="padding:12px;border:1px solid #dbe3f6;border-radius:12px;" type="date" name="to" value="<%= values?.to || '' %>" required />
+          </div>
+          <textarea style="padding:12px;border:1px solid #dbe3f6;border-radius:12px;min-height:160px;" name="reason" placeholder="Reason" required><%= values?.reason || '' %></textarea>
+          <button class="btn primary" style="width:max-content;" type="submit">Submit Leave Request</button>
+        </form>
+      </section>
+    <% } else { %>
+      <section class="card">
+        <div class="mini-list">
+          <% if (items?.length) { %>
+            <% items.forEach(function(item) { %>
+              <div class="mini-item">
+                <span><%= item.from ? new Date(item.from).toDateString() : "-" %> to <%= item.to ? new Date(item.to).toDateString() : "-" %></span>
+                <span><%= item.status || "pending" %></span>
+              </div>
+            <% }) %>
+          <% } else { %>
+            <div class="small-muted">No leave requests submitted yet.</div>
+          <% } %>
+        </div>
+      </section>
+    <% } %>
+  </main>
+  </div>
+  <script src="/js/navbar.js"></script>
+</body>
+</html>

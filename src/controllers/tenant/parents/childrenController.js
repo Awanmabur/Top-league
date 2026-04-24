@@ -2,12 +2,6 @@ const { getParent } = require("./_helpers");
 
 module.exports = {
   async list(req, res) {
-    const log = (...a) =>
-      console.log(
-        `[PARENT-CHILDREN] tenant=${req.tenant?.code || req.tenant?._id || "?"}`,
-        ...a
-      );
-
     try {
       const { Student } = req.models || {};
 
@@ -36,22 +30,6 @@ module.exports = {
               .lean()
               .catch(() => [])
           : [];
-
-      log(
-        "user:",
-        user ? { id: user._id, email: user.email, roles: user.roles } : null
-      );
-      log(
-        "parent:",
-        parent
-          ? {
-              id: parent._id,
-              email: parent.email,
-              kids: (parent.childrenStudentIds || []).length,
-            }
-          : null
-      );
-      log("children:", children.length);
 
       return res.render("parents/children", {
         tenant: req.tenant,

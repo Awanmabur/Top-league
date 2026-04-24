@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title><%= pageTitle || "Profile" %> - <%= tenant?.name || "Classic Academy" %></title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/navbar.css" />
+  <link rel="stylesheet" href="/css/student-portal.css" />
+</head>
+<body>
+  <%- include("./navbar") %>
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="title">My Profile</div>
+        <div class="subtitle">Keep your contact information up to date.</div>
+      </div>
+    </div>
+
+    <%- include("../tenant/partials/flash") %>
+
+    <section class="card">
+      <% if (error) { %><div class="small-muted" style="color:#b91c1c;"><%= error %></div><% } %>
+      <form method="post" action="/staff/profile" style="display:grid;gap:14px;margin-top:14px;">
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;">
+          <div>
+            <label>First Name</label>
+            <input class="input" style="width:100%;padding:12px;border:1px solid #dbe3f6;border-radius:12px;" type="text" name="firstName" value="<%= user?.firstName || '' %>" required />
+          </div>
+          <div>
+            <label>Last Name</label>
+            <input class="input" style="width:100%;padding:12px;border:1px solid #dbe3f6;border-radius:12px;" type="text" name="lastName" value="<%= user?.lastName || '' %>" required />
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;">
+          <div>
+            <label>Email</label>
+            <input class="input" style="width:100%;padding:12px;border:1px solid #dbe3f6;border-radius:12px;background:#f8fafc;" type="email" value="<%= user?.email || '' %>" disabled />
+          </div>
+          <div>
+            <label>Phone</label>
+            <input class="input" style="width:100%;padding:12px;border:1px solid #dbe3f6;border-radius:12px;" type="text" name="phone" value="<%= user?.phone || staff?.phone || '' %>" />
+          </div>
+        </div>
+        <button class="btn primary" style="width:max-content;" type="submit">Save Changes</button>
+      </form>
+    </section>
+  </main>
+  </div>
+  <script src="/js/navbar.js"></script>
+</body>
+</html>

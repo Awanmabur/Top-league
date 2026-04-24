@@ -28,6 +28,7 @@
 </head>
 <body>
   <%- include("./navbar") %>
+  <% const canManageAnnouncements = platformAccess?.can("announcements.manage"); %>
 
   <main class="main">
     <% if (error) { %>
@@ -61,7 +62,7 @@
         <% } %>
 
         <div class="actions" style="margin-top:16px;">
-          <% if (announcement.status !== 'published') { %>
+          <% if (canManageAnnouncements && announcement.status !== 'published') { %>
             <form action="/super-admin/announcements/<%= announcement._id %>/publish" method="POST">
               <button class="btn" type="submit">Publish</button>
             </form>

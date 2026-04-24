@@ -3,7 +3,7 @@ const { getStaffProfile } = require("./_helpers");
 module.exports = {
   async dashboard(req, res) {
     try {
-      const { Announcement, Notification, Timetable, LeaveRequest, Payslip } = req.models || {};
+      const { Announcement, Notification, TimetableEntry, LeaveRequest, PayrollItem } = req.models || {};
       const { user, staff } = await getStaffProfile(req);
       if (!user) return res.redirect("/login");
 
@@ -15,25 +15,26 @@ module.exports = {
         ? await Announcement.find({}).sort({ createdAt: -1 }).limit(6).lean().catch(() => [])
         : [];
 
-      const timetableCount = (staff && Timetable)
-        ? await Timetable.countDocuments({ staffId: staff._id }).catch(() => 0)
+      const timetableCount = (staff && TimetableEntry)
+        ? await TimetableEntry.countDocuments({ staffId: staff._id }).catch(() => 0)
         : 0;
 
       const pendingLeave = (staff && LeaveRequest)
         ? await LeaveRequest.countDocuments({ staffId: staff._id, status: "pending" }).catch(() => 0)
         : 0;
 
-      const payslips = (staff && Payslip)
-        ? await Payslip.find({ staffId: staff._id }).sort({ period: -1 }).limit(3).lean().catch(() => [])
+      const payslips = (staff && PayrollItem)
+        ? await PayrollItem.find({ staffId: staff._id }).sort({ createdAt: -1 }).limit(3).lean().catch(() => [])
         : [];
 
-      return res.render("tenant/staff/dashboard", {
+      return res.render("staff/dashboard", {
         tenant: req.tenant,
         user,
         staff,
         announcements,
         stats: { unread, timetableCount, pendingLeave },
         payslips,
+        pageTitle: "Staff Dashboard",
         error: staff ? null : "Staff profile not found. Contact admin."
       });
     } catch (err) {

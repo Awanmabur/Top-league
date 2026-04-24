@@ -101,8 +101,11 @@ module.exports = {
 
   updateSecuritySettings: async (req, res) => {
     try {
-      await upsertSetting("password_min_length", "security", Number(req.body.password_min_length || 8), req.user?._id);
-      await upsertSetting("session_timeout_minutes", "security", Number(req.body.session_timeout_minutes || 120), req.user?._id);
+      const passwordMinLength = Math.max(10, Number(req.body.password_min_length || 10) || 10);
+      const sessionTimeoutMinutes = Math.max(15, Number(req.body.session_timeout_minutes || 120) || 120);
+
+      await upsertSetting("password_min_length", "security", passwordMinLength, req.user?._id);
+      await upsertSetting("session_timeout_minutes", "security", sessionTimeoutMinutes, req.user?._id);
       await upsertSetting("allow_superadmin_2fa", "security", req.body.allow_superadmin_2fa === "on", req.user?._id);
 
       await writeAudit(req, {

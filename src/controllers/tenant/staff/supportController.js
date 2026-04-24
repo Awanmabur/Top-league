@@ -11,10 +11,12 @@ module.exports = {
         ? await SupportTicket.find({ createdByUserId: user._id }).sort({ createdAt: -1 }).lean().catch(() => [])
         : [];
 
-      return res.render("tenant/staff/support/list", {
+      return res.render("staff/support", {
         tenant: req.tenant,
         user,
         staff,
+        pageTitle: "Support",
+        mode: "list",
         tickets,
         error: null
       });
@@ -27,10 +29,12 @@ module.exports = {
   async newForm(req, res) {
     const { user, staff } = await getStaffProfile(req);
     if (!user) return res.redirect("/login");
-    return res.render("tenant/staff/support/new", {
+    return res.render("staff/support", {
       tenant: req.tenant,
       user,
       staff,
+      pageTitle: "Support",
+      mode: "new",
       error: null,
       values: {}
     });
@@ -47,7 +51,7 @@ module.exports = {
       const message = String(req.body.message || "").trim();
 
       if (!subject || !message) {
-        return renderError(res, "tenant/staff/support/new", { tenant: req.tenant, user, staff, values: req.body }, "Subject and message are required.");
+        return renderError(res, "staff/support", { tenant: req.tenant, user, staff, pageTitle: "Support", mode: "new", values: req.body }, "Subject and message are required.");
       }
 
       const ticket = await SupportTicket.create({
@@ -77,10 +81,12 @@ module.exports = {
       const ticket = await SupportTicket.findOne({ _id: id, createdByUserId: user._id }).lean().catch(() => null);
       if (!ticket) return res.status(404).send("Not found");
 
-      return res.render("tenant/staff/support/view", {
+      return res.render("staff/support", {
         tenant: req.tenant,
         user,
         staff,
+        pageTitle: "Support",
+        mode: "view",
         ticket,
         error: null
       });

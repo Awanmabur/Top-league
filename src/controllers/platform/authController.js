@@ -2,6 +2,11 @@ const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 
 const { platformConnection } = require("../../config/db");
+const { validatePasswordStrength } = require("../../utils/passwordPolicy");
+const {
+  getPlatformDashboardRedirect,
+  normalizePlatformRole,
+} = require("../../utils/platformAccess");
 
 const PlatformUser = require("../../models/platform/PlatformUser")(platformConnection);
 const AuditLog = require("../../models/platform/AuditLog")(platformConnection);
@@ -47,12 +52,16 @@ async function writeAudit(req, payload) {
       meta: payload.meta || {},
     });
   } catch (err) {
-    console.error("❌ auth audit log failed:", err);
+    console.error("âŒ auth audit log failed:", err);
   }
 }
 
 module.exports = {
   loginForm: async (req, res) => {
+    if (req.session?.platformUserId) {
+      return res.redirect(getPlatformDashboardRedirect(req.session.platformRole));
+    }
+
     return res.render("platform/auth/login", {
       error: null,
       old: {},
@@ -110,22 +119,24 @@ module.exports = {
 
       await regenerateSession(req);
       req.session.platformUserId = String(user._id);
-      req.session.platformRole = user.role;
+      const role = normalizePlatformRole(user.role);
+      req.session.platformRole = role;
       req.session.platformEmail = user.email;
       req.session.platformName = fullName(user);
+      req.session.platformTokenVersion = Number(user.tokenVersion || 0);
 
       await writeAudit(req, {
         actorId: user._id,
         actorName: fullName(user),
-        actorRole: user.role,
+        actorRole: role,
         action: "Platform Login",
         entityId: user._id,
         description: `Platform user ${user.email} logged in`,
       });
 
-      return res.redirect("/super-admin/dashboard");
+      return res.redirect(getPlatformDashboardRedirect(role));
     } catch (err) {
-      console.error("❌ login error:", err);
+      console.error("âŒ login error:", err);
       return res.status(500).render("platform/auth/login", {
         error: "Failed to sign in.",
         old: req.body,
@@ -140,14 +151,16 @@ module.exports = {
         description: `Platform user logged out`,
       });
 
-      if (req.session) {
-        req.session.destroy(() => {});
-      }
+      if (!req.session) return res.redirect("/login");
 
-      return res.redirect("/super-admin/login");
+      return req.session.destroy(() => {
+        res.clearCookie("platform.sid", { path: "/" });
+        return res.redirect("/login");
+      });
     } catch (err) {
-      console.error("❌ logout error:", err);
-      return res.redirect("/super-admin/login");
+      console.error("âŒ logout error:", err);
+      res.clearCookie("platform.sid", { path: "/" });
+      return res.redirect("/login");
     }
   },
 
@@ -174,13 +187,21 @@ module.exports = {
       const cleanLastName = safeTrim(lastName);
       const cleanEmail = safeLower(email);
       const cleanPassword = safeTrim(password);
-      const cleanRole = safeTrim(role || "Support");
+      const cleanRole = normalizePlatformRole(role || "Support");
       const cleanPhone = safeTrim(phone);
 
       if (!cleanFirstName || !cleanLastName || !cleanEmail || !cleanPassword) {
         return res.status(400).render("platform/auth/create-user", {
           old: req.body,
           error: "First name, last name, email and password are required.",
+        });
+      }
+
+      const passwordError = validatePasswordStrength(cleanPassword, { minLength: 10 });
+      if (passwordError) {
+        return res.status(400).render("platform/auth/create-user", {
+          old: req.body,
+          error: passwordError,
         });
       }
 
@@ -196,7 +217,7 @@ module.exports = {
         });
       }
 
-      const passwordHash = await bcrypt.hash(cleanPassword, 10);
+      const passwordHash = await bcrypt.hash(cleanPassword, 12);
 
       const user = await PlatformUser.create({
         firstName: cleanFirstName,
@@ -222,7 +243,7 @@ module.exports = {
 
       return res.redirect("/super-admin/settings");
     } catch (err) {
-      console.error("❌ createPlatformUser error:", err);
+      console.error("âŒ createPlatformUser error:", err);
       return res.status(500).render("platform/auth/create-user", {
         old: req.body,
         error: err?.message || "Failed to create platform user.",
@@ -278,7 +299,7 @@ module.exports = {
         success: "If the email exists, a password reset token has been generated.",
       });
     } catch (err) {
-      console.error("❌ forgotPassword error:", err);
+      console.error("âŒ forgotPassword error:", err);
       return res.status(500).render("platform/auth/forgot-password", {
         error: "Failed to process forgot password.",
         success: null,
@@ -287,10 +308,11 @@ module.exports = {
   },
 
   resetPasswordForm: async (req, res) => {
-    return res.render("platform/auth/reset-password", {
-      token: req.params.token,
-      error: null,
-    });
+      return res.render("platform/auth/reset-password", {
+        token: req.params.token,
+        error: null,
+        success: null,
+      });
   },
 
   resetPassword: async (req, res) => {
@@ -303,6 +325,16 @@ module.exports = {
         return res.status(400).render("platform/auth/reset-password", {
           token: req.params.token,
           error: "Passwords do not match.",
+          success: null,
+        });
+      }
+
+      const passwordError = validatePasswordStrength(password, { minLength: 10 });
+      if (passwordError) {
+        return res.status(400).render("platform/auth/reset-password", {
+          token: req.params.token,
+          error: passwordError,
+          success: null,
         });
       }
 
@@ -316,10 +348,11 @@ module.exports = {
         return res.status(400).render("platform/auth/reset-password", {
           token: req.params.token,
           error: "Reset token is invalid or expired.",
+          success: null,
         });
       }
 
-      const newPasswordHash = await bcrypt.hash(password, 10);
+      const newPasswordHash = await bcrypt.hash(password, 12);
 
       await PlatformUser.updateOne(
         { _id: user._id },
@@ -343,13 +376,15 @@ module.exports = {
         description: `Reset password for ${user.email}`,
       });
 
-      return res.redirect("/super-admin/login");
+      return res.redirect("/login");
     } catch (err) {
-      console.error("❌ resetPassword error:", err);
+      console.error("âŒ resetPassword error:", err);
       return res.status(500).render("platform/auth/reset-password", {
         token: req.params.token,
         error: "Failed to reset password.",
+        success: null,
       });
     }
   },
 };
+

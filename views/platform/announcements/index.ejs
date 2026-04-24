@@ -32,6 +32,7 @@
 </head>
 <body>
   <%- include("./navbar") %>
+  <% const canManageAnnouncements = platformAccess?.can("announcements.manage"); %>
 
   <main class="main">
     <div class="topbar">
@@ -39,9 +40,11 @@
         <div class="title">Announcements</div>
         <div class="subtitle">Create, publish and manage platform-wide notices for schools.</div>
       </div>
-      <div>
-        <a href="/super-admin/announcements/create" class="btn primary"><i class="fa-solid fa-bullhorn"></i> New Announcement</a>
-      </div>
+      <% if (canManageAnnouncements) { %>
+        <div>
+          <a href="/super-admin/announcements/create" class="btn primary"><i class="fa-solid fa-bullhorn"></i> New Announcement</a>
+        </div>
+      <% } %>
     </div>
 
     <% if (error) { %>
@@ -70,14 +73,16 @@
 
               <div class="actions">
                 <a href="/super-admin/announcements/<%= item._id %>" class="btn">View</a>
-                <% if (item.status !== 'published') { %>
+                <% if (canManageAnnouncements && item.status !== 'published') { %>
                   <form action="/super-admin/announcements/<%= item._id %>/publish" method="POST">
                     <button type="submit" class="btn">Publish</button>
                   </form>
                 <% } %>
-                <form action="/super-admin/announcements/<%= item._id %>/delete" method="POST" onsubmit="return confirm('Delete this announcement?');">
-                  <button type="submit" class="btn">Delete</button>
-                </form>
+                <% if (canManageAnnouncements) { %>
+                  <form action="/super-admin/announcements/<%= item._id %>/delete" method="POST" onsubmit="return confirm('Delete this announcement?');">
+                    <button type="submit" class="btn">Delete</button>
+                  </form>
+                <% } %>
               </div>
             </div>
           <% }) %>

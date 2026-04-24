@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title><%= pageTitle || "Announcements" %> - <%= tenant?.name || "Classic Academy" %></title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/navbar.css" />
+  <link rel="stylesheet" href="/css/student-portal.css" />
+</head>
+<body>
+  <%- include("./navbar") %>
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="title">Announcements</div>
+        <div class="subtitle">School-wide updates and notices for staff.</div>
+      </div>
+    </div>
+
+    <section class="card">
+      <div class="notif-list">
+        <% if (items?.length) { %>
+          <% items.forEach(function(item) { %>
+            <div class="notif-item">
+              <div class="notif-icon"><i class="fa-solid fa-bullhorn"></i></div>
+              <div>
+                <div class="notif-title"><%= item.title || "Announcement" %></div>
+                <div class="notif-meta"><%= item.body || item.message || "" %></div>
+              </div>
+            </div>
+          <% }) %>
+        <% } else { %>
+          <div class="small-muted">No announcements available.</div>
+        <% } %>
+      </div>
+    </section>
+  </main>
+  </div>
+  <script src="/js/navbar.js"></script>
+</body>
+</html>

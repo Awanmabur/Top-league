@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title><%= pageTitle %> — <%= tenant?.name || "Classic Academy" %></title>
+  <title><%= pageTitle %> - <%= tenant?.name || "Classic Academy" %></title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="stylesheet" href="/css/navbar.css"/>
   <link rel="stylesheet" href="/css/student-portal.css" />
 </head>
-<body>
+<body data-portal="student">
 <%- include("./navbar") %>
 
 <main class="main">
@@ -34,14 +34,14 @@
           <div class="profile-name"><%= profile.fullName %></div>
           <div class="profile-id">Student ID: <%= profile.studentNumber %></div>
           <div class="profile-row">
-            <span><%= profile.program %> • <%= profile.level %></span>
+            <span><%= [profile.program, profile.level].filter(Boolean).join(" - ") %></span>
             <span class="pill-status"><i class="fa-solid fa-circle-check"></i> Active</span>
           </div>
         </div>
       </div>
 
       <div style="margin-top:16px;">
-        <div class="section-title">Personal information</div>
+        <div class="section-title">Personal Information</div>
         <div class="mini-list" style="margin-top:8px;">
           <div class="mini-item"><span>Full name</span><span><%= profile.fullName %></span></div>
           <div class="mini-item"><span>Email</span><span><%= profile.email || "-" %></span></div>
@@ -56,10 +56,10 @@
 
     <aside>
       <section class="card">
-        <div class="section-title">Academic profile</div>
+        <div class="section-title">Academic Profile</div>
         <div class="mini-list" style="margin-top:8px;">
           <div class="mini-item"><span>Student number</span><span><%= profile.studentNumber %></span></div>
-          <div class="mini-item"><span>Programme</span><span><%= profile.program %></span></div>
+          <div class="mini-item"><span>Class / Program</span><span><%= profile.program %></span></div>
           <div class="mini-item"><span>Level</span><span><%= profile.level %></span></div>
           <div class="mini-item"><span>Semester</span><span><%= profile.semester %></span></div>
           <div class="mini-item"><span>Faculty</span><span><%= profile.faculty || "-" %></span></div>
@@ -68,7 +68,7 @@
       </section>
 
       <section class="card" style="margin-top:16px;">
-        <div class="section-title">Emergency / guardian contact</div>
+        <div class="section-title">Emergency / Guardian Contact</div>
         <div class="mini-list" style="margin-top:8px;">
           <div class="mini-item"><span>Guardian name</span><span><%= profile.guardianName || "-" %></span></div>
           <div class="mini-item"><span>Guardian phone</span><span><%= profile.guardianPhone || "-" %></span></div>

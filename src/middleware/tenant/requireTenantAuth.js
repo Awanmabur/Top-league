@@ -1,5 +1,7 @@
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
+const { getPrimaryTenantRole, normalizeTenantRoles } = require("../../utils/tenantRoles");
+const { getTenantCookieOptions } = require("../../config/runtime");
 
 function getBearerToken(req) {
   const h = req.headers["authorization"];
@@ -17,33 +19,8 @@ function safeLower(s) {
   return String(s || "").trim().toLowerCase();
 }
 
-function shouldSetDomain(hostname, baseDomain) {
-  if (!hostname || !baseDomain) return false;
-  const h = safeLower(hostname);
-  const b = safeLower(baseDomain);
-  if (h === "localhost" || h.endsWith(".localhost")) return false;
-  return h === b || h.endsWith("." + b);
-}
-
 function cookieOptions(req) {
-  const baseDomain = process.env.BASE_DOMAIN;
-  const hostname = req.hostname;
-
-  const opts = {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-  };
-
-  if (
-    process.env.NODE_ENV === "production" &&
-    shouldSetDomain(hostname, baseDomain)
-  ) {
-    opts.domain = "." + safeLower(baseDomain);
-  }
-
-  return opts;
+  return getTenantCookieOptions(req);
 }
 
 function clearTenantCookies(req, res, tenantCode) {
@@ -163,7 +140,7 @@ module.exports = function requireTenantAuth(requiredRole = null) {
           deletedAt: null,
           status: "active",
         })
-          .select("_id email roles status tokenVersion")
+          .select("_id email firstName lastName roles status tokenVersion")
           .lean();
         perf("user db lookup", dbStartedAt);
 
@@ -198,26 +175,49 @@ module.exports = function requireTenantAuth(requiredRole = null) {
       perf("token version check", versionStartedAt);
 
       const roleStartedAt = Date.now();
-      const roles = Array.isArray(user.roles) ? user.roles : [];
+      const roles = normalizeTenantRoles(user.roles);
+      const primaryRole = getPrimaryTenantRole(roles);
       const allowedRoles = Array.isArray(requiredRole)
         ? requiredRole
         : requiredRole
         ? [requiredRole]
         : [];
 
-      if (allowedRoles.length && !allowedRoles.some((role) => roles.includes(role))) {
+      if (allowedRoles.length && !allowedRoles.includes(primaryRole)) {
         if (wantsJson(req)) {
           return res.status(403).json({ message: "Forbidden" });
         }
-        req.flash?.("error", "You don’t have permission to access that page.");
+        req.flash?.("error", "You don't have permission to access that page.");
         return res.status(403).send("Forbidden");
       }
       perf("role check", roleStartedAt);
 
+      if (
+        Array.isArray(user.roles) &&
+        (user.roles.length !== roles.length || user.roles.some((role, index) => role !== roles[index]))
+      ) {
+        req.models.User.updateOne(
+          { _id: user._id, deletedAt: null },
+          { $set: { roles } },
+        ).catch(() => {});
+
+        user = {
+          ...user,
+          roles,
+        };
+        setCachedUser(tenantCode, payload.userId, user);
+      }
+
       req.user = {
         userId: String(user._id),
+        _id: String(user._id),
+        id: String(user._id),
         email: user.email,
         roles,
+        role: primaryRole,
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        name: [user.firstName, user.lastName].filter(Boolean).join(" ").trim(),
         tenantCode,
       };
 

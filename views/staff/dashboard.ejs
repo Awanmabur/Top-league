@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title><%= pageTitle || "Staff Dashboard" %> - <%= tenant?.name || "Classic Academy" %></title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/navbar.css" />
+  <link rel="stylesheet" href="/css/student-portal.css" />
+</head>
+<body>
+  <%- include("./navbar") %>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="title">Staff Dashboard</div>
+        <div class="subtitle">Your daily workspace for announcements, timetable, leave, payroll, and support.</div>
+      </div>
+      <div class="top-actions">
+        <a class="btn light" href="/staff/timetable"><i class="fa-solid fa-calendar-week"></i> Timetable</a>
+        <a class="btn primary" href="/staff/support"><i class="fa-solid fa-headset"></i> Support</a>
+      </div>
+    </div>
+
+    <%- include("../tenant/partials/flash") %>
+
+    <div class="kpi-row">
+      <div class="card">
+        <div class="section-title">Unread Notifications</div>
+        <div style="margin-top:8px;font-size:22px;font-weight:800;"><%= stats?.unread || 0 %></div>
+      </div>
+      <div class="card">
+        <div class="section-title">Timetable Entries</div>
+        <div style="margin-top:8px;font-size:22px;font-weight:800;"><%= stats?.timetableCount || 0 %></div>
+      </div>
+      <div class="card">
+        <div class="section-title">Pending Leave</div>
+        <div style="margin-top:8px;font-size:22px;font-weight:800;"><%= stats?.pendingLeave || 0 %></div>
+      </div>
+      <div class="card">
+        <div class="section-title">Recent Payroll Items</div>
+        <div style="margin-top:8px;font-size:22px;font-weight:800;"><%= payslips?.length || 0 %></div>
+      </div>
+    </div>
+
+    <div class="content" style="margin-top:4px;">
+      <section class="card">
+        <div class="profile-top">
+          <div class="avatar"><%= (user?.name || "S").split(" ").map(v => v[0]).slice(0,2).join("").toUpperCase() %></div>
+          <div>
+            <div class="profile-name"><%= user?.name || "Staff User" %></div>
+            <div class="profile-id"><%= staff?.jobTitle || user?.role || "Staff" %></div>
+            <div class="profile-row">
+              <span><%= user?.email || "" %></span>
+              <span class="pill-status"><i class="fa-solid fa-circle-check"></i> Active</span>
+            </div>
+          </div>
+        </div>
+
+        <% if (error) { %>
+          <div class="small-muted" style="margin-top:14px;color:#b91c1c;"><%= error %></div>
+        <% } %>
+
+        <div style="margin-top:16px;">
+          <div class="section-title">Latest Announcements</div>
+          <div class="notif-list">
+            <% if (announcements?.length) { %>
+              <% announcements.forEach(function(item) { %>
+                <div class="notif-item">
+                  <div class="notif-icon"><i class="fa-solid fa-bullhorn"></i></div>
+                  <div>
+                    <div class="notif-title"><%= item.title || "Announcement" %></div>
+                    <div class="notif-meta"><%= item.createdAt ? new Date(item.createdAt).toDateString() : "" %></div>
+                  </div>
+                </div>
+              <% }) %>
+            <% } else { %>
+              <div class="small-muted">No announcements available.</div>
+            <% } %>
+          </div>
+        </div>
+      </section>
+
+      <aside>
+        <section class="card">
+          <div class="section-title">Quick Links</div>
+          <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;">
+            <a class="btn-xs" href="/staff/leave"><i class="fa-solid fa-person-walking-arrow-right"></i> Leave</a>
+            <a class="btn-xs" href="/staff/payroll"><i class="fa-solid fa-money-check-dollar"></i> Payroll</a>
+            <a class="btn-xs" href="/staff/profile"><i class="fa-solid fa-user"></i> Profile</a>
+          </div>
+        </section>
+
+        <section class="card" style="margin-top:16px;">
+          <div class="section-title">Recent Payroll</div>
+          <div class="mini-list" style="margin-top:8px;">
+            <% if (payslips?.length) { %>
+              <% payslips.forEach(function(item) { %>
+                <div class="mini-item">
+                  <span><%= item.title || item.period || item.name || "Payroll item" %></span>
+                  <span><%= item.amount ? Number(item.amount).toLocaleString() : "-" %></span>
+                </div>
+              <% }) %>
+            <% } else { %>
+              <div class="small-muted">No payroll items available.</div>
+            <% } %>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </main>
+  </div>
+  <script src="/js/navbar.js"></script>
+</body>
+</html>

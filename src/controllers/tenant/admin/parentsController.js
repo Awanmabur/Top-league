@@ -4,6 +4,10 @@ const { body, validationResult } = require("express-validator");
 const { sendMail } = require("../../../utils/mailer");
 const { createSetPasswordInvite } = require("../../../utils/inviteService");
 const { setupPasswordEmail } = require("../../../utils/emailTemplates");
+const {
+  ensureSingleRoleForUser,
+  singleRoleUpdate,
+} = require("../../../utils/tenantUserAccounts");
 
 /* -----------------------
    Helpers
@@ -26,12 +30,6 @@ function splitName(full) {
     firstName: parts[0] || "",
     lastName: parts.slice(1).join(" ") || "",
   };
-}
-
-function uniqRolesAdd(existingRoles, role) {
-  const roles = new Set(Array.isArray(existingRoles) ? existingRoles : []);
-  if (role) roles.add(role);
-  return Array.from(roles);
 }
 
 function normalizeParentStatus(v) {
@@ -112,13 +110,13 @@ async function findOrCreateParentUser({ req, ParentDoc, User }) {
     const linked = await User.findOne({ _id: ParentDoc.userId, deletedAt: null }).select(
       "+passwordHash roles status tokenVersion email firstName lastName childrenStudentIds",
     );
-    if (linked) return linked;
+    if (linked) return ensureSingleRoleForUser(linked, "parent", email);
   }
 
   let user = await User.findOne({ email, deletedAt: null }).select(
     "+passwordHash roles status tokenVersion email firstName lastName childrenStudentIds",
   );
-  if (user) return user;
+  if (user) return ensureSingleRoleForUser(user, "parent", email);
 
   const firstName = cleanStr(ParentDoc?.firstName, 60) || "Parent";
   const lastName = cleanStr(ParentDoc?.lastName, 60) || "Account";
@@ -256,7 +254,7 @@ module.exports = {
 
   create: async (req, res) => {
     try {
-      const { Parent } = req.models;
+      const { Parent, User } = req.models;
       if (!Parent) return res.status(500).send("Tenant models missing.");
 
       const errors = validationResult(req);
@@ -278,6 +276,11 @@ module.exports = {
       if (exists) {
         req.flash?.("error", "Parent email already exists.");
         return res.redirect("/admin/parents");
+      }
+
+      if (User) {
+        const existingUser = await User.findOne({ email, deletedAt: null }).select("email roles").lean();
+        ensureSingleRoleForUser(existingUser, "parent", email);
       }
 
       await Parent.create({
@@ -305,7 +308,7 @@ module.exports = {
 
   update: async (req, res) => {
     try {
-      const { Parent } = req.models;
+      const { Parent, User } = req.models;
       if (!Parent) return res.status(500).send("Tenant models missing.");
 
       const errors = validationResult(req);
@@ -333,6 +336,11 @@ module.exports = {
       if (collision) {
         req.flash?.("error", "Parent email already exists.");
         return res.redirect("/admin/parents");
+      }
+
+      if (User) {
+        const existingUser = await User.findOne({ email, deletedAt: null }).select("email roles").lean();
+        ensureSingleRoleForUser(existingUser, "parent", email);
       }
 
       await Parent.updateOne(
@@ -467,7 +475,6 @@ module.exports = {
         return res.redirect("back");
       }
 
-      const roles = uniqRolesAdd(user.roles, "parent");
       const kids = new Set((user.childrenStudentIds || []).map(String));
       (parent.childrenStudentIds || []).forEach((sid) => kids.add(String(sid)));
 
@@ -475,7 +482,7 @@ module.exports = {
         { _id: user._id, deletedAt: null },
         {
           $set: {
-            roles,
+            ...singleRoleUpdate("parent"),
             status: hasPassword ? user.status : "invited",
             childrenStudentIds: Array.from(kids),
           },
@@ -540,7 +547,6 @@ module.exports = {
           const user = await findOrCreateParentUser({ req, ParentDoc: parent, User });
           if (!user || !user.email) continue;
 
-          const roles = uniqRolesAdd(user.roles, "parent");
           const kids = new Set((user.childrenStudentIds || []).map(String));
           (parent.childrenStudentIds || []).forEach((sid) => kids.add(String(sid)));
 
@@ -548,7 +554,7 @@ module.exports = {
             { _id: user._id, deletedAt: null },
             {
               $set: {
-                roles,
+                ...singleRoleUpdate("parent"),
                 status: user.passwordHash ? user.status : "invited",
                 childrenStudentIds: Array.from(kids),
               },

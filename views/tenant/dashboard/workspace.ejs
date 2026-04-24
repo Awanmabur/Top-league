@@ -1,0 +1,71 @@
+<%- include("../partials/header") %>
+<%- include("../partials/navbar") %>
+
+<main class="main">
+  <section class="tab active" id="dashboard">
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="page-title">
+          <h2><%= workspace?.title || "Workspace" %></h2>
+          <p><%= workspace?.subtitle || "Your role-specific dashboard." %></p>
+        </div>
+      </div>
+    </div>
+
+    <section class="grid grid-4">
+      <% (workspace?.cards || []).forEach(function(card) { %>
+        <article class="card stat">
+          <div class="stat-head">
+            <div>
+              <div class="label"><%= card.label %></div>
+              <div class="value"><%= card.value %></div>
+            </div>
+            <div class="stat-meta">
+              <span><i class="fa-solid <%= card.icon %>"></i></span>
+              <strong class="accent"><%= card.note %></strong>
+            </div>
+          </div>
+        </article>
+      <% }) %>
+    </section>
+
+    <section class="grid grid-3">
+      <section class="card">
+        <div class="card-head">
+          <div>
+            <h3>Quick Actions</h3>
+            <p>Go straight to the tools you use most.</p>
+          </div>
+        </div>
+        <div class="shortcuts">
+          <% (workspace?.shortcuts || []).forEach(function(item) { %>
+            <a class="btn" href="<%= item.href %>"><i class="fa-solid <%= item.icon %>"></i> <%= item.label %></a>
+          <% }) %>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <div>
+            <h3>Announcements</h3>
+            <p>Recent internal updates</p>
+          </div>
+        </div>
+        <div class="list">
+          <% if (workspace?.announcements?.length) { %>
+            <% workspace.announcements.forEach(function(item) { %>
+              <div class="list-item">
+                <%= item.title || "Announcement" %>
+                <span class="muted"><%= item.status || "" %></span>
+              </div>
+            <% }) %>
+          <% } else { %>
+            <div class="list-item">No announcements yet <span class="muted">Empty</span></div>
+          <% } %>
+        </div>
+      </section>
+    </section>
+  </section>
+</main>
+
+<%- include("../partials/footer") %>

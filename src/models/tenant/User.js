@@ -1,6 +1,9 @@
+const { normalizeTenantRoles } = require("../../utils/tenantRoles");
+
 const ROLES = [
   "admin",
   "staff",
+  "lecturer",
   "finance",
   "librarian",
   "hostel",
@@ -60,7 +63,13 @@ module.exports = (conn) => {
     { unique: true, partialFilterExpression: { deletedAt: null } },
   );
 
+  userSchema.pre("validate", function (next) {
+    this.roles = normalizeTenantRoles(this.roles);
+    next();
+  });
+
   return conn.model("User", userSchema);
 };
 
 module.exports.ROLES = ROLES;
+

@@ -1,6 +1,68 @@
 <!-- ======================
      MOBILE GLASS TOP NAV
 ======================= -->
+<%
+  const currentPath =
+    (typeof originalUrl !== "undefined" && originalUrl) ||
+    (typeof url !== "undefined" && url) ||
+    "";
+  const tenantAccess = locals.tenantAccess || {};
+  const modelList = Array.isArray(locals.availableModels) ? locals.availableModels : [];
+  const modelSet = new Set(modelList);
+
+  function isActive(path, exact = false) {
+    if (!currentPath) return false;
+    if (exact) return currentPath === path;
+    return currentPath === path || currentPath.startsWith(path + "/");
+  }
+
+  function navClass(path, options = {}) {
+    return isActive(path, !!options.exact) ? "navbutton active" : "navbutton";
+  }
+
+  function hasAnyModel() {
+    return Array.from(arguments).some((name) => modelSet.has(name));
+  }
+
+  function visibleItems(items) {
+    return items.filter((item) => !item.hidden);
+  }
+
+  const showChildren = hasAnyModel("Student");
+  const showAttendance = hasAnyModel("Attendance");
+  const showResults = hasAnyModel("Result");
+  const showFees = hasAnyModel("FeeInvoice", "FeePayment", "Payment", "Fee", "Invoice");
+  const showTimetable = hasAnyModel("Timetable", "ClassTimetable", "Schedule");
+  const showAnnouncements = hasAnyModel("Announcement");
+  const showNotifications = hasAnyModel("Notification");
+  const showSupport =
+    tenantAccess?.featureFlags?.helpdesk !== false &&
+    hasAnyModel("SupportTicket", "Ticket");
+
+  const homeItems = visibleItems([
+    { label: "Dashboard", icon: "fa-house", href: "/parent/dashboard", hidden: false },
+  ]);
+
+  const childItems = visibleItems([
+    { label: "Children", icon: "fa-user-graduate", href: "/parent/children", hidden: !showChildren },
+    { label: "Attendance", icon: "fa-user-check", href: "/parent/attendance", hidden: !showAttendance },
+    { label: "Results", icon: "fa-award", href: "/parent/results", hidden: !showResults },
+    { label: "Fees", icon: "fa-credit-card", href: "/parent/fees", hidden: !showFees },
+    { label: "Timetable", icon: "fa-clock", href: "/parent/timetable", hidden: !showTimetable },
+  ]);
+
+  const updateItems = visibleItems([
+    { label: "Announcements", icon: "fa-bullhorn", href: "/parent/announcements", hidden: !showAnnouncements },
+    { label: "Notifications", icon: "fa-bell", href: "/parent/notifications", hidden: !showNotifications },
+    { label: "Support", icon: "fa-headset", href: "/parent/support", hidden: !showSupport },
+  ]);
+
+  const accountItems = visibleItems([
+    { label: "Profile", icon: "fa-user", href: "/parent/profile", hidden: false },
+    { label: "Logout", icon: "fa-right-from-bracket", href: "/logout", exact: true, hidden: false },
+  ]);
+%>
+
 <header class="mglass-nav" id="mglassNav">
   <div class="mglass-left">
     <a class="mglass-home" href="/parent/dashboard" aria-label="Home">
@@ -15,12 +77,8 @@
 </header>
 
 <div class="app">
-  <!-- transparent click-catcher for mobile -->
   <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
 
-  <!-- ======================
-       SIDEBAR
-  ======================= -->
   <aside class="sidebar" id="sidebar">
     <button type="button" id="sbToggle" class="sbToggle" aria-label="Toggle sidebar">
       <i class="fa fa-angle-left"></i>
@@ -29,54 +87,60 @@
     <div class="brand">
       <div class="brand-logo">CS</div>
       <div class="brand-meta">
-        <h1 class="brand-title">
-          <%= tenant?.name || "Classic Academy" %>
-        </h1>
-        <div class="brand-sub">Classic Academy</div>
+        <h1 class="brand-title"><%= tenant?.name || "Classic Academy" %></h1>
+        <div class="brand-sub">Parent Portal</div>
       </div>
     </div>
 
     <nav class="nav">
-      <div class="navcat">CORE</div>
-      <div class="group">
-        <a class="navbutton" href="/parent/dashboard" data-label="Dashboard"><i
-            class="fa fa-house"></i><span>Dashboard</span></a>
-      </div>
+      <% if (homeItems.length) { %>
+        <div class="navcat">HOME</div>
+        <div class="group">
+          <% homeItems.forEach(function(item) { %>
+            <a class="<%= navClass(item.href, { exact: item.exact }) %>" href="<%= item.href %>" data-label="<%= item.label %>">
+              <i class="fa <%= item.icon %>"></i>
+              <span><%= item.label %></span>
+            </a>
+          <% }) %>
+        </div>
+      <% } %>
 
-      <div class="navcat">MY CHILDREN</div>
-      <div class="group">
-        <a class="navbutton" href="/parent/children" data-label="Children"><i
-            class="fa fa-user-graduate"></i><span>Children</span></a>
-        <a class="navbutton" href="/parent/attendance" data-label="Attendance"><i
-            class="fa fa-user-check"></i><span>Attendance</span></a>
-        <a class="navbutton" href="/parent/results" data-label="Results"><i
-            class="fa fa-award"></i><span>Results</span></a>
-        <a class="navbutton" href="/parent/fees" data-label="Fees & Payments"><i
-            class="fa fa-credit-card"></i><span>Fees & Payments</span></a>
-        <a class="navbutton" href="/parent/timetable" data-label="Timetable"><i
-            class="fa fa-clock"></i><span>Timetable</span></a>
-      </div>
+      <% if (childItems.length) { %>
+        <div class="navcat">CHILDREN</div>
+        <div class="group">
+          <% childItems.forEach(function(item) { %>
+            <a class="<%= navClass(item.href, { exact: item.exact }) %>" href="<%= item.href %>" data-label="<%= item.label %>">
+              <i class="fa <%= item.icon %>"></i>
+              <span><%= item.label %></span>
+            </a>
+          <% }) %>
+        </div>
+      <% } %>
 
-      <div class="navcat">COMMUNICATIONS</div>
-      <div class="group">
-        <a class="navbutton" href="/parent/announcements" data-label="Announcements"><i
-            class="fa fa-bullhorn"></i><span>Announcements</span></a>
-        <a class="navbutton" href="/parent/notifications" data-label="Notifications"><i
-            class="fa fa-bell"></i><span>Notifications</span></a>
-        <a class="navbutton" href="/parent/support" data-label="Support"><i
-            class="fa fa-headset"></i><span>Support</span></a>
-      </div>
+      <% if (updateItems.length) { %>
+        <div class="navcat">UPDATES</div>
+        <div class="group">
+          <% updateItems.forEach(function(item) { %>
+            <a class="<%= navClass(item.href, { exact: item.exact }) %>" href="<%= item.href %>" data-label="<%= item.label %>">
+              <i class="fa <%= item.icon %>"></i>
+              <span><%= item.label %></span>
+            </a>
+          <% }) %>
+        </div>
+      <% } %>
 
-      <div class="navcat">ACCOUNT</div>
-      <div class="group">
-        <a class="navbutton" href="/parent/profile" data-label="Profile"><i
-            class="fa fa-user"></i><span>Profile</span></a>
-        <a class="navbutton" href="/logout" data-label="Logout"><i
-            class="fa fa-right-from-bracket"></i><span>Logout</span></a>
-      </div>
+      <% if (accountItems.length) { %>
+        <div class="navcat">ACCOUNT</div>
+        <div class="group">
+          <% accountItems.forEach(function(item) { %>
+            <a class="<%= navClass(item.href, { exact: item.exact }) %>" href="<%= item.href %>" data-label="<%= item.label %>">
+              <i class="fa <%= item.icon %>"></i>
+              <span><%= item.label %></span>
+            </a>
+          <% }) %>
+        </div>
+      <% } %>
 
       <div class="navfoot">Portal: <strong>Parent</strong></div>
     </nav>
   </aside>
-
-  <!-- ✅ IMPORTANT: The dashboard page must close this .app by rendering MAIN and then closing tags -->

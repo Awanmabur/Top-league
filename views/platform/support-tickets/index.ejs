@@ -33,6 +33,7 @@
 </head>
 <body>
   <%- include("./navbar") %>
+  <% const canManageSupport = platformAccess?.can("support.manage"); %>
 
   <main class="main">
     <div class="topbar">
@@ -40,9 +41,11 @@
         <div class="title">Support Tickets</div>
         <div class="subtitle">Review, assign and respond to issues from tenant schools.</div>
       </div>
-      <div>
-        <a href="/super-admin/support-tickets/create" class="btn primary"><i class="fa-solid fa-headset"></i> New Ticket</a>
-      </div>
+      <% if (canManageSupport) { %>
+        <div>
+          <a href="/super-admin/support-tickets/create" class="btn primary"><i class="fa-solid fa-headset"></i> New Ticket</a>
+        </div>
+      <% } %>
     </div>
 
     <% if (error) { %>

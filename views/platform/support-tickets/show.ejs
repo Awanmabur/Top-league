@@ -34,6 +34,7 @@
 </head>
 <body>
   <%- include("./navbar") %>
+  <% const canManageSupport = platformAccess?.can("support.manage"); %>
 
   <main class="main">
     <% if (error) { %>
@@ -65,16 +66,18 @@
             <% }) %>
           </div>
 
-          <div class="card">
-            <div style="font-weight:800;color:#083454;margin-bottom:12px;">Reply</div>
-            <form action="/super-admin/support-tickets/<%= ticket._id %>/reply" method="POST">
-              <label>Message</label>
-              <textarea name="body" required></textarea>
-              <div style="margin-top:12px;">
-                <button type="submit" class="btn">Send Reply</button>
-              </div>
-            </form>
-          </div>
+          <% if (canManageSupport) { %>
+            <div class="card">
+              <div style="font-weight:800;color:#083454;margin-bottom:12px;">Reply</div>
+              <form action="/super-admin/support-tickets/<%= ticket._id %>/reply" method="POST">
+                <label>Message</label>
+                <textarea name="body" required></textarea>
+                <div style="margin-top:12px;">
+                  <button type="submit" class="btn">Send Reply</button>
+                </div>
+              </form>
+            </div>
+          <% } %>
         </section>
 
         <aside class="stack">
@@ -86,35 +89,37 @@
             <div class="meta">Created: <%= ticket.createdAt ? new Date(ticket.createdAt).toLocaleString() : '—' %></div>
           </div>
 
-          <div class="card">
-            <form action="/super-admin/support-tickets/<%= ticket._id %>/assign" method="POST">
-              <label>Assign To</label>
-              <select name="assignedTo">
-                <option value="">Unassigned</option>
-                <% (agents || []).forEach(function(agent){ %>
-                  <option value="<%= agent._id %>" <%= String(ticket?.assignedTo?._id || '') === String(agent._id) ? 'selected' : '' %>><%= agent.name || (agent.firstName + ' ' + agent.lastName) %></option>
-                <% }) %>
-              </select>
-              <div style="margin-top:12px;">
-                <button type="submit" class="btn">Assign</button>
-              </div>
-            </form>
-          </div>
+          <% if (canManageSupport) { %>
+            <div class="card">
+              <form action="/super-admin/support-tickets/<%= ticket._id %>/assign" method="POST">
+                <label>Assign To</label>
+                <select name="assignedTo">
+                  <option value="">Unassigned</option>
+                  <% (agents || []).forEach(function(agent){ %>
+                    <option value="<%= agent._id %>" <%= String(ticket?.assignedTo?._id || '') === String(agent._id) ? 'selected' : '' %>><%= agent.name || (agent.firstName + ' ' + agent.lastName) %></option>
+                  <% }) %>
+                </select>
+                <div style="margin-top:12px;">
+                  <button type="submit" class="btn">Assign</button>
+                </div>
+              </form>
+            </div>
 
-          <div class="card">
-            <form action="/super-admin/support-tickets/<%= ticket._id %>/status" method="POST">
-              <label>Status</label>
-              <select name="status">
-                <option value="open" <%= ticket.status === 'open' ? 'selected' : '' %>>Open</option>
-                <option value="pending" <%= ticket.status === 'pending' ? 'selected' : '' %>>Pending</option>
-                <option value="resolved" <%= ticket.status === 'resolved' ? 'selected' : '' %>>Resolved</option>
-                <option value="closed" <%= ticket.status === 'closed' ? 'selected' : '' %>>Closed</option>
-              </select>
-              <div style="margin-top:12px;">
-                <button type="submit" class="btn">Update Status</button>
-              </div>
-            </form>
-          </div>
+            <div class="card">
+              <form action="/super-admin/support-tickets/<%= ticket._id %>/status" method="POST">
+                <label>Status</label>
+                <select name="status">
+                  <option value="open" <%= ticket.status === 'open' ? 'selected' : '' %>>Open</option>
+                  <option value="pending" <%= ticket.status === 'pending' ? 'selected' : '' %>>Pending</option>
+                  <option value="resolved" <%= ticket.status === 'resolved' ? 'selected' : '' %>>Resolved</option>
+                  <option value="closed" <%= ticket.status === 'closed' ? 'selected' : '' %>>Closed</option>
+                </select>
+                <div style="margin-top:12px;">
+                  <button type="submit" class="btn">Update Status</button>
+                </div>
+              </form>
+            </div>
+          <% } %>
         </aside>
       </div>
     <% } %>

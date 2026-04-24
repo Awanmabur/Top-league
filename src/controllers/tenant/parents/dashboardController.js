@@ -2,12 +2,6 @@ const { getParent } = require("./_helpers");
 
 module.exports = {
   async dashboard(req, res) {
-    const log = (...a) =>
-      console.log(
-        `[PARENT-DASH] tenant=${req.tenant?.code || req.tenant?._id || "?"}`,
-        ...a
-      );
-
     try {
       const { Notification, Announcement, Student } = req.models || {};
 
@@ -51,28 +45,6 @@ module.exports = {
               .lean()
               .catch(() => [])
           : [];
-
-      log(
-        "req.user:",
-        req.user
-          ? { id: req.user._id || req.user.userId || req.user.id, roles: req.user.roles }
-          : null
-      );
-      log(
-        "user:",
-        user ? { id: user._id, email: user.email, roles: user.roles } : null
-      );
-      log(
-        "parent:",
-        parent
-          ? {
-              id: parent._id,
-              email: parent.email,
-              kids: (parent.childrenStudentIds || []).length,
-            }
-          : null
-      );
-      log("children:", children.length);
 
       return res.render("parents/dashboard", {
         tenant: req.tenant,

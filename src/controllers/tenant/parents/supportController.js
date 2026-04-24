@@ -1,7 +1,7 @@
 const { getParent, canAccessChild } = require("./_helpers");
 
 function fmtDate(v) {
-  if (!v) return "—";
+  if (!v) return "â€”";
   try {
     return new Date(v).toLocaleString();
   } catch {
@@ -40,12 +40,6 @@ function normalizeTicket(row = {}, children = []) {
 
 module.exports = {
   async index(req, res) {
-    const log = (...a) =>
-      console.log(
-        `[PARENT-SUPPORT] tenant=${req.tenant?.code || req.tenant?._id || "?"}`,
-        ...a
-      );
-
     try {
       const { Student, SupportTicket, Ticket } = req.models || {};
 
@@ -100,19 +94,6 @@ module.exports = {
         pending: tickets.filter((t) => ["pending", "in_progress"].includes(t.status)).length,
         resolved: tickets.filter((t) => ["resolved", "closed"].includes(t.status)).length,
       };
-
-      log(
-        "user:",
-        user ? { id: user._id, email: user.email, roles: user.roles } : null
-      );
-      log(
-        "parent:",
-        parent
-          ? { id: parent._id, email: parent.email, kids: (parent.childrenStudentIds || []).length }
-          : null
-      );
-      log("children:", children.length);
-      log("tickets:", tickets.length);
 
       return res.render("parents/support", {
         tenant: req.tenant,

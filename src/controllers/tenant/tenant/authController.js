@@ -1,5 +1,11 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const {
+  getPrimaryTenantRole,
+  normalizeTenantRoles,
+  getTenantDashboardRedirect,
+} = require("../../../utils/tenantRoles");
+const { getTenantCookieOptions } = require("../../../config/runtime");
 
 function safeLower(s) {
   return String(s || "")
@@ -7,22 +13,18 @@ function safeLower(s) {
     .toLowerCase();
 }
 
-// Decide if we should set cookie domain (production only).
-function shouldSetDomain(hostname, baseDomain) {
-  if (!hostname || !baseDomain) return false;
-
-  const h = safeLower(hostname);
-  const b = safeLower(baseDomain);
-
-  if (h === "localhost" || h.endsWith(".localhost")) return false;
-  return h === b || h.endsWith("." + b);
+function regenerateSession(req) {
+  return new Promise((resolve, reject) => {
+    if (!req.session) return resolve();
+    req.session.regenerate((err) => (err ? reject(err) : resolve()));
+  });
 }
 
-function getProto(req) {
-  return (req.get("x-forwarded-proto") || req.protocol || "http")
-    .split(",")[0]
-    .trim()
-    .toLowerCase();
+function destroySession(req) {
+  return new Promise((resolve) => {
+    if (!req.session) return resolve();
+    req.session.destroy(() => resolve());
+  });
 }
 
 /**
@@ -30,25 +32,7 @@ function getProto(req) {
  * Must match set + clear exactly (domain/path/secure/samesite)
  */
 function cookieOptions(req) {
-  const baseDomain = process.env.BASE_DOMAIN;
-  const hostname = req.hostname;
-
-  const isProd = process.env.NODE_ENV === "production";
-  const proto = getProto(req);
-
-  const opts = {
-    httpOnly: true,
-    secure: isProd, // keep your original behavior
-    sameSite: "lax",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-    path: "/",
-  };
-
-  if (isProd && shouldSetDomain(hostname, baseDomain)) {
-    opts.domain = "." + safeLower(baseDomain);
-  }
-
-  return { opts, debug: { isProd, proto, hostname, baseDomain } };
+  return { opts: getTenantCookieOptions(req) };
 }
 
 function setTenantTokenCookie(req, res, tenantCode, token) {
@@ -170,16 +154,20 @@ module.exports = {
         return renderLogin(req, res, 401, { error: "Invalid credentials" });
       }
 
+      await regenerateSession(req);
+
       // clear previous cookies (with SAME cookie options)
       clearTenantTokenCookies(req, res, tenantCode);
 
-      const roles = Array.isArray(user.roles) ? user.roles : [];
+      const roles = normalizeTenantRoles(user.roles);
+      const primaryRole = getPrimaryTenantRole(roles);
 
       const token = jwt.sign(
         {
           userId: String(user._id),
           tenantCode,
           roles,
+          role: primaryRole,
           tokenVersion: Number(user.tokenVersion || 0),
         },
         process.env.JWT_SECRET,
@@ -200,14 +188,7 @@ module.exports = {
       ).catch(() => {});
 
       // redirects
-      let redirectTo = "/";
-      if (roles.includes("admin")) redirectTo = "/admin/dashboard";
-      else if (roles.includes("parent")) redirectTo = "/parent/dashboard";
-      else if (roles.includes("staff") || roles.includes("registrar")) redirectTo = "/staff/dashboard";
-      else if (roles.includes("finance")) redirectTo = "/finance/dashboard";
-      else if (roles.includes("librarian")) redirectTo = "/library/dashboard";
-      else if (roles.includes("hostel")) redirectTo = "/hostel/dashboard";
-      else if (roles.includes("student")) redirectTo = "/student/dashboard";
+      const redirectTo = getTenantDashboardRedirect(primaryRole);
       
 
       // optional success flash (keeps your logic; remove if you don't want it)
@@ -232,6 +213,8 @@ module.exports = {
         if (token && process.env.JWT_SECRET) {
           const payload = jwt.verify(token, process.env.JWT_SECRET, {
             algorithms: ["HS256"],
+            issuer: "classic-academy",
+            audience: "tenant",
           });
 
           if (
@@ -252,8 +235,8 @@ module.exports = {
 
     // clear with SAME options
     clearTenantTokenCookies(req, res, tenantCode);
-
-    req.flash?.("success", "You have been logged out.");
+    await destroySession(req);
     return res.redirect("/login");
   },
 };
+

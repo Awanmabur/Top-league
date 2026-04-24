@@ -92,12 +92,12 @@
         <form action="/super-admin/settings/security" method="POST">
           <div class="field">
             <label>Password Min Length</label>
-            <input type="number" name="password_min_length" value="<%= values?.password_min_length || 8 %>" />
+            <input type="number" name="password_min_length" value="<%= values?.password_min_length || 10 %>" min="10" />
           </div>
 
           <div class="field">
             <label>Session Timeout Minutes</label>
-            <input type="number" name="session_timeout_minutes" value="<%= values?.session_timeout_minutes || 120 %>" />
+            <input type="number" name="session_timeout_minutes" value="<%= values?.session_timeout_minutes || 120 %>" min="15" />
           </div>
 
           <div class="field">

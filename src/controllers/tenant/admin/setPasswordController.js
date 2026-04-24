@@ -1,16 +1,6 @@
 const bcrypt = require("bcrypt");
 const { hashRawToken } = require("../../../utils/inviteToken");
-
-function isStrongPassword(p) {
-  return (
-    typeof p === "string" &&
-    p.length >= 10 &&
-    /[A-Z]/.test(p) &&
-    /[a-z]/.test(p) &&
-    /[0-9]/.test(p) &&
-    /[^A-Za-z0-9]/.test(p)
-  );
-}
+const { validatePasswordStrength } = require("../../../utils/passwordPolicy");
 
 module.exports = {
   // GET /set-password?token=RAW
@@ -102,10 +92,10 @@ module.exports = {
         });
       }
 
-      if (!isStrongPassword(password)) {
+      const passwordError = validatePasswordStrength(password, { minLength: 10 });
+      if (passwordError) {
         return res.status(400).render("tenant/auth/set-password", {
-          error:
-            "Password must be 10+ chars with upper, lower, number, and symbol.",
+          error: passwordError,
           token: rawToken,
           email: "",
         });

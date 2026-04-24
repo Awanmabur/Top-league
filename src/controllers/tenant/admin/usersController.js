@@ -1,6 +1,7 @@
 // src/controllers/tenant/usersController.js
 const mongoose = require("mongoose");
 const crypto = require("crypto");
+const { normalizeTenantRoles, getPrimaryTenantRole } = require("../../../utils/tenantRoles");
 
 const USER_STATUS = {
   INVITED: "invited",
@@ -66,7 +67,7 @@ async function loadUsersPageData(req) {
     email: u.email || "",
     phone: u.phone || "",
     roles: Array.isArray(u.roles) ? u.roles : [],
-    rolesText: Array.isArray(u.roles) && u.roles.length ? u.roles.join(", ") : "—",
+    rolesText: getPrimaryTenantRole(u.roles) || "—",
     status: u.status || USER_STATUS.INVITED,
     hasPassword: !!u.passwordHash,
     staffId: u.staffId ? String(u.staffId) : null,
@@ -185,7 +186,7 @@ module.exports = {
             lastName: String(lastName).trim(),
             email: cleanEmail,
             phone: phone ? String(phone).trim() : null,
-            roles: [role],
+            roles: normalizeTenantRoles(role),
             status: USER_STATUS.INVITED,
             deletedAt: null,
             passwordHash: null,
@@ -426,6 +427,8 @@ module.exports = {
     if (!Array.isArray(roles) || roles.length === 0) {
       return res.status(400).send("Roles required");
     }
+
+    roles = normalizeTenantRoles(roles);
 
     await User.updateOne(
       { _id: req.params.id, deletedAt: null },

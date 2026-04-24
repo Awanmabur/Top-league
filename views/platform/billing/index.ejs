@@ -31,6 +31,7 @@
 </head>
 <body>
   <%- include("./navbar") %>
+  <% const canManageBilling = platformAccess?.can("billing.manage"); %>
 
   <main class="main">
     <div class="topbar">
@@ -38,9 +39,11 @@
         <div class="title">Billing & Subscriptions</div>
         <div class="subtitle">Manage school subscriptions and review recent platform payments.</div>
       </div>
-      <div>
-        <a href="/super-admin/billing/payments/create" class="btn primary"><i class="fa-solid fa-receipt"></i> Record Payment</a>
-      </div>
+      <% if (canManageBilling) { %>
+        <div>
+          <a href="/super-admin/billing/payments/create" class="btn primary"><i class="fa-solid fa-receipt"></i> Record Payment</a>
+        </div>
+      <% } %>
     </div>
 
     <% if (error) { %>
