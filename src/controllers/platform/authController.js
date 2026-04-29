@@ -3,6 +3,7 @@ const crypto = require("crypto");
 
 const { platformConnection } = require("../../config/db");
 const { validatePasswordStrength } = require("../../utils/passwordPolicy");
+const { sendMail } = require("../../utils/mailer");
 const {
   getPlatformDashboardRedirect,
   normalizePlatformRole,
@@ -11,16 +12,22 @@ const {
 const PlatformUser = require("../../models/platform/PlatformUser")(platformConnection);
 const AuditLog = require("../../models/platform/AuditLog")(platformConnection);
 
-function safeLower(v) {
-  return String(v || "").trim().toLowerCase();
+function safeLower(value) {
+  return String(value || "").trim().toLowerCase();
 }
 
-function safeTrim(v) {
-  return String(v || "").trim();
+function safeTrim(value) {
+  return String(value || "").trim();
 }
 
-function sha256(v) {
-  return crypto.createHash("sha256").update(String(v || "")).digest("hex");
+function sha256(value) {
+  return crypto.createHash("sha256").update(String(value || "")).digest("hex");
+}
+
+function absoluteUrl(req, pathname = "/") {
+  const host = safeTrim(req.get("host"));
+  const cleanPath = `/${String(pathname || "/").replace(/^\/+/, "")}`;
+  return `${req.protocol}://${host}${cleanPath}`;
 }
 
 function fullName(user = {}) {
@@ -52,8 +59,44 @@ async function writeAudit(req, payload) {
       meta: payload.meta || {},
     });
   } catch (err) {
-    console.error("âŒ auth audit log failed:", err);
+    console.error("Auth audit log failed:", err);
   }
+}
+
+async function sendPlatformResetEmail(req, user, rawToken) {
+  const name = fullName(user) || "there";
+  const resetLink = absoluteUrl(req, `/reset-password/${rawToken}`);
+
+  await sendMail({
+    to: user.email,
+    subject: "Classic Academy Platform Password Reset",
+    text: [
+      `Hello ${name},`,
+      "",
+      "A password reset was requested for your Classic Academy platform account.",
+      `Reset your password here: ${resetLink}`,
+      "",
+      "This link expires in 30 minutes. If you did not request this, you can ignore this email.",
+    ].join("\n"),
+    html: `
+      <div style="font-family:Arial,sans-serif;line-height:1.6;color:#111827">
+        <h2 style="margin:0 0 12px 0">Classic Academy Platform Password Reset</h2>
+        <p style="margin:0 0 12px 0">Hello ${name},</p>
+        <p style="margin:0 0 12px 0">
+          A password reset was requested for your Classic Academy platform account.
+        </p>
+        <p style="margin:18px 0">
+          <a href="${resetLink}"
+             style="display:inline-block;padding:12px 16px;background:#0a6fbf;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:700">
+            Reset Password
+          </a>
+        </p>
+        <p style="margin:0 0 12px 0;color:#4b5563">
+          This link expires in 30 minutes. If you did not request this, you can ignore this email.
+        </p>
+      </div>
+    `,
+  });
 }
 
 module.exports = {
@@ -85,14 +128,7 @@ module.exports = {
         isDeleted: { $ne: true },
       });
 
-      if (!user || !user.isActive) {
-        return res.status(401).render("platform/auth/login", {
-          error: "Invalid credentials.",
-          old: req.body,
-        });
-      }
-
-      if (!user.passwordHash) {
+      if (!user || !user.isActive || !user.passwordHash) {
         return res.status(401).render("platform/auth/login", {
           error: "Invalid credentials.",
           old: req.body,
@@ -114,7 +150,7 @@ module.exports = {
             lastLoginAt: new Date(),
             lastLoginIp: req.ip || "",
           },
-        }
+        },
       );
 
       await regenerateSession(req);
@@ -136,7 +172,7 @@ module.exports = {
 
       return res.redirect(getPlatformDashboardRedirect(role));
     } catch (err) {
-      console.error("âŒ login error:", err);
+      console.error("Platform login error:", err);
       return res.status(500).render("platform/auth/login", {
         error: "Failed to sign in.",
         old: req.body,
@@ -148,7 +184,7 @@ module.exports = {
     try {
       await writeAudit(req, {
         action: "Platform Logout",
-        description: `Platform user logged out`,
+        description: "Platform user logged out",
       });
 
       if (!req.session) return res.redirect("/login");
@@ -158,7 +194,7 @@ module.exports = {
         return res.redirect("/login");
       });
     } catch (err) {
-      console.error("âŒ logout error:", err);
+      console.error("Platform logout error:", err);
       res.clearCookie("platform.sid", { path: "/" });
       return res.redirect("/login");
     }
@@ -243,7 +279,7 @@ module.exports = {
 
       return res.redirect("/super-admin/settings");
     } catch (err) {
-      console.error("âŒ createPlatformUser error:", err);
+      console.error("Create platform user error:", err);
       return res.status(500).render("platform/auth/create-user", {
         old: req.body,
         error: err?.message || "Failed to create platform user.",
@@ -286,8 +322,24 @@ module.exports = {
               resetPasswordTokenHash: tokenHash,
               resetPasswordExpiresAt: expiresAt,
             },
-          }
+          },
         );
+
+        try {
+          await sendPlatformResetEmail(req, user, rawToken);
+        } catch (mailErr) {
+          await PlatformUser.updateOne(
+            { _id: user._id },
+            {
+              $set: {
+                resetPasswordTokenHash: "",
+                resetPasswordExpiresAt: null,
+              },
+            },
+          );
+
+          console.error("Platform forgot-password mail error:", mailErr);
+        }
 
         if (process.env.DEBUG_AUTH_TOKENS === "1") {
           console.log("Platform reset token:", rawToken);
@@ -296,10 +348,10 @@ module.exports = {
 
       return res.render("platform/auth/forgot-password", {
         error: null,
-        success: "If the email exists, a password reset token has been generated.",
+        success: "If the email exists, a password reset link has been sent.",
       });
     } catch (err) {
-      console.error("âŒ forgotPassword error:", err);
+      console.error("Platform forgot-password error:", err);
       return res.status(500).render("platform/auth/forgot-password", {
         error: "Failed to process forgot password.",
         success: null,
@@ -308,11 +360,11 @@ module.exports = {
   },
 
   resetPasswordForm: async (req, res) => {
-      return res.render("platform/auth/reset-password", {
-        token: req.params.token,
-        error: null,
-        success: null,
-      });
+    return res.render("platform/auth/reset-password", {
+      token: req.params.token,
+      error: null,
+      success: null,
+    });
   },
 
   resetPassword: async (req, res) => {
@@ -364,7 +416,7 @@ module.exports = {
             resetPasswordExpiresAt: null,
             tokenVersion: (user.tokenVersion || 0) + 1,
           },
-        }
+        },
       );
 
       await writeAudit(req, {
@@ -378,7 +430,7 @@ module.exports = {
 
       return res.redirect("/login");
     } catch (err) {
-      console.error("âŒ resetPassword error:", err);
+      console.error("Platform reset-password error:", err);
       return res.status(500).render("platform/auth/reset-password", {
         token: req.params.token,
         error: "Failed to reset password.",
@@ -387,4 +439,3 @@ module.exports = {
     }
   },
 };
-

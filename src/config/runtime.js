@@ -113,6 +113,10 @@ function validateRuntimeConfig() {
     requireEnv("BASE_DOMAIN");
     requireEnv("INVITE_TOKEN_SECRET", { minLength: 32 });
     requireEnv("TRANSCRIPT_SIGNING_SECRET", { minLength: 32 });
+    requireEnv("SMTP_HOST");
+    requireEnv("SMTP_PORT");
+    requireEnv("SMTP_USER");
+    requireEnv("SMTP_PASS");
 
     const blockedDebugFlags = [
       "DEBUG_AUTH_TOKENS",

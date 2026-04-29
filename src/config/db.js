@@ -54,6 +54,29 @@ async function waitForPlatform() {
 const TENANT_CACHE = new Map();
 const TENANT_CONNECTING = new Map();
 
+function getMongoHost(uri) {
+  try {
+    return new URL(uri).host.toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
+const PLATFORM_MONGO_HOST = getMongoHost(platformUri);
+const TENANT_MONGO_HOST = getMongoHost(tenantBaseUri);
+const CAN_REUSE_PLATFORM_CLIENT =
+  PLATFORM_MONGO_HOST &&
+  TENANT_MONGO_HOST &&
+  PLATFORM_MONGO_HOST === TENANT_MONGO_HOST;
+
+function shouldReusePlatformClient() {
+  if (process.env.REUSE_PLATFORM_MONGO !== undefined) {
+    return boolEnv("REUSE_PLATFORM_MONGO", CAN_REUSE_PLATFORM_CLIENT);
+  }
+
+  return CAN_REUSE_PLATFORM_CLIENT;
+}
+
 async function waitForConn(conn) {
   if (conn.readyState === 1) return;
 
@@ -69,6 +92,15 @@ async function waitForConn(conn) {
 }
 
 async function createTenantConnection(dbName) {
+  if (shouldReusePlatformClient()) {
+    await waitForPlatform();
+    const conn = platformConnection.useDb(dbName, { useCache: true });
+    conn.on("error", (e) => {
+      console.error(`Tenant DB error (${dbName}):`, e.message);
+    });
+    return conn;
+  }
+
   const conn = mongoose.createConnection(tenantBaseUri, {
     ...COMMON_OPTS,
     dbName,

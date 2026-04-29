@@ -67,6 +67,19 @@ function perf(label, startedAt) {
   }
 }
 
+function wantsJson(req) {
+  const accept = String(req.headers.accept || "");
+  return accept.includes("application/json") || req.xhr;
+}
+
+function isMongoSrvTimeout(err) {
+  return (
+    err &&
+    err.code === "ETIMEOUT" &&
+    String(err.syscall || "").toLowerCase().includes("querysrv")
+  );
+}
+
 module.exports = async function tenantResolver(req, res, next) {
   const totalStartedAt = Date.now();
 
@@ -183,6 +196,24 @@ module.exports = async function tenantResolver(req, res, next) {
     return next();
   } catch (e) {
     console.error("tenantResolver error:", e);
+
+    if (isMongoSrvTimeout(e)) {
+      const message = "Tenant database is temporarily unavailable. Please try again.";
+
+      if (wantsJson(req)) {
+        return res.status(503).json({ message });
+      }
+
+      return res.status(503).render(
+        "platform/public/500",
+        { message },
+        (renderErr, html) => {
+          if (renderErr) return res.status(503).send(message);
+          return res.send(html);
+        },
+      );
+    }
+
     return next(e);
   }
 };

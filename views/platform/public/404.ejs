@@ -1,663 +1,255 @@
 <!doctype html>
 <html lang="en">
-
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>404 — Classic Academy</title>
-
-  <!-- SEO -->
+  <title>404 - Classic Academy</title>
   <meta name="description" content="Page not found." />
-  <meta name="robots" content="index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1" />
+  <meta name="robots" content="noindex,nofollow" />
   <meta name="theme-color" content="#4a90e2" />
-  <link rel="canonical" href="/404" />
-  <meta property="og:type" content="website" />
-  <meta property="og:title" content="404 — Classic Academy" />
-  <meta property="og:description" content="Page not found." />
-  <meta property="og:url" content="/404" />
-  <meta property="og:image" content="/img/hero.png" />
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="404 — Classic Academy" />
-  <meta name="twitter:description" content="Page not found." />
-  <meta name="twitter:image" content="/img/hero.png" />
-
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --primary:#4a90e2;
+      --ink:#0f172a;
+      --muted:#475569;
+      --page-pad:clamp(1rem,4vw,6rem);
+      --shadow2:0 18px 50px rgba(15,23,42,.12);
+      --radius:22px;
+    }
+    html{scroll-behavior:smooth}
+    a{text-decoration:none}
+    body{
+      font-family:"Segoe UI",Tahoma,Geneva,Verdana,sans-serif;
+      line-height:1.6;
+      background:#e0f7fa;
+      color:#333;
+      overflow-x:clip;
+      -webkit-overflow-scrolling:touch;
+      padding-top:112px;
+    }
+    @media (max-width:600px){body{padding-top:102px}}
+
+    #loader{
+      position:fixed;
+      inset:0;
+      background:#e0f7fa;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      align-items:center;
+      justify-content:center;
+      z-index:9999;
+      padding:1.2rem;
+      text-align:center;
+    }
+    .academylogo{width:min(220px,70vw)}
+    .academylogo img{width:100%;height:auto;display:block}
+    .loader{position:relative;width:18px;height:28px;perspective:500px;animation:flip 2s infinite}
+    .loader:nth-child(3){animation-delay:.2s}
+    .loader:nth-child(4){animation-delay:.4s}
+    .loader:nth-child(5){animation-delay:.6s}
+    .loader:nth-child(6){animation-delay:.8s}
+    .face{position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:4px}
+    .front{background:var(--primary)}
+    .back{background:#d35400;transform:rotateY(180deg)}
+    @keyframes flip{
+      0%,100%{transform:rotateY(0deg)}
+      50%{transform:rotateY(180deg)}
     }
 
-    :root {
-      --primary: #4a90e2;
-      --accent: #d97800;
-      --highlight: #009f8b;
-
-      --ink: #0f172a;
-      --muted: #475569;
-
-      --page-pad: clamp(1rem, 4vw, 6rem);
-      --shadow2: 0 18px 50px rgba(15, 23, 42, .12);
-      --shadow3: 0 10px 30px rgba(15, 23, 42, .10);
-      --radius: 22px;
+    .header{
+      position:fixed;
+      top:14px;
+      left:var(--page-pad);
+      right:var(--page-pad);
+      padding:.65rem .85rem;
+      border-radius:999px;
+      background:rgba(255,255,255,.70);
+      border:1px solid rgba(255,255,255,.78);
+      backdrop-filter:blur(12px);
+      box-shadow:0 16px 46px rgba(15,23,42,.10);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:.8rem;
+      z-index:2000;
     }
-
-    html {
-      scroll-behavior: smooth;
+    .brand{display:flex;align-items:center;gap:.75rem;min-width:0;color:var(--ink)}
+    .brand-mark{
+      width:40px;height:40px;border-radius:14px;object-fit:cover;
+      border:1px solid rgba(15,23,42,.10);background:rgba(255,255,255,.85);flex:0 0 auto;
     }
-
-    a {
-      text-decoration: none;
+    .brand-txt{display:grid;line-height:1.05;min-width:0}
+    .brand-name{
+      font-weight:900;letter-spacing:-.02em;color:var(--ink);
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
     }
-
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      line-height: 1.6;
-      background: #e0f7fa;
-      color: #333;
-      overflow-x: clip;
-      -webkit-overflow-scrolling: touch;
-      padding-top: 112px;
+    .brand-sub{
+      font-size:.86rem;color:var(--muted);
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
     }
-
-    @media (max-width: 600px) {
-      body {
-        padding-top: 102px;
+    .navbar{display:flex;align-items:center;gap:.35rem}
+    .navbar a{
+      padding:.55rem .75rem;border-radius:999px;color:#1d4ed8;font-weight:600;
+      font-size:1.02rem;transition:background .2s ease,transform .2s ease,color .2s ease;
+      white-space:nowrap;
+    }
+    .navbar a:hover{background:rgba(74,144,226,.10);transform:translateY(-1px);color:var(--ink)}
+    .nav-pill{
+      border:1px solid rgba(74,144,226,.35);
+      background:rgba(74,144,226,.10);
+      color:#0f172a !important;
+      font-weight:800;
+    }
+    .nav-actions{display:flex;align-items:center;gap:.55rem;flex:0 0 auto}
+    .btn{
+      display:inline-flex;align-items:center;justify-content:center;gap:.45rem;
+      padding:.72rem 1rem;background-color:var(--primary);color:#fff;border:1px solid var(--primary);
+      border-radius:999px;font-weight:800;transition:background-color .25s ease,transform .2s ease,box-shadow .2s ease;
+      cursor:pointer;user-select:none;box-shadow:0 10px 28px rgba(74,144,226,.18);white-space:nowrap;
+    }
+    .btn:hover{
+      background-color:transparent;color:var(--primary);transform:translateY(-1px);
+      box-shadow:0 14px 34px rgba(15,23,42,.12);
+    }
+    .btn.ghost{
+      background:rgba(255,255,255,.72);
+      border:1px solid rgba(15,23,42,.12);
+      color:var(--ink);
+      box-shadow:0 10px 26px rgba(15,23,42,.08);
+    }
+    .btn.ghost:hover{background:rgba(255,255,255,.88);color:var(--ink)}
+    .btn-sm{padding:.55rem .8rem !important;font-size:.95rem !important;box-shadow:none !important}
+    .menu-btn{
+      width:44px;height:44px;border-radius:999px;border:1px solid rgba(15,23,42,.12);
+      background:rgba(255,255,255,.78);display:none;align-items:center;justify-content:center;
+      cursor:pointer;box-shadow:0 10px 26px rgba(15,23,42,.08);
+    }
+    .menu-btn i{color:var(--ink);font-size:1.05rem}
+    @media (max-width:1024px){
+      .brand-sub{display:none}
+      .menu-btn{display:inline-flex}
+      .navbar{
+        position:absolute;top:calc(100% + .65rem);left:0;right:0;margin:0 .25rem;padding:.75rem;
+        background:rgba(74,144,226,.96);border:1px solid rgba(255,255,255,.35);border-radius:20px;
+        backdrop-filter:blur(12px);display:grid;gap:.4rem;transform:translateY(-8px);opacity:0;
+        pointer-events:none;transition:transform .2s ease,opacity .2s ease;
       }
-    }
-
-    /* LOADER */
-    #loader {
-      position: fixed;
-      inset: 0;
-      background: #e0f7fa;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-      padding: 1.2rem;
-      text-align: center;
-    }
-
-    .academylogo {
-      width: min(220px, 70vw);
-    }
-
-    .academylogo img {
-      width: 100%;
-      height: auto;
-      display: block;
-    }
-
-    .loader {
-      position: relative;
-      width: 18px;
-      height: 28px;
-      perspective: 500px;
-      animation: flip 2s infinite;
-    }
-
-    .loader:nth-child(3) {
-      animation-delay: 0.2s;
-    }
-
-    .loader:nth-child(4) {
-      animation-delay: 0.4s;
-    }
-
-    .loader:nth-child(5) {
-      animation-delay: 0.6s;
-    }
-
-    .loader:nth-child(6) {
-      animation-delay: 0.8s;
-    }
-
-    .face {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      backface-visibility: hidden;
-      border-radius: 4px;
-    }
-
-    .front {
-      background: var(--primary);
-    }
-
-    .back {
-      background: #d35400;
-      transform: rotateY(180deg);
-    }
-
-    @keyframes flip {
-
-      0%,
-      100% {
-        transform: rotateY(0deg);
-      }
-
-      50% {
-        transform: rotateY(180deg);
-      }
-    }
-
-    /* NAVBAR */
-    .header {
-      position: fixed;
-      top: 14px;
-      left: var(--page-pad);
-      right: var(--page-pad);
-      padding: .65rem .85rem;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, .70);
-      border: 1px solid rgba(255, 255, 255, .78);
-      backdrop-filter: blur(12px);
-      box-shadow: 0 16px 46px rgba(15, 23, 42, .10);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: .8rem;
-      z-index: 2000;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: .75rem;
-      min-width: 0;
-      color: var(--ink);
-    }
-
-    .brand-mark {
-      width: 40px;
-      height: 40px;
-      border-radius: 14px;
-      object-fit: cover;
-      border: 1px solid rgba(15, 23, 42, .10);
-      background: rgba(255, 255, 255, .85);
-      flex: 0 0 auto;
-    }
-
-    .brand-txt {
-      display: grid;
-      line-height: 1.05;
-      min-width: 0;
-    }
-
-    .brand-name {
-      font-weight: 900;
-      letter-spacing: -.02em;
-      color: var(--ink);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .brand-sub {
-      font-size: .86rem;
-      color: var(--muted);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .navbar {
-      display: flex;
-      align-items: center;
-      gap: .35rem;
-    }
-
-    .navbar a {
-      padding: .55rem .75rem;
-      border-radius: 999px;
-      color: #1d4ed8;
-      font-weight: 600;
-      font-size: 1.02rem;
-      transition: background .2s ease, transform .2s ease, color .2s ease;
-      white-space: nowrap;
-    }
-
-    .navbar a:hover {
-      background: rgba(74, 144, 226, .10);
-      transform: translateY(-1px);
-      color: var(--ink);
-    }
-
-    .nav-pill {
-      border: 1px solid rgba(74, 144, 226, .35);
-      background: rgba(74, 144, 226, .10);
-      color: #0f172a !important;
-      font-weight: 800;
-    }
-
-    .nav-pill:hover {
-      background: rgba(74, 144, 226, .18);
-      border-color: rgba(74, 144, 226, .45);
-    }
-
-    .nav-actions {
-      display: flex;
-      align-items: center;
-      gap: .55rem;
-      flex: 0 0 auto;
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: .45rem;
-      padding: 0.72rem 1rem;
-      background-color: var(--primary);
-      color: white;
-      border: 1px solid var(--primary);
-      border-radius: 999px;
-      font-weight: 800;
-      transition: background-color .25s ease, transform .2s ease, box-shadow .2s ease;
-      cursor: pointer;
-      user-select: none;
-      box-shadow: 0 10px 28px rgba(74, 144, 226, .18);
-      white-space: nowrap;
-    }
-
-    .btn:hover {
-      background-color: transparent;
-      color: var(--primary);
-      transform: translateY(-1px);
-      box-shadow: 0 14px 34px rgba(15, 23, 42, .12);
-    }
-
-    .btn.ghost {
-      background: rgba(255, 255, 255, .72);
-      border: 1px solid rgba(15, 23, 42, .12);
-      color: var(--ink);
-      box-shadow: 0 10px 26px rgba(15, 23, 42, .08);
-    }
-
-    .btn.ghost:hover {
-      background: rgba(255, 255, 255, .88);
-      color: var(--ink);
-    }
-
-    .btn-sm {
-      padding: .55rem .8rem !important;
-      font-size: .95rem !important;
-      box-shadow: none !important;
-    }
-
-    .menu-btn {
-      width: 44px;
-      height: 44px;
-      border-radius: 999px;
-      border: 1px solid rgba(15, 23, 42, .12);
-      background: rgba(255, 255, 255, .78);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      box-shadow: 0 10px 26px rgba(15, 23, 42, .08);
-    }
-
-    .menu-btn i {
-      color: var(--ink);
-      font-size: 1.05rem;
-    }
-
-    @media (max-width: 1024px) {
-      .brand-sub {
-        display: none;
-      }
-
-      .menu-btn {
-        display: inline-flex;
-      }
-
-      .navbar {
-        position: absolute;
-        top: calc(100% + .65rem);
-        left: 0;
-        right: 0;
-        margin: 0 .25rem;
-        padding: .75rem;
-        background: rgba(74, 144, 226, .96);
-        border: 1px solid rgba(255, 255, 255, .35);
-        border-radius: 20px;
-        backdrop-filter: blur(12px);
-        display: grid;
-        gap: .4rem;
-        transform: translateY(-8px);
-        opacity: 0;
-        pointer-events: none;
-        transition: transform .2s ease, opacity .2s ease;
-      }
-
-      .navbar.active {
-        transform: translateY(0);
-        opacity: 1;
-        pointer-events: auto;
-      }
-
-      .navbar a {
-        color: #fff;
-        border-radius: 16px;
-        padding: .85rem .85rem;
-        background: rgba(255, 255, 255, .08);
-      }
-
-      .navbar a:hover {
-        background: rgba(255, 255, 255, .14);
-        transform: none;
-        color: #fff;
-      }
-
-      .nav-pill {
-        background: rgba(255, 255, 255, .18);
-        border-color: rgba(255, 255, 255, .35);
-        color: #fff !important;
-      }
-    }
-
-    /* REVEAL */
-    .reveal {
-      opacity: 0;
-      transform: translateY(14px);
-      transition: all .7s ease;
-    }
-
-    .reveal.in {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    /* 404 HERO */
-    .kicker {
-      display: inline-flex;
-      gap: .55rem;
-      align-items: center;
-      color: #1b2a4e;
-      font-weight: 900;
-      padding: .45rem .8rem;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, .82);
-      border: 1px solid rgba(255, 255, 255, .90);
-      box-shadow: 0 12px 30px rgba(15, 23, 42, .08);
-      width: fit-content;
-    }
-
-    .about-hero {
-      margin: 0 var(--page-pad);
-      border-radius: 26px;
-      background: rgba(255, 255, 255, .28);
-      backdrop-filter: blur(14px);
-      border: 1px solid rgba(255, 255, 255, .55);
-      box-shadow: var(--shadow2);
-      padding: 2rem 2rem;
-      display: grid;
-      grid-template-columns: 1.1fr .9fr;
-      gap: 1.4rem;
-      align-items: center;
-    }
-
-    .about-hero h1 {
-      margin: .7rem 0 .55rem 0;
-      font-size: clamp(1.65rem, 2.4vw, 2.2rem);
-      color: var(--ink);
-      letter-spacing: -.02em;
-      line-height: 1.15;
-    }
-
-    .about-hero p {
-      margin: 0;
-      color: #334155;
-      max-width: 65ch;
-    }
-
-    .about-hero .actions {
-      margin-top: 1.25rem;
-      display: flex;
-      gap: .6rem;
-      flex-wrap: wrap;
-    }
-
-    .about-hero .media {
-      border-radius: 22px;
-      overflow: hidden;
-      background: rgba(74, 144, 226, .12);
-      border: 1px solid rgba(255, 255, 255, .75);
-      box-shadow: 0 12px 30px rgba(15, 23, 42, .10);
-      min-height: 260px;
-    }
-
-    .about-hero .media img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-
-    @media (max-width: 1024px) {
-      .about-hero {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    /* FOOTER */
-    .footer {
-      background: rgba(255, 255, 255, 0.3);
-      backdrop-filter: blur(10px);
-      border-radius: 25px;
-      margin: 2rem var(--page-pad);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      font-size: 0.95rem;
-    }
-
-    .footer div {
-      margin: 1rem;
-      flex: 1 1 200px;
-      min-width: 200px;
-    }
-
-    .footer h4 {
-      font-size: 1.05rem;
-      margin-bottom: .8rem;
-      color: var(--ink);
-    }
-
-    .footer p {
-      color: var(--muted);
-    }
-
-    .footer ul {
-      list-style: none;
-      padding: 0;
-    }
-
-    .footer ul li {
-      margin-bottom: 0.5rem;
-    }
-
-    .footer ul li a {
-      color: #333;
-    }
-
-    .footer ul li a:hover {
-      text-decoration: underline;
-    }
-
-    /* Scroll to Top Button */
-    #toTopBtn {
-      position: fixed;
-      bottom: 30px;
-      right: 30px;
-      background-color: var(--primary);
-      color: white;
-      border: none;
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
-      cursor: pointer;
-      font-size: 1.5rem;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-      display: none;
-      z-index: 1000;
-      transition: background 0.3s, transform 0.3s;
-    }
-
-    #toTopBtn:hover {
-      background-color: #4a90e2;
-      transform: scale(1.1);
-    }
-
-    /* Floating support button */
-    .shadow {
-      box-shadow: 0 10px 26px rgba(15, 23, 42, .12);
-    }
-
-    .fab-container {
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-      align-items: center;
-      position: fixed;
-      bottom: 170px;
-      right: 20px;
-      z-index: 1200;
-    }
-
-    .fab-container:hover {
-      height: 100%;
-    }
-
-    .fab-container:hover .sub-button:nth-child(2) {
-      transform: translateY(-80px);
-    }
-
-    .fab-container:hover .sub-button:nth-child(3) {
-      transform: translateY(-140px);
-    }
-
-    .fab-container:hover .sub-button:nth-child(4) {
-      transform: translateY(-200px);
-    }
-
-    .fab-container .fab {
-      position: relative;
-      height: 70px;
-      width: 70px;
-      background-color: #4ba2ff;
-      border-radius: 50%;
-      z-index: 2;
-    }
-
-    .fab-container .fab:before {
-      content: " ";
-      position: absolute;
-      bottom: 0;
-      right: 0;
-      height: 35px;
-      width: 35px;
-      background-color: inherit;
-      border-radius: 0 0 10px 0;
-      z-index: -1;
-    }
-
-    .fab-container .fab .fab-content {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      width: 100%;
-      border-radius: 50%;
-      cursor: pointer;
-      user-select: none;
-    }
-
-    .fab-container .fab .fab-content .material-icons {
-      color: #2e2e2e;
-      font-size: 48px;
-    }
-
-    .fab-container .sub-button {
-      position: absolute;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      bottom: 10px;
-      right: 10px;
-      height: 50px;
-      width: 50px;
-      background-color: #4ba2ff;
-      border-radius: 50%;
-      transition: all 0.3s ease;
-    }
-
-    .fab-container .sub-button a {
-      display: grid;
-      place-items: center;
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-    }
-
-    .fab-container .sub-button .material-icons {
-      color: #2e2e2e;
-      padding-top: 6px;
-    }
-
-    .fab-container .sub-button i {
-      color: #2e2e2e;
-      font-size: 20px;
-    }
-
+      .navbar.active{transform:translateY(0);opacity:1;pointer-events:auto}
+      .navbar a{color:#fff;border-radius:16px;padding:.85rem .85rem;background:rgba(255,255,255,.08)}
+      .navbar a:hover{background:rgba(255,255,255,.14);transform:none;color:#fff}
+      .nav-pill{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.35);color:#fff !important}
+    }
+
+    .reveal{opacity:0;transform:translateY(14px);transition:all .7s ease}
+    .reveal.in{opacity:1;transform:translateY(0)}
+    .kicker{
+      display:inline-flex;gap:.55rem;align-items:center;color:#1b2a4e;font-weight:900;
+      padding:.45rem .8rem;border-radius:999px;background:rgba(255,255,255,.82);
+      border:1px solid rgba(255,255,255,.90);box-shadow:0 12px 30px rgba(15,23,42,.08);width:fit-content;
+    }
+    .about-hero{
+      margin:0 var(--page-pad);
+      border-radius:26px;
+      background:rgba(255,255,255,.28);
+      backdrop-filter:blur(14px);
+      border:1px solid rgba(255,255,255,.55);
+      box-shadow:var(--shadow2);
+      padding:2rem;
+      display:grid;
+      grid-template-columns:1.1fr .9fr;
+      gap:1.4rem;
+      align-items:center;
+    }
+    .about-hero h1{
+      margin:.7rem 0 .55rem 0;
+      font-size:clamp(1.65rem,2.4vw,2.2rem);
+      color:var(--ink);
+      letter-spacing:-.02em;
+      line-height:1.15;
+    }
+    .about-hero p{margin:0;color:#334155;max-width:65ch}
+    .about-hero .actions{margin-top:1.25rem;display:flex;gap:.6rem;flex-wrap:wrap}
+    .about-hero .media{
+      border-radius:22px;overflow:hidden;background:rgba(74,144,226,.12);
+      border:1px solid rgba(255,255,255,.75);box-shadow:0 12px 30px rgba(15,23,42,.10);min-height:260px;
+    }
+    .about-hero .media img{width:100%;height:100%;object-fit:cover;display:block}
+    @media (max-width:1024px){.about-hero{grid-template-columns:1fr}}
+
+    .footer{
+      background:rgba(255,255,255,0.3);backdrop-filter:blur(10px);border-radius:25px;
+      margin:2rem var(--page-pad);box-shadow:0 8px 32px rgba(0,0,0,0.1);
+      display:flex;flex-wrap:wrap;justify-content:space-between;font-size:.95rem;
+    }
+    .footer div{margin:1rem;flex:1 1 200px;min-width:200px}
+    .footer h4{font-size:1.05rem;margin-bottom:.8rem;color:var(--ink)}
+    .footer p{color:var(--muted)}
+    .footer ul{list-style:none;padding:0}
+    .footer ul li{margin-bottom:.5rem}
+    .footer ul li a{color:#333}
+    .footer ul li a:hover{text-decoration:underline}
+
+    #toTopBtn{
+      position:fixed;bottom:30px;right:30px;background-color:var(--primary);color:white;border:none;
+      width:42px;height:42px;border-radius:50%;cursor:pointer;font-size:1.5rem;
+      box-shadow:0 4px 10px rgba(0,0,0,.2);display:none;z-index:1000;transition:background .3s,transform .3s;
+    }
+    #toTopBtn:hover{background-color:#4a90e2;transform:scale(1.1)}
+
+    .shadow{box-shadow:0 10px 26px rgba(15,23,42,.12)}
+    .fab-container{
+      display:flex;flex-direction:column;justify-content:flex-end;align-items:center;position:fixed;
+      bottom:170px;right:20px;z-index:1200;
+    }
+    .fab-container:hover{height:100%}
+    .fab-container:hover .sub-button:nth-child(2){transform:translateY(-80px)}
+    .fab-container:hover .sub-button:nth-child(3){transform:translateY(-140px)}
+    .fab-container:hover .sub-button:nth-child(4){transform:translateY(-200px)}
+    .fab-container .fab{
+      position:relative;height:70px;width:70px;background-color:#4ba2ff;border-radius:50%;z-index:2;
+    }
+    .fab-container .fab:before{
+      content:" ";position:absolute;bottom:0;right:0;height:35px;width:35px;background-color:inherit;
+      border-radius:0 0 10px 0;z-index:-1;
+    }
+    .fab-container .fab .fab-content{
+      display:flex;align-items:center;justify-content:center;height:100%;width:100%;border-radius:50%;
+      cursor:pointer;user-select:none;
+    }
+    .fab-container .fab .fab-content .material-icons{color:#2e2e2e;font-size:48px}
+    .fab-container .sub-button{
+      position:absolute;display:flex;align-items:center;justify-content:center;bottom:10px;right:10px;height:50px;width:50px;
+      background-color:#4ba2ff;border-radius:50%;transition:all .3s ease;
+    }
+    .fab-container .sub-button a{
+      display:grid;place-items:center;width:100%;height:100%;border-radius:50%;
+    }
+    .fab-container .sub-button .material-icons{color:#2e2e2e;padding-top:6px}
+    .fab-container .sub-button i{color:#2e2e2e;font-size:20px}
     .fab-container .sub-button:hover .material-icons,
-    .fab-container .sub-button:hover i {
-      color: #FEFEFE;
-    }
+    .fab-container .sub-button:hover i{color:#fefefe}
   </style>
 </head>
-
 <body>
-  <!-- Loader -->
   <div id="loader">
     <div class="academylogo">
       <img src="/img/academylogo.png" alt="Classic Academy logo">
     </div>
-    <div style="display:flex; gap:10px;">
-      <div class="loader">
-        <div class="face front"></div>
-        <div class="face back"></div>
-      </div>
-      <div class="loader">
-        <div class="face front"></div>
-        <div class="face back"></div>
-      </div>
-      <div class="loader">
-        <div class="face front"></div>
-        <div class="face back"></div>
-      </div>
-      <div class="loader">
-        <div class="face front"></div>
-        <div class="face back"></div>
-      </div>
-      <div class="loader">
-        <div class="face front"></div>
-        <div class="face back"></div>
-      </div>
+    <div style="display:flex;gap:10px;">
+      <div class="loader"><div class="face front"></div><div class="face back"></div></div>
+      <div class="loader"><div class="face front"></div><div class="face back"></div></div>
+      <div class="loader"><div class="face front"></div><div class="face back"></div></div>
+      <div class="loader"><div class="face front"></div><div class="face back"></div></div>
+      <div class="loader"><div class="face front"></div><div class="face back"></div></div>
     </div>
   </div>
 
-  <!-- Nav -->
   <header class="header" id="siteHeader">
     <a href="/" class="brand" aria-label="Classic Academy Home">
       <img class="brand-mark" src="/img/academylogo.png" alt="Classic Academy logo">
@@ -689,8 +281,8 @@
     <section class="about-hero reveal">
       <div>
         <span class="kicker"><i class="fa-solid fa-sparkles"></i> Not found</span>
-        <h1>404 — Page not found</h1>
-        <p>The page you’re looking for doesn’t exist. Use search or go back to the homepage.</p>
+        <h1>404 - Page not found</h1>
+        <p>The page you are looking for does not exist. Use search or go back to the homepage.</p>
         <div class="actions">
           <a class="btn" href="/"><i class="fa-solid fa-house"></i> Home</a>
           <a class="btn ghost" href="/search"><i class="fa-solid fa-magnifying-glass"></i> Search</a>
@@ -703,18 +295,15 @@
     </section>
   </main>
 
-  <!-- Footer -->
   <footer class="footer">
     <div>
       <h4>About Us</h4>
-      <p>We are excited to introduce our upcoming Classic Academy Plans, where schools will be categorized</p>
+      <p>We are excited to introduce our upcoming Classic Academy Plans, where schools will be categorized.</p>
       <a href="https://play.google.com/store" target="_blank" rel="noopener">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg"
-          style="height: 50px; width: 150px" alt="Google Play">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" style="height:50px;width:150px" alt="Google Play">
       </a>
       <a href="https://apps.apple.com/" target="_blank" rel="noopener">
-        <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg"
-          alt="Download on the App Store" style="height: 50px;">
+        <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store" style="height:50px;">
       </a>
     </div>
 
@@ -723,7 +312,7 @@
       <ul>
         <li><a href="/about">Our Story</a></li>
         <li><a href="/services">What We Offer</a></li>
-        <li><a href="/plan?plan=standard">Plans & Pricing</a></li>
+        <li><a href="/plan?plan=standard">Plans and Pricing</a></li>
         <li><a href="/blog?slug=increase-admissions">Press resources</a></li>
         <li><a href="/careers">Careers</a></li>
       </ul>
@@ -752,33 +341,27 @@
     </div>
   </footer>
 
-  <button id="toTopBtn" aria-label="Scroll to top">↑</button>
+  <button id="toTopBtn" aria-label="Scroll to top">&uarr;</button>
 
-  <!-- Floating support button -->
   <div class="fab-container" aria-hidden="true">
     <div class="fab shadow">
       <div class="fab-content">
         <span class="material-icons">support_agent</span>
       </div>
     </div>
-
     <div class="sub-button shadow">
       <a href="tel:+256781977217" aria-label="Call support"><span class="material-icons">phone</span></a>
     </div>
-
     <div class="sub-button shadow">
       <a href="https://api.whatsapp.com/send?phone=256781977217" target="_blank" rel="noopener" aria-label="WhatsApp">
         <i class="fa-brands fa-whatsapp"></i>
       </a>
     </div>
-
     <div class="sub-button shadow">
       <a href="/share" target="_blank" rel="noopener" aria-label="Share"><span class="material-icons">share</span></a>
     </div>
   </div>
 
-<script src="/pages/404.js"></script>
-
+  <script src="/pages/404.js"></script>
 </body>
-
 </html>

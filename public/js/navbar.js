@@ -1,6 +1,5 @@
 (() => {
   const sidebar = document.getElementById("sidebar");
-  const backdrop = document.getElementById("sidebarBackdrop");
   const mobileBtn = document.getElementById("mobileMenuBtn");
   const collapseBtn = document.getElementById("sbToggle");
 
@@ -13,13 +12,11 @@
 
   function openMobile() {
     sidebar.classList.add("open");
-    backdrop?.classList.add("show");
     mobileBtn?.setAttribute("aria-expanded", "true");
   }
 
   function closeMobile() {
     sidebar.classList.remove("open");
-    backdrop?.classList.remove("show");
     mobileBtn?.setAttribute("aria-expanded", "false");
   }
 
@@ -28,10 +25,19 @@
     sidebar.classList.contains("open") ? closeMobile() : openMobile();
   });
 
-  backdrop?.addEventListener("click", closeMobile);
-
   window.addEventListener("keydown", (event) => {
     if (event.key === "Escape") closeMobile();
+  });
+
+  document.addEventListener("click", (event) => {
+    if (!isMobile() || !sidebar.classList.contains("open")) return;
+
+    const clickedSidebar = sidebar.contains(event.target);
+    const clickedToggle = mobileBtn?.contains(event.target);
+
+    if (!clickedSidebar && !clickedToggle) {
+      closeMobile();
+    }
   });
 
   window.addEventListener("resize", () => {

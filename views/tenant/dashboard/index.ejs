@@ -36,28 +36,30 @@
             <% } %>
           </p>
         </div>
+      </div>
 
-        <div class="topbar-right">
-          <form class="search" role="search" method="GET" action="/admin/search">
-            <i class="fa fa-magnifying-glass"></i>
-            <input id="searchInput" name="q" placeholder="<%= ui.searchPlaceholder %>" />
-          </form>
+      <div class="topbar-center">
+        <form class="search" role="search" method="GET" action="/admin/search">
+          <i class="fa fa-magnifying-glass"></i>
+          <input id="searchInput" name="q" placeholder="<%= ui.searchPlaceholder %>" />
+        </form>
+      </div>
 
-          <% if (canNotifications) { %>
-            <a class="notif-pill" href="/admin/notifications">
-              <span>Notifications</span>
-              <span class="chip" id="notifCount"><%= dashboardData?.notificationsCount || 0 %></span>
-            </a>
-          <% } %>
+      <div class="topbar-right">
+        <% if (canNotifications) { %>
+          <a class="notif-pill" href="/admin/notifications">
+            <span>Notifications</span>
+            <span class="chip" id="notifCount"><%= dashboardData?.notificationsCount || 0 %></span>
+          </a>
+        <% } %>
 
-          <div class="avatar">
-            <div class="avatar-circle">
-              <%= ((user?.name || user?.fullName || "A").charAt(0)).toUpperCase() %>
-            </div>
-            <div class="avatar-meta">
-              <strong><%= user?.name || user?.fullName || "Admin User" %></strong>
-              <span><%= user?.role || "Admin" %></span>
-            </div>
+        <div class="avatar">
+          <div class="avatar-circle">
+            <%= ((user?.name || user?.fullName || "A").charAt(0)).toUpperCase() %>
+          </div>
+          <div class="avatar-meta">
+            <strong><%= user?.name || user?.fullName || "Admin User" %></strong>
+            <span><%= user?.role || "Admin" %></span>
           </div>
         </div>
       </div>
