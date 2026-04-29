@@ -67,7 +67,7 @@ button{ font:inherit; }
   width:280px;
   flex-shrink:0;
 
-  background:linear-gradient(180deg, var(--blue), var(--blue-2));
+  background:var(--blue);
   color:#fff;
 
   padding:22px;
@@ -413,7 +413,7 @@ button{ font:inherit; }
 }
 
 :where(form, .toolbar, .filters, .filters-row, .top-actions, .modal, .modal-card, .modal-body, .modal-content)
-  :where(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), select, .input, .select, .view-input){
+  :where(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), select, .input, .select, .view-input:not(.multiline)){
   border-radius:999px !important;
 }
 
@@ -437,7 +437,7 @@ button{ font:inherit; }
   padding-right:34px !important;
 }
 
-:where(textarea, .textarea){
+:where(textarea, .textarea, .view-input.multiline){
   border-radius:18px !important;
   min-height:108px;
 }
@@ -449,6 +449,44 @@ button{ font:inherit; }
 @media (max-width:640px){
   :where(.grid-4, .kpi-row, .stats-grid, .summary-grid, .quick-grid, .module-grid, .modules-grid, .modules){
     grid-template-columns:repeat(2, minmax(0,1fr)) !important;
+  }
+
+  :where(.filters-row, .toolbar .left, .toolbar .right){
+    width:100% !important;
+    display:grid !important;
+    grid-template-columns:repeat(3, minmax(0, 1fr)) !important;
+    grid-auto-flow:row dense !important;
+    align-items:end !important;
+    gap:8px !important;
+  }
+
+  :where(.filters-row > *, .toolbar .left > *, .toolbar .right > *){
+    grid-column:span 1;
+    width:auto !important;
+    max-width:none !important;
+    min-width:0 !important;
+    justify-self:stretch !important;
+  }
+
+  :where(.filters-row > *, .toolbar .left > *, .toolbar .right > *)
+    :where(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), select, .input, .select, .btn, .btn-xs, button, a.btn){
+    width:100% !important;
+    min-width:0 !important;
+    max-width:100% !important;
+  }
+}
+
+@media (max-width:580px){
+  :where(.filters-row > *, .toolbar .left > *, .toolbar .right > *)
+    :where(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), select, .input, .select, .btn, .btn-xs, button, a.btn){
+    min-width:0 !important;
+    max-width:100% !important;
+  }
+}
+
+@media (max-width:520px){
+  :where(.filters-row, .toolbar .left, .toolbar .right){
+    gap:7px !important;
   }
 }
 

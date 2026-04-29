@@ -561,7 +561,7 @@ textarea {
 
     .top-actions .btn,
     .top-actions .chip {
-        width: 100%;
+        width: auto;
         justify-content: center;
     }
 

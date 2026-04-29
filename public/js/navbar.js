@@ -131,4 +131,121 @@
 
     window.addEventListener("scroll", hideTip, true);
   })();
+
+  (() => {
+    const MOBILE_BREAKPOINT = "(max-width: 640px)";
+    const filterLayoutSelector = ".toolbar .left, .toolbar .right, .filters-row";
+    const controlSelector =
+      'input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), select, .input, .select';
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function clearSizing(control) {
+      const layoutParent = control.closest(filterLayoutSelector);
+      if (!layoutParent) return;
+
+      let item = control;
+      while (item.parentElement && item.parentElement !== layoutParent) {
+        item = item.parentElement;
+      }
+
+      item.style.removeProperty("flex");
+      item.style.removeProperty("width");
+      item.style.removeProperty("min-width");
+      item.style.removeProperty("grid-column");
+
+      control.style.removeProperty("width");
+      control.style.removeProperty("min-width");
+      control.style.removeProperty("max-width");
+    }
+
+    function baseTextForControl(control) {
+      const explicit = (control.dataset.sizeText || "").trim();
+      if (explicit) return explicit;
+
+      if (control.matches("select")) {
+        const anchorOption = Array.from(control.options || []).find((option) => {
+          if ((option.dataset.sizeText || "").trim()) return true;
+          if (option.hasAttribute("data-size-anchor")) return true;
+          return Boolean((option.textContent || "").trim());
+        });
+
+        const anchorText =
+          (anchorOption?.dataset.sizeText || "").trim() ||
+          (anchorOption?.textContent || "").trim();
+
+        return (
+          anchorText ||
+          control.getAttribute("placeholder") ||
+          control.getAttribute("aria-label") ||
+          "Option"
+        ).trim();
+      }
+
+      const type = (control.getAttribute("type") || "text").toLowerCase();
+
+      if (type === "datetime-local") return "2026-12-31 23:59";
+      if (type === "date") return "2026-12-31";
+      if (type === "time") return "23:59";
+      if (type === "month") return "2026-12";
+      if (type === "week") return "2026-W52";
+      if (type === "number") return control.getAttribute("placeholder") || "0000";
+
+      const placeholder = (control.getAttribute("placeholder") || "").trim();
+      if (placeholder) return placeholder;
+
+      const label = control.closest(".field")?.querySelector("label");
+      if (label?.textContent?.trim()) return label.textContent.trim();
+
+      return control.getAttribute("name") || "Field";
+    }
+
+    function spanForControl(control) {
+      const explicit = Number(control.dataset.sizeSpan || "");
+      if (Number.isFinite(explicit) && explicit >= 1) {
+        return clamp(Math.round(explicit), 1, 2);
+      }
+
+      const isSearch =
+        control.matches('input[name="q"]') ||
+        control.matches('input[type="search"]') ||
+        control.matches('.input[name="q"]');
+
+      if (isSearch) return 2;
+      return 1;
+    }
+
+    function applyCompactSizing() {
+      const isCompact = window.matchMedia(MOBILE_BREAKPOINT).matches;
+      document.querySelectorAll(controlSelector).forEach((control) => {
+        const layoutParent = control.closest(filterLayoutSelector);
+        if (!layoutParent) return;
+
+        if (!isCompact) {
+          clearSizing(control);
+          return;
+        }
+
+        let item = control;
+        while (item.parentElement && item.parentElement !== layoutParent) {
+          item = item.parentElement;
+        }
+
+        const span = spanForControl(control);
+
+        item.style.setProperty("grid-column", `span ${span}`, "important");
+        item.style.setProperty("min-width", "0", "important");
+
+        control.style.setProperty("width", "100%", "important");
+        control.style.setProperty("min-width", "0", "important");
+        control.style.setProperty("max-width", "100%", "important");
+      });
+    }
+
+    applyCompactSizing();
+    window.addEventListener("resize", applyCompactSizing);
+    window.addEventListener("pageshow", applyCompactSizing);
+  })();
 })();

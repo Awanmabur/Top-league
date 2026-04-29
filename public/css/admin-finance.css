@@ -9,7 +9,7 @@
 body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial;background:var(--bg);color:#0f172a}
 a{color:inherit;text-decoration:none}
 .app{display:flex;min-height:100vh}
-.sidebar{width:260px;background:linear-gradient(180deg,var(--blue),var(--blue2));color:#fff;padding:18px}
+.sidebar{width:260px;background:var(--blue);color:#fff;padding:18px}
 .brand{display:flex;gap:10px;align-items:center;margin-bottom:14px}
 .logo{width:42px;height:42px;border-radius:14px;background:rgba(255,255,255,.14);display:grid;place-items:center;font-weight:1000}
 .brand h1{font-size:14px;margin:0;font-weight:1000}
