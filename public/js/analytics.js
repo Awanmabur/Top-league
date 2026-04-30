@@ -223,7 +223,7 @@
 
     makeBarChart(
       "chartPrograms",
-      topPrograms.map((x) => x.label || "Program"),
+      topPrograms.map((x) => x.label || "Section"),
       topPrograms.map((x) => Number(x.students || 0)),
       "Students"
     );

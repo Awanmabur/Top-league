@@ -196,7 +196,7 @@
       ref: row.admissionNumber || row.studentName,
       rawDate: "—",
       amount: row.balance || 0,
-      description: `${row.studentName || "—"} • ${row.programName || "—"} • Invoiced ${money(row.totalInvoiced || 0)} • Paid ${money(row.totalPaid || 0)}`,
+      description: `${row.studentName || "—"} - ${row.programName || "—"} - Invoiced ${money(row.totalInvoiced || 0)} - Paid ${money(row.totalPaid || 0)}`,
       status: row.balance > 0 ? "Outstanding" : "Settled",
     });
   });
@@ -222,8 +222,35 @@
     }
   });
 
+  function csvCell(value) {
+    const text = String(value ?? "");
+    if (/[",\n]/.test(text)) return `"${text.replace(/"/g, '""')}"`;
+    return text;
+  }
+
   $("btnExport").addEventListener("click", function () {
-    alert("Hook finance reports export route later.");
+    const rows = [["Date", "Type", "Reference", "Description", "Amount", "Status"]];
+    (REPORTS.recentActivity || []).forEach(function (row) {
+      rows.push([
+        row.rawDate || "",
+        row.type || "",
+        row.ref || "",
+        row.description || "",
+        row.amount || 0,
+        row.status || "",
+      ]);
+    });
+
+    const csv = rows.map((row) => row.map(csvCell).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `finance-report-${Date.now()}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   });
 
   setView("overview");

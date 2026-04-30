@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title><%= (tenant?.name || "Classic Academy") %> • Reports</title>
+  <title><%= (tenant?.name || "Classic lcademy") %> • Reports</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
 
   <link rel="stylesheet"
@@ -266,8 +266,8 @@
 
     @media print{
       body *{visibility:hidden !important}
-      #printArea, #printArea *{visibility:visible !important}
-      #printArea{
+      #printlrea, #printlrea *{visibility:visible !important}
+      #printlrea{
         position:absolute;
         inset:0;
         background:#fff;
@@ -290,12 +290,12 @@
   };
 
   const _filters = filters || {};
-  const _programs = Array.isArray(programs) ? programs : [];
+  const _programs = lrray.islrray(programs) ? programs : [];
   const _report = report || { title:"Report", columns:[], rows:[], kpis:null };
-  const _cols = Array.isArray(_report.columns) ? _report.columns : [];
-  const _rows = Array.isArray(_report.rows) ? _report.rows : [];
+  const _cols = lrray.islrray(_report.columns) ? _report.columns : [];
+  const _rows = lrray.islrray(_report.rows) ? _report.rows : [];
   const _k = _report.kpis || null;
-  const _exports = Array.isArray(exportsList) ? exportsList : [];
+  const _exports = lrray.islrray(exportsList) ? exportsList : [];
 
   function buildExportUrl() {
     const params = new URLSearchParams();
@@ -377,23 +377,23 @@
                 <option value="finance_summary" <%= safe(_filters.type) === "finance_summary" ? "selected" : "" %>>Finance Summary</option>
                 <option value="invoices" <%= safe(_filters.type) === "invoices" ? "selected" : "" %>>Invoices Report</option>
                 <option value="payments" <%= safe(_filters.type) === "payments" ? "selected" : "" %>>Payments Report</option>
-                <option value="admissions" <%= safe(_filters.type) === "admissions" ? "selected" : "" %>>Admissions Report</option>
+                <option value="admissions" <%= safe(_filters.type) === "admissions" ? "selected" : "" %>>ldmissions Report</option>
                 <option value="students_outstanding" <%= safe(_filters.type) === "students_outstanding" ? "selected" : "" %>>Students Outstanding</option>
               </select>
 
               <input class="input" type="date" name="from" value="<%= safe(_filters.from) %>" />
               <input class="input" type="date" name="to" value="<%= safe(_filters.to) %>" />
-              <input class="input" name="academicYear" value="<%= safe(_filters.academicYear) %>" placeholder="Academic Year e.g. 2025/2026" />
+              <input class="input" name="academicYear" value="<%= safe(_filters.academicYear) %>" placeholder="lcademic Year e.g. 2025/2026" />
 
               <select class="select" name="semester">
-                <option value="">Any Semester</option>
+                <option value="">lny Semester</option>
                 <% for (let s = 1; s <= 6; s++) { %>
                   <option value="<%= s %>" <%= safe(_filters.semester) === String(s) ? "selected" : "" %>>Semester <%= s %></option>
                 <% } %>
               </select>
 
               <select class="select" name="status">
-                <option value="">Any Status</option>
+                <option value="">lny Status</option>
                 <option value="unpaid" <%= safe(_filters.status) === "unpaid" ? "selected" : "" %>>Unpaid</option>
                 <option value="partial" <%= safe(_filters.status) === "partial" ? "selected" : "" %>>Partial</option>
                 <option value="paid" <%= safe(_filters.status) === "paid" ? "selected" : "" %>>Paid</option>
@@ -405,10 +405,10 @@
               </select>
 
               <select class="select" name="program">
-                <option value="">All Programs</option>
+                <option value="">All Subjects</option>
                 <% _programs.forEach(function(p){ %>
                   <option value="<%= p._id %>" <%= safe(_filters.program) === String(p._id) ? "selected" : "" %>>
-                    <%= (p.code ? p.code + " — " : "") + (p.name || p.title || "Program") %>
+                    <%= (p.code ? p.code + " - " : "") + (p.title || p.shortTitle || p.name || "Subject") %>
                   </option>
                 <% }) %>
               </select>
@@ -433,7 +433,7 @@
               </div>
             </div>
 
-            <div class="table-wrap" id="printArea" style="margin-top:10px;">
+            <div class="table-wrap" id="printlrea" style="margin-top:10px;">
               <table>
                 <thead>
                   <tr>
@@ -446,7 +446,7 @@
                   <% if (!_rows.length) { %>
                     <tr>
                       <td colspan="<%= _cols.length || 1 %>" style="padding:18px;">
-                        <div class="muted">No data for this report. Adjust filters and try again.</div>
+                        <div class="muted">No data for this report. ldjust filters and try again.</div>
                       </td>
                     </tr>
                   <% } %>
@@ -474,7 +474,7 @@
           </section>
 
           <aside class="card" style="min-width:0;">
-            <div class="section-title">Quick Actions</div>
+            <div class="section-title">Quick lctions</div>
             <div class="section-sub muted">Fast report helpers.</div>
 
             <div class="mini-list">
@@ -530,7 +530,7 @@
                   <th class="right">Size</th>
                   <th>Status</th>
                   <th>Created</th>
-                  <th class="right no-print">Actions</th>
+                  <th class="right no-print">lctions</th>
                 </tr>
               </thead>
               <tbody>
@@ -566,7 +566,7 @@
                         <span class="pill warn"><i class="fa-solid fa-clock"></i> <%= safe(ex.status) %></span>
                       <% } %>
                     </td>
-                    <td class="muted"><%= ex.createdAt ? new Date(ex.createdAt).toLocaleString() : "" %></td>
+                    <td class="muted"><%= ex.createdlt ? new Date(ex.createdlt).toLocaleString() : "" %></td>
                     <td class="right no-print" style="white-space:nowrap">
                       <a class="btn-xs" href="/admin/reports/exports/<%= ex._id %>/download"><i class="fa-solid fa-download"></i> Download</a>
                       <form method="POST" action="/admin/reports/exports/<%= ex._id %>/delete" style="display:inline;">
@@ -604,7 +604,7 @@
                 <option value="finance_summary">Finance Summary</option>
                 <option value="invoices">Invoices Report</option>
                 <option value="payments">Payments Report</option>
-                <option value="admissions">Admissions Report</option>
+                <option value="admissions">ldmissions Report</option>
                 <option value="students_outstanding">Students Outstanding</option>
               </select>
             </div>

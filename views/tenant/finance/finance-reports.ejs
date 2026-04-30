@@ -139,7 +139,7 @@
             </select>
 
             <select class="select" name="program">
-              <option value="all" <%= q.program === 'all' ? 'selected' : '' %>>All Programs</option>
+              <option value="all" <%= q.program === 'all' ? 'selected' : '' %>>All Subjects</option>
               <% (programs || []).forEach(function(p){ %>
                 <option value="<%= p.id %>" <%= q.program === p.id ? 'selected' : '' %>><%= p.name %></option>
               <% }) %>
@@ -249,7 +249,7 @@
                   <tr>
                     <th>Student</th>
                     <th>Admission No</th>
-                    <th>Program</th>
+                    <th>Subject</th>
                     <th>Total Invoiced</th>
                     <th>Total Paid</th>
                     <th>Balance</th>

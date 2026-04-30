@@ -77,12 +77,12 @@ function buildDateMatch(filters, field = "createdAt") {
 }
 
 async function getPrograms(req) {
-  const Program = req.models?.Program;
-  if (!Program) return [];
+  const Subject = req.models?.Subject || req.models?.Program;
+  if (!Subject) return [];
 
-  return Program.find({ isDeleted: { $ne: true } })
-    .select("name title code")
-    .sort({ name: 1, title: 1 })
+  return Subject.find({ isDeleted: { $ne: true } })
+    .select("title shortTitle name code")
+    .sort({ title: 1, shortTitle: 1, name: 1, code: 1 })
     .lean();
 }
 
@@ -106,12 +106,56 @@ function buildFiltersFromQuery(req) {
   };
 }
 
+function normalizeInvoiceStatusFilter(status) {
+  const value = safeStr(status).toLowerCase();
+  if (!value) return "";
+  if (value === "unpaid") return "Unpaid";
+  if (value === "partial") return "Partially Paid";
+  if (value === "paid") return "Paid";
+  if (value === "voided") return "Cancelled";
+  return "";
+}
+
+function getStudentName(student) {
+  if (!student) return "-";
+  return (
+    student.fullName ||
+    [student.firstName, student.middleName, student.lastName].filter(Boolean).join(" ").trim() ||
+    "-"
+  );
+}
+
+function getStudentRegNo(student) {
+  return student?.regNo || student?.admissionNumber || student?.studentNo || "";
+}
+
+function getSubjectName(subject) {
+  if (!subject) return "-";
+  return subject.title || subject.shortTitle || subject.name || subject.code || "-";
+}
+
+function getSubjectLabel(subject) {
+  if (!subject) return "-";
+  const code = safeStr(subject.code);
+  const name = getSubjectName(subject);
+  return code && code !== name ? `${code} - ${name}` : name;
+}
+
+function getStudentAcademicLabel(student) {
+  const subjects = Array.isArray(student?.subjects) ? student.subjects : [];
+  if (subjects.length) return getSubjectLabel(subjects[0]);
+
+  const parts = [student?.className, student?.section, student?.stream].filter(Boolean);
+  return parts.length ? parts.join(" - ") : "-";
+}
+
 // ---------- report builders ----------
 async function reportFinanceSummary(req, filters) {
   const { Invoice, Payment } = req.models || {};
   const matchSoft = { isDeleted: { $ne: true } };
   const invoiceDateMatch = buildDateMatch(filters, "createdAt");
   const paymentDateMatch = buildDateMatch(filters, "createdAt");
+  const subjectId = mongoose.Types.ObjectId.isValid(filters.program) ? filters.program : "";
 
   let invoicesIssued = 0;
   let invoicesAmount = 0;
@@ -123,15 +167,18 @@ async function reportFinanceSummary(req, filters) {
   const jobs = [];
 
   if (Invoice) {
+    const invoiceMatch = { ...matchSoft, ...invoiceDateMatch };
+    if (subjectId) invoiceMatch.programId = new mongoose.Types.ObjectId(subjectId);
+
     jobs.push(
       Invoice.aggregate([
-        { $match: { ...matchSoft, ...invoiceDateMatch } },
+        { $match: invoiceMatch },
         {
           $group: {
             _id: null,
             count: { $sum: 1 },
-            total: { $sum: "$amount" },
-            paid: { $sum: "$amountPaid" },
+            total: { $sum: { $ifNull: ["$totalAmount", 0] } },
+            paid: { $sum: { $ifNull: ["$paidAmount", 0] } },
           },
         },
       ]).then((agg) => {
@@ -143,12 +190,27 @@ async function reportFinanceSummary(req, filters) {
 
     jobs.push(
       Invoice.aggregate([
-        { $match: { ...matchSoft, status: { $in: ["unpaid", "partial"] } } },
+        {
+          $match: {
+            ...invoiceMatch,
+            status: { $in: ["Unpaid", "Partially Paid", "Overdue"] },
+          },
+        },
         {
           $group: {
             _id: null,
             outstanding: {
-              $sum: { $max: [0, { $subtract: ["$amount", "$amountPaid"] }] },
+              $sum: {
+                $max: [
+                  0,
+                  {
+                    $subtract: [
+                      { $ifNull: ["$totalAmount", 0] },
+                      { $ifNull: ["$paidAmount", 0] },
+                    ],
+                  },
+                ],
+              },
             },
           },
         },
@@ -159,9 +221,12 @@ async function reportFinanceSummary(req, filters) {
   }
 
   if (Payment) {
+    const paymentMatch = { ...matchSoft, ...paymentDateMatch };
+    if (subjectId) paymentMatch.programId = new mongoose.Types.ObjectId(subjectId);
+
     jobs.push(
       Payment.aggregate([
-        { $match: { ...matchSoft, ...paymentDateMatch } },
+        { $match: paymentMatch },
         {
           $group: {
             _id: null,
@@ -204,7 +269,7 @@ async function reportFinanceSummary(req, filters) {
 }
 
 async function reportInvoices(req, filters) {
-  const { Invoice, Student, Program } = req.models || {};
+  const { Invoice } = req.models || {};
   if (!Invoice) return { title: "Invoices Report", columns: [], rows: [], kpis: null };
 
   const q = {
@@ -212,75 +277,43 @@ async function reportInvoices(req, filters) {
     ...buildDateMatch(filters, "createdAt"),
   };
 
-  if (filters.status) q.status = filters.status;
+  const status = normalizeInvoiceStatusFilter(filters.status);
+  if (status) q.status = status;
   if (filters.academicYear) q.academicYear = filters.academicYear;
   if (filters.semester) q.semester = safeNum(filters.semester, 0);
+  if (filters.program) q.programId = filters.program;
 
   const invoices = await Invoice.find(q)
+    .populate("studentId", "fullName firstName middleName lastName regNo admissionNumber studentNo")
+    .populate("programId", "title shortTitle name code")
     .sort({ createdAt: -1 })
     .limit(800)
     .lean();
 
-  const studentIds = Array.from(new Set(
-    invoices.map((x) => x.studentId).filter(Boolean).map(String)
-  ));
-
-  const students = Student
-    ? await Student.find({ _id: { $in: studentIds }, isDeleted: { $ne: true } })
-        .select("fullName firstName lastName regNo program")
-        .lean()
-    : [];
-
-  const studentMap = new Map(students.map((s) => [String(s._id), s]));
-
-  const programIds = Array.from(new Set(
-    students.map((s) => s.program).filter(Boolean).map(String)
-  ));
-
-  const programDocs = Program
-    ? await Program.find({ _id: { $in: programIds }, isDeleted: { $ne: true } })
-        .select("code name title")
-        .lean()
-    : [];
-
-  const programMap = new Map(programDocs.map((p) => [String(p._id), p]));
-
-  let rows = invoices.map((inv) => {
-    const st = inv.studentId ? studentMap.get(String(inv.studentId)) : null;
-    const pr = st?.program ? programMap.get(String(st.program)) : null;
-
-    const studentLabel = st
-      ? ((st.fullName || [st.firstName, st.lastName].filter(Boolean).join(" ").trim()) + (st.regNo ? ` • ${st.regNo}` : ""))
-      : "-";
-
-    const programLabel = pr
-      ? ((pr.code ? pr.code + " — " : "") + (pr.name || pr.title || "Program"))
-      : "-";
-
-    const amount = safeNum(inv.amount, 0);
-    const paid = safeNum(inv.amountPaid, 0);
+  const rows = invoices.map((inv) => {
+    const student = inv.studentId || null;
+    const subject = inv.programId || null;
+    const amount = safeNum(inv.totalAmount, 0);
+    const paid = safeNum(inv.paidAmount, 0);
     const outstanding = Math.max(0, amount - paid);
+    const regNo = getStudentRegNo(student);
 
     return {
       invoiceNumber: inv.invoiceNumber || "-",
       description: inv.description || "",
-      student: studentLabel,
-      program: programLabel,
+      student: student ? `${getStudentName(student)}${regNo ? ` - ${regNo}` : ""}` : "-",
+      program: getSubjectLabel(subject),
       academicYear: inv.academicYear || "",
       semester: inv.semester || "",
       amount,
       paid,
       outstanding,
-      status: inv.status || "unpaid",
+      status: inv.status || "Unpaid",
       createdAt: inv.createdAt ? new Date(inv.createdAt).toLocaleString() : "",
       _href: `/admin/invoices/${inv._id}`,
-      _programId: st?.program ? String(st.program) : "",
+      _programId: subject?._id ? String(subject._id) : String(inv.programId || ""),
     };
   });
-
-  if (filters.program) {
-    rows = rows.filter((r) => r._programId === filters.program);
-  }
 
   const totalAmount = rows.reduce((s, r) => s + safeNum(r.amount), 0);
   const totalPaid = rows.reduce((s, r) => s + safeNum(r.paid), 0);
@@ -291,7 +324,7 @@ async function reportInvoices(req, filters) {
     columns: [
       { key: "invoiceNumber", label: "Invoice" },
       { key: "student", label: "Student" },
-      { key: "program", label: "Program" },
+      { key: "program", label: "Subject" },
       { key: "academicYear", label: "Year" },
       { key: "semester", label: "Sem" },
       { key: "amount", label: "Amount", align: "right", money: true },
@@ -311,78 +344,41 @@ async function reportInvoices(req, filters) {
 }
 
 async function reportPayments(req, filters) {
-  const { Payment, Student, Invoice, Program } = req.models || {};
+  const { Payment } = req.models || {};
   if (!Payment) return { title: "Payments Report", columns: [], rows: [], kpis: null };
 
   const q = {
     isDeleted: { $ne: true },
     ...buildDateMatch(filters, "createdAt"),
   };
+  if (filters.program) q.programId = filters.program;
 
   const payments = await Payment.find(q)
+    .populate("studentId", "fullName firstName middleName lastName regNo admissionNumber studentNo")
+    .populate("invoiceId", "invoiceNumber")
+    .populate("programId", "title shortTitle name code")
     .sort({ createdAt: -1 })
     .limit(800)
     .lean();
 
-  const studentIds = Array.from(new Set(
-    payments.map((p) => p.studentId).filter(Boolean).map(String)
-  ));
-  const invoiceIds = Array.from(new Set(
-    payments.map((p) => p.invoiceId).filter(Boolean).map(String)
-  ));
-
-  const students = Student
-    ? await Student.find({ _id: { $in: studentIds }, isDeleted: { $ne: true } })
-        .select("fullName firstName lastName regNo program")
-        .lean()
-    : [];
-
-  const invoices = Invoice
-    ? await Invoice.find({ _id: { $in: invoiceIds }, isDeleted: { $ne: true } })
-        .select("invoiceNumber")
-        .lean()
-    : [];
-
-  const studentMap = new Map(students.map((s) => [String(s._id), s]));
-  const invoiceMap = new Map(invoices.map((i) => [String(i._id), i]));
-
-  const programIds = Array.from(new Set(
-    students.map((s) => s.program).filter(Boolean).map(String)
-  ));
-
-  const programDocs = Program
-    ? await Program.find({ _id: { $in: programIds }, isDeleted: { $ne: true } })
-        .select("code name title")
-        .lean()
-    : [];
-
-  const programMap = new Map(programDocs.map((p) => [String(p._id), p]));
-
-  let rows = payments.map((p) => {
-    const st = p.studentId ? studentMap.get(String(p.studentId)) : null;
-    const inv = p.invoiceId ? invoiceMap.get(String(p.invoiceId)) : null;
-    const pr = st?.program ? programMap.get(String(st.program)) : null;
-
-    const studentLabel = st
-      ? ((st.fullName || [st.firstName, st.lastName].filter(Boolean).join(" ").trim()) + (st.regNo ? ` • ${st.regNo}` : ""))
-      : "-";
+  const rows = payments.map((payment) => {
+    const student = payment.studentId || null;
+    const invoice = payment.invoiceId || null;
+    const subject = payment.programId || null;
+    const regNo = getStudentRegNo(student);
 
     return {
-      receiptNumber: p.receiptNumber || "-",
-      invoiceNumber: inv ? (inv.invoiceNumber || "-") : "-",
-      student: studentLabel,
-      program: pr ? ((pr.code ? pr.code + " — " : "") + (pr.name || pr.title || "Program")) : "-",
-      amount: safeNum(p.amount, 0),
-      method: p.method || "-",
-      reference: p.reference || "",
-      createdAt: p.createdAt ? new Date(p.createdAt).toLocaleString() : "",
-      _programId: st?.program ? String(st.program) : "",
+      receiptNumber: payment.receiptNumber || "-",
+      invoiceNumber: invoice ? (invoice.invoiceNumber || "-") : "-",
+      student: student ? `${getStudentName(student)}${regNo ? ` - ${regNo}` : ""}` : "-",
+      program: getSubjectLabel(subject),
+      amount: safeNum(payment.amount, 0),
+      method: payment.method || "-",
+      reference: payment.reference || "",
+      createdAt: payment.createdAt ? new Date(payment.createdAt).toLocaleString() : "",
+      _programId: subject?._id ? String(subject._id) : String(payment.programId || ""),
     };
   });
-
-  if (filters.program) {
-    rows = rows.filter((r) => r._programId === filters.program);
-  }
 
   const total = rows.reduce((s, r) => s + safeNum(r.amount), 0);
 
@@ -392,7 +388,7 @@ async function reportPayments(req, filters) {
       { key: "receiptNumber", label: "Receipt" },
       { key: "invoiceNumber", label: "Invoice" },
       { key: "student", label: "Student" },
-      { key: "program", label: "Program" },
+      { key: "program", label: "Subject" },
       { key: "amount", label: "Amount", align: "right", money: true },
       { key: "method", label: "Method" },
       { key: "reference", label: "Reference" },
@@ -429,7 +425,7 @@ async function reportAdmissions(req, filters) {
   const rows = apps.map((a) => ({
     applicationId: a.applicationId || "-",
     name: (a.fullName || [a.firstName, a.lastName].filter(Boolean).join(" ").trim()) || "-",
-    program: a.program1 ? ((a.program1.code ? a.program1.code + " — " : "") + (a.program1.name || a.program1.title || "Program")) : "-",
+    program: a.program1 ? ((a.program1.code ? a.program1.code + " - " : "") + (a.program1.name || a.program1.title || "Section")) : "-",
     status: a.status || "-",
     email: a.email || "",
     phone: a.phone || "",
@@ -447,7 +443,7 @@ async function reportAdmissions(req, filters) {
     columns: [
       { key: "applicationId", label: "Application ID" },
       { key: "name", label: "Name" },
-      { key: "program", label: "Program" },
+      { key: "program", label: "Section" },
       { key: "status", label: "Status" },
       { key: "email", label: "Email" },
       { key: "phone", label: "Phone" },
@@ -464,62 +460,50 @@ async function reportAdmissions(req, filters) {
 }
 
 async function reportStudentsOutstanding(req, filters) {
-  const { Student, Invoice, Program } = req.models || {};
-  if (!Student || !Invoice) return { title: "Students Outstanding", columns: [], rows: [], kpis: null };
+  const { Invoice } = req.models || {};
+  if (!Invoice) return { title: "Students Outstanding", columns: [], rows: [], kpis: null };
 
-  const agg = await Invoice.aggregate([
-    { $match: { isDeleted: { $ne: true }, status: { $in: ["unpaid", "partial"] } } },
-    {
-      $group: {
-        _id: "$studentId",
-        outstanding: { $sum: { $max: [0, { $subtract: ["$amount", "$amountPaid"] }] } },
-      },
-    },
-    { $sort: { outstanding: -1 } },
-    { $limit: 300 },
-  ]);
-
-  const studentIds = agg.map((x) => x._id).filter(Boolean);
-
-  const students = await Student.find({
-    _id: { $in: studentIds },
+  const invoiceQuery = {
     isDeleted: { $ne: true },
-  })
-    .select("fullName firstName lastName regNo program status")
+    status: { $in: ["Unpaid", "Partially Paid", "Overdue"] },
+  };
+  if (filters.program) invoiceQuery.programId = filters.program;
+
+  const openInvoices = await Invoice.find(invoiceQuery)
+    .populate("studentId", "fullName firstName middleName lastName regNo admissionNumber studentNo status subjects className section stream")
+    .populate("programId", "title shortTitle name code")
     .lean();
 
-  const studentMap = new Map(students.map((s) => [String(s._id), s]));
+  const grouped = new Map();
 
-  const programIds = Array.from(new Set(
-    students.map((s) => s.program).filter(Boolean).map(String)
-  ));
+  openInvoices.forEach((invoice) => {
+    const student = invoice.studentId || null;
+    if (!student?._id) return;
+    const key = String(student._id);
+    const amount = Math.max(0, safeNum(invoice.totalAmount, 0) - safeNum(invoice.paidAmount, 0));
+    if (!grouped.has(key)) {
+      grouped.set(key, {
+        student,
+        subject: invoice.programId || null,
+        outstanding: 0,
+      });
+    }
 
-  const programDocs = Program
-    ? await Program.find({ _id: { $in: programIds }, isDeleted: { $ne: true } })
-        .select("code name title")
-        .lean()
-    : [];
-
-  const programMap = new Map(programDocs.map((p) => [String(p._id), p]));
-
-  let rows = agg.map((x) => {
-    const st = studentMap.get(String(x._id));
-    const pr = st?.program ? programMap.get(String(st.program)) : null;
-
-    return {
-      student: st
-        ? ((st.fullName || [st.firstName, st.lastName].filter(Boolean).join(" ").trim()) + (st.regNo ? ` • ${st.regNo}` : ""))
-        : "-",
-      program: pr ? ((pr.code ? pr.code + " — " : "") + (pr.name || pr.title || "Program")) : "-",
-      status: st?.status || "",
-      outstanding: safeNum(x.outstanding, 0),
-      _programId: st?.program ? String(st.program) : "",
-    };
+    const row = grouped.get(key);
+    row.outstanding += amount;
+    if (!row.subject && invoice.programId) row.subject = invoice.programId;
   });
 
-  if (filters.program) {
-    rows = rows.filter((r) => r._programId === filters.program);
-  }
+  const rows = Array.from(grouped.values())
+    .map(({ student, subject, outstanding }) => ({
+      student: `${getStudentName(student)}${getStudentRegNo(student) ? ` - ${getStudentRegNo(student)}` : ""}`,
+      program: subject ? getSubjectLabel(subject) : getStudentAcademicLabel(student),
+      status: student?.status || "",
+      outstanding: safeNum(outstanding, 0),
+      _programId: subject?._id ? String(subject._id) : "",
+    }))
+    .sort((a, b) => b.outstanding - a.outstanding)
+    .slice(0, 300);
 
   const totalOutstanding = rows.reduce((s, r) => s + safeNum(r.outstanding), 0);
 
@@ -527,7 +511,7 @@ async function reportStudentsOutstanding(req, filters) {
     title: "Students Outstanding",
     columns: [
       { key: "student", label: "Student" },
-      { key: "program", label: "Program" },
+      { key: "program", label: "Subject / Class" },
       { key: "status", label: "Status" },
       { key: "outstanding", label: "Outstanding", align: "right", money: true },
     ],
@@ -535,7 +519,7 @@ async function reportStudentsOutstanding(req, filters) {
     kpis: {
       a: { label: "Outstanding Total", value: totalOutstanding, prefix: "UGX " },
       b: { label: "Students", value: rows.length, prefix: "" },
-      c: { label: "Top List", value: 300, prefix: "" },
+      c: { label: "Top List", value: rows.length, prefix: "" },
       d: { label: "Action", value: "Follow up", prefix: "" },
     },
   };

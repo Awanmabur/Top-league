@@ -129,6 +129,28 @@ function getDocProgram(doc, programsMap) {
   return programsMap.get(String(programValue)) || null;
 }
 
+function getStudentAcademicLabel(student, programsMap) {
+  if (!student) return "â€”";
+
+  if (Array.isArray(student.subjects) && student.subjects.length) {
+    const first = student.subjects[0];
+    const subject =
+      first && typeof first === "object" && first._id
+        ? first
+        : programsMap.get(String(first || ""));
+
+    if (subject) return getProgramName(subject);
+  }
+
+  const parts = [
+    student.className || "",
+    student.section || "",
+    student.stream || "",
+  ].filter(Boolean);
+
+  return parts.length ? parts.join(" â€¢ ") : "â€”";
+}
+
 module.exports = {
   /**
    * GET /admin/finance-reports
@@ -141,8 +163,10 @@ module.exports = {
         Expense,
         Scholarship,
         Student,
+        Subject,
         Program,
       } = req.models;
+      const AcademicSubject = Subject || Program || null;
 
       const { clean } = buildFilters(req.query);
       const range = resolvePeriodRange(clean.period);
@@ -154,7 +178,7 @@ module.exports = {
         : null;
 
       if (Invoice && hasPath(Invoice, "programId")) {
-        invoiceQuery = invoiceQuery.populate("programId", "name title code");
+        invoiceQuery = invoiceQuery.populate("programId", "title shortTitle name code");
       }
 
       let paymentQuery = Payment
@@ -165,7 +189,7 @@ module.exports = {
         : null;
 
       if (Payment && hasPath(Payment, "programId")) {
-        paymentQuery = paymentQuery.populate("programId", "name title code");
+        paymentQuery = paymentQuery.populate("programId", "title shortTitle name code");
       }
 
       let scholarshipQuery = Scholarship
@@ -175,17 +199,17 @@ module.exports = {
         : null;
 
       if (Scholarship && hasPath(Scholarship, "programId")) {
-        scholarshipQuery = scholarshipQuery.populate("programId", "name title code");
+        scholarshipQuery = scholarshipQuery.populate("programId", "title shortTitle name code");
       }
 
       let studentQuery = Student
         ? Student.find({})
-            .select("firstName middleName lastName fullName admissionNumber programId createdAt")
+            .select("firstName middleName lastName fullName admissionNumber regNo subjects section className classLevel stream createdAt")
             .sort({ createdAt: -1 })
         : null;
 
-      if (Student && hasPath(Student, "programId")) {
-        studentQuery = studentQuery.populate("programId", "name title code");
+      if (Student && hasPath(Student, "subjects")) {
+        studentQuery = studentQuery.populate("subjects", "title shortTitle name code");
       }
 
       const [invoiceDocs, paymentDocs, expenseDocs, scholarshipDocs, studentDocs, programDocs] =
@@ -199,10 +223,10 @@ module.exports = {
             : [],
           scholarshipQuery ? scholarshipQuery.lean() : [],
           studentQuery ? studentQuery.lean() : [],
-          Program
-            ? Program.find({})
-                .select("name title code")
-                .sort({ name: 1, title: 1 })
+          AcademicSubject
+            ? AcademicSubject.find({})
+                .select("title shortTitle name code")
+                .sort({ title: 1, shortTitle: 1, name: 1, code: 1 })
                 .lean()
             : [],
         ]);
@@ -237,9 +261,14 @@ module.exports = {
         });
 
         students = students.filter((x) => {
-          const p = getDocProgram(x, programsMap);
-          const pid = p?._id ? String(p._id) : "";
-          return pid === clean.program;
+          if (!Array.isArray(x.subjects)) return false;
+          return x.subjects.some((subject) => {
+            const sid =
+              subject && typeof subject === "object" && subject._id
+                ? String(subject._id)
+                : String(subject || "");
+            return sid === clean.program;
+          });
         });
       }
 
@@ -318,7 +347,8 @@ module.exports = {
           const text = [
             getStudentName(x),
             x.admissionNumber || "",
-            getProgramName(getDocProgram(x, programsMap)),
+            x.regNo || "",
+            getStudentAcademicLabel(x, programsMap),
           ].join(" ");
           return regex.test(text);
         });
@@ -434,7 +464,7 @@ module.exports = {
             studentId: sid,
             studentName: getStudentName(student),
             admissionNumber: student.admissionNumber || "",
-            programName: getProgramName(getDocProgram(student, programsMap)),
+            programName: getStudentAcademicLabel(student, programsMap),
             totalInvoiced,
             totalPaid,
             balance,

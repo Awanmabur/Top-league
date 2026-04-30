@@ -70,6 +70,7 @@ function getStudentName(st) {
     st.fullName ||
     [st.firstName, st.middleName, st.lastName].filter(Boolean).join(" ") ||
     st.name ||
+    st.regNo ||
     st.admissionNumber ||
     "—"
   );
@@ -77,7 +78,7 @@ function getStudentName(st) {
 
 function getProgramName(p) {
   if (!p) return "—";
-  return p.name || p.title || p.programName || p.code || "—";
+  return p.title || p.shortTitle || p.name || p.programName || p.code || "—";
 }
 
 function invoiceAmount(inv) {
@@ -303,6 +304,7 @@ module.exports = {
   index: async (req, res) => {
     const {
       Student,
+      Subject,
       Program,
       Invoice,
       Payment,
@@ -310,6 +312,7 @@ module.exports = {
       Scholarship,
       Expense,
     } = req.models || {};
+    const AcademicSubject = Subject || Program || null;
 
     const { clean } = buildFilters(req.query);
     const range = resolvePeriodRange(clean.period);
@@ -397,19 +400,24 @@ module.exports = {
       recentExpensesRaw,
     ] = await Promise.all([
       countSafe(Student),
-      countSafe(Program),
+      countSafe(AcademicSubject),
       countSafe(FeeStructure),
       countSafe(Scholarship),
       findSafe(Invoice, invoiceMongo),
       findSafe(Payment, paymentMongo),
       findSafe(Expense, expenseMongo),
-      findSafe(Program, {}, null, { sort: { name: 1, title: 1 } }),
+      findSafe(
+        AcademicSubject,
+        {},
+        "title shortTitle name programName code",
+        { sort: { title: 1, shortTitle: 1, name: 1, code: 1 } }
+      ),
       findSafe(Invoice, invoiceMongo, null, {
         sort: { createdAt: -1 },
         limit: 8,
         populate: [
           { path: "studentId", select: "firstName middleName lastName fullName admissionNumber" },
-          { path: "programId", select: "name title code" },
+          { path: "programId", select: "title shortTitle name code" },
         ],
       }),
       findSafe(Payment, paymentMongo, null, {
@@ -463,7 +471,7 @@ module.exports = {
       },
       availableModels: {
         Student: modelExists(req, "Student"),
-        Program: modelExists(req, "Program"),
+        Program: modelExists(req, "Subject") || modelExists(req, "Program"),
         Invoice: modelExists(req, "Invoice"),
         Payment: modelExists(req, "Payment"),
         FeeStructure: modelExists(req, "FeeStructure"),

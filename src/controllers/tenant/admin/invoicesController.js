@@ -27,6 +27,7 @@ function getStudentName(st) {
     st.fullName ||
     [st.firstName, st.middleName, st.lastName].filter(Boolean).join(" ") ||
     st.name ||
+    st.regNo ||
     st.admissionNumber ||
     "—"
   );
@@ -34,7 +35,7 @@ function getStudentName(st) {
 
 function getProgramName(p) {
   if (!p) return "—";
-  return p.name || p.title || p.programName || p.code || "—";
+  return p.title || p.shortTitle || p.name || p.programName || p.code || "â€”";
 }
 
 function invoiceAmount(inv) {
@@ -205,14 +206,15 @@ module.exports = {
    * GET /admin/invoices
    */
   index: async (req, res) => {
-    const { Invoice, Student, Program, Payment } = req.models;
+    const { Invoice, Student, Subject, Program, Payment } = req.models;
+    const AcademicSubject = Subject || Program || null;
 
     const { mongo, clean } = buildFilters(req.query);
 
     const [invoiceDocs, studentDocs, programDocs, paymentDocs] = await Promise.all([
       Invoice.find(mongo)
         .populate("studentId", "firstName middleName lastName fullName admissionNumber")
-        .populate("programId", "name title code")
+        .populate("programId", "title shortTitle name code")
         .sort({ createdAt: -1, issueDate: -1 })
         .lean(),
       Student
@@ -221,10 +223,10 @@ module.exports = {
             .sort({ createdAt: -1 })
             .lean()
         : [],
-      Program
-        ? Program.find({})
-            .select("name title code")
-            .sort({ name: 1, title: 1 })
+      AcademicSubject
+        ? AcademicSubject.find({})
+            .select("title shortTitle name code")
+            .sort({ title: 1, shortTitle: 1, name: 1, code: 1 })
             .lean()
         : [],
       Payment

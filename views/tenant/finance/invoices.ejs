@@ -175,7 +175,7 @@
             </select>
 
             <select class="select" name="program">
-              <option value="all" <%= q.program === 'all' ? 'selected' : '' %>>All Programs</option>
+              <option value="all" <%= q.program === 'all' ? 'selected' : '' %>>All Subjects</option>
               <% (programs || []).forEach(function(p){ %>
                 <option value="<%= p.id %>" <%= q.program === p.id ? 'selected' : '' %>><%= p.name %></option>
               <% }) %>
@@ -227,7 +227,7 @@
                     <th style="width:42px;"><input type="checkbox" id="checkAll" /></th>
                     <th>Invoice</th>
                     <th>Student</th>
-                    <th>Program</th>
+                    <th>Subject</th>
                     <th>Issue / Due</th>
                     <th>Total</th>
                     <th>Paid</th>
@@ -351,7 +351,7 @@
             </div>
 
             <div class="field">
-              <label>Program</label>
+              <label>Subject</label>
               <select class="select" id="iProgram" name="programId">
                 <option value="">Select program</option>
                 <% (programs || []).forEach(function(p){ %>
@@ -496,7 +496,7 @@
             <div class="view-value" id="vStudent">—</div>
           </div>
           <div class="view-card">
-            <div class="view-label">Program</div>
+            <div class="view-label">Subject</div>
             <div class="view-value" id="vProgram">—</div>
           </div>
           <div class="view-card">

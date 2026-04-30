@@ -406,7 +406,7 @@
 
       <div class="tabs no-print">
         <button class="tabbtn active" data-pane="paneOverview" type="button">Overview</button>
-        <button class="tabbtn" data-pane="panePrograms" type="button">Programs</button>
+        <button class="tabbtn" data-pane="panePrograms" type="button">Sections</button>
         <button class="tabbtn" data-pane="paneFinance" type="button">Finance</button>
         <button class="tabbtn" data-pane="paneRisk" type="button">Risk</button>
       </div>
@@ -473,7 +473,7 @@
             </div>
 
             <div class="note" style="margin-top:12px;">
-              Use this page for quick monitoring, then drill into Admissions, Invoices, Finance and Programs for action.
+              Use this page for quick monitoring, then drill into Admissions, Invoices, Finance and Sections for action.
             </div>
           </aside>
         </div>
@@ -484,7 +484,7 @@
           <section class="card">
             <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;">
               <div>
-                <div class="section-title">Program Performance</div>
+                <div class="section-title">Section Performance</div>
                 <div class="section-sub">Students, outstanding balance, attendance and pass rate.</div>
               </div>
               <div class="muted" id="programResultMeta"><%= rows.length %> row(s)</div>
@@ -495,7 +495,7 @@
                 <table id="programTable">
                   <thead>
                     <tr>
-                      <th style="width:34%;">Program</th>
+                      <th style="width:34%;">Section</th>
                       <th class="right" style="width:14%;">Students</th>
                       <th class="right" style="width:20%;">Outstanding (UGX)</th>
                       <th class="right" style="width:16%;">Attendance</th>
@@ -506,7 +506,7 @@
                     <% if (!rows.length) { %>
                       <tr>
                         <td colspan="5">
-                          <div class="muted">No programs found.</div>
+                          <div class="muted">No sections found.</div>
                         </td>
                       </tr>
                     <% } %>
@@ -535,8 +535,8 @@
           </section>
 
           <section class="card chart-card">
-            <div class="section-title">Top Programs by Student Volume</div>
-            <div class="section-sub">Highest-volume programs in current dataset.</div>
+            <div class="section-title">Top Sections by Student Volume</div>
+            <div class="section-sub">Highest-volume sections in current dataset.</div>
             <div class="chart-wrap">
               <canvas id="chartPrograms"></canvas>
             </div>

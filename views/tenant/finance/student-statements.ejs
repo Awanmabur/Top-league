@@ -138,7 +138,7 @@
       <section class="card" style="margin-top:12px;">
         <form class="toolbar" method="GET" action="/admin/student-statements">
           <div class="left">
-            <input class="input" name="q" value="<%= q.q || '' %>" placeholder="Search student, admission no, or program..." />
+            <input class="input" name="q" value="<%= q.q || '' %>" placeholder="Search student, admission no, or subject..." />
 
             <select class="select" name="student">
               <option value="all" <%= q.student === 'all' ? 'selected' : '' %>>All Students</option>
@@ -148,7 +148,7 @@
             </select>
 
             <select class="select" name="program">
-              <option value="all" <%= q.program === 'all' ? 'selected' : '' %>>All Programs</option>
+              <option value="all" <%= q.program === 'all' ? 'selected' : '' %>>All Subjects</option>
               <% (programs || []).forEach(function(p){ %>
                 <option value="<%= p.id %>" <%= q.program === p.id ? 'selected' : '' %>><%= p.name %></option>
               <% }) %>
@@ -183,7 +183,7 @@
                 <thead>
                   <tr>
                     <th>Student</th>
-                    <th>Program</th>
+                    <th>Subject</th>
                     <th>Invoices</th>
                     <th>Payments</th>
                     <th>Total Invoiced</th>
@@ -208,7 +208,7 @@
                     <th>Type</th>
                     <th>Reference</th>
                     <th>Description</th>
-                    <th>Program</th>
+                    <th>Subject</th>
                     <th>Debit</th>
                     <th>Credit</th>
                     <th>Running Balance</th>
@@ -305,7 +305,7 @@
             <div class="view-value" id="vStudentName">—</div>
           </div>
           <div class="view-card">
-            <div class="view-label">Program</div>
+            <div class="view-label">Subject</div>
             <div class="view-value" id="vProgramName">—</div>
           </div>
           <div class="view-card">

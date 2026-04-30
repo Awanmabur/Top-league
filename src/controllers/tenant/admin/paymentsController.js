@@ -27,6 +27,7 @@ function getStudentName(st) {
     st.fullName ||
     [st.firstName, st.middleName, st.lastName].filter(Boolean).join(" ") ||
     st.name ||
+    st.regNo ||
     st.admissionNumber ||
     "—"
   );
@@ -34,7 +35,7 @@ function getStudentName(st) {
 
 function getProgramName(p) {
   if (!p) return "—";
-  return p.name || p.title || p.programName || p.code || "—";
+  return p.title || p.shortTitle || p.name || p.programName || p.code || "â€”";
 }
 
 function paymentAmount(p) {
@@ -210,7 +211,8 @@ module.exports = {
    * GET /admin/payments
    */
   index: async (req, res) => {
-    const { Payment, Student, Invoice, Program } = req.models;
+    const { Payment, Student, Invoice, Subject, Program } = req.models;
+    const AcademicSubject = Subject || Program || null;
 
     const { mongo, clean } = buildFilters(req.query);
 
@@ -218,7 +220,7 @@ module.exports = {
       Payment.find(mongo)
         .populate("studentId", "firstName middleName lastName fullName admissionNumber")
         .populate("invoiceId", "invoiceNumber totalAmount paidAmount balance status issueDate dueDate")
-        .populate("programId", "name title code")
+        .populate("programId", "title shortTitle name code")
         .sort({ paymentDate: -1, createdAt: -1 })
         .lean(),
       Student
@@ -230,14 +232,14 @@ module.exports = {
       Invoice
         ? Invoice.find({ isDeleted: { $ne: true } })
             .populate("studentId", "firstName middleName lastName fullName admissionNumber")
-            .populate("programId", "name title code")
+            .populate("programId", "title shortTitle name code")
             .sort({ createdAt: -1 })
             .lean()
         : [],
-      Program
-        ? Program.find({})
-            .select("name title code")
-            .sort({ name: 1, title: 1 })
+      AcademicSubject
+        ? AcademicSubject.find({})
+            .select("title shortTitle name code")
+            .sort({ title: 1, shortTitle: 1, name: 1, code: 1 })
             .lean()
         : [],
     ]);
