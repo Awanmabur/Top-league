@@ -52,7 +52,7 @@
     @media(max-width:720px){.grid{grid-template-columns:1fr}}
   </style>
 </head>
-<body>
+<body data-portal="tenant">
 <%
   const _tenant = (typeof tenant !== "undefined" && tenant) ? tenant : null;
   const _payment = (typeof payment !== "undefined" && payment) ? payment : null;
@@ -205,3 +205,4 @@
 </div>
 </body>
 </html>
+

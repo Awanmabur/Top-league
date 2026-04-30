@@ -129,7 +129,7 @@
   </style>
 </head>
 
-<body>
+<body data-portal="tenant">
 <%
   const tenantName = (tenant && tenant.name) ? String(tenant.name) : "Classic Academy";
   const csrf = (typeof csrfToken !== "undefined" && csrfToken) ? csrfToken : null;
@@ -942,3 +942,4 @@
 <script src="/js/navbar.js" defer></script>
 </body>
 </html>
+

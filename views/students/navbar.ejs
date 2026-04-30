@@ -62,7 +62,7 @@
     { label: "Finance", icon: "fa-sack-dollar", href: "/student/finance", hidden: !showFinance },
   ]);
 
-  const campusItems = visibleItems([
+  const servicesItems = visibleItems([
     { label: "Hostel", icon: "fa-bed", href: "/student/hostel", hidden: !showHostel },
     { label: "Library", icon: "fa-book", href: "/student/library", hidden: !showLibrary },
     { label: "Events", icon: "fa-calendar-days", href: "/student/events", hidden: !showEvents },
@@ -131,10 +131,10 @@
         </div>
       <% } %>
 
-      <% if (campusItems.length) { %>
-        <div class="navcat">CAMPUS</div>
+      <% if (servicesItems.length) { %>
+        <div class="navcat">SERVICES</div>
         <div class="group">
-          <% campusItems.forEach(function(item) { %>
+          <% servicesItems.forEach(function(item) { %>
             <a class="<%= navClass(item.href, { exact: item.exact }) %>" href="<%= item.href %>" data-label="<%= item.label %>">
               <i class="fa <%= item.icon %>"></i>
               <span><%= item.label %></span>
@@ -158,4 +158,3 @@
       <div class="navfoot">Portal: <strong>Student</strong></div>
     </nav>
   </aside>
-

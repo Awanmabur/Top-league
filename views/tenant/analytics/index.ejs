@@ -259,7 +259,7 @@
     }
   </style>
 </head>
-<body>
+<body data-portal="tenant">
   <%
     const safe = (v)=> (v === null || v === undefined ? "" : String(v));
     const num = (v)=> {
@@ -377,10 +377,11 @@
               <option value="365" <%= String(q.range) === '365' ? 'selected' : '' %>>Last 12 months</option>
             </select>
 
-            <select class="select" name="campus">
-              <option value="all" <%= String(q.campus) === 'all' ? 'selected' : '' %>>All Campuses</option>
-              <option value="main" <%= String(q.campus) === 'main' ? 'selected' : '' %>>Main Campus</option>
-              <option value="city" <%= String(q.campus) === 'city' ? 'selected' : '' %>>City Campus</option>
+            <select class="select" name="schoolUnit">
+              <option value="all" <%= String(q.schoolUnit || 'all') === 'all' ? 'selected' : '' %>>All School Units</option>
+              <% (schoolUnitOptions || []).forEach(function(unit){ %>
+                <option value="<%= unit.value %>" <%= String(q.schoolUnit || 'all') === String(unit.value) ? 'selected' : '' %>><%= unit.label %></option>
+              <% }) %>
             </select>
 
             <select class="select" name="year">
@@ -393,7 +394,7 @@
           </div>
 
           <div class="right">
-            <a class="btn light" id="btnReset" href="/admin/analytics?range=90&campus=all&year=<%= encodeURIComponent(safe(q.year || years[0] || '2025')) %>">
+            <a class="btn light" id="btnReset" href="/admin/analytics?range=90&schoolUnit=all&year=<%= encodeURIComponent(safe(q.year || years[0] || '2025')) %>">
               <i class="fa-solid fa-rotate-left"></i> Reset
             </a>
             <button class="btn primary" type="submit">

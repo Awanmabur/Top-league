@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="/css/navbar.css"/>
   <link rel="stylesheet" href="/css/student-portal.css" />
 </head>
-<body>
+<body data-portal="student">
 <%- include("./navbar") %>
 
 <main class="main">
@@ -16,7 +16,7 @@
     <div>
       <div class="title">Events & Announcements</div>
       <div class="subtitle">
-        Track academic, student, administrative, and social events across campus.
+        Track academic, student, administrative, and social events across the school.
       </div>
     </div>
     <div class="top-actions">
@@ -50,17 +50,17 @@
         <label class="small-muted">Location</label><br/>
         <select id="eventLocation" class="select">
           <option value="all" selected>All locations</option>
-          <option value="main">Main Campus</option>
-          <option value="city">City Campus</option>
+          <option value="main">Main School</option>
+          <option value="city">City Centre</option>
         </select>
       </div>
     </div>
   </section>
 
   <div class="content">
-    <section class="card">
-      <div class="section-title">Upcoming Events</div>
-      <div class="section-sub">Campus calendar.</div>
+      <section class="card">
+        <div class="section-title">Upcoming Events</div>
+      <div class="section-sub">School calendar.</div>
 
       <div style="margin-top:10px;overflow-x:auto;">
         <table style="width:100%;border-collapse:collapse;font-size:13px;" id="eventsTable">

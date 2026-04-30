@@ -63,7 +63,7 @@
 
   function schoolLevelLabel(v) {
     const map = { nursery: "Nursery", primary: "Primary", secondary: "Secondary" };
-    return map[v] || v || "—";
+    return map[v] || v || "-";
   }
 
   function campusesForUnit(unitId) {
@@ -92,21 +92,24 @@
     const html = campusesForUnit(unitId).map((c) => (
       `<option value="${escapeHtml(c.id)}" ${String(selected || "") === String(c.id) ? "selected" : ""}>${escapeHtml(c.name)}</option>`
     )).join("");
-    $("mCampusId").innerHTML = `<option value="">— Select Campus —</option>${html}`;
+    $("mCampusId").innerHTML = `<option value="">- Select Location -</option>${html}`;
+    if (!$("mCampusId").value && $("mCampusId").options.length === 2) {
+      $("mCampusId").selectedIndex = 1;
+    }
   }
 
   function fillClassOptions(unitId, campusId, levelType, selected) {
     const html = classOptions(unitId, campusId, levelType).map((c) => (
-      `<option value="${escapeHtml(c.id)}" ${String(selected || "") === String(c.id) ? "selected" : ""}>${escapeHtml(c.name || c.classLevel || "Class")} • ${escapeHtml(c.stream || "A")} • ${escapeHtml(c.academicYear || "")}</option>`
+      `<option value="${escapeHtml(c.id)}" ${String(selected || "") === String(c.id) ? "selected" : ""}>${escapeHtml(c.name || c.classLevel || "Class")}  -  ${escapeHtml(c.stream || "A")}  -  ${escapeHtml(c.academicYear || "")}</option>`
     )).join("");
-    $("mClassId").innerHTML = `<option value="">— Select Class —</option>${html}`;
+    $("mClassId").innerHTML = `<option value="">- Select Class -</option>${html}`;
   }
 
   function fillStreamOptions(unitId, campusId, levelType, classId, selected) {
     const html = streamOptions(unitId, campusId, levelType, classId).map((s) => (
-      `<option value="${escapeHtml(s.id)}" ${String(selected || "") === String(s.id) ? "selected" : ""}>${escapeHtml(s.name || s.code || "Stream")}${s.className ? " • " + escapeHtml(s.className) : ""}</option>`
+      `<option value="${escapeHtml(s.id)}" ${String(selected || "") === String(s.id) ? "selected" : ""}>${escapeHtml(s.name || s.code || "Stream")}${s.className ? "  -  " + escapeHtml(s.className) : ""}</option>`
     )).join("");
-    $("mStreamId").innerHTML = `<option value="">— No Stream —</option>${html}`;
+    $("mStreamId").innerHTML = `<option value="">- No Stream -</option>${html}`;
   }
 
   function renderTable() {
@@ -116,13 +119,13 @@
         return `
           <tr class="row-clickable" data-id="${escapeHtml(s.id)}">
             <td class="col-check"><input type="checkbox" class="rowCheck" data-id="${escapeHtml(s.id)}" ${checked}></td>
-            <td class="col-section"><div class="section-main"><div class="section-title">${escapeHtml(s.name)}</div><div class="section-sub">${escapeHtml(s.code || "—")}</div></div></td>
+            <td class="col-section"><div class="section-main"><div class="section-title">${escapeHtml(s.name)}</div><div class="section-sub">${escapeHtml(s.code || "-")}</div></div></td>
             <td class="col-level">${escapeHtml(schoolLevelLabel(s.levelType))}</td>
-            <td class="col-class">${escapeHtml(s.className || "—")}</td>
-            <td class="col-stream">${escapeHtml(s.streamName || "—")}</td>
-            <td class="col-teacher">${escapeHtml(s.teacherName || "—")}</td>
+            <td class="col-class">${escapeHtml(s.className || "-")}</td>
+            <td class="col-stream">${escapeHtml(s.streamName || "-")}</td>
+            <td class="col-teacher">${escapeHtml(s.teacherName || "-")}</td>
             <td class="col-capacity">${escapeHtml(String(s.capacity || 0))} / ${escapeHtml(String(s.enrolledCount || 0))}</td>
-            <td class="col-room">${escapeHtml(s.room || "—")}</td>
+            <td class="col-room">${escapeHtml(s.room || "-")}</td>
             <td class="col-status">${statusPill(s.status)}</td>
             <td class="col-actions">
               <div class="actions">
@@ -170,16 +173,16 @@
   function openViewModal(s) {
     if (!s) return;
     state.currentViewId = s.id;
-    $("vName").textContent = s.name || "—";
-    $("vCode").textContent = s.code || "—";
+    $("vName").textContent = s.name || "-";
+    $("vCode").textContent = s.code || "-";
     $("vStatus").innerHTML = statusPill(s.status || "active");
     $("vLevel").textContent = schoolLevelLabel(s.levelType);
-    $("vClass").textContent = s.className || "—";
-    $("vStream").textContent = s.streamName || "—";
-    $("vTeacher").textContent = s.teacherName || "—";
-    $("vCapacity").textContent = `Capacity ${Number(s.capacity || 0)} • Enrolled ${Number(s.enrolledCount || 0)}`;
-    $("vRoom").textContent = s.room || "—";
-    $("vNotes").textContent = s.notes || "—";
+    $("vClass").textContent = s.className || "-";
+    $("vStream").textContent = s.streamName || "-";
+    $("vTeacher").textContent = s.teacherName || "-";
+    $("vCapacity").textContent = `Capacity ${Number(s.capacity || 0)}  -  Enrolled ${Number(s.enrolledCount || 0)}`;
+    $("vRoom").textContent = s.room || "-";
+    $("vNotes").textContent = s.notes || "-";
     openModal("mView");
   }
 
@@ -209,7 +212,7 @@
 
   function exportSections() {
     const rows = [[
-      "Name", "Code", "SchoolUnit", "Campus", "LevelType", "Class", "Stream", "Teacher", "Capacity", "EnrolledCount", "Room", "Status", "Notes"
+      "Name", "Code", "SchoolUnit", "Location", "LevelType", "Class", "Stream", "Teacher", "Capacity", "EnrolledCount", "Room", "Status", "Notes"
     ]].concat(SECTIONS.map((s) => ([
       s.name || "",
       s.code || "",
@@ -349,3 +352,4 @@
   renderTable();
   updateCounters();
 })();
+

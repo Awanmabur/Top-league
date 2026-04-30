@@ -75,12 +75,12 @@
 
   function schoolLevelLabel(level) {
     const map = { nursery: "Nursery", primary: "Primary", secondary: "Secondary" };
-    return map[level] || level || "—";
+    return map[level] || level || "-";
   }
 
   function shiftLabel(shift) {
     const map = { day: "Day", boarding: "Boarding", both: "Both" };
-    return map[shift] || shift || "—";
+    return map[shift] || shift || "-";
   }
 
   function campusesForUnit(unitId) {
@@ -116,7 +116,10 @@
     const options = campusesForUnit(unitId).map((c) => (
       `<option value="${escapeHtml(c.id)}" ${String(selected || "") === String(c.id) ? "selected" : ""}>${escapeHtml(c.name)}</option>`
     )).join("");
-    $("mCampusId").innerHTML = `<option value="">— Select Campus —</option>${options}`;
+    $("mCampusId").innerHTML = `<option value="">- Select Location -</option>${options}`;
+    if (!$("mCampusId").value && $("mCampusId").options.length === 2) {
+      $("mCampusId").selectedIndex = 1;
+    }
   }
 
   function fillLevelOptions(unitId, campusId, selectedLevelType) {
@@ -144,7 +147,7 @@
     const options = levels.map((l) => (
       `<option value="${escapeHtml(l.type)}" ${String(finalSelected) === String(l.type) ? "selected" : ""}>${escapeHtml(l.name || schoolLevelLabel(l.type))}</option>`
     )).join("");
-    $("mLevelType").innerHTML = `<option value="">— Select Level —</option>${options}`;
+    $("mLevelType").innerHTML = `<option value="">- Select Level -</option>${options}`;
   }
 
   function fillClassLevelOptions(levelType, selectedClassLevel) {
@@ -157,7 +160,7 @@
     const options = levels.map((item) => (
       `<option value="${escapeHtml(item)}" ${String(finalSelected) === String(item) ? "selected" : ""}>${escapeHtml(item)}</option>`
     )).join("");
-    $("mClassLevel").innerHTML = `<option value="">— Select Class Level —</option>${options}`;
+    $("mClassLevel").innerHTML = `<option value="">- Select Class Level -</option>${options}`;
   }
 
   function fillSectionOptions(selectedSectionId) {
@@ -176,10 +179,10 @@
       const labelBits = [section.name || "Section"];
       if (section.className) labelBits.push(section.className);
       if (section.classStream) labelBits.push(section.classStream);
-      return `<option value="${escapeHtml(section._id || section.id)}" ${String(section._id || section.id) === selected ? "selected" : ""}>${escapeHtml(labelBits.join(" • "))}</option>`;
+      return `<option value="${escapeHtml(section._id || section.id)}" ${String(section._id || section.id) === selected ? "selected" : ""}>${escapeHtml(labelBits.join("  -  "))}</option>`;
     }).join("");
 
-    select.innerHTML = `<option value="">— No Section —</option>${options}`;
+    select.innerHTML = `<option value="">- No Section -</option>${options}`;
     $("sectionHint").textContent = optionsList.length
       ? `${optionsList.length} optional section option(s) available.`
       : "No sections found for this placement. You can still save the class without selecting a section.";
@@ -202,10 +205,10 @@
       const labelBits = [stream.name || "Stream"];
       if (stream.sectionName) labelBits.push(stream.sectionName);
       if (stream.className) labelBits.push(stream.className);
-      return `<option value="${escapeHtml(stream._id || stream.id)}" ${String(stream._id || stream.id) === selected ? "selected" : ""}>${escapeHtml(labelBits.join(" • "))}</option>`;
+      return `<option value="${escapeHtml(stream._id || stream.id)}" ${String(stream._id || stream.id) === selected ? "selected" : ""}>${escapeHtml(labelBits.join("  -  "))}</option>`;
     }).join("");
 
-    select.innerHTML = `<option value="">— No Stream —</option>${options}`;
+    select.innerHTML = `<option value="">- No Stream -</option>${options}`;
     $("streamHint").textContent = optionsList.length
       ? `${optionsList.length} optional stream option(s) available.`
       : "No streams found for this placement. You can still save the class without selecting a stream.";
@@ -222,18 +225,18 @@
             <td class="col-class">
               <div class="class-main">
                 <div class="class-title" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</div>
-                <div class="class-sub" title="${escapeHtml(c.code || "—")}">${escapeHtml(c.code || "—")}</div>
+                <div class="class-sub" title="${escapeHtml(c.code || "-")}">${escapeHtml(c.code || "-")}</div>
               </div>
             </td>
             <td class="col-level"><span class="cell-ellipsis">${escapeHtml(schoolLevelLabel(c.levelType))}</span></td>
-            <td class="col-classlevel"><span class="cell-ellipsis">${escapeHtml(c.classLevel || "—")}</span></td>
-            <td class="col-section"><span class="cell-ellipsis">${escapeHtml(c.sectionName || "—")}</span></td>
-            <td class="col-stream"><span class="cell-ellipsis">${escapeHtml(c.streamName || c.stream || "—")}</span></td>
+            <td class="col-classlevel"><span class="cell-ellipsis">${escapeHtml(c.classLevel || "-")}</span></td>
+            <td class="col-section"><span class="cell-ellipsis">${escapeHtml(c.sectionName || "-")}</span></td>
+            <td class="col-stream"><span class="cell-ellipsis">${escapeHtml(c.streamName || c.stream || "-")}</span></td>
             <td class="col-term"><span class="cell-ellipsis">T${escapeHtml(String(Number(c.term || 1)))}</span></td>
-            <td class="col-year"><span class="cell-ellipsis">${escapeHtml(c.academicYear || "—")}</span></td>
+            <td class="col-year"><span class="cell-ellipsis">${escapeHtml(c.academicYear || "-")}</span></td>
             <td class="col-shift"><span class="cell-ellipsis">${escapeHtml(shiftLabel(c.shift))}</span></td>
             <td class="col-capacity"><span class="cell-ellipsis">${escapeHtml(String(c.capacity || 0))} / ${escapeHtml(String(c.enrolledCount || 0))}</span></td>
-            <td class="col-teacher"><span class="cell-ellipsis">${escapeHtml(c.classTeacherName || "—")}</span></td>
+            <td class="col-teacher"><span class="cell-ellipsis">${escapeHtml(c.classTeacherName || "-")}</span></td>
             <td class="col-status">${statusPill(c.status)}</td>
             <td class="col-actions">
               <div class="actions">
@@ -288,20 +291,20 @@
     if (!c) return;
     state.currentViewId = c.id;
 
-    $("vName").textContent = c.name || "—";
-    $("vCode").textContent = c.code || "—";
+    $("vName").textContent = c.name || "-";
+    $("vCode").textContent = c.code || "-";
     $("vStatus").innerHTML = statusPill(c.status || "active");
     $("vSchoolLevel").textContent = schoolLevelLabel(c.levelType);
-    $("vClassLevel").textContent = c.classLevel || "—";
-    $("vClassTeacher").textContent = c.classTeacherName || "—";
-    $("vAcademicYear").textContent = c.academicYear || "—";
+    $("vClassLevel").textContent = c.classLevel || "-";
+    $("vClassTeacher").textContent = c.classTeacherName || "-";
+    $("vAcademicYear").textContent = c.academicYear || "-";
     $("vTerm").textContent = `Term ${Number(c.term || 1)}`;
-    $("vSection").textContent = c.sectionName || "—";
-    $("vStream").textContent = c.streamName || c.stream || "—";
+    $("vSection").textContent = c.sectionName || "-";
+    $("vStream").textContent = c.streamName || c.stream || "-";
     $("vShift").textContent = shiftLabel(c.shift);
-    $("vCapacity").textContent = `Capacity ${Number(c.capacity || 0)} • Enrolled ${Number(c.enrolledCount || 0)}`;
-    $("vRoomCampus").textContent = `${c.room || "—"} • ${c.campusName || "—"}`;
-    $("vDescription").textContent = c.description || "—";
+    $("vCapacity").textContent = `Capacity ${Number(c.capacity || 0)}  -  Enrolled ${Number(c.enrolledCount || 0)}`;
+    $("vRoomCampus").textContent = `${c.room || "-"}  -  ${c.campusName || "-"}`;
+    $("vDescription").textContent = c.description || "-";
 
     openModal("mView");
   }
@@ -312,7 +315,7 @@
 
     const missing = [];
     if (!$("mSchoolUnitId").value) missing.push("school unit");
-    if (!$("mCampusId").value) missing.push("campus");
+    if (!$("mCampusId").value) missing.push("location");
     if (!$("mLevelType").value) missing.push("level");
     if (!$("mClassLevel").value) missing.push("class level");
     if (missing.length) {
@@ -342,7 +345,7 @@
 
   function exportClasses() {
     const rows = [[
-      "Name", "Code", "SchoolUnit", "Campus", "LevelType", "ClassLevel", "Section", "Stream", "Term",
+      "Name", "Code", "SchoolUnit", "Location", "LevelType", "ClassLevel", "Section", "Stream", "Term",
       "AcademicYear", "ClassTeacher", "Shift", "Capacity", "EnrolledCount", "Room", "Status", "Description"
     ]].concat(CLASSES.map((c) => ([
       c.name || "",
@@ -523,3 +526,4 @@
   renderTable();
   updateCounters();
 })();
+

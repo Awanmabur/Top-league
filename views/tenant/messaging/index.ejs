@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Admin • Messaging — Classic Academy</title>
+  <title>Admin  -  Messaging - Classic Academy</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
         crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -122,7 +122,7 @@
     }
   </style>
 </head>
-<body>
+<body data-portal="tenant">
   <div class="app">
     <%- include("../partials/navbar") %>
 
@@ -238,7 +238,7 @@
               <div class="section-title" id="panelTitle">Messages</div>
               <div class="section-sub" id="panelSub">Manage messages, schedules and delivery workflow.</div>
             </div>
-            <div class="muted" id="resultMeta">—</div>
+            <div class="muted" id="resultMeta">-</div>
           </div>
 
           <div id="view-list" style="margin-top:10px;">
@@ -326,7 +326,7 @@
             <div class="mini-item">
               <div class="left">
                 <div class="strong">General Notice</div>
-                <div class="muted">Portal + email campus update</div>
+                <div class="muted">Portal + email school update</div>
               </div>
               <button class="btn-xs" id="quickNotice" type="button"><i class="fa-solid fa-bullhorn"></i></button>
             </div>
@@ -492,18 +492,18 @@
 
       <div class="modal-body">
         <div class="view-grid">
-          <div class="view-card"><div class="view-label">Subject</div><div class="view-value" id="vSubject">—</div></div>
-          <div class="view-card"><div class="view-label">Type</div><div class="view-value" id="vType">—</div></div>
-          <div class="view-card"><div class="view-label">Audience</div><div class="view-value" id="vAudience">—</div></div>
-          <div class="view-card"><div class="view-label">Audience Value</div><div class="view-value" id="vAudienceValue">—</div></div>
-          <div class="view-card"><div class="view-label">Status</div><div class="view-value" id="vStatus">—</div></div>
-          <div class="view-card"><div class="view-label">Priority</div><div class="view-value" id="vPriority">—</div></div>
-          <div class="view-card"><div class="view-label">Channels</div><div class="view-value" id="vChannels">—</div></div>
-          <div class="view-card"><div class="view-label">Schedule</div><div class="view-value" id="vSchedule">—</div></div>
+          <div class="view-card"><div class="view-label">Subject</div><div class="view-value" id="vSubject">-</div></div>
+          <div class="view-card"><div class="view-label">Type</div><div class="view-value" id="vType">-</div></div>
+          <div class="view-card"><div class="view-label">Audience</div><div class="view-value" id="vAudience">-</div></div>
+          <div class="view-card"><div class="view-label">Audience Value</div><div class="view-value" id="vAudienceValue">-</div></div>
+          <div class="view-card"><div class="view-label">Status</div><div class="view-value" id="vStatus">-</div></div>
+          <div class="view-card"><div class="view-label">Priority</div><div class="view-value" id="vPriority">-</div></div>
+          <div class="view-card"><div class="view-label">Channels</div><div class="view-value" id="vChannels">-</div></div>
+          <div class="view-card"><div class="view-label">Schedule</div><div class="view-value" id="vSchedule">-</div></div>
         </div>
 
         <div class="view-section-title">Message</div>
-        <div class="view-message" id="vBody">—</div>
+        <div class="view-message" id="vBody">-</div>
       </div>
 
       <div class="modal-footer">

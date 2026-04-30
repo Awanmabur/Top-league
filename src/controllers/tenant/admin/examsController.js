@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+﻿const mongoose = require("mongoose");
 const { body, validationResult } = require("express-validator");
 const {
   loadAcademicScopeLists,
@@ -287,7 +287,7 @@ module.exports = {
 
     if (!errors.isEmpty()) {
       req.flash?.("error", errors.array().map((e) => e.msg).join(" "));
-      return res.redirect("/tenant/exams");
+      return res.redirect("/admin/exams");
     }
 
     try {
@@ -302,7 +302,7 @@ module.exports = {
 
       if (startMin !== null && endMin !== null && endMin <= startMin) {
         req.flash?.("error", "End time must be later than start time.");
-        return res.redirect("/tenant/exams");
+        return res.redirect("/admin/exams");
       }
 
       const scope = await resolveAcademicScope(req, {
@@ -312,7 +312,7 @@ module.exports = {
       });
       if (scope.errors.length || !scope.payload.classId) {
         req.flash?.("error", scope.errors.join(" ") || "Class is required.");
-        return res.redirect("/tenant/exams");
+        return res.redirect("/admin/exams");
       }
 
       const doc = {
@@ -346,12 +346,12 @@ module.exports = {
       await Exam.create(doc);
 
       req.flash?.("success", "Exam created.");
-      return res.redirect("/tenant/exams");
+      return res.redirect("/admin/exams");
     } catch (err) {
       console.error("EXAM CREATE ERROR:", err);
       if (String(err?.code) === "11000") req.flash?.("error", "An exam with similar setup already exists.");
       else req.flash?.("error", "Failed to create exam.");
-      return res.redirect("/tenant/exams");
+      return res.redirect("/admin/exams");
     }
   },
 
@@ -361,14 +361,14 @@ module.exports = {
 
     if (!errors.isEmpty()) {
       req.flash?.("error", errors.array().map((e) => e.msg).join(" "));
-      return res.redirect("/tenant/exams");
+      return res.redirect("/admin/exams");
     }
 
     try {
       const id = cleanStr(req.params.id, 80);
       if (!isObjId(id)) {
         req.flash?.("error", "Invalid exam id.");
-        return res.redirect("/tenant/exams");
+        return res.redirect("/admin/exams");
       }
 
       const title = cleanStr(req.body.title, 180);
@@ -382,7 +382,7 @@ module.exports = {
 
       if (startMin !== null && endMin !== null && endMin <= startMin) {
         req.flash?.("error", "End time must be later than start time.");
-        return res.redirect("/tenant/exams");
+        return res.redirect("/admin/exams");
       }
 
       const scope = await resolveAcademicScope(req, {
@@ -392,7 +392,7 @@ module.exports = {
       });
       if (scope.errors.length || !scope.payload.classId) {
         req.flash?.("error", scope.errors.join(" ") || "Class is required.");
-        return res.redirect("/tenant/exams");
+        return res.redirect("/admin/exams");
       }
 
       await Exam.updateOne(
@@ -430,12 +430,12 @@ module.exports = {
       );
 
       req.flash?.("success", "Exam updated.");
-      return res.redirect("/tenant/exams");
+      return res.redirect("/admin/exams");
     } catch (err) {
       console.error("EXAM UPDATE ERROR:", err);
       if (String(err?.code) === "11000") req.flash?.("error", "An exam with similar setup already exists.");
       else req.flash?.("error", "Failed to update exam.");
-      return res.redirect("/tenant/exams");
+      return res.redirect("/admin/exams");
     }
   },
 
@@ -447,12 +447,12 @@ module.exports = {
 
       if (!isObjId(id)) {
         req.flash?.("error", "Invalid exam id.");
-        return res.redirect("/tenant/exams");
+        return res.redirect("/admin/exams");
       }
 
       if (!STATUSES.includes(status)) {
         req.flash?.("error", "Invalid status.");
-        return res.redirect("/tenant/exams");
+        return res.redirect("/admin/exams");
       }
 
       await Exam.updateOne(
@@ -461,11 +461,11 @@ module.exports = {
       );
 
       req.flash?.("success", "Exam status updated.");
-      return res.redirect("/tenant/exams");
+      return res.redirect("/admin/exams");
     } catch (err) {
       console.error("EXAM STATUS ERROR:", err);
       req.flash?.("error", "Failed to update exam status.");
-      return res.redirect("/tenant/exams");
+      return res.redirect("/admin/exams");
     }
   },
 
@@ -476,16 +476,16 @@ module.exports = {
 
       if (!isObjId(id)) {
         req.flash?.("error", "Invalid exam id.");
-        return res.redirect("/tenant/exams");
+        return res.redirect("/admin/exams");
       }
 
       await Exam.deleteOne({ _id: id });
       req.flash?.("success", "Exam deleted.");
-      return res.redirect("/tenant/exams");
+      return res.redirect("/admin/exams");
     } catch (err) {
       console.error("EXAM DELETE ERROR:", err);
       req.flash?.("error", "Failed to delete exam.");
-      return res.redirect("/tenant/exams");
+      return res.redirect("/admin/exams");
     }
   },
 
@@ -501,27 +501,28 @@ module.exports = {
 
       if (!ids.length) {
         req.flash?.("error", "No exams selected.");
-        return res.redirect("/tenant/exams");
+        return res.redirect("/admin/exams");
       }
 
       if (action === "draft" || action === "scheduled" || action === "completed" || action === "archived") {
         await Exam.updateMany({ _id: { $in: ids } }, { $set: { status: action } });
         req.flash?.("success", `Updated ${ids.length} exam(s).`);
-        return res.redirect("/tenant/exams");
+        return res.redirect("/admin/exams");
       }
 
       if (action === "delete") {
         await Exam.deleteMany({ _id: { $in: ids } });
         req.flash?.("success", `Deleted ${ids.length} exam(s).`);
-        return res.redirect("/tenant/exams");
+        return res.redirect("/admin/exams");
       }
 
       req.flash?.("error", "Invalid bulk action.");
-      return res.redirect("/tenant/exams");
+      return res.redirect("/admin/exams");
     } catch (err) {
       console.error("EXAM BULK ERROR:", err);
       req.flash?.("error", "Bulk action failed.");
-      return res.redirect("/tenant/exams");
+      return res.redirect("/admin/exams");
     }
   },
 };
+

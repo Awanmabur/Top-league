@@ -27,7 +27,7 @@
   @media print{ #printBtn{display:none} body{margin:10mm} }
 </style>
 </head>
-<body>
+<body data-portal="tenant">
 <div class="page">
   <% const st = data.transcriptMeta?.status || "draft"; %>
   <% if (st === "draft" || st === "revoked") { %>

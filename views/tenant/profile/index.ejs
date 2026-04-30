@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Admin • School Profile — Classic Academy</title>
+  <title>Admin  -  School Profile - Classic Academy</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
 
   <link rel="stylesheet"
@@ -97,7 +97,7 @@
     @media (max-width:520px){.grid-4{grid-template-columns:1fr}.toolbar .left,.toolbar .right{width:100%}.toolbar .left > *,.toolbar .right > *{max-width:100%}.modal-backdrop{padding:30px 12px}.modal{max-height:calc(100dvh - 60px);border-radius:20px}.modal-header,.modal-body,.modal-footer{padding-left:14px;padding-right:14px}}
   </style>
 </head>
-<body>
+<body data-portal="tenant">
 <%
   var tenantObj = tenant || {};
   var settings = tenantObj.settings || {};
@@ -190,7 +190,7 @@
         <% if (schoolUnitsList.length) { %>
           <select id="schoolUnitId" class="select">
             <% schoolUnitsList.forEach(function(unit){ %>
-              <option value="<%= unit._id %>" <%= String(activeSchoolUnitIdValue) === String(unit._id) ? "selected" : "" %>><%= unit.name %><%= unit.category ? " · " + unit.category : "" %></option>
+              <option value="<%= unit._id %>" <%= String(activeSchoolUnitIdValue) === String(unit._id) ? "selected" : "" %>><%= unit.name %><%= unit.category ? "  -  " + unit.category : "" %></option>
             <% }) %>
           </select>
         <% } %>
@@ -254,14 +254,14 @@
         <div class="hero-side">
           <div class="mini-kpi">
             <b>Created</b>
-            <span><%= stats.createdAtLabel || "—" %></span>
+            <span><%= stats.createdAtLabel || "-" %></span>
           </div>
           <div class="mini-kpi">
             <b>Staff</b>
             <span><%= stats.staff || 0 %></span>
           </div>
           <div class="mini-kpi">
-            <b>Campuses</b>
+            <b>Locations</b>
             <span><%= stats.campuses || 0 %></span>
           </div>
         </div>
@@ -665,7 +665,7 @@
             <div class="form-grid">
               <div class="field">
                 <label>Fees Range</label>
-                <input class="input" name="feesRange" value="<%= admissions.feesRange || p.feesRange || "" %>" placeholder="UGX 350,000 – 650,000 per term">
+                <input class="input" name="feesRange" value="<%= admissions.feesRange || p.feesRange || "" %>" placeholder="UGX 350,000 - 650,000 per term">
               </div>
               <div class="field">
                 <label>Payment Options</label>
@@ -700,13 +700,13 @@
             <div class="section-sub">Quick visual check of major public data points.</div>
 
             <div class="mini-list">
-              <div class="mini-item"><div class="left"><div class="strong">School Name</div><div class="muted"><%= tenantObj.name || "—" %></div></div></div>
-              <div class="mini-item"><div class="left"><div class="strong">School Type</div><div class="muted"><%= p.type || "—" %></div></div></div>
-              <div class="mini-item"><div class="left"><div class="strong">Phone / Email</div><div class="muted"><%= contact.phone || "—" %> / <%= contact.email || "—" %></div></div></div>
-              <div class="mini-item"><div class="left"><div class="strong">Address</div><div class="muted"><%= contact.addressFull || "—" %></div></div></div>
-              <div class="mini-item"><div class="left"><div class="strong">Apply Link</div><div class="muted"><%= admissions.applyUrl || p.applyUrl || "—" %></div></div></div>
-              <div class="mini-item"><div class="left"><div class="strong">Fees</div><div class="muted"><%= admissions.feesRange || p.feesRange || "—" %></div></div></div>
-              <div class="mini-item"><div class="left"><div class="strong">Documents</div><div class="muted"><%= Array.isArray(admissions.requiredDocs) && admissions.requiredDocs.length ? admissions.requiredDocs.join(", ") : "—" %></div></div></div>
+              <div class="mini-item"><div class="left"><div class="strong">School Name</div><div class="muted"><%= tenantObj.name || "-" %></div></div></div>
+              <div class="mini-item"><div class="left"><div class="strong">School Type</div><div class="muted"><%= p.type || "-" %></div></div></div>
+              <div class="mini-item"><div class="left"><div class="strong">Phone / Email</div><div class="muted"><%= contact.phone || "-" %> / <%= contact.email || "-" %></div></div></div>
+              <div class="mini-item"><div class="left"><div class="strong">Address</div><div class="muted"><%= contact.addressFull || "-" %></div></div></div>
+              <div class="mini-item"><div class="left"><div class="strong">Apply Link</div><div class="muted"><%= admissions.applyUrl || p.applyUrl || "-" %></div></div></div>
+              <div class="mini-item"><div class="left"><div class="strong">Fees</div><div class="muted"><%= admissions.feesRange || p.feesRange || "-" %></div></div></div>
+              <div class="mini-item"><div class="left"><div class="strong">Documents</div><div class="muted"><%= Array.isArray(admissions.requiredDocs) && admissions.requiredDocs.length ? admissions.requiredDocs.join(", ") : "-" %></div></div></div>
             </div>
           </aside>
         </div>
@@ -880,11 +880,11 @@
             <div class="section-sub">Tenant infrastructure details for this school.</div>
 
             <div class="mini-list">
-              <div class="mini-item"><div class="left"><div class="strong">Tenant Code</div><div class="muted"><%= tenantObj.code || "—" %></div></div></div>
-              <div class="mini-item"><div class="left"><div class="strong">Subdomain</div><div class="muted"><%= tenantObj.subdomain || "—" %></div></div></div>
-              <div class="mini-item"><div class="left"><div class="strong">DB Name</div><div class="muted"><%= tenantObj.dbName || "—" %></div></div></div>
-              <div class="mini-item"><div class="left"><div class="strong">Custom Domain</div><div class="muted"><%= tenantObj.customDomain || "—" %></div></div></div>
-              <div class="mini-item"><div class="left"><div class="strong">Status</div><div class="muted"><%= tenantObj.status || "—" %></div></div></div>
+              <div class="mini-item"><div class="left"><div class="strong">Tenant Code</div><div class="muted"><%= tenantObj.code || "-" %></div></div></div>
+              <div class="mini-item"><div class="left"><div class="strong">Subdomain</div><div class="muted"><%= tenantObj.subdomain || "-" %></div></div></div>
+              <div class="mini-item"><div class="left"><div class="strong">DB Name</div><div class="muted"><%= tenantObj.dbName || "-" %></div></div></div>
+              <div class="mini-item"><div class="left"><div class="strong">Custom Domain</div><div class="muted"><%= tenantObj.customDomain || "-" %></div></div></div>
+              <div class="mini-item"><div class="left"><div class="strong">Status</div><div class="muted"><%= tenantObj.status || "-" %></div></div></div>
             </div>
           </aside>
         </div>

@@ -43,7 +43,7 @@
       <div>
         <div class="title">Student Dashboard</div>
         <div class="subtitle">
-          Quick view of your studies, timetable, attendance, and campus updates.
+          Quick view of your studies, timetable, attendance, and school updates.
         </div>
       </div>
 
@@ -129,7 +129,7 @@
       </div>
 
       <div class="card">
-        <div class="section-title"><%= showEvents ? "Upcoming Events" : "Campus Status" %></div>
+        <div class="section-title"><%= showEvents ? "Upcoming Events" : "Portal Status" %></div>
         <div class="section-sub">Services and upcoming activity</div>
         <div style="margin-top:8px;">
           <div style="font-size:22px;font-weight:800;">
@@ -169,7 +169,7 @@
 
         <div class="profile-row" style="margin-top:10px;">
           <span><i class="fa-solid fa-calendar-days"></i> <%= metaInfo.academicYear || "Current Year" %> - <%= metaInfo.semester || "Current Term" %></span>
-          <span><i class="fa-solid fa-location-dot"></i> <%= tenant?.name || "Main Campus" %></span>
+          <span><i class="fa-solid fa-location-dot"></i> <%= tenant?.name || "School" %></span>
           <span><i class="fa-solid fa-clock"></i> Local time: <span id="localTimeLabel">--:--</span></span>
         </div>
 

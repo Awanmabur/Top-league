@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title><%= (tenant?.name || "Classic Academy") %> • Attendance</title>
+  <title><%= (tenant?.name || "Classic Academy") %>  -  Attendance</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
         crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -28,7 +28,7 @@
     .bad{background:#fee2e2;color:#b91c1c}
     .info{background:#eef2ff;color:#3730a3}
     .table-wrap{overflow-x:auto;overflow-y:hidden;border:1px solid rgba(13,64,96,.10);border-radius:12px;max-width:100%;-webkit-overflow-scrolling:touch}
-    table{width:100%;min-width:1500px;border-collapse:separate;border-spacing:0;background:#fff;table-layout:fixed}
+    table{width:100%;min-width:1800px;border-collapse:separate;border-spacing:0;background:#fff;table-layout:fixed}
     th,td{padding:10px 12px;border-bottom:1px solid rgba(13,64,96,.08);vertical-align:middle}
     th{font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;text-align:left;background:rgba(13,64,96,.03);position:sticky;top:0;z-index:1;white-space:nowrap}
     tr:hover td{background:rgba(10,111,191,.04)}
@@ -37,6 +37,8 @@
     .col-student{width:260px}
     .col-reg{width:140px}
     .col-class{width:180px}
+    .col-section{width:150px}
+    .col-stream{width:150px}
     .col-subject{width:200px}
     .col-session{width:180px}
     .col-status{width:140px}
@@ -92,7 +94,7 @@
     @media print{body *{visibility:hidden !important}#printArea, #printArea *{visibility:visible !important}#printArea{position:absolute;inset:0;background:#fff;padding:20px}}
   </style>
 </head>
-<body>
+<body data-portal="tenant">
   <div class="app">
     <%- include("../partials/navbar") %>
 
@@ -115,12 +117,14 @@
         </div>
 
         <div class="top-actions">
-          <a class="btn light" href="/tenant/attendance/sheet"><i class="fa-solid fa-table-list"></i> Attendance Sheet</a>
-          <a class="btn light" href="/tenant/attendance/import-template"><i class="fa-solid fa-download"></i> Import Template</a>
-          <a class="btn light" href="/tenant/attendance/export?<%= new URLSearchParams({
+          <a class="btn light" href="/admin/attendance/sheet"><i class="fa-solid fa-table-list"></i> Attendance Sheet</a>
+          <a class="btn light" href="/admin/attendance/import-template"><i class="fa-solid fa-download"></i> Import Template</a>
+          <a class="btn light" href="/admin/attendance/export?<%= new URLSearchParams({
             q: query?.q || '',
             subject: query?.subject || '',
             classGroup: query?.classGroup || '',
+            sectionId: query?.sectionId || '',
+            streamId: query?.streamId || '',
             status: query?.status || '',
             academicYear: query?.academicYear || '',
             term: query?.term || '',
@@ -157,18 +161,26 @@
       </div>
 
       <section class="card" style="margin-top:12px;">
-        <form class="toolbar" method="GET" action="/tenant/attendance">
+        <form class="toolbar" method="GET" action="/admin/attendance" data-academic-selector>
           <div class="left">
             <input class="input" name="q" value="<%= query?.q || '' %>" placeholder="Search student, reg no, email..." />
 
-            <select class="select" name="classGroup">
+            <select class="select" name="classGroup" data-role="class" data-placeholder="All Classes">
               <option value="">All Classes</option>
               <% (classes || []).forEach(function(c){ %>
                 <option value="<%= String(c._id) %>" <%= String(query?.classGroup || '') === String(c._id) ? 'selected' : '' %>><%= c.name || c.code || 'Class' %></option>
               <% }) %>
             </select>
 
-            <select class="select" name="subject">
+            <select class="select" name="sectionId" data-role="section" data-placeholder="All Sections" data-selected="<%= query?.sectionId || '' %>">
+              <option value="">All Sections</option>
+            </select>
+
+            <select class="select" name="streamId" data-role="stream" data-placeholder="All Streams" data-selected="<%= query?.streamId || '' %>">
+              <option value="">All Streams</option>
+            </select>
+
+            <select class="select" name="subject" data-role="subject" data-placeholder="All Subjects">
               <option value="">All Subjects</option>
               <% (subjects || []).forEach(function(s){ %>
                 <option value="<%= String(s._id) %>" <%= String(query?.subject || '') === String(s._id) ? 'selected' : '' %>><%= s.title || s.code || 'Subject' %></option>
@@ -198,7 +210,7 @@
 
           <div class="right">
             <button class="btn light" id="btnBulk" type="button"><i class="fa-solid fa-layer-group"></i> Bulk</button>
-            <a class="btn light" href="/tenant/attendance"><i class="fa-solid fa-rotate-left"></i> Reset</a>
+            <a class="btn light" href="/admin/attendance"><i class="fa-solid fa-rotate-left"></i> Reset</a>
             <button class="btn primary" type="submit"><i class="fa-solid fa-magnifying-glass"></i> Filter</button>
           </div>
         </form>
@@ -241,6 +253,8 @@
                     <th class="col-student">Student</th>
                     <th class="col-reg">Reg No</th>
                     <th class="col-class">Class</th>
+                    <th class="col-section">Section</th>
+                    <th class="col-stream">Stream</th>
                     <th class="col-subject">Subject</th>
                     <th class="col-session">Session</th>
                     <th class="col-status">Status</th>
@@ -268,13 +282,15 @@
                   if (query?.q) params.set("q", query.q);
                   if (query?.subject) params.set("subject", query.subject);
                   if (query?.classGroup) params.set("classGroup", query.classGroup);
+                  if (query?.sectionId) params.set("sectionId", query.sectionId);
+                  if (query?.streamId) params.set("streamId", query.streamId);
                   if (query?.status) params.set("status", query.status);
                   if (query?.academicYear) params.set("academicYear", query.academicYear);
                   if (query?.term) params.set("term", query.term);
                   if (query?.from) params.set("from", query.from);
                   if (query?.to) params.set("to", query.to);
                   params.set("page", String(targetPage));
-                  return "/tenant/attendance?" + params.toString();
+                  return "/admin/attendance?" + params.toString();
                 }
 
                 const startPage = Math.max(1, currentPage - 2);
@@ -347,18 +363,15 @@
         <button class="btn-xs" type="button" data-close-modal="mEdit"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
-      <form id="attendanceForm" method="POST" action="/tenant/attendance">
+      <form id="attendanceForm" method="POST" action="/admin/attendance" data-academic-selector>
         <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
 
         <div class="modal-body">
           <div class="form-grid">
             <div class="field">
               <label>Student</label>
-              <select class="select" id="mStudent" name="student">
-                <option value="">— Select Student —</option>
-                <% (students || []).forEach(function(s){ %>
-                  <option value="<%= String(s._id) %>"><%= s.fullName || 'Student' %><%= s.regNo ? (' — ' + s.regNo) : '' %></option>
-                <% }) %>
+              <select class="select" id="mStudent" name="student" data-role="student" data-placeholder="Select Student">
+                <option value="">Select Student</option>
               </select>
             </div>
 
@@ -369,30 +382,38 @@
 
             <div class="field">
               <label>Class</label>
-              <select class="select" id="mClassGroup" name="classGroup">
-                <option value="">— Select Class —</option>
-                <% (classes || []).forEach(function(c){ %>
-                  <option value="<%= String(c._id) %>"><%= c.name || c.code || 'Class' %></option>
-                <% }) %>
+              <select class="select" id="mClassGroup" name="classGroup" data-role="class">
+                <option value="">Select Class</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label>Section</label>
+              <select class="select" id="mSection" name="sectionId" data-role="section" data-placeholder="Whole Class">
+                <option value="">Whole Class</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label>Stream</label>
+              <select class="select" id="mStream" name="streamId" data-role="stream" data-placeholder="All Streams">
+                <option value="">All Streams</option>
               </select>
             </div>
 
             <div class="field">
               <label>Subject</label>
-              <select class="select" id="mSubject" name="subject" required>
-                <option value="">— Select Subject —</option>
-                <% (subjects || []).forEach(function(s){ %>
-                  <option value="<%= String(s._id) %>"><%= s.title || s.code || 'Subject' %></option>
-                <% }) %>
+              <select class="select" id="mSubject" name="subject" data-role="subject" data-placeholder="Select Subject" required>
+                <option value="">Select Subject</option>
               </select>
             </div>
 
             <div class="field">
               <label>Teacher</label>
               <select class="select" id="mTeacher" name="teacher">
-                <option value="">— Select Teacher —</option>
+                <option value="">- Select Teacher -</option>
                 <% (staffList || []).forEach(function(s){ %>
-                  <option value="<%= String(s._id) %>"><%= s.fullName || s.name || 'Staff' %><%= s.role ? (' — ' + s.role) : '' %></option>
+                  <option value="<%= String(s._id) %>"><%= s.fullName || s.name || 'Staff' %><%= s.role ? (' - ' + s.role) : '' %></option>
                 <% }) %>
               </select>
             </div>
@@ -456,47 +477,57 @@
         <div class="form-grid">
           <div class="field">
             <label>Student</label>
-            <div class="view-input" id="vStudent">—</div>
+            <div class="view-input" id="vStudent">-</div>
           </div>
 
           <div class="field">
             <label>Reg No</label>
-            <div class="view-input" id="vRegNo">—</div>
+            <div class="view-input" id="vRegNo">-</div>
           </div>
 
           <div class="field">
             <label>Email</label>
-            <div class="view-input" id="vEmail">—</div>
+            <div class="view-input" id="vEmail">-</div>
           </div>
 
           <div class="field">
             <label>Class</label>
-            <div class="view-input" id="vClassGroup">—</div>
+            <div class="view-input" id="vClassGroup">-</div>
+          </div>
+
+          <div class="field">
+            <label>Section</label>
+            <div class="view-input" id="vSection">-</div>
+          </div>
+
+          <div class="field">
+            <label>Stream</label>
+            <div class="view-input" id="vStream">-</div>
           </div>
 
           <div class="field">
             <label>Subject</label>
-            <div class="view-input" id="vSubject">—</div>
+            <div class="view-input" id="vSubject">-</div>
           </div>
 
           <div class="field">
             <label>Teacher</label>
-            <div class="view-input" id="vTeacher">—</div>
+            <div class="view-input" id="vTeacher">-</div>
           </div>
 
           <div class="field">
             <label>Academic</label>
-            <div class="view-input" id="vAcademic">—</div>
+            <div class="view-input" id="vAcademic">-</div>
           </div>
 
           <div class="field">
             <label>Session</label>
-            <div class="view-input" id="vSession">—</div>
+            <div class="view-input" id="vSession">-</div>
           </div>
 
           <div class="field">
             <label>Status</label>
-            <div class="view-input" id="vStatus">—</div>
+            <div class="view-input" id="vStatus">-</div>
           </div>
         </div>
 
@@ -504,7 +535,7 @@
 
         <div class="field">
           <label>Notes</label>
-          <div class="view-input multiline" id="vNotes">—</div>
+          <div class="view-input multiline" id="vNotes">-</div>
         </div>
       </div>
 
@@ -526,7 +557,7 @@
         <button class="btn-xs" type="button" data-close-modal="mImport"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
-      <form method="POST" action="/tenant/attendance/import" enctype="multipart/form-data">
+      <form method="POST" action="/admin/attendance/import" enctype="multipart/form-data">
         <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
 
         <div class="modal-body">
@@ -547,6 +578,8 @@
   <form id="rowActionForm" method="POST" style="display:none;">
     <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
     <input type="hidden" name="classGroup" id="hsClassGroup">
+    <input type="hidden" name="sectionId" id="hsSection">
+    <input type="hidden" name="streamId" id="hsStream">
     <input type="hidden" name="subject" id="hsSubject">
     <input type="hidden" name="teacher" id="hsTeacher">
     <input type="hidden" name="student" id="hsStudent">
@@ -562,7 +595,7 @@
     <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
   </form>
 
-  <form id="bulkForm" method="POST" action="/tenant/attendance/bulk" style="display:none;">
+  <form id="bulkForm" method="POST" action="/admin/attendance/bulk" style="display:none;">
     <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
     <input type="hidden" name="action" id="bulkActionValue">
     <input type="hidden" name="status" id="bulkStatusValue">
@@ -580,6 +613,10 @@
       email: r.student?.email || '',
       classGroupId: r.classGroup?._id ? String(r.classGroup._id) : '',
       className: r.classGroup?.name || '',
+      sectionId: r.sectionId?._id ? String(r.sectionId._id) : String(r.sectionId || ''),
+      sectionName: r.sectionName || r.sectionId?.name || '',
+      streamId: r.streamId?._id ? String(r.streamId._id) : String(r.streamId || ''),
+      streamName: r.streamName || r.streamId?.name || '',
       subjectId: r.subject?._id ? String(r.subject._id) : '',
       subjectName: r.subject?.title || r.subject?.code || '',
       teacherId: r.teacher?._id ? String(r.teacher._id) : '',
@@ -594,6 +631,12 @@
   })) %></textarea>
 
   <script src="/js/navbar.js"></script>
+  <textarea id="classesData" class="json-data" aria-hidden="true"><%- JSON.stringify(classes || []) %></textarea>
+  <textarea id="sectionsData" class="json-data" aria-hidden="true"><%- JSON.stringify(sections || []) %></textarea>
+  <textarea id="streamsData" class="json-data" aria-hidden="true"><%- JSON.stringify(streams || []) %></textarea>
+  <textarea id="subjectOptionsData" class="json-data" aria-hidden="true"><%- JSON.stringify(subjectOptions || subjects || []) %></textarea>
+  <textarea id="studentsData" class="json-data" aria-hidden="true"><%- JSON.stringify(studentOptions || students || []) %></textarea>
+  <script src="/js/academic-selector.js"></script>
   <script src="/js/attendance.js"></script>
 </body>
 </html>

@@ -57,7 +57,7 @@
       svgDataURL("#083454", "#2d9cdb", "Library Time"),
       svgDataURL("#0a6fbf", "#0a3d62", "Sports Day"),
       svgDataURL("#0b2239", "#0a6fbf", "ICT Classroom"),
-      svgDataURL("#0a3d62", "#1d4ed8", "Campus View"),
+      svgDataURL("#0a3d62", "#1d4ed8", "School View"),
       svgDataURL("#083454", "#0ea5e9", "Graduation Moment"),
     ];
 

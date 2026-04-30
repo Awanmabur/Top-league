@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { getSchoolUnits } = require("../../../utils/academicStructure");
 
 const SCHOOL_LEVELS = ["nursery", "primary", "secondary"];
 const CLASS_LEVELS = [
@@ -124,10 +125,6 @@ function buildStudentFilter(req) {
   }
 
   return { filter, query: { q, schoolUnitId, campusId, classId, schoolLevel, classLevel, term: term || "", status } };
-}
-
-function getSchoolUnits(req) {
-  return req.tenantDoc?.settings?.academics?.schoolUnits || req.tenant?.settings?.academics?.schoolUnits || [];
 }
 
 function buildStructure(req) {

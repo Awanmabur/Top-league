@@ -28,7 +28,7 @@
   .fok{padding:10px 12px;border-radius:12px;border:1px solid rgba(22,163,74,.25);background:#dcfce7;color:#166534;font-weight:900;font-size:13px}
 </style>
 </head>
-<body>
+<body data-portal="tenant">
 <%
   const rows = Array.isArray(items) ? items : [];
   const t = totals || { base:0, allow:0, deduct:0, net:0 };
@@ -140,3 +140,4 @@
 </div>
 </body>
 </html>
+

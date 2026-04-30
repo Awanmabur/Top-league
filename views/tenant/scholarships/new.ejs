@@ -17,7 +17,7 @@
     textarea{min-height:120px}
   </style>
 </head>
-<body>
+<body data-portal="tenant">
 <%
   const safe=(v)=> (v===null||v===undefined) ? "" : String(v);
   const _mode = (typeof mode!=="undefined" && mode) ? String(mode) : "new";
@@ -240,3 +240,4 @@
 </div>
 </body>
 </html>
+

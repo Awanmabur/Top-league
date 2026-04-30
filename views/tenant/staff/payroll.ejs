@@ -84,7 +84,7 @@
     }
   </style>
 </head>
-<body>
+<body data-portal="tenant">
   <%
     const q = query || {};
     const formatMoney = (v) => Number(v || 0).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:2});

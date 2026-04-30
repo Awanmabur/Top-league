@@ -66,7 +66,7 @@
     const diff = Math.max(0, Number(endMins || 0) - Number(startMins || 0));
     const h = Math.floor(diff / 60);
     const m = diff % 60;
-    if (!diff) return "—";
+    if (!diff) return "-";
     if (h && m) return `${h}h ${m}m`;
     if (h) return `${h}h`;
     return `${m}m`;
@@ -82,7 +82,7 @@
     $("tbodyEntries").innerHTML =
       ENTRIES.map((e) => {
         const checked = state.selected.has(e.id) ? "checked" : "";
-        const subjectLabel = [e.subjectCode, e.subjectTitle].filter(Boolean).join(" — ") || "—";
+        const subjectLabel = [e.subjectCode, e.subjectTitle].filter(Boolean).join(" - ") || "-";
 
         return `
           <tr class="row-clickable" data-id="${escapeHtml(e.id)}">
@@ -93,12 +93,12 @@
             <td class="col-subject">
               <div class="entry-main">
                 <div class="entry-title" title="${escapeHtml(subjectLabel)}">${escapeHtml(subjectLabel)}</div>
-                <div class="entry-sub" title="${escapeHtml(e.note || "—")}">${escapeHtml(e.note || "—")}</div>
+                <div class="entry-sub" title="${escapeHtml(e.note || "-")}">${escapeHtml(e.note || "-")}</div>
               </div>
             </td>
 
             <td class="col-class">
-              <span class="cell-ellipsis" title="${escapeHtml(e.className || "—")}">${escapeHtml(e.className || "—")}</span>
+              <span class="cell-ellipsis" title="${escapeHtml(e.className || "-")}">${escapeHtml(e.className || "-")}</span>
             </td>
 
             <td class="col-section">
@@ -110,28 +110,28 @@
             </td>
 
             <td class="col-teacher">
-              <span class="cell-ellipsis" title="${escapeHtml(e.teacherName || "—")}">${escapeHtml(e.teacherName || "—")}</span>
+              <span class="cell-ellipsis" title="${escapeHtml(e.teacherName || "-")}">${escapeHtml(e.teacherName || "-")}</span>
             </td>
 
             <td class="col-day">
-              <span class="cell-ellipsis">${escapeHtml(e.dayOfWeek || "—")}</span>
+              <span class="cell-ellipsis">${escapeHtml(e.dayOfWeek || "-")}</span>
             </td>
 
             <td class="col-time">
-              <span class="cell-ellipsis">${escapeHtml((e.startTime || "—") + "–" + (e.endTime || "—"))}</span>
+              <span class="cell-ellipsis">${escapeHtml((e.startTime || "-") + " - " + (e.endTime || "-"))}</span>
             </td>
 
             <td class="col-room">
-              <span class="cell-ellipsis" title="${escapeHtml(e.room || "—")}">${escapeHtml(e.room || "—")}</span>
+              <span class="cell-ellipsis" title="${escapeHtml(e.room || "-")}">${escapeHtml(e.room || "-")}</span>
             </td>
 
             <td class="col-campus">
-              <span class="cell-ellipsis" title="${escapeHtml(e.campus || "—")}">${escapeHtml(e.campus || "—")}</span>
+              <span class="cell-ellipsis" title="${escapeHtml(e.campus || "-")}">${escapeHtml(e.campus || "-")}</span>
             </td>
 
             <td class="col-academic">
-              <span class="cell-ellipsis" title="${escapeHtml((e.academicYear || "—") + " • Term " + (e.term || 1))}">
-                ${escapeHtml(e.academicYear || "—")} • Term ${escapeHtml(String(e.term || 1))}
+              <span class="cell-ellipsis" title="${escapeHtml((e.academicYear || "-") + " - Term " + (e.term || 1))}">
+                ${escapeHtml(e.academicYear || "-")} - Term ${escapeHtml(String(e.term || 1))}
               </span>
             </td>
 
@@ -181,8 +181,11 @@
     $("entryForm").action = e ? `/admin/timetable/${encodeURIComponent(e.id)}` : "/admin/timetable";
 
     $("mClass").value = e ? e.classId || "" : "";
+    window.AcademicSelector?.refresh(document);
     $("mSection").value = e ? e.sectionId || "" : "";
+    window.AcademicSelector?.refresh(document);
     $("mStream").value = e ? e.streamId || "" : "";
+    window.AcademicSelector?.refresh(document);
     $("mSubject").value = e ? e.subjectId || "" : "";
     $("mTeacher").value = e ? e.teacherId || "" : "";
     $("mDay").value = e ? e.dayOfWeek || "Mon" : "Mon";
@@ -205,19 +208,18 @@
     if (!e) return;
 
     state.currentViewId = e.id;
+    $("vSubject").textContent = [e.subjectCode, e.subjectTitle].filter(Boolean).join(" - ") || "-";
+    $("vClass").textContent = e.className || "-";
     $("vSection").textContent = e.sectionName || "Whole Class";
     $("vStream").textContent = e.streamName || "All Streams";
-
-    $("vSubject").textContent = [e.subjectCode, e.subjectTitle].filter(Boolean).join(" — ") || "—";
-    $("vClass").textContent = e.className || "—";
-    $("vTeacher").textContent = e.teacherName || "—";
-    $("vDay").textContent = e.dayOfWeek || "—";
-    $("vTime").textContent = `${e.startTime || "—"} – ${e.endTime || "—"} (${formatDuration(e.startMinutes, e.endMinutes)})`;
+    $("vTeacher").textContent = e.teacherName || "-";
+    $("vDay").textContent = e.dayOfWeek || "-";
+    $("vTime").textContent = `${e.startTime || "-"} - ${e.endTime || "-"} (${formatDuration(e.startMinutes, e.endMinutes)})`;
     $("vStatus").innerHTML = statusPill(e.status || "active");
-    $("vRoom").textContent = e.room || "—";
-    $("vCampus").textContent = e.campus || "—";
-    $("vAcademic").textContent = `${e.academicYear || "—"} • Term ${e.term || 1} • ${e.weekPattern || "all"}`;
-    $("vNote").textContent = e.note || "—";
+    $("vRoom").textContent = e.room || "-";
+    $("vCampus").textContent = e.campus || "-";
+    $("vAcademic").textContent = `${e.academicYear || "-"} - Term ${e.term || 1} - ${e.weekPattern || "all"}`;
+    $("vNote").textContent = e.note || "-";
 
     openModal("mView");
   }
@@ -259,7 +261,7 @@
 
   function exportEntries() {
     const rows = [
-      ["SubjectCode", "SubjectTitle", "Class", "Section", "Stream", "Teacher", "Day", "StartTime", "EndTime", "Room", "Campus", "AcademicYear", "Term", "WeekPattern", "Status", "Note"],
+      ["SubjectCode", "SubjectTitle", "Class", "Section", "Stream", "Teacher", "Day", "StartTime", "EndTime", "Room", "Location", "AcademicYear", "Term", "WeekPattern", "Status", "Note"],
       ...ENTRIES.map((e) => [
         e.subjectCode || "",
         e.subjectTitle || "",
@@ -326,8 +328,8 @@
       div.innerHTML = `
         <div class="b1">${escapeHtml(e.subjectCode || "SUBJECT")}</div>
         <div class="b2">${escapeHtml([e.className, e.sectionName, e.streamName].filter(Boolean).join(" / ") || "Class")}</div>
-        <div class="b2">${escapeHtml((e.startTime || "") + "–" + (e.endTime || ""))} • ${escapeHtml(e.room || "—")}</div>
-        <div class="b2">${escapeHtml(e.className || "—")}</div>
+        <div class="b2">${escapeHtml((e.startTime || "") + " - " + (e.endTime || ""))} - ${escapeHtml(e.room || "-")}</div>
+        <div class="b2">${escapeHtml(e.className || "-")}</div>
       `;
       cell.appendChild(div);
     });
@@ -480,3 +482,5 @@
   renderTable();
   updateCounters();
 })();
+
+

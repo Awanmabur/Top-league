@@ -1,4 +1,4 @@
-const HostelModel = require("../../../models/tenant/Hostel");
+﻿const HostelModel = require("../../../models/tenant/Hostel");
 
 function actorUserId(req) {
   return req.user?.userId || req.user?._id || req.session?.tenantUser?.id || null;
@@ -14,9 +14,9 @@ function num(v, fallback = 0) {
 }
 
 function formatDate(v) {
-  if (!v) return "—";
+  if (!v) return "â€”";
   const d = new Date(v);
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return "â€”";
   return d.toISOString().slice(0, 10);
 }
 
@@ -146,7 +146,7 @@ exports.index = async (req, res) => {
   } catch (error) {
     console.error("hostelsController.index error:", error);
     req.flash?.("error", "Failed to load hostels page.");
-    return res.redirect("/tenant/dashboard");
+    return res.redirect("/admin/dashboard");
   }
 };
 

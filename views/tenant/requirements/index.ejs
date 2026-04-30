@@ -302,7 +302,7 @@
     }
   </style>
 </head>
-<body>
+<body data-portal="tenant">
   <%
     const safe = (v, d = "") => (v === null || v === undefined ? d : String(v));
     const itemsArr = Array.isArray(items) ? items : [];
@@ -747,3 +747,4 @@
   <script src="/js/requirements-index.js"></script>
 </body>
 </html>
+

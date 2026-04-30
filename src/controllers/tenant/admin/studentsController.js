@@ -15,6 +15,7 @@ const {
   ensureStudentDocsFromApplicants,
   buildStudentDocSummaries,
 } = require("../../../utils/studentDocs");
+const { getSchoolUnits } = require("../../../utils/academicStructure");
 
 let importedNextRegNo = null;
 try {
@@ -158,12 +159,6 @@ function buildAcademicYears(terms) {
     if (year) years.add(year);
   });
   return Array.from(years).sort();
-}
-
-function getSchoolUnits(req) {
-  return req.tenantDoc?.settings?.academics?.schoolUnits
-    || req.tenant?.settings?.academics?.schoolUnits
-    || [];
 }
 
 function buildStructure(req) {

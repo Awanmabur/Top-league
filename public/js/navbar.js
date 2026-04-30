@@ -6,7 +6,8 @@
   if (!sidebar) return;
 
   const firstPath = window.location.pathname.split("/").filter(Boolean)[0] || "tenant";
-  const portal = document.body?.dataset?.portal || firstPath;
+  const inferredPortal = ["admin", "tenant"].includes(firstPath) ? "tenant" : firstPath;
+  const portal = document.body?.dataset?.portal || inferredPortal;
   const storageKey = `classic_academy_sidebar_${portal}`;
   const isMobile = () => window.matchMedia("(max-width:1100px)").matches;
 

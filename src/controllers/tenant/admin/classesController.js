@@ -1,5 +1,6 @@
-const mongoose = require("mongoose");
+﻿const mongoose = require("mongoose");
 const { body, validationResult } = require("express-validator");
+const { getSchoolUnits } = require("../../../utils/academicStructure");
 
 const LEVEL_TYPES = ["nursery", "primary", "secondary"];
 const SHIFTS = ["day", "boarding", "both"];
@@ -31,12 +32,6 @@ function normalizeClassLevel(value) {
 
 function escapeRegExp(value) {
   return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function getSchoolUnits(req) {
-  return req.tenantDoc?.settings?.academics?.schoolUnits
-    || req.tenant?.settings?.academics?.schoolUnits
-    || [];
 }
 
 function findPlacement(req, schoolUnitId, campusId, levelType) {
@@ -97,7 +92,7 @@ function buildSmartCode(body, placement, sectionName, streamName) {
 const classRules = [
   body("name").trim().isLength({ min: 2, max: 180 }).withMessage("Class name is required (2-180 chars)."),
   body("schoolUnitId").trim().notEmpty().withMessage("School unit is required."),
-  body("campusId").trim().notEmpty().withMessage("Campus is required."),
+  body("campusId").trim().notEmpty().withMessage("Location is required."),
   body("levelType").trim().isIn(LEVEL_TYPES).withMessage("Invalid level."),
   body("classLevel").trim().isIn(CLASS_LEVELS).withMessage("Invalid class level."),
   body("sectionId").optional({ checkFalsy: true }).trim().custom((v) => !v || mongoose.Types.ObjectId.isValid(v)).withMessage("Select a valid section."),
@@ -277,7 +272,7 @@ module.exports = {
     try {
       const placement = findPlacement(req, req.body.schoolUnitId, req.body.campusId, req.body.levelType);
       if (!placement) {
-        req.flash?.("error", "Selected school unit, campus, or level was not found.");
+        req.flash?.("error", "Selected school unit, location, or level was not found.");
         return res.redirect("/admin/classes");
       }
 
@@ -393,7 +388,7 @@ module.exports = {
 
       const placement = findPlacement(req, req.body.schoolUnitId, req.body.campusId, req.body.levelType);
       if (!placement) {
-        req.flash?.("error", "Selected school unit, campus, or level was not found.");
+        req.flash?.("error", "Selected school unit, location, or level was not found.");
         return res.redirect("/admin/classes");
       }
 
@@ -574,3 +569,4 @@ module.exports = {
     }
   },
 };
+

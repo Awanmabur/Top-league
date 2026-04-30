@@ -1,5 +1,6 @@
-const mongoose = require("mongoose");
+﻿const mongoose = require("mongoose");
 const { body, validationResult } = require("express-validator");
+const { getSchoolUnits } = require("../../../utils/academicStructure");
 
 function safeText(value, max = 200) {
   return String(value || "").trim().slice(0, max);
@@ -26,7 +27,7 @@ function clone(value) {
 
 function readTenantAcademicState(req) {
   const academics = req?.tenant?.settings?.academics || {};
-  const schoolUnits = Array.isArray(academics.schoolUnits) ? clone(academics.schoolUnits) : [];
+  const schoolUnits = getSchoolUnits(req);
   return {
     academics,
     schoolUnits,
@@ -158,7 +159,7 @@ function findPlacement(structure, body) {
   const schoolUnit = structure.find((item) => item.code === schoolUnitCode);
   if (!schoolUnit) throw new Error("Selected school unit was not found in tenant structure.");
   const campus = (schoolUnit.campuses || []).find((item) => item.code === campusCode);
-  if (!campus) throw new Error("Selected campus was not found under the chosen school unit.");
+  if (!campus) throw new Error("Selected location was not found under the chosen school unit.");
   return { schoolUnit, campus };
 }
 
@@ -167,7 +168,7 @@ function levelRules() {
     body("name").trim().isLength({ min: 1, max: 80 }).withMessage("Level name is required."),
     body("code").optional({ checkFalsy: true }).trim().isLength({ max: 50 }).withMessage("Level code is too long."),
     body("schoolUnitCode").trim().notEmpty().withMessage("School unit is required."),
-    body("campusCode").trim().notEmpty().withMessage("Campus is required."),
+    body("campusCode").trim().notEmpty().withMessage("Location is required."),
     body("status").optional({ checkFalsy: true }).isIn(["active", "inactive"]).withMessage("Invalid level status."),
     body("title").optional({ checkFalsy: true }).trim().isLength({ max: 120 }),
     body("description").optional({ checkFalsy: true }).trim().isLength({ max: 2000 }),
@@ -354,14 +355,14 @@ module.exports = {
       const unitIndex = schoolUnits.findIndex((item) => safeLower(item.code || item.name) === schoolUnit.code);
       if (unitIndex < 0) throw new Error("School unit could not be loaded for update.");
       const campusIndex = (schoolUnits[unitIndex].campuses || []).findIndex((item) => safeLower(item.code || item.name) === campus.code);
-      if (campusIndex < 0) throw new Error("Campus could not be loaded for update.");
+      if (campusIndex < 0) throw new Error("Location could not be loaded for update.");
 
       const levelName = safeText(req.body.name, 80);
       const levelCode = safeLower(req.body.code || req.body.name).replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 50);
       const levels = Array.isArray(schoolUnits[unitIndex].campuses[campusIndex].levels) ? schoolUnits[unitIndex].campuses[campusIndex].levels : [];
 
       if (levels.some((item) => safeLower(item.code || item.name) === levelCode || safeLower(item.name) === safeLower(levelName))) {
-        req.flash?.("error", "A level with the same name or code already exists in this campus.");
+        req.flash?.("error", "A level with the same name or code already exists in this location.");
         return res.redirect("/admin/levels");
       }
 
@@ -412,7 +413,7 @@ module.exports = {
 
       const targetUnitIndex = schoolUnits.findIndex((item) => safeLower(item.code || item.name) === schoolUnit.code);
       const targetCampusIndex = (schoolUnits[targetUnitIndex]?.campuses || []).findIndex((item) => safeLower(item.code || item.name) === campus.code);
-      if (targetUnitIndex < 0 || targetCampusIndex < 0) throw new Error("Target campus was not found.");
+      if (targetUnitIndex < 0 || targetCampusIndex < 0) throw new Error("Target location was not found.");
 
       const movingLevel = schoolUnits[unitIndex].campuses[campusIndex].levels[levelIndex];
       const nextSections = parseSectionsText(req.body.sectionsText, nextLevelName, schoolUnit.category);
@@ -438,7 +439,7 @@ module.exports = {
         return safeLower(item.code || item.name) === nextLevelCode || safeLower(item.name) === safeLower(nextLevelName);
       });
       if (collision) {
-        req.flash?.("error", "A level with the same name or code already exists in the selected campus.");
+        req.flash?.("error", "A level with the same name or code already exists in the selected location.");
         return res.redirect("/admin/levels");
       }
 
@@ -502,3 +503,4 @@ module.exports = {
     }
   },
 };
+

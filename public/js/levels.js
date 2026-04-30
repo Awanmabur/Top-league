@@ -45,10 +45,13 @@
     const campusSel = $("mCampusCode");
     const level = STRUCTURE.find((unit) => unit.code === selectedSchoolUnitCode);
     const campuses = level ? (level.campuses || []) : [];
-    campusSel.innerHTML = ['<option value="">— Select Campus —</option>']
+    campusSel.innerHTML = ['<option value="">- Select Location -</option>']
       .concat(campuses.map((campus) => `<option value="${escapeHtml(campus.code)}">${escapeHtml(campus.name)}</option>`))
       .join("");
     campusSel.value = selectedCampusCode || "";
+    if (!campusSel.value && campusSel.options.length === 2) {
+      campusSel.selectedIndex = 1;
+    }
   }
 
   function currentCategory() {
@@ -95,17 +98,17 @@
   function openViewModal(level) {
     if (!level) return;
     state.currentViewId = level.id;
-    $("vName").textContent = level.levelName || "—";
-    $("vCode").textContent = level.levelCode || "—";
-    $("vSchoolUnit").textContent = level.schoolUnitName || "—";
-    $("vCampus").textContent = level.campusName || "—";
+    $("vName").textContent = level.levelName || "-";
+    $("vCode").textContent = level.levelCode || "-";
+    $("vSchoolUnit").textContent = level.schoolUnitName || "-";
+    $("vCampus").textContent = level.campusName || "-";
     $("vStatus").innerHTML = statusPill(level.status || "active");
-    $("vSections").textContent = (level.sections || []).map((item) => item.name).join(", ") || "—";
-    $("vTitle").textContent = level.profile?.title || "—";
-    $("vCurriculum").textContent = level.profile?.curriculum || "—";
-    $("vDescription").textContent = level.profile?.description || "—";
-    $("vAdmissionsNote").textContent = level.profile?.admissionsNote || "—";
-    $("vFeesNote").textContent = level.profile?.feesNote || "—";
+    $("vSections").textContent = (level.sections || []).map((item) => item.name).join(", ") || "-";
+    $("vTitle").textContent = level.profile?.title || "-";
+    $("vCurriculum").textContent = level.profile?.curriculum || "-";
+    $("vDescription").textContent = level.profile?.description || "-";
+    $("vAdmissionsNote").textContent = level.profile?.admissionsNote || "-";
+    $("vFeesNote").textContent = level.profile?.feesNote || "-";
     openModal("mView");
   }
 
@@ -120,7 +123,7 @@
         <td><div class="strong">${escapeHtml(item.levelName)}</div><div class="muted">${escapeHtml(item.levelCode)}</div></td>
         <td>${escapeHtml(item.schoolUnitName)}</td>
         <td>${escapeHtml(item.campusName)}</td>
-        <td>${escapeHtml((item.sections || []).map((x) => x.name).join(", ") || "—")}</td>
+        <td>${escapeHtml((item.sections || []).map((x) => x.name).join(", ") || "-")}</td>
         <td>${statusPill(item.status)}</td>
         <td style="text-align:right"><div class="actions"><button class="btn-xs actView" type="button"><i class="fa-solid fa-eye"></i></button><button class="btn-xs actEdit" type="button"><i class="fa-solid fa-pen"></i></button><button class="btn-xs actStatus" type="button"><i class="fa-solid fa-rotate"></i></button><button class="btn-xs actDelete" type="button"><i class="fa-solid fa-trash"></i></button></div></td>
       </tr>
@@ -136,7 +139,7 @@
 
   $("btnCreate")?.addEventListener("click", function () { openEditor(); });
   $("btnExport")?.addEventListener("click", function () {
-    const rows = [["Level", "Code", "School Unit", "Campus", "Sections", "Status"]]
+    const rows = [["Level", "Code", "School Unit", "Location", "Sections", "Status"]]
       .concat(LEVELS.map((item) => [item.levelName, item.levelCode, item.schoolUnitName, item.campusName, (item.sections || []).map((x) => x.name).join(" | "), item.status]));
     const esc = (value) => {
       const s = String(value ?? "");
@@ -164,7 +167,7 @@
   $("saveBtn")?.addEventListener("click", function () {
     if (!$("mName").value.trim()) return alert("Level name is required.");
     if (!$("mSchoolUnitCode").value) return alert("School unit is required.");
-    if (!$("mCampusCode").value) return alert("Campus is required.");
+    if (!$("mCampusCode").value) return alert("Location is required.");
     $("levelForm").submit();
   });
 
@@ -222,3 +225,4 @@
   renderTable();
   updateCounters();
 })();
+

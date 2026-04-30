@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+﻿const mongoose = require("mongoose");
 const { body, validationResult } = require("express-validator");
 const {
   loadAcademicScopeLists,
@@ -462,12 +462,12 @@ module.exports = {
 
       if (!isObjId(subjectId)) {
         req.flash?.("error", "Subject is required.");
-        return res.redirect("/tenant/attendance/sheet");
+        return res.redirect("/admin/attendance/sheet");
       }
 
       if (!isObjId(classGroupId)) {
         req.flash?.("error", "Class is required.");
-        return res.redirect(`/tenant/attendance/sheet?subject=${encodeURIComponent(subjectId)}`);
+        return res.redirect(`/admin/attendance/sheet?subject=${encodeURIComponent(subjectId)}`);
       }
 
       const subject = await Subject.findById(subjectId).select("_id").lean();
@@ -476,18 +476,18 @@ module.exports = {
 
       if (!subject || !classGroup || scope.errors.length) {
         req.flash?.("error", scope.errors.join(" ") || "Subject or class not found.");
-        return res.redirect("/tenant/attendance/sheet");
+        return res.redirect("/admin/attendance/sheet");
       }
 
       if (!sessionAt) {
         req.flash?.("error", "Session date/time is required.");
-        return res.redirect(`/tenant/attendance/sheet?subject=${encodeURIComponent(subjectId)}&classGroup=${encodeURIComponent(classGroupId)}`);
+        return res.redirect(`/admin/attendance/sheet?subject=${encodeURIComponent(subjectId)}&classGroup=${encodeURIComponent(classGroupId)}`);
       }
 
       const rows = Array.isArray(req.body.rows) ? req.body.rows : [];
       if (!rows.length) {
         req.flash?.("error", "No attendance rows submitted.");
-        return res.redirect(`/tenant/attendance/sheet?subject=${encodeURIComponent(subjectId)}&classGroup=${encodeURIComponent(classGroupId)}&sessionAt=${encodeURIComponent(req.body.sessionAt || "")}`);
+        return res.redirect(`/admin/attendance/sheet?subject=${encodeURIComponent(subjectId)}&classGroup=${encodeURIComponent(classGroupId)}&sessionAt=${encodeURIComponent(req.body.sessionAt || "")}`);
       }
 
       const regNos = rows.map((r) => cleanStr(r.regNo, 60)).filter(Boolean);
@@ -562,17 +562,17 @@ module.exports = {
 
       if (!ops.length) {
         req.flash?.("error", "No valid attendance rows to save.");
-        return res.redirect(`/tenant/attendance/sheet?subject=${encodeURIComponent(subjectId)}&classGroup=${encodeURIComponent(classGroupId)}&sessionAt=${encodeURIComponent(req.body.sessionAt || "")}`);
+        return res.redirect(`/admin/attendance/sheet?subject=${encodeURIComponent(subjectId)}&classGroup=${encodeURIComponent(classGroupId)}&sessionAt=${encodeURIComponent(req.body.sessionAt || "")}`);
       }
 
       await Attendance.bulkWrite(ops, { ordered: false });
 
       req.flash?.("success", `Saved ${touched} attendance row(s).`);
-      return res.redirect(`/tenant/attendance/sheet?subject=${encodeURIComponent(subjectId)}&classGroup=${encodeURIComponent(classGroupId)}&sectionId=${encodeURIComponent(sectionId)}&streamId=${encodeURIComponent(streamId)}&sessionAt=${encodeURIComponent(req.body.sessionAt || "")}&academicYear=${encodeURIComponent(academicYear)}&term=${encodeURIComponent(term)}`);
+      return res.redirect(`/admin/attendance/sheet?subject=${encodeURIComponent(subjectId)}&classGroup=${encodeURIComponent(classGroupId)}&sectionId=${encodeURIComponent(sectionId)}&streamId=${encodeURIComponent(streamId)}&sessionAt=${encodeURIComponent(req.body.sessionAt || "")}&academicYear=${encodeURIComponent(academicYear)}&term=${encodeURIComponent(term)}`);
     } catch (err) {
       console.error("ATTENDANCE SHEET SAVE ERROR:", err);
       req.flash?.("error", "Failed to save attendance sheet.");
-      return res.redirect("/tenant/attendance/sheet");
+      return res.redirect("/admin/attendance/sheet");
     }
   },
 
@@ -582,7 +582,7 @@ module.exports = {
 
     if (!errors.isEmpty()) {
       req.flash?.("error", errors.array().map((e) => e.msg).join(" "));
-      return res.redirect("/tenant/attendance");
+      return res.redirect("/admin/attendance");
     }
 
     try {
@@ -591,13 +591,13 @@ module.exports = {
 
       if (!subject) {
         req.flash?.("error", "Subject not found.");
-        return res.redirect("/tenant/attendance");
+        return res.redirect("/admin/attendance");
       }
 
       const sessionAt = parseDateTime(req.body.sessionAt);
       if (!sessionAt) {
         req.flash?.("error", "Session date/time is required.");
-        return res.redirect("/tenant/attendance");
+        return res.redirect("/admin/attendance");
       }
 
       const status = normalizeStatus(req.body.status) || "present";
@@ -617,7 +617,7 @@ module.exports = {
         const student = await Student.findOne({ regNo, isDeleted: { $ne: true } }).select("_id").lean();
         if (!student) {
           req.flash?.("error", "Student not found by RegNo.");
-          return res.redirect("/tenant/attendance");
+          return res.redirect("/admin/attendance");
         }
         studentId = String(student._id);
       }
@@ -625,7 +625,7 @@ module.exports = {
       const scope = await resolveAcademicScope(req, { classId: classGroup, sectionId, streamId });
       if (scope.errors.length) {
         req.flash?.("error", scope.errors.join(" "));
-        return res.redirect("/tenant/attendance");
+        return res.redirect("/admin/attendance");
       }
 
       await Attendance.updateOne(
@@ -658,12 +658,12 @@ module.exports = {
       );
 
       req.flash?.("success", "Attendance saved.");
-      return res.redirect("/tenant/attendance");
+      return res.redirect("/admin/attendance");
     } catch (err) {
       console.error("ATTENDANCE CREATE ERROR:", err);
       if (String(err?.code) === "11000") req.flash?.("error", "Duplicate attendance record.");
       else req.flash?.("error", "Failed to save attendance.");
-      return res.redirect("/tenant/attendance");
+      return res.redirect("/admin/attendance");
     }
   },
 
@@ -673,14 +673,14 @@ module.exports = {
 
     if (!errors.isEmpty()) {
       req.flash?.("error", errors.array().map((e) => e.msg).join(" "));
-      return res.redirect("/tenant/attendance");
+      return res.redirect("/admin/attendance");
     }
 
     try {
       const id = cleanStr(req.params.id, 80);
       if (!isObjId(id)) {
         req.flash?.("error", "Invalid attendance id.");
-        return res.redirect("/tenant/attendance");
+        return res.redirect("/admin/attendance");
       }
 
       const subjectId = cleanStr(req.body.subject, 80);
@@ -688,13 +688,13 @@ module.exports = {
 
       if (!subject) {
         req.flash?.("error", "Subject not found.");
-        return res.redirect("/tenant/attendance");
+        return res.redirect("/admin/attendance");
       }
 
       const sessionAt = parseDateTime(req.body.sessionAt);
       if (!sessionAt) {
         req.flash?.("error", "Session date/time is required.");
-        return res.redirect("/tenant/attendance");
+        return res.redirect("/admin/attendance");
       }
 
       const status = normalizeStatus(req.body.status) || "present";
@@ -714,7 +714,7 @@ module.exports = {
         const student = await Student.findOne({ regNo, isDeleted: { $ne: true } }).select("_id").lean();
         if (!student) {
           req.flash?.("error", "Student not found by RegNo.");
-          return res.redirect("/tenant/attendance");
+          return res.redirect("/admin/attendance");
         }
         studentId = String(student._id);
       }
@@ -722,7 +722,7 @@ module.exports = {
       const scope = await resolveAcademicScope(req, { classId: classGroup, sectionId, streamId });
       if (scope.errors.length) {
         req.flash?.("error", scope.errors.join(" "));
-        return res.redirect("/tenant/attendance");
+        return res.redirect("/admin/attendance");
       }
 
       await Attendance.updateOne(
@@ -752,12 +752,12 @@ module.exports = {
       );
 
       req.flash?.("success", "Attendance updated.");
-      return res.redirect("/tenant/attendance");
+      return res.redirect("/admin/attendance");
     } catch (err) {
       console.error("ATTENDANCE UPDATE ERROR:", err);
       if (String(err?.code) === "11000") req.flash?.("error", "Duplicate attendance record.");
       else req.flash?.("error", "Failed to update attendance.");
-      return res.redirect("/tenant/attendance");
+      return res.redirect("/admin/attendance");
     }
   },
 
@@ -768,16 +768,16 @@ module.exports = {
 
       if (!isObjId(id)) {
         req.flash?.("error", "Invalid attendance id.");
-        return res.redirect("/tenant/attendance");
+        return res.redirect("/admin/attendance");
       }
 
       await Attendance.deleteOne({ _id: id });
       req.flash?.("success", "Attendance deleted.");
-      return res.redirect("/tenant/attendance");
+      return res.redirect("/admin/attendance");
     } catch (err) {
       console.error("ATTENDANCE DELETE ERROR:", err);
       req.flash?.("error", "Failed to delete attendance.");
-      return res.redirect("/tenant/attendance");
+      return res.redirect("/admin/attendance");
     }
   },
 
@@ -795,32 +795,32 @@ module.exports = {
 
       if (!ids.length) {
         req.flash?.("error", "No records selected.");
-        return res.redirect("/tenant/attendance");
+        return res.redirect("/admin/attendance");
       }
 
       if (action === "set_status") {
         if (!status) {
           req.flash?.("error", "Choose a valid status.");
-          return res.redirect("/tenant/attendance");
+          return res.redirect("/admin/attendance");
         }
 
         await Attendance.updateMany({ _id: { $in: ids } }, { $set: { status } });
         req.flash?.("success", `Updated ${ids.length} record(s).`);
-        return res.redirect("/tenant/attendance");
+        return res.redirect("/admin/attendance");
       }
 
       if (action === "delete") {
         await Attendance.deleteMany({ _id: { $in: ids } });
         req.flash?.("success", `Deleted ${ids.length} record(s).`);
-        return res.redirect("/tenant/attendance");
+        return res.redirect("/admin/attendance");
       }
 
       req.flash?.("error", "Invalid bulk action.");
-      return res.redirect("/tenant/attendance");
+      return res.redirect("/admin/attendance");
     } catch (err) {
       console.error("ATTENDANCE BULK ERROR:", err);
       req.flash?.("error", "Bulk action failed.");
-      return res.redirect("/tenant/attendance");
+      return res.redirect("/admin/attendance");
     }
   },
 
@@ -843,7 +843,7 @@ module.exports = {
 
       if (!req.file?.buffer) {
         req.flash?.("error", "CSV file is required.");
-        return res.redirect("/tenant/attendance");
+        return res.redirect("/admin/attendance");
       }
 
       const text = req.file.buffer.toString("utf8");
@@ -851,7 +851,7 @@ module.exports = {
 
       if (!rows.length) {
         req.flash?.("error", "CSV is empty.");
-        return res.redirect("/tenant/attendance");
+        return res.redirect("/admin/attendance");
       }
 
       const headers = rows[0].map((h) => cleanStr(h, 60).toLowerCase());
@@ -865,7 +865,7 @@ module.exports = {
 
       if (iReg < 0 || iSubjectCode < 0 || iSessionAt < 0 || iStatus < 0) {
         req.flash?.("error", "Required headers: regNo, subjectCode, sessionAt, status.");
-        return res.redirect("/tenant/attendance");
+        return res.redirect("/admin/attendance");
       }
 
       const allSubjects = await Subject.find({})
@@ -950,15 +950,15 @@ module.exports = {
 
       if (!imported) {
         req.flash?.("error", "No valid rows imported.");
-        return res.redirect("/tenant/attendance");
+        return res.redirect("/admin/attendance");
       }
 
       req.flash?.("success", `Imported/updated ${imported} attendance record(s).`);
-      return res.redirect("/tenant/attendance");
+      return res.redirect("/admin/attendance");
     } catch (err) {
       console.error("ATTENDANCE IMPORT ERROR:", err);
       req.flash?.("error", "Import failed.");
-      return res.redirect("/tenant/attendance");
+      return res.redirect("/admin/attendance");
     }
   },
 
@@ -1054,3 +1054,4 @@ module.exports = {
     }
   },
 };
+

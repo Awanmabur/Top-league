@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { getSchoolUnits } = require("../../../utils/academicStructure");
 
 function safeStr(v, def = "") {
   if (v === null || v === undefined) return def;
@@ -158,6 +159,29 @@ function perfLog(label, startedAt) {
   }
 }
 
+function modelHasPath(Model, path) {
+  try {
+    return !!Model?.schema?.path(path);
+  } catch (_) {
+    return false;
+  }
+}
+
+function buildSchoolUnitFilter(Model, schoolUnit) {
+  const value = safeStr(schoolUnit, "all").trim();
+  if (!value || value === "all") return {};
+
+  if (modelHasPath(Model, "schoolUnitCode")) return { schoolUnitCode: value };
+  if (modelHasPath(Model, "schoolUnitId")) {
+    return mongoose.Types.ObjectId.isValid(value) ? { schoolUnitId: value } : {};
+  }
+  if (modelHasPath(Model, "schoolUnitName")) {
+    return { schoolUnitName: new RegExp(`^${escapeRegex(value)}$`, "i") };
+  }
+
+  return {};
+}
+
 module.exports = {
   analyticsPage: async (req, res) => {
     const totalStartedAt = Date.now();
@@ -171,7 +195,7 @@ module.exports = {
       const Program = models.Program || null;
 
       const range = clamp(parseInt(req.query.range, 10) || 90, 30, 365);
-      const campus = safeStr(req.query.campus, "all").trim().toLowerCase();
+      const schoolUnit = safeStr(req.query.schoolUnit || req.query.campus, "all").trim();
       const year = safeStr(req.query.year, "2025").trim();
       const search = safeStr(req.query.search, "").trim().slice(0, 80);
 
@@ -181,15 +205,23 @@ module.exports = {
 
       const matchTenantSoftDelete = { isDeleted: { $ne: true } };
 
-      const campusFilter =
-        campus && campus !== "all"
-          ? { campus: campus }
-          : {};
-
-      const baseMatch = {
+      const studentMatch = {
         ...matchTenantSoftDelete,
-        ...campusFilter,
+        ...buildSchoolUnitFilter(Student, schoolUnit),
       };
+      const applicantMatch = {
+        ...matchTenantSoftDelete,
+        ...buildSchoolUnitFilter(Applicant, schoolUnit),
+      };
+      const invoiceMatch = {
+        ...matchTenantSoftDelete,
+        ...buildSchoolUnitFilter(Invoice, schoolUnit),
+      };
+      const paymentMatch = {
+        ...matchTenantSoftDelete,
+        ...buildSchoolUnitFilter(Payment, schoolUnit),
+      };
+      const programMatch = buildSchoolUnitFilter(Program, schoolUnit);
 
       const queryStartedAt = Date.now();
 
@@ -209,12 +241,12 @@ module.exports = {
         feeBreakdownRaw,
       ] = await Promise.all([
         Student
-          ? Student.countDocuments({ ...baseMatch, status: "active" })
+          ? Student.countDocuments({ ...studentMatch, status: "active" })
           : Promise.resolve(0),
 
         Student
           ? Student.countDocuments({
-              ...baseMatch,
+              ...studentMatch,
               status: "active",
               createdAt: { $lt: from },
             })
@@ -222,46 +254,46 @@ module.exports = {
 
         Applicant
           ? Applicant.countDocuments({
-              ...baseMatch,
+              ...applicantMatch,
               createdAt: { $gte: from },
             })
           : Promise.resolve(0),
 
         Applicant
           ? Applicant.countDocuments({
-              ...baseMatch,
+              ...applicantMatch,
               createdAt: { $gte: prevFrom, $lt: from },
             })
           : Promise.resolve(0),
 
         Payment
           ? Payment.aggregate([
-              { $match: { ...baseMatch, createdAt: { $gte: from } } },
+              { $match: { ...paymentMatch, createdAt: { $gte: from } } },
               { $group: { _id: null, total: { $sum: { $ifNull: ["$amount", 0] } } } },
             ])
           : Promise.resolve([]),
 
         Payment
           ? Payment.aggregate([
-              { $match: { ...baseMatch, createdAt: { $gte: prevFrom, $lt: from } } },
+              { $match: { ...paymentMatch, createdAt: { $gte: prevFrom, $lt: from } } },
               { $group: { _id: null, total: { $sum: { $ifNull: ["$amount", 0] } } } },
             ])
           : Promise.resolve([]),
 
         Invoice
           ? Invoice.countDocuments({
-              ...baseMatch,
+              ...invoiceMatch,
               status: { $in: ["unpaid", "partial"] },
               dueDate: { $lt: now },
             })
           : Promise.resolve(0),
 
-        buildWeeklyCountFast(Applicant, baseMatch, 12),
-        buildWeeklySumFast(Payment, "amount", baseMatch, 12),
+        buildWeeklyCountFast(Applicant, applicantMatch, 12),
+        buildWeeklySumFast(Payment, "amount", paymentMatch, 12),
 
         Student
           ? Student.aggregate([
-              { $match: { ...baseMatch } },
+              { $match: { ...studentMatch } },
               { $group: { _id: "$program", students: { $sum: 1 } } },
             ])
           : Promise.resolve([]),
@@ -270,7 +302,7 @@ module.exports = {
           ? Invoice.aggregate([
               {
                 $match: {
-                  ...baseMatch,
+                  ...invoiceMatch,
                   status: { $in: ["unpaid", "partial"] },
                 },
               },
@@ -305,7 +337,7 @@ module.exports = {
           : Promise.resolve([]),
 
         Program
-          ? Program.find({ ...baseMatch })
+          ? Program.find({ ...programMatch })
               .select("_id code name title")
               .sort({ name: 1, title: 1 })
               .lean()
@@ -313,7 +345,7 @@ module.exports = {
 
         Invoice
           ? Invoice.aggregate([
-              { $match: { ...baseMatch, createdAt: { $gte: from } } },
+              { $match: { ...invoiceMatch, createdAt: { $gte: from } } },
               {
                 $group: {
                   _id: { $ifNull: ["$feeType", "other"] },
@@ -423,8 +455,12 @@ module.exports = {
       return res.render("tenant/analytics/index", {
         tenant: req.tenant || null,
         csrfToken: res.locals.csrfToken || null,
-        query: { range, campus, year, search },
+        query: { range, schoolUnit, year, search },
         academicYears,
+        schoolUnitOptions: getSchoolUnits(req).map((unit) => ({
+          value: unit.code || unit.id || "",
+          label: unit.name || "School Unit",
+        })),
 
         kpis: {
           activeStudents,
@@ -465,22 +501,30 @@ module.exports = {
       const Program = models.Program || null;
 
       const range = clamp(parseInt(req.query.range, 10) || 90, 30, 365);
-      const campus = safeStr(req.query.campus, "all").trim().toLowerCase();
+      const schoolUnit = safeStr(req.query.schoolUnit || req.query.campus, "all").trim();
       const search = safeStr(req.query.search, "").trim().slice(0, 80);
 
       const now = new Date();
       const from = addDays(now, -range);
 
       const matchTenantSoftDelete = { isDeleted: { $ne: true } };
-      const campusFilter =
-        campus && campus !== "all"
-          ? { campus: campus }
-          : {};
-
-      const baseMatch = {
+      const studentMatch = {
         ...matchTenantSoftDelete,
-        ...campusFilter,
+        ...buildSchoolUnitFilter(Student, schoolUnit),
       };
+      const applicantMatch = {
+        ...matchTenantSoftDelete,
+        ...buildSchoolUnitFilter(Applicant, schoolUnit),
+      };
+      const invoiceMatch = {
+        ...matchTenantSoftDelete,
+        ...buildSchoolUnitFilter(Invoice, schoolUnit),
+      };
+      const paymentMatch = {
+        ...matchTenantSoftDelete,
+        ...buildSchoolUnitFilter(Payment, schoolUnit),
+      };
+      const programMatch = buildSchoolUnitFilter(Program, schoolUnit);
 
       const [
         activeStudents,
@@ -492,23 +536,23 @@ module.exports = {
         programs,
       ] = await Promise.all([
         Student
-          ? Student.countDocuments({ ...baseMatch, status: "active" })
+          ? Student.countDocuments({ ...studentMatch, status: "active" })
           : Promise.resolve(0),
 
         Applicant
-          ? Applicant.countDocuments({ ...baseMatch, createdAt: { $gte: from } })
+          ? Applicant.countDocuments({ ...applicantMatch, createdAt: { $gte: from } })
           : Promise.resolve(0),
 
         Payment
           ? Payment.aggregate([
-              { $match: { ...baseMatch, createdAt: { $gte: from } } },
+              { $match: { ...paymentMatch, createdAt: { $gte: from } } },
               { $group: { _id: null, total: { $sum: { $ifNull: ["$amount", 0] } } } },
             ])
           : Promise.resolve([]),
 
         Invoice
           ? Invoice.countDocuments({
-              ...baseMatch,
+              ...invoiceMatch,
               status: { $in: ["unpaid", "partial"] },
               dueDate: { $lt: now },
             })
@@ -516,7 +560,7 @@ module.exports = {
 
         Student
           ? Student.aggregate([
-              { $match: { ...baseMatch } },
+              { $match: { ...studentMatch } },
               { $group: { _id: "$program", students: { $sum: 1 } } },
             ])
           : Promise.resolve([]),
@@ -525,7 +569,7 @@ module.exports = {
           ? Invoice.aggregate([
               {
                 $match: {
-                  ...baseMatch,
+                  ...invoiceMatch,
                   status: { $in: ["unpaid", "partial"] },
                 },
               },
@@ -560,7 +604,7 @@ module.exports = {
           : Promise.resolve([]),
 
         Program
-          ? Program.find({ ...baseMatch })
+          ? Program.find({ ...programMatch })
               .select("_id code name title")
               .sort({ name: 1, title: 1 })
               .lean()

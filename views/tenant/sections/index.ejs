@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title><%= (tenant?.name || "Classic Academy") %> • Sections</title>
+  <title><%= (tenant?.name || "Classic Academy") %>  -  Sections</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="stylesheet" href="/css/navbar.css" />
@@ -49,7 +49,7 @@
     @media (max-width:520px){.toolbar .left,.toolbar .right{width:100%}.toolbar .left>*,.toolbar .right>*{max-width:100%}table{min-width:1680px}}
   </style>
 </head>
-<body>
+<body data-portal="tenant">
   <div class="app">
     <%- include("../partials/navbar") %>
     <main class="main">
@@ -81,10 +81,10 @@
           <div class="left">
             <input class="input" name="q" value="<%= query?.q || '' %>" placeholder="Search section, code, class..." />
             <select class="select" name="schoolUnitId"><option value="">All School Units</option><% (structure || []).forEach(function(su){ %><option value="<%= su.id %>" <%= query?.schoolUnitId===su.id?'selected':'' %>><%= su.name %></option><% }) %></select>
-            <select class="select" name="campusId"><option value="">All Campuses</option><% (structure || []).forEach(function(su){ (su.campuses || []).forEach(function(c){ %><option value="<%= c.id %>" <%= query?.campusId===c.id?'selected':'' %>><%= su.name %> • <%= c.name %></option><% }) }) %></select>
+            <select class="select" name="campusId"><option value="">All Locations</option><% (structure || []).forEach(function(su){ (su.campuses || []).forEach(function(c){ %><option value="<%= c.id %>" <%= query?.campusId===c.id?'selected':'' %>><%= su.name %>  -  <%= c.name %></option><% }) }) %></select>
             <select class="select" name="levelType"><option value="">All Levels</option><option value="nursery" <%= query?.levelType==='nursery'?'selected':'' %>>Nursery</option><option value="primary" <%= query?.levelType==='primary'?'selected':'' %>>Primary</option><option value="secondary" <%= query?.levelType==='secondary'?'selected':'' %>>Secondary</option></select>
-            <select class="select" name="classId"><option value="">All Classes</option><% (classes || []).forEach(function(c){ %><option value="<%= String(c._id) %>" <%= query?.classId===String(c._id)?'selected':'' %>><%= c.name %> • <%= c.streamName || c.stream || 'A' %> • <%= c.academicYear || '' %></option><% }) %></select>
-            <select class="select" name="streamId"><option value="">All Streams</option><% (streams || []).forEach(function(s){ %><option value="<%= String(s._id) %>" <%= query?.streamId===String(s._id)?'selected':'' %>><%= s.name %><%= s.className ? (' • ' + s.className) : '' %></option><% }) %></select>
+            <select class="select" name="classId"><option value="">All Classes</option><% (classes || []).forEach(function(c){ %><option value="<%= String(c._id) %>" <%= query?.classId===String(c._id)?'selected':'' %>><%= c.name %>  -  <%= c.streamName || c.stream || 'A' %>  -  <%= c.academicYear || '' %></option><% }) %></select>
+            <select class="select" name="streamId"><option value="">All Streams</option><% (streams || []).forEach(function(s){ %><option value="<%= String(s._id) %>" <%= query?.streamId===String(s._id)?'selected':'' %>><%= s.name %><%= s.className ? ('  -  ' + s.className) : '' %></option><% }) %></select>
             <select class="select" name="status"><option value="">All Status</option><option value="active" <%= query?.status==='active'?'selected':'' %>>Active</option><option value="inactive" <%= query?.status==='inactive'?'selected':'' %>>Inactive</option><option value="archived" <%= query?.status==='archived'?'selected':'' %>>Archived</option></select>
           </div>
           <div class="right">
@@ -138,12 +138,12 @@
             <div class="field"><label>Section Name</label><input class="input" id="mName" name="name" required /></div>
             <div class="field"><label>Section Code</label><input class="input" id="mCode" name="code" placeholder="Auto-generated if blank" /></div>
             <div class="field"><label>Status</label><select class="select" id="mStatus" name="status"><option value="active">Active</option><option value="inactive">Inactive</option><option value="archived">Archived</option></select></div>
-            <div class="field"><label>School Unit</label><select class="select" id="mSchoolUnitId" name="schoolUnitId"><option value="">— Select School Unit —</option><% (structure || []).forEach(function(su){ %><option value="<%= su.id %>"><%= su.name %></option><% }) %></select></div>
-            <div class="field"><label>Campus</label><select class="select" id="mCampusId" name="campusId"><option value="">— Select Campus —</option></select></div>
-            <div class="field"><label>School Level</label><select class="select" id="mLevelType" name="levelType"><option value="">— Select Level —</option><option value="nursery">Nursery</option><option value="primary">Primary</option><option value="secondary">Secondary</option></select></div>
-            <div class="field"><label>Class</label><select class="select" id="mClassId" name="classId" required><option value="">— Select Class —</option></select></div>
-            <div class="field"><label>Stream <span class="muted">(optional)</span></label><select class="select" id="mStreamId" name="streamId"><option value="">— No Stream —</option></select></div>
-            <div class="field"><label>Teacher</label><select class="select" id="mClassTeacher" name="classTeacher"><option value="">— Select Teacher —</option><% (staffList || []).forEach(function(s){ %><option value="<%= String(s._id) %>"><%= s.fullName || s.name || 'Staff' %><%= s.role ? (' — ' + s.role) : '' %></option><% }) %></select></div>
+            <div class="field"><label>School Unit</label><select class="select" id="mSchoolUnitId" name="schoolUnitId"><option value="">- Select School Unit -</option><% (structure || []).forEach(function(su){ %><option value="<%= su.id %>"><%= su.name %></option><% }) %></select></div>
+            <div class="field"><label>Location</label><select class="select" id="mCampusId" name="campusId"><option value="">- Select Location -</option></select></div>
+            <div class="field"><label>School Level</label><select class="select" id="mLevelType" name="levelType"><option value="">- Select Level -</option><option value="nursery">Nursery</option><option value="primary">Primary</option><option value="secondary">Secondary</option></select></div>
+            <div class="field"><label>Class</label><select class="select" id="mClassId" name="classId" required><option value="">- Select Class -</option></select></div>
+            <div class="field"><label>Stream <span class="muted">(optional)</span></label><select class="select" id="mStreamId" name="streamId"><option value="">- No Stream -</option></select></div>
+            <div class="field"><label>Teacher</label><select class="select" id="mClassTeacher" name="classTeacher"><option value="">- Select Teacher -</option><% (staffList || []).forEach(function(s){ %><option value="<%= String(s._id) %>"><%= s.fullName || s.name || 'Staff' %><%= s.role ? (' - ' + s.role) : '' %></option><% }) %></select></div>
             <div class="field"><label>Capacity</label><input class="input" id="mCapacity" name="capacity" type="number" min="0" /></div>
             <div class="field"><label>Enrolled Count</label><input class="input" id="mEnrolledCount" name="enrolledCount" type="number" min="0" /></div>
             <div class="field"><label>Room</label><input class="input" id="mRoom" name="room" /></div>
@@ -163,16 +163,16 @@
       <div class="modal-header"><div class="modal-title">Section Details</div><button class="btn-xs" type="button" data-close-modal="mView"><i class="fa-solid fa-xmark"></i></button></div>
       <div class="modal-body">
         <div class="form-grid">
-          <div class="field"><label>Section</label><div class="view-input" id="vName">—</div></div>
-          <div class="field"><label>Code</label><div class="view-input" id="vCode">—</div></div>
-          <div class="field"><label>Status</label><div class="view-input" id="vStatus">—</div></div>
-          <div class="field"><label>Level</label><div class="view-input" id="vLevel">—</div></div>
-          <div class="field"><label>Class</label><div class="view-input" id="vClass">—</div></div>
-          <div class="field"><label>Stream</label><div class="view-input" id="vStream">—</div></div>
-          <div class="field"><label>Teacher</label><div class="view-input" id="vTeacher">—</div></div>
-          <div class="field"><label>Capacity</label><div class="view-input" id="vCapacity">—</div></div>
-          <div class="field"><label>Room</label><div class="view-input" id="vRoom">—</div></div>
-          <div class="field full"><label>Notes</label><div class="view-input multiline" id="vNotes">—</div></div>
+          <div class="field"><label>Section</label><div class="view-input" id="vName">-</div></div>
+          <div class="field"><label>Code</label><div class="view-input" id="vCode">-</div></div>
+          <div class="field"><label>Status</label><div class="view-input" id="vStatus">-</div></div>
+          <div class="field"><label>Level</label><div class="view-input" id="vLevel">-</div></div>
+          <div class="field"><label>Class</label><div class="view-input" id="vClass">-</div></div>
+          <div class="field"><label>Stream</label><div class="view-input" id="vStream">-</div></div>
+          <div class="field"><label>Teacher</label><div class="view-input" id="vTeacher">-</div></div>
+          <div class="field"><label>Capacity</label><div class="view-input" id="vCapacity">-</div></div>
+          <div class="field"><label>Room</label><div class="view-input" id="vRoom">-</div></div>
+          <div class="field full"><label>Notes</label><div class="view-input multiline" id="vNotes">-</div></div>
         </div>
       </div>
       <div class="modal-footer">
@@ -251,3 +251,4 @@
   <script src="/js/sections.js"></script>
 </body>
 </html>
+

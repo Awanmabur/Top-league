@@ -53,7 +53,7 @@
     @media print{body *{visibility:hidden!important}#printArea,#printArea *{visibility:visible!important}#printArea{position:absolute;inset:0;background:#fff;padding:20px}}
   </style>
 </head>
-<body>
+<body data-portal="tenant">
   <%
     const items = Array.isArray(assignments) ? assignments : [];
     const kpiData = (typeof kpis !== "undefined" && kpis) ? kpis : { total: items.length, published: 0, draft: 0, archived: 0, closed: 0 };
@@ -304,3 +304,4 @@
   <script src="/js/assignments.js"></script>
 </body>
 </html>
+

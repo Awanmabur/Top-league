@@ -66,7 +66,7 @@
 
   function schoolLevelLabel(v) {
     const map = { nursery: "Nursery", primary: "Primary", secondary: "Secondary" };
-    return map[v] || v || "—";
+    return map[v] || v || "-";
   }
 
   function categoryLabel(v) {
@@ -78,7 +78,7 @@
       "co-curricular": "Co-curricular",
       general: "General",
     };
-    return map[v] || v || "—";
+    return map[v] || v || "-";
   }
 
   function campusesForUnit(unitId) {
@@ -103,8 +103,11 @@
     const html = campusesForUnit(unitId).map((c) => (
       `<option value="${escapeHtml(c.id)}" ${String(selected || "") === String(c.id) ? "selected" : ""}>${escapeHtml(c.name)}</option>`
     )).join("");
-    $("mCampusId").innerHTML = `<option value="">— Select Campus —</option>${html}`;
+    $("mCampusId").innerHTML = `<option value="">- Select Location -</option>${html}`;
     if (selected && $("mCampusId").value !== String(selected)) $("mCampusId").value = "";
+    if (!$("mCampusId").value && $("mCampusId").options.length === 2) {
+      $("mCampusId").selectedIndex = 1;
+    }
   }
 
   function fillLevelOptions(unitId, campusId, selectedLevelType) {
@@ -126,7 +129,7 @@
       `<option value="${escapeHtml(l.type)}" ${String(selectedLevelType || "") === String(l.type) ? "selected" : ""}>${escapeHtml(l.name)}</option>`
     )).join("");
 
-    $("mLevelType").innerHTML = `<option value="">— Select Level —</option>${html}`;
+    $("mLevelType").innerHTML = `<option value="">- Select Level -</option>${html}`;
     if (selectedLevelType && $("mLevelType").value !== String(selectedLevelType)) $("mLevelType").value = "";
   }
 
@@ -135,13 +138,13 @@
       const label = [
         c.name || c.classLevel || "Class",
         c.classLevel ? `(${c.classLevel})` : "",
-        c.stream ? `• ${c.stream}` : "",
-        c.academicYear ? `• ${c.academicYear}` : "",
+        c.stream ? ` -  ${c.stream}` : "",
+        c.academicYear ? ` -  ${c.academicYear}` : "",
       ].filter(Boolean).join(" ");
       return `<option value="${escapeHtml(c.id)}" ${String(selected || "") === String(c.id) ? "selected" : ""}>${escapeHtml(label)}</option>`;
     }).join("");
 
-    $("mClassId").innerHTML = `<option value="">— Select Class —</option>${html}`;
+    $("mClassId").innerHTML = `<option value="">- Select Class -</option>${html}`;
     if (selected && $("mClassId").value !== String(selected)) $("mClassId").value = "";
   }
 
@@ -149,7 +152,7 @@
     const html = (SECTIONS_MAP[String(classId)] || []).map((s) => (
       `<option value="${escapeHtml(s.id)}" ${String(selected || "") === String(s.id) ? "selected" : ""}>${escapeHtml(s.name)}</option>`
     )).join("");
-    $("mSectionId").innerHTML = `<option value="">— Whole Class —</option>${html}`;
+    $("mSectionId").innerHTML = `<option value="">- Whole Class -</option>${html}`;
     if (selected && $("mSectionId").value !== String(selected)) $("mSectionId").value = "";
   }
 
@@ -162,7 +165,7 @@
       const value = String(s.id || s._id || "");
       return `<option value="${escapeHtml(value)}" ${String(selected || "") === value ? "selected" : ""}>${escapeHtml(s.name || s.label || "Stream")}</option>`;
     }).join("");
-    $("mStreamId").innerHTML = `<option value="">— All Streams —</option>${html}`;
+    $("mStreamId").innerHTML = `<option value="">- All Streams -</option>${html}`;
     if (selected && $("mStreamId").value !== String(selected)) $("mStreamId").value = "";
   }
 
@@ -175,17 +178,17 @@
             <td class="col-check"><input type="checkbox" class="rowCheck" data-id="${escapeHtml(s.id)}" ${checked}></td>
             <td class="col-subject">
               <div class="subject-main">
-                <div class="subject-title" title="${escapeHtml(s.title || "—")}">${escapeHtml(s.title || "—")}</div>
-                <div class="subject-sub" title="${escapeHtml(s.code || "—")}">${escapeHtml(s.code || "—")}</div>
+                <div class="subject-title" title="${escapeHtml(s.title || "-")}">${escapeHtml(s.title || "-")}</div>
+                <div class="subject-sub" title="${escapeHtml(s.code || "-")}">${escapeHtml(s.code || "-")}</div>
               </div>
             </td>
             <td class="col-level"><span class="cell-ellipsis">${escapeHtml(schoolLevelLabel(s.levelType))}</span></td>
-            <td class="col-class"><span class="cell-ellipsis">${escapeHtml(s.className || "—")}</span></td>
+            <td class="col-class"><span class="cell-ellipsis">${escapeHtml(s.className || "-")}</span></td>
             <td class="col-section"><span class="cell-ellipsis">${escapeHtml(s.sectionName || "Whole Class")}</span></td>
             <td class="col-stream"><span class="cell-ellipsis">${escapeHtml(s.streamName || "All Streams")}</span></td>
             <td class="col-term"><span class="cell-ellipsis">${escapeHtml("Term " + Number(s.term || 1))}</span></td>
             <td class="col-category"><span class="cell-ellipsis">${escapeHtml(categoryLabel(s.category))}</span></td>
-            <td class="col-teacher"><span class="cell-ellipsis">${escapeHtml(s.teacherName || "—")}</span></td>
+            <td class="col-teacher"><span class="cell-ellipsis">${escapeHtml(s.teacherName || "-")}</span></td>
             <td class="col-status">${statusPill(s.status)}</td>
             <td class="col-actions">
               <div class="actions">
@@ -245,21 +248,21 @@
     if (!s) return;
     state.currentViewId = s.id;
 
-    $("vTitle").textContent = s.title || "—";
-    $("vCode").textContent = s.code || "—";
+    $("vTitle").textContent = s.title || "-";
+    $("vCode").textContent = s.code || "-";
     $("vStatus").innerHTML = statusPill(s.status || "active");
-    $("vClass").textContent = s.className || "—";
+    $("vClass").textContent = s.className || "-";
     $("vLevel").textContent = schoolLevelLabel(s.levelType);
     $("vSection").textContent = s.sectionName || "Whole Class";
     $("vStream").textContent = s.streamName || "All Streams";
     $("vTerm").textContent = `Term ${Number(s.term || 1)}`;
-    $("vCategoryType").textContent = `${categoryLabel(s.category)} • ${s.isCompulsory ? "Compulsory" : "Optional"}`;
-    $("vPeriodsPass").textContent = `Periods ${Number(s.weeklyPeriods || 0)} • Pass Mark ${Number(s.passMark || 0)}%`;
-    $("vAssessment").textContent = s.assessmentMethod || "—";
-    $("vTeacher").textContent = s.teacherName || "—";
-    $("vDescription").textContent = s.description || "—";
-    $("vObjectives").textContent = s.objectives || "—";
-    $("vOutline").textContent = s.outline || "—";
+    $("vCategoryType").textContent = `${categoryLabel(s.category)}  -  ${s.isCompulsory ? "Compulsory" : "Optional"}`;
+    $("vPeriodsPass").textContent = `Periods ${Number(s.weeklyPeriods || 0)}  -  Pass Mark ${Number(s.passMark || 0)}%`;
+    $("vAssessment").textContent = s.assessmentMethod || "-";
+    $("vTeacher").textContent = s.teacherName || "-";
+    $("vDescription").textContent = s.description || "-";
+    $("vObjectives").textContent = s.objectives || "-";
+    $("vOutline").textContent = s.outline || "-";
 
     openModal("mView");
   }
@@ -268,7 +271,7 @@
     const missing = [];
     if (!$("mTitle").value.trim()) missing.push("subject name");
     if (!$("mSchoolUnitId").value) missing.push("school unit");
-    if (!$("mCampusId").value) missing.push("campus");
+    if (!$("mCampusId").value) missing.push("location");
     if (!$("mLevelType").value) missing.push("level");
     if (!$("mClassId").value) missing.push("class");
 
@@ -300,7 +303,7 @@
 
   function exportSubjects() {
     const rows = [[
-      "Title", "Code", "SchoolUnit", "Campus", "LevelType", "Class", "Section", "Stream", "Term", "AcademicYear", "Category",
+      "Title", "Code", "SchoolUnit", "Location", "LevelType", "Class", "Section", "Stream", "Term", "AcademicYear", "Category",
       "Compulsory", "WeeklyPeriods", "PassMark", "Teacher", "Status", "AssessmentMethod", "Description"
     ]].concat(SUBJECTS.map((s) => ([
       s.title || "",
@@ -474,3 +477,4 @@
   renderTable();
   updateCounters();
 })();
+

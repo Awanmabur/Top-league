@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const { body, validationResult } = require("express-validator");
+const { getSchoolUnits } = require("../../../utils/academicStructure");
 
 const STATUSES = ["active", "inactive", "archived"];
 
@@ -11,12 +12,6 @@ function slugCode(input) {
     .replace(/[^A-Z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "")
     .slice(0, 40);
-}
-
-function getSchoolUnits(req) {
-  return req.tenantDoc?.settings?.academics?.schoolUnits
-    || req.tenant?.settings?.academics?.schoolUnits
-    || [];
 }
 
 function buildStructure(req) {

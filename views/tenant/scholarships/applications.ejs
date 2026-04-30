@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="/css/admin-finance.css"/>
   <script src="/js/admin-scholarships.js" defer></script>
 </head>
-<body>
+<body data-portal="tenant">
 <%
   const safe=(v)=> (v===null||v===undefined) ? "" : String(v);
   const sch = (typeof scholarship!=="undefined" && scholarship) ? scholarship : null;
@@ -142,3 +142,4 @@
 </div>
 </body>
 </html>
+

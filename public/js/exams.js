@@ -56,9 +56,9 @@
   }
 
   function formatDateTime(v) {
-    if (!v) return "—";
+    if (!v) return "-";
     const d = new Date(v);
-    if (Number.isNaN(d.getTime())) return "—";
+    if (Number.isNaN(d.getTime())) return "-";
     return d.toLocaleString();
   }
 
@@ -71,16 +71,16 @@
             <td class="col-check"><input type="checkbox" class="rowCheck" data-id="${escapeHtml(e.id)}" ${checked}></td>
             <td class="col-title">
               <div class="exam-main">
-                <div class="exam-title">${escapeHtml(e.title || "—")}</div>
-                <div class="exam-sub">${escapeHtml(e.code || "—")}</div>
+                <div class="exam-title">${escapeHtml(e.title || "-")}</div>
+                <div class="exam-sub">${escapeHtml(e.code || "-")}</div>
               </div>
             </td>
-            <td class="col-class"><span class="cell-ellipsis">${escapeHtml(e.className || "—")}</span></td>
+            <td class="col-class"><span class="cell-ellipsis">${escapeHtml(e.className || "-")}</span></td>
             <td class="col-section"><span class="cell-ellipsis">${escapeHtml(e.sectionName || "Whole Class")}</span></td>
             <td class="col-stream"><span class="cell-ellipsis">${escapeHtml(e.streamName || "All Streams")}</span></td>
-            <td class="col-subject"><span class="cell-ellipsis">${escapeHtml(e.subjectName || "—")}</span></td>
-            <td class="col-type"><span class="cell-ellipsis">${escapeHtml(e.examType || "—")}</span></td>
-            <td class="col-date"><span class="cell-ellipsis">${escapeHtml(e.examDateLabel || "—")}</span></td>
+            <td class="col-subject"><span class="cell-ellipsis">${escapeHtml(e.subjectName || "-")}</span></td>
+            <td class="col-type"><span class="cell-ellipsis">${escapeHtml(e.examType || "-")}</span></td>
+            <td class="col-date"><span class="cell-ellipsis">${escapeHtml(e.examDateLabel || "-")}</span></td>
             <td class="col-marks"><span class="cell-ellipsis">${escapeHtml(String(e.maxMarks || 0))} / ${escapeHtml(String(e.passMark || 0))}</span></td>
             <td class="col-status">${statusPill(e.status)}</td>
             <td class="col-actions">
@@ -113,13 +113,16 @@
     const e = prefill || null;
 
     $("mTitleBar").textContent = e ? "Edit Exam" : "Add Exam";
-    $("examForm").action = e ? `/tenant/exams/${encodeURIComponent(e.id)}` : "/tenant/exams";
+    $("examForm").action = e ? `/admin/exams/${encodeURIComponent(e.id)}` : "/admin/exams";
 
     $("mTitle").value = e ? e.title || "" : "";
     $("mCode").value = e ? e.code || "" : "";
     $("mClassGroup").value = e ? e.classGroupId || "" : "";
+    window.AcademicSelector?.refresh(document);
     $("mSection").value = e ? e.sectionId || "" : "";
+    window.AcademicSelector?.refresh(document);
     $("mStream").value = e ? e.streamId || "" : "";
+    window.AcademicSelector?.refresh(document);
     $("mSubject").value = e ? e.subjectId || "" : "";
     $("mTeacher").value = e ? e.teacherId || "" : "";
     $("mAcademicYear").value = e ? e.academicYear || "" : "";
@@ -136,8 +139,6 @@
     $("mStatus").value = e ? e.status || "draft" : "draft";
     $("mInstructions").value = e ? e.instructions || "" : "";
 
-    window.AcademicSelector?.refresh(document);
-
     updateCounters();
     openModal("mEdit");
   }
@@ -146,23 +147,23 @@
     if (!e) return;
     state.currentViewId = e.id;
 
-    $("vTitle").textContent = e.title || "—";
-    $("vCode").textContent = e.code || "—";
-    $("vClassGroup").textContent = e.className || "—";
+    $("vTitle").textContent = e.title || "-";
+    $("vCode").textContent = e.code || "-";
+    $("vClassGroup").textContent = e.className || "-";
     $("vSection").textContent = e.sectionName || "Whole Class";
     $("vStream").textContent = e.streamName || "All Streams";
-    $("vSubject").textContent = e.subjectName || "—";
-    $("vTeacher").textContent = e.teacherName || "—";
-    $("vAcademic").textContent = `${e.academicYear || "—"} • Term ${e.term || 1}`;
-    $("vType").textContent = e.examType || "—";
-    $("vExamDate").textContent = e.examDateLabel || "—";
-    $("vTime").textContent = [e.startTime || "", e.endTime || ""].filter(Boolean).join(" - ") || "—";
-    $("vDuration").textContent = e.durationMinutes ? `${e.durationMinutes} minutes` : "—";
+    $("vSubject").textContent = e.subjectName || "-";
+    $("vTeacher").textContent = e.teacherName || "-";
+    $("vAcademic").textContent = `${e.academicYear || "-"}  -  Term ${e.term || 1}`;
+    $("vType").textContent = e.examType || "-";
+    $("vExamDate").textContent = e.examDateLabel || "-";
+    $("vTime").textContent = [e.startTime || "", e.endTime || ""].filter(Boolean).join(" - ") || "-";
+    $("vDuration").textContent = e.durationMinutes ? `${e.durationMinutes} minutes` : "-";
     $("vMarks").textContent = `${e.maxMarks || 0} max / ${e.passMark || 0} pass`;
-    $("vRoom").textContent = e.room || "—";
-    $("vCampus").textContent = e.campus || "—";
+    $("vRoom").textContent = e.room || "-";
+    $("vCampus").textContent = e.campus || "-";
     $("vStatus").innerHTML = statusPill(e.status || "draft");
-    $("vInstructions").textContent = e.instructions || "—";
+    $("vInstructions").textContent = e.instructions || "-";
 
     openModal("mView");
   }
@@ -171,7 +172,7 @@
     if (!e) return;
     if (!window.confirm(`Delete "${e.title}"?`)) return;
     const form = $("deleteForm");
-    form.action = `/tenant/exams/${encodeURIComponent(e.id)}/delete`;
+    form.action = `/admin/exams/${encodeURIComponent(e.id)}/delete`;
     form.submit();
   }
 

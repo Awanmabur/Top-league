@@ -35,7 +35,7 @@
   @media(max-width:820px){.grid{grid-template-columns:1fr}}
 </style>
 </head>
-<body>
+<body data-portal="tenant">
 <%
   const rows = Array.isArray(runs) ? runs : [];
   const q = (typeof query!=="undefined" && query) ? query : {};
@@ -178,3 +178,4 @@
 </script>
 </body>
 </html>
+

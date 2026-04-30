@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title><%= (tenant?.name || "Classic Academy") %> • Levels</title>
+  <title><%= (tenant?.name || "Classic Academy") %>  -  Levels</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="stylesheet" href="/css/navbar.css" />
@@ -21,7 +21,7 @@
     @media (max-width:1100px){.grid-2{grid-template-columns:1fr}.modal-layout{grid-template-columns:1fr}}@media (max-width:900px){.topbar{flex-wrap:wrap}.top-actions{width:100%;justify-content:flex-start}}@media (max-width:720px){.form-grid{grid-template-columns:1fr}}@media (max-width:680px){.grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}.input{min-width:160px}}
   </style>
 </head>
-<body>
+<body data-portal="tenant">
   <div class="app">
     <%- include("../partials/navbar") %>
     <main class="main">
@@ -30,7 +30,7 @@
       <% } %>
 
       <div class="topbar">
-        <div><div class="title">Levels</div><div class="subtitle">Manage academic levels per school unit and campus. Levels remain part of the tenant academic structure.</div></div>
+        <div><div class="title">Levels</div><div class="subtitle">Manage academic levels per school unit and location. Levels remain part of the tenant academic structure.</div></div>
         <div class="top-actions"><button class="btn light" id="btnExport" type="button"><i class="fa-solid fa-file-arrow-down"></i> Export CSV</button><button class="btn primary" id="btnCreate" type="button"><i class="fa-solid fa-plus"></i> Add Level</button></div>
       </div>
 
@@ -44,9 +44,9 @@
       <section class="card" style="margin-top:12px;">
         <form class="toolbar" method="GET" action="/admin/levels">
           <div class="left">
-            <input class="input" name="q" value="<%= query?.q || '' %>" placeholder="Search level, code, campus..." />
+            <input class="input" name="q" value="<%= query?.q || '' %>" placeholder="Search level, code, location..." />
             <select class="select" name="schoolUnitCode"><option value="">All School Units</option><% (schoolUnitOptions || []).forEach(function(item){ %><option value="<%= item.code %>" <%= query?.schoolUnitCode === item.code ? 'selected' : '' %>><%= item.name %></option><% }) %></select>
-            <select class="select" name="campusCode"><option value="">All Campuses</option><% (campusOptions || []).forEach(function(item){ %><option value="<%= item.campusCode %>" <%= query?.campusCode === item.campusCode ? 'selected' : '' %>><%= item.schoolUnitName %> • <%= item.campusName %></option><% }) %></select>
+            <select class="select" name="campusCode"><option value="">All Locations</option><% (campusOptions || []).forEach(function(item){ %><option value="<%= item.campusCode %>" <%= query?.campusCode === item.campusCode ? 'selected' : '' %>><%= item.schoolUnitName %>  -  <%= item.campusName %></option><% }) %></select>
             <select class="select" name="status"><option value="">All Status</option><option value="active" <%= query?.status === 'active' ? 'selected' : '' %>>Active</option><option value="inactive" <%= query?.status === 'inactive' ? 'selected' : '' %>>Inactive</option></select>
           </div>
           <div class="right"><a class="btn light" href="/admin/levels"><i class="fa-solid fa-rotate-left"></i> Reset</a><button class="btn primary" type="submit"><i class="fa-solid fa-magnifying-glass"></i> Filter</button></div>
@@ -56,7 +56,7 @@
       <div class="grid-2" style="margin-top:12px;">
         <section class="card" style="min-width:0;">
           <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;"><div><div class="section-title">Levels Table</div><div class="section-sub">Showing <%= levels.length %> of <%= query?.total || 0 %> records.</div></div><div class="muted">Page <%= query?.page || 1 %> of <%= query?.totalPages || 1 %></div></div>
-          <div style="margin-top:10px;"><div class="table-wrap"><table><thead><tr><th>Level</th><th>School Unit</th><th>Campus</th><th>Sections / Streams</th><th>Status</th><th style="text-align:right;">Actions</th></tr></thead><tbody id="tbodyLevels"></tbody></table></div></div>
+          <div style="margin-top:10px;"><div class="table-wrap"><table><thead><tr><th>Level</th><th>School Unit</th><th>Location</th><th>Sections / Streams</th><th>Status</th><th style="text-align:right;">Actions</th></tr></thead><tbody id="tbodyLevels"></tbody></table></div></div>
           <div class="pagination"><div class="muted">Rows per page: <strong><%= query?.perPage || 10 %></strong></div><div class="pagination-links"><%
             const currentPage = Number(query?.page || 1);
             const totalPages = Number(query?.totalPages || 1);
@@ -74,7 +74,7 @@
           %><a class="page-link <%= currentPage <= 1 ? 'disabled' : '' %>" href="<%= buildPageUrl(Math.max(1, currentPage - 1)) %>"><i class="fa-solid fa-angle-left"></i></a><% for (let p = startPage; p <= endPage; p++) { %><a class="page-link <%= p === currentPage ? 'active' : '' %>" href="<%= buildPageUrl(p) %>"><%= p %></a><% } %><a class="page-link <%= currentPage >= totalPages ? 'disabled' : '' %>" href="<%= buildPageUrl(Math.min(totalPages, currentPage + 1)) %>"><i class="fa-solid fa-angle-right"></i></a></div></div>
         </section>
 
-        <aside class="card"><div class="section-title">Architecture Note</div><div class="section-sub">Levels are not a separate standalone collection.</div><div class="note-box">A level belongs to <strong>school unit → campus</strong> and lives inside the tenant academic structure. Subjects, learners, timetable, exams and attendance should attach to that structure instead of duplicating it.</div><div class="mini-list"><div class="mini-item"><div class="left"><div class="strong">Primary example</div><div class="muted">Campus → P1 → Stream A / B</div></div><i class="fa-solid fa-school"></i></div><div class="mini-item"><div class="left"><div class="strong">Secondary example</div><div class="muted">Campus → S5 → Stream A / B</div></div><i class="fa-solid fa-graduation-cap"></i></div></div></aside>
+        <aside class="card"><div class="section-title">Architecture Note</div><div class="section-sub">Levels are not a separate standalone collection.</div><div class="note-box">A level belongs to <strong>school unit -> location</strong> and lives inside the tenant academic structure. Subjects, learners, timetable, exams and attendance should attach to that structure instead of duplicating it.</div><div class="mini-list"><div class="mini-item"><div class="left"><div class="strong">Primary example</div><div class="muted">Location -> P1 -> Stream A / B</div></div><i class="fa-solid fa-school"></i></div><div class="mini-item"><div class="left"><div class="strong">Secondary example</div><div class="muted">Location -> S5 -> Stream A / B</div></div><i class="fa-solid fa-graduation-cap"></i></div></div></aside>
       </div>
     </main>
   </div>
@@ -88,12 +88,12 @@
             <div class="field"><label for="mCode">Level Code</label><input class="input" id="mCode" name="code" placeholder="Auto-generated if blank" /></div>
             <div class="field"><label for="mStatus">Status</label><select class="select" id="mStatus" name="status"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
             <div class="field"><label for="mSchoolUnitCode">School Unit</label><select class="select" id="mSchoolUnitCode" name="schoolUnitCode"><% (schoolUnitOptions || []).forEach(function(item){ %><option value="<%= item.code %>"><%= item.name %></option><% }) %></select></div>
-            <div class="field"><label for="mCampusCode">Campus</label><select class="select" id="mCampusCode" name="campusCode"></select></div>
+            <div class="field"><label for="mCampusCode">Location</label><select class="select" id="mCampusCode" name="campusCode"></select></div>
             <div class="field full"><label for="mSectionsText">Default Sections / Streams</label><textarea class="textarea" id="mSectionsText" name="sectionsText" maxlength="1000" placeholder="A, B or Red, Blue"></textarea><div class="help">Separate sections with commas, pipes or new lines. Leave blank to auto-seed defaults for the category.</div><div class="char-count" id="sectionsCount">0 / 1000</div></div>
           </div>
         </section>
         <section class="modal-panel"><div class="panel-title">Level Profile</div><div class="panel-sub">Optional academic notes used across modules.</div>
-          <div class="note-box">Because levels already live under each campus in the tenant structure, this module updates the embedded academic tree instead of creating a duplicate standalone level collection.</div>
+          <div class="note-box">Because levels already live under each location in the tenant structure, this module updates the embedded academic tree instead of creating a duplicate standalone level collection.</div>
           <div class="form-grid" style="margin-top:12px;"><div class="field full"><label for="mTitle">Profile Title</label><input class="input" id="mTitle" name="title" maxlength="120" placeholder="e.g. Primary One" /></div><div class="field"><label for="mCurriculum">Curriculum</label><input class="input" id="mCurriculum" name="curriculum" maxlength="120" placeholder="e.g. UNEB" /></div><div class="field"><label for="mAdmissionsNote">Admissions Note</label><input class="input" id="mAdmissionsNote" name="admissionsNote" maxlength="1200" placeholder="Any admissions note" /></div><div class="field full"><label for="mDescription">Description</label><textarea class="textarea" id="mDescription" name="description" maxlength="2000" placeholder="Describe the level..."></textarea><div class="char-count" id="descCount">0 / 2000</div></div><div class="field full"><label for="mFeesNote">Fees Note</label><textarea class="textarea" id="mFeesNote" name="feesNote" maxlength="1200" placeholder="Any fees note"></textarea></div></div>
         </section>
       </div></div>
@@ -101,7 +101,7 @@
     </form></div></div>
 
   <div class="modal-backdrop" id="mView"><div class="modal sm"><div class="modal-header"><div class="modal-title">Level Details</div><button class="btn-xs" type="button" data-close-modal="mView"><i class="fa-solid fa-xmark"></i></button></div>
-    <div class="modal-body"><div class="form-grid"><div class="field"><label>Level</label><div class="view-input" id="vName">—</div></div><div class="field"><label>Code</label><div class="view-input" id="vCode">—</div></div><div class="field"><label>School Unit</label><div class="view-input" id="vSchoolUnit">—</div></div><div class="field"><label>Campus</label><div class="view-input" id="vCampus">—</div></div><div class="field"><label>Status</label><div class="view-input" id="vStatus">—</div></div><div class="field"><label>Sections / Streams</label><div class="view-input" id="vSections">—</div></div><div class="field full"><label>Profile Title</label><div class="view-input" id="vTitle">—</div></div><div class="field"><label>Curriculum</label><div class="view-input" id="vCurriculum">—</div></div></div><div class="section-divider"></div><div class="field"><label>Description</label><div class="view-input multiline" id="vDescription">—</div></div><div class="field" style="margin-top:12px;"><label>Admissions Note</label><div class="view-input multiline" id="vAdmissionsNote">—</div></div><div class="field" style="margin-top:12px;"><label>Fees Note</label><div class="view-input multiline" id="vFeesNote">—</div></div></div>
+    <div class="modal-body"><div class="form-grid"><div class="field"><label>Level</label><div class="view-input" id="vName">-</div></div><div class="field"><label>Code</label><div class="view-input" id="vCode">-</div></div><div class="field"><label>School Unit</label><div class="view-input" id="vSchoolUnit">-</div></div><div class="field"><label>Location</label><div class="view-input" id="vCampus">-</div></div><div class="field"><label>Status</label><div class="view-input" id="vStatus">-</div></div><div class="field"><label>Sections / Streams</label><div class="view-input" id="vSections">-</div></div><div class="field full"><label>Profile Title</label><div class="view-input" id="vTitle">-</div></div><div class="field"><label>Curriculum</label><div class="view-input" id="vCurriculum">-</div></div></div><div class="section-divider"></div><div class="field"><label>Description</label><div class="view-input multiline" id="vDescription">-</div></div><div class="field" style="margin-top:12px;"><label>Admissions Note</label><div class="view-input multiline" id="vAdmissionsNote">-</div></div><div class="field" style="margin-top:12px;"><label>Fees Note</label><div class="view-input multiline" id="vFeesNote">-</div></div></div>
     <div class="modal-footer"><button class="btn light" type="button" id="viewActivateBtn"><i class="fa-solid fa-circle-check"></i> Activate</button><button class="btn light" type="button" id="viewDeactivateBtn"><i class="fa-solid fa-circle-minus"></i> Deactivate</button><button class="btn light" type="button" data-close-modal="mView">Close</button><button class="btn primary" type="button" id="viewEditBtn"><i class="fa-solid fa-pen"></i> Edit</button></div>
   </div></div>
 
@@ -112,3 +112,4 @@
   <script src="/js/levels.js"></script>
 </body>
 </html>
+

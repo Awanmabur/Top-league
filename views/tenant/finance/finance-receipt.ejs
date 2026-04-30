@@ -78,7 +78,7 @@
     }
   </style>
 </head>
-<body>
+<body data-portal="tenant">
 
 <div class="wrap">
   <div class="topbar">
@@ -96,7 +96,7 @@
   <section class="card">
     <div class="card-head">
       <div>
-        <div class="card-title">Classic Academy School Finance Office</div>
+        <div class="card-title"><%= tenant?.name || "Classic Academy" %> Finance Office</div>
         <div class="card-sub">Official Payment Receipt • Keep this for your records</div>
       </div>
       <div>
@@ -109,10 +109,10 @@
       <div class="grid">
         <div class="stamp">
           <div class="strong" style="margin-bottom:6px"><i class="fa-solid fa-building-columns"></i> Institution Details</div>
-          <div class="muted">School / Tenant: <span class="strong">Demo School</span></div>
-          <div class="muted">Address: Main Campus, Kampala</div>
+          <div class="muted">School / Tenant: <span class="strong"><%= tenant?.name || "Classic Academy" %></span></div>
+          <div class="muted">Address: Main office / registered address</div>
           <div class="muted">Phone: +256 700 000 000</div>
-          <div class="muted">Email: finance@demo-school.edu</div>
+          <div class="muted">Email: finance@classicacademy.app</div>
         </div>
 
         <div class="stamp">
@@ -303,3 +303,5 @@
 
 </body>
 </html>
+
+

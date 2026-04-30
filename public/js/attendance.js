@@ -90,17 +90,17 @@
 
             <td class="col-student">
               <div class="student-main">
-                <div class="student-title" title="${escapeHtml(r.studentName || "—")}">${escapeHtml(r.studentName || "—")}</div>
-                <div class="student-sub" title="${escapeHtml(r.email || "—")}">${escapeHtml(r.email || "—")}</div>
+                <div class="student-title" title="${escapeHtml(r.studentName || "-")}">${escapeHtml(r.studentName || "-")}</div>
+                <div class="student-sub" title="${escapeHtml(r.email || "-")}">${escapeHtml(r.email || "-")}</div>
               </div>
             </td>
 
             <td class="col-reg">
-              <span class="cell-ellipsis" title="${escapeHtml(r.regNo || "—")}">${escapeHtml(r.regNo || "—")}</span>
+              <span class="cell-ellipsis" title="${escapeHtml(r.regNo || "-")}">${escapeHtml(r.regNo || "-")}</span>
             </td>
 
             <td class="col-class">
-              <span class="cell-ellipsis" title="${escapeHtml(r.className || "—")}">${escapeHtml(r.className || "—")}</span>
+              <span class="cell-ellipsis" title="${escapeHtml(r.className || "-")}">${escapeHtml(r.className || "-")}</span>
             </td>
 
             <td class="col-section">
@@ -112,11 +112,11 @@
             </td>
 
             <td class="col-subject">
-              <span class="cell-ellipsis" title="${escapeHtml(r.subjectName || "—")}">${escapeHtml(r.subjectName || "—")}</span>
+              <span class="cell-ellipsis" title="${escapeHtml(r.subjectName || "-")}">${escapeHtml(r.subjectName || "-")}</span>
             </td>
 
             <td class="col-session">
-              <span class="cell-ellipsis" title="${escapeHtml(r.sessionAtLabel || "—")}">${escapeHtml(r.sessionAtLabel || "—")}</span>
+              <span class="cell-ellipsis" title="${escapeHtml(r.sessionAtLabel || "-")}">${escapeHtml(r.sessionAtLabel || "-")}</span>
             </td>
 
             <td class="col-status">
@@ -124,7 +124,7 @@
             </td>
 
             <td class="col-notes">
-              <span class="cell-ellipsis" title="${escapeHtml(r.notes || "—")}">${escapeHtml(r.notes || "—")}</span>
+              <span class="cell-ellipsis" title="${escapeHtml(r.notes || "-")}">${escapeHtml(r.notes || "-")}</span>
             </td>
 
             <td class="col-actions">
@@ -177,7 +177,7 @@
 
     fillHiddenStatusForm(r, status);
     const form = $("rowActionForm");
-    form.action = `/tenant/attendance/${encodeURIComponent(r.id)}`;
+    form.action = `/admin/attendance/${encodeURIComponent(r.id)}`;
     form.submit();
   }
 
@@ -185,7 +185,7 @@
     if (!r) return;
     if (!window.confirm(`Delete attendance for "${r.studentName}"?`)) return;
     const form = $("deleteForm");
-    form.action = `/tenant/attendance/${encodeURIComponent(r.id)}/delete`;
+    form.action = `/admin/attendance/${encodeURIComponent(r.id)}/delete`;
     form.submit();
   }
 
@@ -193,14 +193,17 @@
     const r = prefill || null;
 
     $("mTitle").textContent = r ? "Edit Attendance" : "Mark Attendance";
-    $("attendanceForm").action = r ? `/tenant/attendance/${encodeURIComponent(r.id)}` : "/tenant/attendance";
+    $("attendanceForm").action = r ? `/admin/attendance/${encodeURIComponent(r.id)}` : "/admin/attendance";
 
+    $("mClassGroup").value = r ? r.classGroupId || "" : "";
+    window.AcademicSelector?.refresh(document);
+    $("mSection").value = r ? r.sectionId || "" : "";
+    window.AcademicSelector?.refresh(document);
+    $("mStream").value = r ? r.streamId || "" : "";
+    window.AcademicSelector?.refresh(document);
+    $("mSubject").value = r ? r.subjectId || "" : "";
     $("mStudent").value = r ? r.studentId || "" : "";
     $("mRegNo").value = r ? r.regNo || "" : "";
-    $("mClassGroup").value = r ? r.classGroupId || "" : "";
-    $("mSection").value = r ? r.sectionId || "" : "";
-    $("mStream").value = r ? r.streamId || "" : "";
-    $("mSubject").value = r ? r.subjectId || "" : "";
     $("mTeacher").value = r ? r.teacherId || "" : "";
     $("mAcademicYear").value = r ? r.academicYear || "" : "";
     $("mTerm").value = r ? String(r.term || 1) : "1";
@@ -208,7 +211,6 @@
     $("mStatus").value = r ? r.status || "present" : "present";
     $("mNotes").value = r ? r.notes || "" : "";
 
-    window.AcademicSelector?.refresh(document);
     updateCounters();
     openModal("mEdit");
   }
@@ -216,19 +218,19 @@
   function openViewModal(r) {
     if (!r) return;
     state.currentViewId = r.id;
+
+    $("vStudent").textContent = r.studentName || "-";
+    $("vRegNo").textContent = r.regNo || "-";
+    $("vEmail").textContent = r.email || "-";
+    $("vClassGroup").textContent = r.className || "-";
     $("vSection").textContent = r.sectionName || "Whole Class";
     $("vStream").textContent = r.streamName || "All Streams";
-
-    $("vStudent").textContent = r.studentName || "—";
-    $("vRegNo").textContent = r.regNo || "—";
-    $("vEmail").textContent = r.email || "—";
-    $("vClassGroup").textContent = r.className || "—";
-    $("vSubject").textContent = r.subjectName || "—";
-    $("vTeacher").textContent = r.teacherName || "—";
-    $("vAcademic").textContent = `${r.academicYear || "—"} • Term ${r.term || 1}`;
-    $("vSession").textContent = r.sessionAtLabel || "—";
+    $("vSubject").textContent = r.subjectName || "-";
+    $("vTeacher").textContent = r.teacherName || "-";
+    $("vAcademic").textContent = `${r.academicYear || "-"}  -  Term ${r.term || 1}`;
+    $("vSession").textContent = r.sessionAtLabel || "-";
     $("vStatus").innerHTML = statusPill(r.status || "present");
-    $("vNotes").textContent = r.notes || "—";
+    $("vNotes").textContent = r.notes || "-";
 
     openModal("mView");
   }
@@ -429,3 +431,5 @@
   renderTable();
   updateCounters();
 })();
+
+

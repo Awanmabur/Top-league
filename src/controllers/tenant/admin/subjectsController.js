@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const { body, validationResult } = require("express-validator");
 const { loadAcademicScopeLists, resolveAcademicScope } = require("../../../utils/tenantAcademicScope");
+const { getSchoolUnits } = require("../../../utils/academicStructure");
 
 const LEVEL_TYPES = ["nursery", "primary", "secondary"];
 const TERMS = [1, 2, 3];
@@ -17,12 +18,6 @@ function slugCode(input) {
     .replace(/[^A-Z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "")
     .slice(0, 40);
-}
-
-function getSchoolUnits(req) {
-  return req.tenantDoc?.settings?.academics?.schoolUnits
-    || req.tenant?.settings?.academics?.schoolUnits
-    || [];
 }
 
 function buildStructure(req) {

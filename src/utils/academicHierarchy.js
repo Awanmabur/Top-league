@@ -1,8 +1,4 @@
-function getSchoolUnits(req) {
-  return req.tenantDoc?.settings?.academics?.schoolUnits
-    || req.tenant?.settings?.academics?.schoolUnits
-    || [];
-}
+const { getSchoolUnits } = require("./academicStructure");
 
 function normalizeText(value, max = 180) {
   return String(value || '').trim().slice(0, max);
