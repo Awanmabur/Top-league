@@ -91,7 +91,7 @@ function buildFiltersFromQuery(req) {
   const from = safeStr(req.query.from);
   const to = safeStr(req.query.to);
   const academicYear = safeStr(req.query.academicYear);
-  const semester = safeStr(req.query.semester);
+  const term = safeStr(req.query.term || req.query.semester);
   const status = safeStr(req.query.status);
   const program = safeStr(req.query.program);
 
@@ -100,7 +100,7 @@ function buildFiltersFromQuery(req) {
     from,
     to,
     academicYear: academicYear.slice(0, 20),
-    semester: /^\d+$/.test(semester) ? semester : "",
+    term: term.slice(0, 20),
     status: ALLOWED_STATUSES.has(status) ? status : "",
     program: mongoose.Types.ObjectId.isValid(program) ? program : "",
   };
@@ -153,8 +153,8 @@ function getStudentAcademicLabel(student) {
 async function reportFinanceSummary(req, filters) {
   const { Invoice, Payment } = req.models || {};
   const matchSoft = { isDeleted: { $ne: true } };
-  const invoiceDateMatch = buildDateMatch(filters, "createdAt");
-  const paymentDateMatch = buildDateMatch(filters, "createdAt");
+  const invoiceDateMatch = buildDateMatch(filters, "issueDate");
+  const paymentDateMatch = buildDateMatch(filters, "paymentDate");
   const subjectId = mongoose.Types.ObjectId.isValid(filters.program) ? filters.program : "";
 
   let invoicesIssued = 0;
@@ -169,6 +169,8 @@ async function reportFinanceSummary(req, filters) {
   if (Invoice) {
     const invoiceMatch = { ...matchSoft, ...invoiceDateMatch };
     if (subjectId) invoiceMatch.programId = new mongoose.Types.ObjectId(subjectId);
+    if (filters.academicYear) invoiceMatch.academicYear = filters.academicYear;
+    if (filters.term) invoiceMatch.term = filters.term;
 
     jobs.push(
       Invoice.aggregate([
@@ -223,6 +225,8 @@ async function reportFinanceSummary(req, filters) {
   if (Payment) {
     const paymentMatch = { ...matchSoft, ...paymentDateMatch };
     if (subjectId) paymentMatch.programId = new mongoose.Types.ObjectId(subjectId);
+    if (filters.academicYear) paymentMatch.academicYear = filters.academicYear;
+    if (filters.term) paymentMatch.term = filters.term;
 
     jobs.push(
       Payment.aggregate([
@@ -274,13 +278,13 @@ async function reportInvoices(req, filters) {
 
   const q = {
     isDeleted: { $ne: true },
-    ...buildDateMatch(filters, "createdAt"),
+    ...buildDateMatch(filters, "issueDate"),
   };
 
   const status = normalizeInvoiceStatusFilter(filters.status);
   if (status) q.status = status;
   if (filters.academicYear) q.academicYear = filters.academicYear;
-  if (filters.semester) q.semester = safeNum(filters.semester, 0);
+  if (filters.term) q.term = filters.term;
   if (filters.program) q.programId = filters.program;
 
   const invoices = await Invoice.find(q)
@@ -304,7 +308,7 @@ async function reportInvoices(req, filters) {
       student: student ? `${getStudentName(student)}${regNo ? ` - ${regNo}` : ""}` : "-",
       program: getSubjectLabel(subject),
       academicYear: inv.academicYear || "",
-      semester: inv.semester || "",
+      term: inv.term || "",
       amount,
       paid,
       outstanding,
@@ -326,7 +330,7 @@ async function reportInvoices(req, filters) {
       { key: "student", label: "Student" },
       { key: "program", label: "Subject" },
       { key: "academicYear", label: "Year" },
-      { key: "semester", label: "Sem" },
+      { key: "term", label: "Term" },
       { key: "amount", label: "Amount", align: "right", money: true },
       { key: "paid", label: "Paid", align: "right", money: true },
       { key: "outstanding", label: "Outstanding", align: "right", money: true },
@@ -349,8 +353,10 @@ async function reportPayments(req, filters) {
 
   const q = {
     isDeleted: { $ne: true },
-    ...buildDateMatch(filters, "createdAt"),
+    ...buildDateMatch(filters, "paymentDate"),
   };
+  if (filters.academicYear) q.academicYear = filters.academicYear;
+  if (filters.term) q.term = filters.term;
   if (filters.program) q.programId = filters.program;
 
   const payments = await Payment.find(q)
@@ -374,8 +380,14 @@ async function reportPayments(req, filters) {
       program: getSubjectLabel(subject),
       amount: safeNum(payment.amount, 0),
       method: payment.method || "-",
+      term: payment.term || "",
+      academicYear: payment.academicYear || "",
       reference: payment.reference || "",
-      createdAt: payment.createdAt ? new Date(payment.createdAt).toLocaleString() : "",
+      createdAt: payment.paymentDate
+        ? new Date(payment.paymentDate).toLocaleString()
+        : payment.createdAt
+          ? new Date(payment.createdAt).toLocaleString()
+          : "",
       _programId: subject?._id ? String(subject._id) : String(payment.programId || ""),
     };
   });
@@ -389,6 +401,8 @@ async function reportPayments(req, filters) {
       { key: "invoiceNumber", label: "Invoice" },
       { key: "student", label: "Student" },
       { key: "program", label: "Subject" },
+      { key: "academicYear", label: "Year" },
+      { key: "term", label: "Term" },
       { key: "amount", label: "Amount", align: "right", money: true },
       { key: "method", label: "Method" },
       { key: "reference", label: "Reference" },
@@ -467,6 +481,8 @@ async function reportStudentsOutstanding(req, filters) {
     isDeleted: { $ne: true },
     status: { $in: ["Unpaid", "Partially Paid", "Overdue"] },
   };
+  if (filters.academicYear) invoiceQuery.academicYear = filters.academicYear;
+  if (filters.term) invoiceQuery.term = filters.term;
   if (filters.program) invoiceQuery.programId = filters.program;
 
   const openInvoices = await Invoice.find(invoiceQuery)

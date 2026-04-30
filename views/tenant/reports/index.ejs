@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title><%= (tenant?.name || "Classic lcademy") %> • Reports</title>
+  <title><%= tenant?.name || "Classic Academy" %> - Reports</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
 
   <link rel="stylesheet"
@@ -15,299 +15,106 @@
   <style>
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-
-    .input,.select,.textarea,.view-input{
-      padding:10px 12px;
-      border-radius:12px;
-      border:1px solid rgba(13,64,96,.16);
-      background:#fff;
-      outline:none;
-    }
-
+    .input,.select,.textarea,.view-input{padding:10px 12px;border-radius:12px;border:1px solid rgba(13,64,96,.16);background:#fff;outline:none}
     .input{min-width:220px}
     .select{min-width:180px}
     .textarea{width:100%;min-height:110px;resize:vertical}
-
-    .input:focus,.select:focus,.textarea:focus{
-      border-color:rgba(10,111,191,.45);
-      box-shadow:0 0 0 3px rgba(10,111,191,.12);
-    }
-
-    .view-input{
-      min-height:44px;
-      display:flex;
-      align-items:center;
-      font-weight:800;
-      color:#0f172a;
-      background:#fbfdff;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      white-space:nowrap;
-    }
-
-    .view-input.multiline{
-      min-height:96px;
-      align-items:flex-start;
-      white-space:pre-wrap;
-      overflow:auto;
-      text-overflow:unset;
-      line-height:1.55;
-    }
-
+    .input:focus,.select:focus,.textarea:focus{border-color:rgba(10,111,191,.45);box-shadow:0 0 0 3px rgba(10,111,191,.12)}
+    .view-input{min-height:44px;display:flex;align-items:center;font-weight:800;color:#0f172a;background:#fbfdff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .view-input.multiline{min-height:96px;align-items:flex-start;white-space:pre-wrap;overflow:auto;text-overflow:unset;line-height:1.55}
     .muted{font-size:12px;color:#6b7280}
     .strong{font-weight:900}
-
     .grid-4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
     .grid-2{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(320px,.5fr);gap:12px}
-
     .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:900;white-space:nowrap}
     .ok{background:#ecfdf3;color:#15803d}
     .warn{background:#fef9c3;color:#92400e}
     .bad{background:#fee2e2;color:#b91c1c}
     .info{background:#eef2ff;color:#3730a3}
-
-    .table-wrap{
-      overflow-x:auto;
-      overflow-y:hidden;
-      border:1px solid rgba(13,64,96,.10);
-      border-radius:12px;
-      max-width:100%;
-      -webkit-overflow-scrolling:touch;
-    }
-
-    table{
-      width:100%;
-      min-width:1180px;
-      border-collapse:separate;
-      border-spacing:0;
-      background:#fff;
-      table-layout:auto;
-    }
-
-    th,td{
-      padding:10px 12px;
-      border-bottom:1px solid rgba(13,64,96,.08);
-      vertical-align:middle;
-    }
-
-    th{
-      font-size:12px;
-      color:#6b7280;
-      text-transform:uppercase;
-      letter-spacing:.04em;
-      text-align:left;
-      background:rgba(13,64,96,.03);
-      position:sticky;
-      top:0;
-      z-index:1;
-      white-space:nowrap;
-    }
-
+    .table-wrap{overflow-x:auto;overflow-y:hidden;border:1px solid rgba(13,64,96,.10);border-radius:12px;max-width:100%;-webkit-overflow-scrolling:touch}
+    table{width:100%;min-width:1180px;border-collapse:separate;border-spacing:0;background:#fff;table-layout:auto}
+    th,td{padding:10px 12px;border-bottom:1px solid rgba(13,64,96,.08);vertical-align:middle}
+    th{font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;text-align:left;background:rgba(13,64,96,.03);position:sticky;top:0;z-index:1;white-space:nowrap}
     tr:hover td{background:rgba(10,111,191,.04)}
     .right{text-align:right}
     .cell-ellipsis{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
     .report-link{color:inherit;text-decoration:none;border-bottom:1px dashed rgba(10,111,191,.35)}
     .report-link:hover{color:#0a6fbf}
-
     .flash-wrap{display:grid;gap:10px;margin-bottom:12px}
     .flash{padding:12px 14px;border-radius:12px;font-weight:700}
     .flash-success{background:#ecfdf3;color:#166534;border:1px solid #bbf7d0}
     .flash-error{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
-
-    .topbar{
-      display:flex;
-      justify-content:space-between;
-      align-items:flex-start;
-      gap:14px;
-      flex-wrap:nowrap;
-    }
-
-    .topbar > div:first-child{
-      min-width:0;
-      flex:1 1 auto;
-    }
-
-    .top-actions{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      justify-content:flex-end;
-      align-items:center;
-      flex:0 0 auto;
-      margin-left:auto;
-    }
-
+    .topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:nowrap}
+    .topbar > div:first-child{min-width:0;flex:1 1 auto}
+    .top-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;align-items:center;flex:0 0 auto;margin-left:auto}
     .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-    .tabbtn{
-      padding:10px 12px;
-      border-radius:12px;
-      border:1px solid rgba(13,64,96,.14);
-      background:#fff;
-      cursor:pointer;
-      font-weight:900;
-    }
-    .tabbtn.active{
-      background:rgba(10,111,191,.10);
-      border-color:rgba(10,111,191,.30);
-      color:#0a6fbf;
-    }
-
+    .tabbtn{padding:10px 12px;border-radius:12px;border:1px solid rgba(13,64,96,.14);background:#fff;cursor:pointer;font-weight:900}
+    .tabbtn.active{background:rgba(10,111,191,.10);border-color:rgba(10,111,191,.30);color:#0a6fbf}
     .pane{display:none}
     .pane.active{display:block}
-
     .mini-list{display:grid;gap:10px;margin-top:10px}
     .mini-item{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 12px;border:1px solid rgba(13,64,96,.10);border-radius:12px;background:#fff}
     .mini-item .left{display:grid;gap:2px}
-
-    .btn-xs{
-      padding:6px 8px;
-      border-radius:10px;
-      border:1px solid rgba(13,64,96,.14);
-      background:#fff;
-      cursor:pointer;
-      font-size:12px;
-      flex:0 0 auto;
-    }
-
+    .btn-xs{padding:6px 8px;border-radius:10px;border:1px solid rgba(13,64,96,.14);background:#fff;cursor:pointer;font-size:12px;flex:0 0 auto}
     .btn-xs:hover{background:rgba(10,111,191,.06)}
-
     .note{padding:10px 12px;border-radius:12px;border:1px dashed rgba(13,64,96,.18);background:rgba(13,64,96,.03)}
     .file-meta{display:grid;gap:4px}
-
-    .modal-backdrop{
-      position:fixed;
-      inset:0;
-      background:rgba(0,0,0,.45);
-      display:none;
-      align-items:center;
-      justify-content:center;
-      padding:30px 18px;
-      z-index:9999;
-      overflow-y:auto;
-    }
-
+    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:30px 18px;z-index:9999;overflow-y:auto}
     .modal-backdrop.show{display:flex}
-
-    .modal{
-      width:min(760px,100%);
-      max-height:calc(100dvh - 60px);
-      background:#fff;
-      border-radius:22px;
-      box-shadow:0 24px 70px rgba(0,0,0,.25);
-      overflow:hidden;
-      display:flex;
-      flex-direction:column;
-    }
-
-    .modal > form{
-      display:flex;
-      flex-direction:column;
-      flex:1 1 auto;
-      min-height:0;
-      overflow:hidden;
-    }
-
-    .modal-header{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:12px;
-      padding:16px 18px;
-      border-bottom:1px solid rgba(13,64,96,.10);
-      background:#fff;
-    }
-
+    .modal{width:min(760px,100%);max-height:calc(100dvh - 60px);background:#fff;border-radius:22px;box-shadow:0 24px 70px rgba(0,0,0,.25);overflow:hidden;display:flex;flex-direction:column}
+    .modal > form{display:flex;flex-direction:column;flex:1 1 auto;min-height:0;overflow:hidden}
+    .modal-header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid rgba(13,64,96,.10);background:#fff}
     .modal-title{font-weight:900;font-size:18px}
-
-    .modal-body{
-      padding:16px 18px;
-      overflow-y:auto;
-      min-height:0;
-      flex:1 1 auto;
-    }
-
-    .modal-footer{
-      display:flex;
-      justify-content:flex-end;
-      gap:10px;
-      padding:14px 18px;
-      border-top:1px solid rgba(13,64,96,.10);
-      background:#fff;
-      flex-wrap:wrap;
-    }
-
+    .modal-body{padding:16px 18px;overflow-y:auto;min-height:0;flex:1 1 auto}
+    .modal-footer{display:flex;justify-content:flex-end;gap:10px;padding:14px 18px;border-top:1px solid rgba(13,64,96,.10);background:#fff;flex-wrap:wrap}
     .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
     .field label{display:block;font-size:12px;color:#6b7280;margin-bottom:6px}
     .field input,.field select,.field textarea{width:100%}
     .divider{height:1px;background:rgba(13,64,96,.10);margin:12px 0}
-
-    @media (max-width: 1100px){
-      .grid-2{grid-template-columns:1fr}
-    }
-
-    @media (max-width: 900px){
-      .form-grid{grid-template-columns:1fr}
-      .topbar{flex-wrap:wrap}
-      .top-actions{width:100%;justify-content:flex-start}
-    }
-
-    @media (max-width: 680px){
-      .grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}
-      .input,.select{min-width:160px}
-    }
-
-    @media (max-width: 520px){
-      .toolbar .left,
-      .toolbar .right{width:100%}
-      .toolbar .left > *,
-      .toolbar .right > *{max-width:100%}
-      table{min-width:1080px}
-    }
-
+    @media (max-width: 1100px){.grid-2{grid-template-columns:1fr}}
+    @media (max-width: 900px){.form-grid{grid-template-columns:1fr}.topbar{flex-wrap:wrap}.top-actions{width:100%;justify-content:flex-start}}
+    @media (max-width: 680px){.grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}.input,.select{min-width:160px}}
+    @media (max-width: 520px){.toolbar .left,.toolbar .right{width:100%}.toolbar .left > *,.toolbar .right > *{max-width:100%}table{min-width:1080px}}
     @media print{
       body *{visibility:hidden !important}
-      #printlrea, #printlrea *{visibility:visible !important}
-      #printlrea{
-        position:absolute;
-        inset:0;
-        background:#fff;
-        padding:20px;
-      }
+      #printArea, #printArea *{visibility:visible !important}
+      #printArea{position:absolute;inset:0;background:#fff;padding:20px}
       .no-print{display:none !important}
     }
   </style>
 </head>
 <body data-portal="tenant">
 <%
-  const safe = (v)=> (v===null || v===undefined) ? "" : String(v);
-  const num  = (v)=> {
+  const safe = (v) => (v === null || v === undefined ? "" : String(v));
+  const num = (v) => {
     const n = Number(v || 0);
     return Number.isFinite(n) ? n : 0;
   };
-  const money = (v)=> {
+  const money = (v) => {
     try { return num(v).toLocaleString(); }
-    catch(e){ return String(num(v)); }
+    catch (error) { return String(num(v)); }
   };
 
-  const _filters = filters || {};
-  const _programs = lrray.islrray(programs) ? programs : [];
-  const _report = report || { title:"Report", columns:[], rows:[], kpis:null };
-  const _cols = lrray.islrray(_report.columns) ? _report.columns : [];
-  const _rows = lrray.islrray(_report.rows) ? _report.rows : [];
-  const _k = _report.kpis || null;
-  const _exports = lrray.islrray(exportsList) ? exportsList : [];
+  const reportFilters = filters || {};
+  const subjectOptions = Array.isArray(programs) ? programs : [];
+  const currentReport = report || { title: "Report", columns: [], rows: [], kpis: null };
+  const columns = Array.isArray(currentReport.columns) ? currentReport.columns : [];
+  const rows = Array.isArray(currentReport.rows) ? currentReport.rows : [];
+  const kpis = currentReport.kpis || null;
+  const exportsHistory = Array.isArray(exportsList) ? exportsList : [];
 
   function buildExportUrl() {
     const params = new URLSearchParams();
-    if (_filters.type) params.set("type", _filters.type);
-    if (_filters.from) params.set("from", _filters.from);
-    if (_filters.to) params.set("to", _filters.to);
-    if (_filters.academicYear) params.set("academicYear", _filters.academicYear);
-    if (_filters.semester) params.set("semester", _filters.semester);
-    if (_filters.status) params.set("status", _filters.status);
-    if (_filters.program) params.set("program", _filters.program);
+    if (reportFilters.type) params.set("type", reportFilters.type);
+    if (reportFilters.from) params.set("from", reportFilters.from);
+    if (reportFilters.to) params.set("to", reportFilters.to);
+    if (reportFilters.academicYear) params.set("academicYear", reportFilters.academicYear);
+    if (reportFilters.term) params.set("term", reportFilters.term);
+    if (reportFilters.status) params.set("status", reportFilters.status);
+    if (reportFilters.program) params.set("program", reportFilters.program);
     return "/admin/reports/export?" + params.toString();
   }
+
   const exportUrl = buildExportUrl();
 %>
 
@@ -339,26 +146,26 @@
         </div>
       </div>
 
-      <% if (_k) { %>
+      <% if (kpis) { %>
         <div class="grid-4" style="margin-top:12px;">
           <div class="card">
-            <div class="section-title"><%= safe(_k.a?.label) %></div>
-            <div class="kpi-value"><%= safe(_k.a?.prefix) %><%= money(_k.a?.value) %></div>
+            <div class="section-title"><%= safe(kpis.a?.label) %></div>
+            <div class="kpi-value"><%= safe(kpis.a?.prefix) %><%= money(kpis.a?.value) %></div>
             <div class="muted">Primary indicator</div>
           </div>
           <div class="card">
-            <div class="section-title"><%= safe(_k.b?.label) %></div>
-            <div class="kpi-value"><%= safe(_k.b?.prefix) %><%= money(_k.b?.value) %></div>
+            <div class="section-title"><%= safe(kpis.b?.label) %></div>
+            <div class="kpi-value"><%= safe(kpis.b?.prefix) %><%= money(kpis.b?.value) %></div>
             <div class="muted">Primary indicator</div>
           </div>
           <div class="card">
-            <div class="section-title"><%= safe(_k.c?.label) %></div>
-            <div class="kpi-value"><%= safe(_k.c?.prefix) %><%= money(_k.c?.value) %></div>
+            <div class="section-title"><%= safe(kpis.c?.label) %></div>
+            <div class="kpi-value"><%= safe(kpis.c?.prefix) %><%= money(kpis.c?.value) %></div>
             <div class="muted">Primary indicator</div>
           </div>
           <div class="card">
-            <div class="section-title"><%= safe(_k.d?.label) %></div>
-            <div class="kpi-value"><%= safe(_k.d?.prefix) %><%= money(_k.d?.value) %></div>
+            <div class="section-title"><%= safe(kpis.d?.label) %></div>
+            <div class="kpi-value"><%= safe(kpis.d?.prefix) %><%= money(kpis.d?.value) %></div>
             <div class="muted">Primary indicator</div>
           </div>
         </div>
@@ -374,41 +181,41 @@
           <form class="toolbar" method="GET" action="/admin/reports" autocomplete="off">
             <div class="left">
               <select class="select" name="type">
-                <option value="finance_summary" <%= safe(_filters.type) === "finance_summary" ? "selected" : "" %>>Finance Summary</option>
-                <option value="invoices" <%= safe(_filters.type) === "invoices" ? "selected" : "" %>>Invoices Report</option>
-                <option value="payments" <%= safe(_filters.type) === "payments" ? "selected" : "" %>>Payments Report</option>
-                <option value="admissions" <%= safe(_filters.type) === "admissions" ? "selected" : "" %>>ldmissions Report</option>
-                <option value="students_outstanding" <%= safe(_filters.type) === "students_outstanding" ? "selected" : "" %>>Students Outstanding</option>
+                <option value="finance_summary" <%= safe(reportFilters.type) === "finance_summary" ? "selected" : "" %>>Finance Summary</option>
+                <option value="invoices" <%= safe(reportFilters.type) === "invoices" ? "selected" : "" %>>Invoices Report</option>
+                <option value="payments" <%= safe(reportFilters.type) === "payments" ? "selected" : "" %>>Payments Report</option>
+                <option value="admissions" <%= safe(reportFilters.type) === "admissions" ? "selected" : "" %>>Admissions Report</option>
+                <option value="students_outstanding" <%= safe(reportFilters.type) === "students_outstanding" ? "selected" : "" %>>Students Outstanding</option>
               </select>
 
-              <input class="input" type="date" name="from" value="<%= safe(_filters.from) %>" />
-              <input class="input" type="date" name="to" value="<%= safe(_filters.to) %>" />
-              <input class="input" name="academicYear" value="<%= safe(_filters.academicYear) %>" placeholder="lcademic Year e.g. 2025/2026" />
+              <input class="input" type="date" name="from" value="<%= safe(reportFilters.from) %>" />
+              <input class="input" type="date" name="to" value="<%= safe(reportFilters.to) %>" />
+              <input class="input" name="academicYear" value="<%= safe(reportFilters.academicYear) %>" placeholder="Academic Year e.g. 2025/2026" />
 
-              <select class="select" name="semester">
-                <option value="">lny Semester</option>
-                <% for (let s = 1; s <= 6; s++) { %>
-                  <option value="<%= s %>" <%= safe(_filters.semester) === String(s) ? "selected" : "" %>>Semester <%= s %></option>
-                <% } %>
+              <select class="select" name="term">
+                <option value="">Any Term</option>
+                <option value="Term 1" <%= safe(reportFilters.term) === "Term 1" ? "selected" : "" %>>Term 1</option>
+                <option value="Term 2" <%= safe(reportFilters.term) === "Term 2" ? "selected" : "" %>>Term 2</option>
+                <option value="Term 3" <%= safe(reportFilters.term) === "Term 3" ? "selected" : "" %>>Term 3</option>
               </select>
 
               <select class="select" name="status">
-                <option value="">lny Status</option>
-                <option value="unpaid" <%= safe(_filters.status) === "unpaid" ? "selected" : "" %>>Unpaid</option>
-                <option value="partial" <%= safe(_filters.status) === "partial" ? "selected" : "" %>>Partial</option>
-                <option value="paid" <%= safe(_filters.status) === "paid" ? "selected" : "" %>>Paid</option>
-                <option value="voided" <%= safe(_filters.status) === "voided" ? "selected" : "" %>>Voided</option>
-                <option value="submitted" <%= safe(_filters.status) === "submitted" ? "selected" : "" %>>Submitted</option>
-                <option value="under_review" <%= safe(_filters.status) === "under_review" ? "selected" : "" %>>Under Review</option>
-                <option value="accepted" <%= safe(_filters.status) === "accepted" ? "selected" : "" %>>Accepted</option>
-                <option value="rejected" <%= safe(_filters.status) === "rejected" ? "selected" : "" %>>Rejected</option>
+                <option value="">Any Status</option>
+                <option value="unpaid" <%= safe(reportFilters.status) === "unpaid" ? "selected" : "" %>>Unpaid</option>
+                <option value="partial" <%= safe(reportFilters.status) === "partial" ? "selected" : "" %>>Partial</option>
+                <option value="paid" <%= safe(reportFilters.status) === "paid" ? "selected" : "" %>>Paid</option>
+                <option value="voided" <%= safe(reportFilters.status) === "voided" ? "selected" : "" %>>Voided</option>
+                <option value="submitted" <%= safe(reportFilters.status) === "submitted" ? "selected" : "" %>>Submitted</option>
+                <option value="under_review" <%= safe(reportFilters.status) === "under_review" ? "selected" : "" %>>Under Review</option>
+                <option value="accepted" <%= safe(reportFilters.status) === "accepted" ? "selected" : "" %>>Accepted</option>
+                <option value="rejected" <%= safe(reportFilters.status) === "rejected" ? "selected" : "" %>>Rejected</option>
               </select>
 
               <select class="select" name="program">
                 <option value="">All Subjects</option>
-                <% _programs.forEach(function(p){ %>
-                  <option value="<%= p._id %>" <%= safe(_filters.program) === String(p._id) ? "selected" : "" %>>
-                    <%= (p.code ? p.code + " - " : "") + (p.title || p.shortTitle || p.name || "Subject") %>
+                <% subjectOptions.forEach(function(subject){ %>
+                  <option value="<%= subject._id %>" <%= safe(reportFilters.program) === String(subject._id) ? "selected" : "" %>>
+                    <%= (subject.code ? subject.code + " - " : "") + (subject.title || subject.shortTitle || subject.name || "Subject") %>
                   </option>
                 <% }) %>
               </select>
@@ -425,44 +232,42 @@
           <section class="card" style="min-width:0;">
             <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;">
               <div>
-                <div class="section-title"><%= safe(_report.title || "Report") %></div>
-                <div class="section-sub muted">Rows: <%= _rows.length %></div>
+                <div class="section-title"><%= safe(currentReport.title || "Report") %></div>
+                <div class="section-sub muted">Rows: <%= rows.length %></div>
               </div>
               <div class="muted no-print">
                 <a class="report-link" href="<%= exportUrl %>">Download current CSV</a>
               </div>
             </div>
 
-            <div class="table-wrap" id="printlrea" style="margin-top:10px;">
+            <div class="table-wrap" id="printArea" style="margin-top:10px;">
               <table>
                 <thead>
                   <tr>
-                    <% _cols.forEach(function(c){ %>
-                      <th class="<%= c.align === 'right' ? 'right' : '' %>"><%= safe(c.label) %></th>
+                    <% columns.forEach(function(column){ %>
+                      <th class="<%= column.align === 'right' ? 'right' : '' %>"><%= safe(column.label) %></th>
                     <% }) %>
                   </tr>
                 </thead>
                 <tbody>
-                  <% if (!_rows.length) { %>
+                  <% if (!rows.length) { %>
                     <tr>
-                      <td colspan="<%= _cols.length || 1 %>" style="padding:18px;">
-                        <div class="muted">No data for this report. ldjust filters and try again.</div>
+                      <td colspan="<%= columns.length || 1 %>" style="padding:18px;">
+                        <div class="muted">No data for this report. Adjust filters and try again.</div>
                       </td>
                     </tr>
                   <% } %>
 
-                  <% _rows.forEach(function(r){ %>
+                  <% rows.forEach(function(row){ %>
                     <tr>
-                      <% _cols.forEach(function(c, idx){ %>
-                        <td class="<%= c.align === 'right' ? 'right' : '' %>">
-                          <% if (c.money) { %>
-                            UGX <%= money(r[c.key]) %>
+                      <% columns.forEach(function(column, index){ %>
+                        <td class="<%= column.align === 'right' ? 'right' : '' %>">
+                          <% if (column.money) { %>
+                            UGX <%= money(row[column.key]) %>
+                          <% } else if (row._href && index === 0) { %>
+                            <a class="report-link" href="<%= row._href %>"><%= safe(row[column.key]) %></a>
                           <% } else { %>
-                            <% if (r._href && idx === 0) { %>
-                              <a class="report-link" href="<%= r._href %>"><%= safe(r[c.key]) %></a>
-                            <% } else { %>
-                              <span class="cell-ellipsis" title="<%= safe(r[c.key]) %>"><%= safe(r[c.key]) %></span>
-                            <% } %>
+                            <span class="cell-ellipsis" title="<%= safe(row[column.key]) %>"><%= safe(row[column.key]) %></span>
                           <% } %>
                         </td>
                       <% }) %>
@@ -474,14 +279,14 @@
           </section>
 
           <aside class="card" style="min-width:0;">
-            <div class="section-title">Quick lctions</div>
+            <div class="section-title">Quick Actions</div>
             <div class="section-sub muted">Fast report helpers.</div>
 
             <div class="mini-list">
               <div class="mini-item">
                 <div class="left">
-                  <div class="strong">Today’s Finance</div>
-                  <div class="muted">Open finance summary with today’s date</div>
+                  <div class="strong">Today's Finance</div>
+                  <div class="muted">Open finance summary with today's date</div>
                 </div>
                 <button class="btn-xs" type="button" id="quickFinanceToday"><i class="fa-solid fa-sack-dollar"></i></button>
               </div>
@@ -530,11 +335,11 @@
                   <th class="right">Size</th>
                   <th>Status</th>
                   <th>Created</th>
-                  <th class="right no-print">lctions</th>
+                  <th class="right no-print">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                <% if (!_exports.length) { %>
+                <% if (!exportsHistory.length) { %>
                   <tr>
                     <td colspan="8" style="padding:18px;">
                       <div class="muted">No exports or imports yet.</div>
@@ -542,34 +347,34 @@
                   </tr>
                 <% } %>
 
-                <% _exports.forEach(function(ex){ %>
+                <% exportsHistory.forEach(function(item){ %>
                   <tr>
-                    <td><span class="strong"><%= safe(ex.type) %></span></td>
+                    <td><span class="strong"><%= safe(item.type) %></span></td>
                     <td>
-                      <% if (ex.source === "import") { %>
+                      <% if (item.source === "import") { %>
                         <span class="pill info"><i class="fa-solid fa-file-import"></i> Import</span>
                       <% } else { %>
                         <span class="pill ok"><i class="fa-solid fa-file-arrow-down"></i> Export</span>
                       <% } %>
                     </td>
                     <td class="muted">
-                      <%= safe(ex.filters?.from || "") %><%= ex.filters?.to ? " → " + safe(ex.filters.to) : "" %>
+                      <%= safe(item.filters?.from || "") %><%= item.filters?.to ? " -> " + safe(item.filters.to) : "" %>
                     </td>
-                    <td class="right"><%= money(ex.rowsCount) %></td>
-                    <td class="right"><%= money(Math.round((num(ex.byteSize) / 1024) * 10) / 10) %> KB</td>
+                    <td class="right"><%= money(item.rowsCount) %></td>
+                    <td class="right"><%= money(Math.round((num(item.byteSize) / 1024) * 10) / 10) %> KB</td>
                     <td>
-                      <% if (ex.status === "ready") { %>
+                      <% if (item.status === "ready") { %>
                         <span class="pill ok"><i class="fa-solid fa-circle-check"></i> Ready</span>
-                      <% } else if (ex.status === "failed") { %>
+                      <% } else if (item.status === "failed") { %>
                         <span class="pill bad"><i class="fa-solid fa-circle-xmark"></i> Failed</span>
                       <% } else { %>
-                        <span class="pill warn"><i class="fa-solid fa-clock"></i> <%= safe(ex.status) %></span>
+                        <span class="pill warn"><i class="fa-solid fa-clock"></i> <%= safe(item.status) %></span>
                       <% } %>
                     </td>
-                    <td class="muted"><%= ex.createdlt ? new Date(ex.createdlt).toLocaleString() : "" %></td>
+                    <td class="muted"><%= item.createdAt ? new Date(item.createdAt).toLocaleString() : "" %></td>
                     <td class="right no-print" style="white-space:nowrap">
-                      <a class="btn-xs" href="/admin/reports/exports/<%= ex._id %>/download"><i class="fa-solid fa-download"></i> Download</a>
-                      <form method="POST" action="/admin/reports/exports/<%= ex._id %>/delete" style="display:inline;">
+                      <a class="btn-xs" href="/admin/reports/exports/<%= item._id %>/download"><i class="fa-solid fa-download"></i> Download</a>
+                      <form method="POST" action="/admin/reports/exports/<%= item._id %>/delete" style="display:inline;">
                         <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
                         <button class="btn-xs" type="submit" onclick="return confirm('Delete this file?')">
                           <i class="fa-solid fa-trash"></i> Delete
@@ -604,7 +409,7 @@
                 <option value="finance_summary">Finance Summary</option>
                 <option value="invoices">Invoices Report</option>
                 <option value="payments">Payments Report</option>
-                <option value="admissions">ldmissions Report</option>
+                <option value="admissions">Admissions Report</option>
                 <option value="students_outstanding">Students Outstanding</option>
               </select>
             </div>

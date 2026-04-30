@@ -72,7 +72,7 @@ router.use("/fees", requireTenantPermission("finance.view"), requireTenantModule
 router.use("/fee-structures", requireTenantPermission("finance.view"), requireTenantModule("FeeStructure"), require("./feeStructures"));
 router.use("/scholarships", requireTenantPermission("finance.view"), requireTenantModule("Scholarship"), require("./scholarships"));
 router.use("/finance-reports", requireTenantPermission("finance.view"), requireTenantModule("Payment"), require("./financeReports"));
-router.use("/expenses", requireTenantPermission("finance.view"), requireTenantModule("Payment"), require("./expenses"));
+router.use("/expenses", requireTenantPermission("finance.view"), requireTenantModule("Expense"), require("./expenses"));
 
 /* =========================================================
    STAFF & HR

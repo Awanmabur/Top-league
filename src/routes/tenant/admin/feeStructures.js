@@ -6,6 +6,7 @@ const feesController = require("../../../controllers/tenant/admin/feesController
 router.get("/", feesController.list);
 router.post("/", feesController.feeRules, feesController.create);
 router.post("/bulk-generate", feesController.bulkGenerate);
+router.post("/:id/update", feesController.feeRules, feesController.update);
 router.post("/:id", feesController.feeRules, feesController.update);
 router.post("/:id/issue", feesController.issue);
 router.post("/:id/void", feesController.voidFee);

@@ -39,6 +39,17 @@ function studentReg(s) {
   return s?.regNo || s?.studentNo || s?.indexNumber || "";
 }
 
+function toClassObjectId(value) {
+  const raw = String(value || "").trim();
+  return isObjId(raw) ? raw : null;
+}
+
+function buildStudentClassLabel(student = {}, classDoc = null) {
+  const className = classDoc?.name || classDoc?.code || student.className || student.classLevel || "";
+  const parts = [className, student.section, student.stream].filter(Boolean);
+  return parts.length ? parts.join(" - ") : "—";
+}
+
 function getModels(req) {
   const models = req.models || {};
 
@@ -136,14 +147,36 @@ function feeRules() {
 }
 
 async function buildLive(req, payload) {
-  const { Student } = getModels(req);
+  const { Student, ClassModel } = getModels(req);
   if (!Student) throw new Error("Student model is not registered in req.models.");
 
   const student = await Student.findById(payload.student)
-    .populate("classGroup", "name code")
+    .select(
+      [
+        "_id",
+        "fullName",
+        "name",
+        "firstName",
+        "middleName",
+        "lastName",
+        "regNo",
+        "studentNo",
+        "indexNumber",
+        "classId",
+        "className",
+        "classLevel",
+        "section",
+        "stream",
+      ].join(" ")
+    )
     .lean();
 
   if (!student) return null;
+
+  const classId = toClassObjectId(student.classId);
+  const classDoc = classId && ClassModel
+    ? await ClassModel.findById(classId).select("name code").lean()
+    : null;
 
   const items = parseItemsFromBody(payload);
   if (!items.length) return null;
@@ -165,7 +198,8 @@ async function buildLive(req, payload) {
       _id: student._id,
       name: studentName(student),
       reg: studentReg(student),
-      classGroup: student.classGroup?.name || student.classGroup?.code || "—",
+      classId: classId || "",
+      className: buildStudentClassLabel(student, classDoc),
     },
     feeMeta: {
       title: str(payload.title || "School Fees", 160),
@@ -195,8 +229,12 @@ async function createOrUpdateFee(req, data, existingId = null) {
   if (!Fee) throw new Error("Fee model is not registered in req.models.");
   if (!Student) throw new Error("Student model is not registered in req.models.");
 
-  const student = await Student.findById(data.student).select("_id classGroup").lean();
+  const student = await Student.findById(data.student)
+    .select("_id classId className classLevel section stream")
+    .lean();
   if (!student) return { ok: false, reason: "Learner not found." };
+
+  const classId = toClassObjectId(student.classId);
 
   const live = await buildLive(req, data);
   if (!live || !live.items.length) {
@@ -205,7 +243,7 @@ async function createOrUpdateFee(req, data, existingId = null) {
 
   const docBase = {
     student: data.student,
-    classGroup: student.classGroup || null,
+    classGroup: classId || null,
     academicYear: str(data.academicYear, 20),
     term: clampInt(data.term, 1, 3, 1),
     title: str(data.title || "School Fees", 160),
@@ -281,7 +319,7 @@ function normalizeFee(doc) {
     studentId: doc.student?._id ? String(doc.student._id) : String(doc.student || ""),
     studentName: student.name || "Learner",
     reg: student.reg || "",
-    className: student.classGroup || doc.classGroup?.name || doc.classGroup?.code || "—",
+    className: student.className || doc.classGroup?.name || doc.classGroup?.code || "—",
     title: feeMeta.title || doc.title || "School Fees",
     academicYear: feeMeta.academicYear || doc.academicYear || "",
     term: Number(feeMeta.term || doc.term || 1),
@@ -363,7 +401,7 @@ module.exports = {
         .lean();
 
       const studentsList = await Student.find({})
-        .select("fullName name regNo studentNo indexNumber classGroup")
+        .select("fullName name regNo studentNo indexNumber classId className classLevel section stream")
         .sort({ fullName: 1, name: 1 })
         .limit(4000)
         .lean();
@@ -502,7 +540,7 @@ return res.render("tenant/fees/index", {
         return res.redirect("/admin/fees");
       }
 
-      const students = await Student.find({ classGroup }).select("_id").lean();
+      const students = await Student.find({ classId: classGroup }).select("_id").lean();
 
       if (!students.length) {
         req.flash?.("error", "No learners found in selected class.");
