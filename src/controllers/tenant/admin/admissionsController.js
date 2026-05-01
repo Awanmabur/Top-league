@@ -42,6 +42,19 @@ function safeStatus(v, fallback = "submitted") {
   return ALLOWED_STATUSES.includes(s) ? s : fallback;
 }
 
+function admissionsBackUrl(req, fallback) {
+  const ref = str(req.get?.("referer"));
+  if (!ref) return fallback;
+
+  try {
+    const url = new URL(ref, "http://localhost");
+    const path = `${url.pathname || ""}${url.search || ""}`;
+    return url.pathname.startsWith("/admin/admissions") ? path : fallback;
+  } catch (_) {
+    return fallback;
+  }
+}
+
 function applicantBaseFilter({ q, section, program, status }) {
   const filter = { isDeleted: { $ne: true } };
   const and = [];
@@ -421,7 +434,32 @@ async function getApplicantListing(req) {
 
 module.exports = {
   dashboard: async (req, res) => {
-    return module.exports.listApplicants(req, res);
+    try {
+      const listing = await getApplicantListing(req);
+
+      return res.render("tenant/admissions/index", {
+        tenant: req.tenant || null,
+        applicants: listing.applicants,
+        programs: listing.programs,
+        sections: listing.sections,
+        csrfToken: req.csrfToken?.() || res.locals.csrfToken || null,
+        kpis: listing.kpis,
+        query: listing.query,
+        pagination: {
+          page: listing.query.page,
+          pages: listing.query.totalPages,
+          total: listing.query.total,
+          perPage: listing.query.perPage,
+        },
+        messages: {
+          success: req.flash ? req.flash("success") : [],
+          error: req.flash ? req.flash("error") : [],
+        },
+      });
+    } catch (err) {
+      console.error("ADMISSIONS DASHBOARD ERROR:", err);
+      return res.status(500).send("Failed to load admissions.");
+    }
   },
 
   listApplicants: async (req, res) => {
@@ -1036,7 +1074,7 @@ module.exports = {
       },
     );
 
-    return res.redirect("/admin/admissions/applicants");
+    return res.redirect(admissionsBackUrl(req, "/admin/admissions/applicants"));
   },
 
   bulkAction: async (req, res) => {
@@ -1053,7 +1091,7 @@ module.exports = {
 
       if (!ids.length) {
         req.flash?.("error", "No applicants selected.");
-        return res.redirect("/admin/admissions/applicants");
+        return res.redirect(admissionsBackUrl(req, "/admin/admissions/applicants"));
       }
 
       const patch = {};
@@ -1071,7 +1109,7 @@ module.exports = {
         patch.decidedBy = req.user?._id || null;
       } else {
         req.flash?.("error", "Invalid bulk action.");
-        return res.redirect("/admin/admissions/applicants");
+        return res.redirect(admissionsBackUrl(req, "/admin/admissions/applicants"));
       }
 
       if (message) patch.adminNotes = message.slice(0, 1200);
@@ -1082,11 +1120,11 @@ module.exports = {
       );
 
       req.flash?.("success", "Bulk action applied.");
-      return res.redirect("/admin/admissions/applicants");
+      return res.redirect(admissionsBackUrl(req, "/admin/admissions/applicants"));
     } catch (err) {
       console.error("BULK APPLICANTS ACTION ERROR:", err);
       req.flash?.("error", "Bulk action failed.");
-      return res.redirect("/admin/admissions/applicants");
+      return res.redirect(admissionsBackUrl(req, "/admin/admissions/applicants"));
     }
   },
 
@@ -1147,11 +1185,11 @@ module.exports = {
 
       await Applicant.updateOne({ _id: req.params.id, isDeleted: { $ne: true } }, { $set: patch });
       req.flash?.("success", "Applicant status updated.");
-      return res.redirect(`/admin/admissions/applicants/${req.params.id}`);
+      return res.redirect(admissionsBackUrl(req, `/admin/admissions/applicants/${req.params.id}`));
     } catch (err) {
       console.error("UPDATE APPLICANT STATUS ERROR:", err);
       req.flash?.("error", "Failed to update status.");
-      return res.redirect(`/admin/admissions/applicants/${req.params.id}`);
+      return res.redirect(admissionsBackUrl(req, `/admin/admissions/applicants/${req.params.id}`));
     }
   },
 
@@ -1165,11 +1203,11 @@ module.exports = {
         { $set: { status: "under_review", adminNotes: "Shortlisted for review" } },
       );
       req.flash?.("success", "Applicant shortlisted for review.");
-      return res.redirect(`/admin/admissions/applicants/${req.params.id}`);
+      return res.redirect(admissionsBackUrl(req, `/admin/admissions/applicants/${req.params.id}`));
     } catch (err) {
       console.error("SHORTLIST APPLICANT ERROR:", err);
       req.flash?.("error", "Failed to shortlist applicant.");
-      return res.redirect(`/admin/admissions/applicants/${req.params.id}`);
+      return res.redirect(admissionsBackUrl(req, `/admin/admissions/applicants/${req.params.id}`));
     }
   },
 
@@ -1189,11 +1227,11 @@ module.exports = {
         { $set: { adminNotes: str(req.body.adminNotes).slice(0, 1200), tags } },
       );
       req.flash?.("success", "Applicant notes saved.");
-      return res.redirect(`/admin/admissions/applicants/${req.params.id}`);
+      return res.redirect(admissionsBackUrl(req, `/admin/admissions/applicants/${req.params.id}`));
     } catch (err) {
       console.error("SAVE APPLICANT NOTES ERROR:", err);
       req.flash?.("error", "Failed to save notes.");
-      return res.redirect(`/admin/admissions/applicants/${req.params.id}`);
+      return res.redirect(admissionsBackUrl(req, `/admin/admissions/applicants/${req.params.id}`));
     }
   },
 
@@ -1222,11 +1260,11 @@ module.exports = {
       await applicant.save();
 
       req.flash?.("success", "Document request recorded.");
-      return res.redirect(`/admin/admissions/applicants/${req.params.id}`);
+      return res.redirect(admissionsBackUrl(req, `/admin/admissions/applicants/${req.params.id}`));
     } catch (err) {
       console.error("REQUEST DOCS ERROR:", err);
       req.flash?.("error", "Failed to request documents.");
-      return res.redirect(`/admin/admissions/applicants/${req.params.id}`);
+      return res.redirect(admissionsBackUrl(req, `/admin/admissions/applicants/${req.params.id}`));
     }
   },
 
@@ -1251,11 +1289,11 @@ module.exports = {
       );
 
       req.flash?.("success", "Interview scheduled.");
-      return res.redirect(`/admin/admissions/applicants/${req.params.id}`);
+      return res.redirect(admissionsBackUrl(req, `/admin/admissions/applicants/${req.params.id}`));
     } catch (err) {
       console.error("SCHEDULE INTERVIEW ERROR:", err);
       req.flash?.("error", "Failed to schedule interview.");
-      return res.redirect(`/admin/admissions/applicants/${req.params.id}`);
+      return res.redirect(admissionsBackUrl(req, `/admin/admissions/applicants/${req.params.id}`));
     }
   },
 };

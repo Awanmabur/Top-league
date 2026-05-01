@@ -169,7 +169,7 @@
       <div class="top-actions">
         <button class="btn light" id="btnExport"><i class="fa-solid fa-file-arrow-down"></i> Export</button>
         <a class="btn light" href="/apply" target="_blank" rel="noopener"><i class="fa-solid fa-link"></i> Public Apply</a>
-        <a class="btn primary" href="/admin/admissions/applicants" title="Refresh"><i class="fa-solid fa-rotate"></i> Refresh</a>
+        <a class="btn primary" href="/admin/admissions" title="Refresh"><i class="fa-solid fa-rotate"></i> Refresh</a>
       </div>
     </div>
 
@@ -198,7 +198,7 @@
 
     <!-- Filters -->
     <section class="card" style="margin-top:12px;">
-      <form class="toolbar" method="GET" action="/admin/admissions/applicants">
+      <form class="toolbar" method="GET" action="/admin/admissions">
         <div class="left">
           <input class="input" name="q" value="<%= q %>" placeholder="Search applicationId, name, email, phone..." />
 
@@ -222,7 +222,7 @@
           </select>
 
           <button class="btn light" type="submit"><i class="fa-solid fa-magnifying-glass"></i> Filter</button>
-          <a class="btn light" href="/admin/admissions/applicants"><i class="fa-solid fa-rotate-left"></i> Reset</a>
+          <a class="btn light" href="/admin/admissions"><i class="fa-solid fa-rotate-left"></i> Reset</a>
         </div>
 
         <div class="right">
@@ -374,10 +374,10 @@
           <div class="pager">
             <div class="muted">Showing <%= A.length %> of <%= total %></div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
-              <a class="pbtn <%= page<=1 ? "disabled":"" %>" href="/admin/admissions/applicants<%= buildQS({ page: String(Math.max(1, page-1)) }) %>">
+              <a class="pbtn <%= page<=1 ? "disabled":"" %>" href="/admin/admissions<%= buildQS({ page: String(Math.max(1, page-1)) }) %>">
                 <i class="fa-solid fa-arrow-left"></i> Prev
               </a>
-              <a class="pbtn <%= page>=pages ? "disabled":"" %>" href="/admin/admissions/applicants<%= buildQS({ page: String(Math.min(pages, page+1)) }) %>">
+              <a class="pbtn <%= page>=pages ? "disabled":"" %>" href="/admin/admissions<%= buildQS({ page: String(Math.min(pages, page+1)) }) %>">
                 Next <i class="fa-solid fa-arrow-right"></i>
               </a>
             </div>
