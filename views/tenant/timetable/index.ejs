@@ -56,7 +56,9 @@
     .bulkbar{display:none;margin-top:10px;padding:10px 12px;border-radius:12px;background:rgba(10,111,191,.08);border:1px solid rgba(10,111,191,.18);justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
     .bulkbar.show{display:flex}
     .badge-count{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 8px;border-radius:999px;background:#0a6fbf;color:#fff;font-size:12px;font-weight:900}
-    .note{padding:10px 12px;border-radius:12px;border:1px dashed rgba(13,64,96,.18);background:rgba(13,64,96,.03)}
+    .note{padding:10px 12px;border-radius:12px;border:1px dashed rgba(13,64,96,.18);background:rgba(13,64,96,.03);overflow-wrap:anywhere;word-break:break-word}
+    .csv-columns{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+    .csv-columns span{display:inline-flex;align-items:center;justify-content:center;padding:5px 10px;border-radius:999px;border:1px solid rgba(13,64,96,.12);background:#fff;color:#0b2f4b;font-size:12px;font-weight:800;max-width:100%}
     .mini-list{display:grid;gap:10px;margin-top:10px}
     .mini-item{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 12px;border:1px solid rgba(13,64,96,.10);border-radius:12px;background:#fff}
     .mini-item .left{display:grid;gap:2px}
@@ -370,10 +372,27 @@
 
           <div class="section-title">CSV Import Format</div>
           <div class="note" style="margin-top:10px;">
-            Required columns:<br>
-            <strong>classCode,subjectCode,dayOfWeek,startTime,endTime</strong><br><br>
-            Optional:<br>
-            academicYear, term, teacherEmail, room, campus, weekPattern, status, note
+            <div class="strong">Required columns</div>
+            <div class="csv-columns">
+              <span>classCode</span>
+              <span>subjectCode</span>
+              <span>dayOfWeek</span>
+              <span>startTime</span>
+              <span>endTime</span>
+            </div>
+            <div class="strong" style="margin-top:10px;">Optional columns</div>
+            <div class="csv-columns">
+              <span>sectionCode</span>
+              <span>streamCode</span>
+              <span>academicYear</span>
+              <span>term</span>
+              <span>teacherEmail</span>
+              <span>room</span>
+              <span>campus</span>
+              <span>weekPattern</span>
+              <span>status</span>
+              <span>note</span>
+            </div>
           </div>
         </aside>
       </div>
@@ -616,8 +635,14 @@
           </div>
 
           <div class="note" style="margin-top:12px;">
-            Required columns:<br>
-            <strong>classCode,subjectCode,dayOfWeek,startTime,endTime</strong>
+            <div class="strong">Required columns</div>
+            <div class="csv-columns">
+              <span>classCode</span>
+              <span>subjectCode</span>
+              <span>dayOfWeek</span>
+              <span>startTime</span>
+              <span>endTime</span>
+            </div>
           </div>
         </div>
 

@@ -65,7 +65,7 @@
       </div>
     </div>
 
-    <section class="grid grid-4">
+    <section class="grid grid-4 dashboard-stack">
       <% focusCardsData.forEach(function(card) { %>
         <article class="card stat">
           <div class="stat-head">
@@ -163,7 +163,7 @@
         </div>
       </div>
 
-      <div class="grid grid-3 snap-grid">
+      <div class="grid grid-3 snap-grid dashboard-stack">
         <div class="softbox">
           <div class="kpi"><span>Submitted</span><strong><%= dashboardData?.admissions?.submitted || 0 %></strong></div>
           <div class="bar"><div class="barfill" style="width:<%= dashboardData?.admissions?.submittedPct || 0 %>%"></div></div>
@@ -205,7 +205,7 @@
     </section>
     <% } %>
 
-    <section class="grid grid-3">
+    <section class="grid grid-3 dashboard-stack">
       <section class="card">
         <div class="card-head">
           <div>
@@ -296,7 +296,7 @@
       <% } %>
     </section>
 
-    <section class="grid grid-3">
+    <section class="grid grid-3 dashboard-stack">
       <% if (canStudents) { %>
       <section class="card">
         <div class="card-head">
