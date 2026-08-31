@@ -18,6 +18,7 @@ module.exports = (connection) => {
   const ScholarshipApplicationSchema = new Schema(
     {
       applicationId: { type: String, required: true, trim: true, maxlength: 60 },
+      applicantKey: { type: String, trim: true, default: null, maxlength: 220 },
 
       scholarship: { type: Schema.Types.ObjectId, ref: "Scholarship", required: true, index: true },
 
@@ -29,7 +30,7 @@ module.exports = (connection) => {
       email: { type: String, trim: true, lowercase: true, maxlength: 120, default: "" },
       phone: { type: String, trim: true, maxlength: 40, default: "" },
 
-      program: { type: Schema.Types.ObjectId, ref: "Subject", default: null, index: true },
+      program: { type: Schema.Types.ObjectId, ref: "Program", default: null, index: true },
       yearLevel: { type: String, trim: true, maxlength: 30, default: "" },
       academicYear: { type: String, trim: true, maxlength: 20, default: "" },
 
@@ -47,6 +48,15 @@ module.exports = (connection) => {
       },
 
       adminNotes: { type: String, trim: true, maxlength: 2000, default: "" },
+
+      reviewedAt: { type: Date, default: null },
+      reviewedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
+      shortlistedAt: { type: Date, default: null },
+      awardedAt: { type: Date, default: null },
+      rejectedAt: { type: Date, default: null },
+      withdrawnAt: { type: Date, default: null },
+      decisionBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
+      awardScholarshipId: { type: Schema.Types.ObjectId, ref: "Scholarship", default: null },
 
       // Documents
       transcript: { type: DocSchema, default: null },
@@ -77,6 +87,10 @@ module.exports = (connection) => {
   );
 
   ScholarshipApplicationSchema.index({ scholarship: 1, status: 1, createdAt: -1 });
+  ScholarshipApplicationSchema.index(
+    { scholarship: 1, applicantKey: 1 },
+    { unique: true, partialFilterExpression: { isDeleted: false, applicantKey: { $type: "string" } } }
+  );
 
   return connection.model("ScholarshipApplication", ScholarshipApplicationSchema);
 };

@@ -304,10 +304,27 @@
       $("vMessage").textContent = row.getAttribute("data-message") || "—";
 
       var url = row.getAttribute("data-url") || "";
+      var linkHost = $("vLink");
+      linkHost.replaceChildren();
       if (url) {
-        $("vLink").innerHTML = '<a href="' + url + '" target="_blank" rel="noopener noreferrer">' + url + "</a>";
+        try {
+          var parsed = new URL(url, window.location.origin);
+          var safeProtocol = parsed.protocol === "http:" || parsed.protocol === "https:";
+          var isLocal = parsed.origin === window.location.origin;
+          if (!safeProtocol || (!isLocal && !/^https?:$/i.test(parsed.protocol))) throw new Error("unsafe notification URL");
+          var anchor = document.createElement("a");
+          anchor.href = isLocal ? parsed.pathname + parsed.search + parsed.hash : parsed.href;
+          anchor.textContent = url;
+          if (!isLocal) {
+            anchor.target = "_blank";
+            anchor.rel = "noopener noreferrer";
+          }
+          linkHost.appendChild(anchor);
+        } catch (_) {
+          linkHost.textContent = "—";
+        }
       } else {
-        $("vLink").textContent = "—";
+        linkHost.textContent = "—";
       }
 
       openModal("mView");

@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .input,.select,.textarea{padding:10px 12px;border-radius:12px;border:1px solid rgba(13,64,96,.16);background:#fff;outline:none}
@@ -87,40 +87,8 @@
 <body data-portal="tenant">
   <%
     const q = query || {};
-    const permsCatalog = [
-      { key:"dashboard", label:"Dashboard" },
-      { key:"students", label:"Students" },
-      { key:"parents", label:"Parents" },
-      { key:"staff", label:"Staff" },
-      { key:"users", label:"Users" },
-      { key:"roles", label:"Roles" },
-      { key:"leave", label:"Leave" },
-      { key:"payroll", label:"Payroll" },
-      { key:"programs", label:"Programs" },
-      { key:"courses", label:"Courses" },
-      { key:"classes", label:"Classes" },
-      { key:"attendance", label:"Attendance" },
-      { key:"results", label:"Results" },
-      { key:"transcripts", label:"Transcripts" },
-      { key:"finance", label:"Finance" },
-      { key:"invoices", label:"Invoices" },
-      { key:"payments", label:"Payments" },
-      { key:"studentStatements", label:"Student Statements" },
-      { key:"feeStructures", label:"Fee Structures" },
-      { key:"scholarships", label:"Scholarships" },
-      { key:"financeReports", label:"Finance Reports" },
-      { key:"expenses", label:"Expenses" },
-      { key:"library", label:"Library" },
-      { key:"hostels", label:"Hostels" },
-      { key:"assets", label:"Assets" },
-      { key:"events", label:"Events" },
-      { key:"announcements", label:"Announcements" },
-      { key:"messaging", label:"Messaging" },
-      { key:"reports", label:"Reports" },
-      { key:"settings", label:"Settings" }
-    ];
+    const permsCatalog = Array.isArray(permissionCatalog) ? permissionCatalog : [];
   %>
-
   <div class="app">
     <%- include("../partials/navbar") %>
 
@@ -338,12 +306,12 @@
           <div class="divider"></div>
 
           <div class="strong">Permissions</div>
-          <div class="muted" style="margin-top:4px;">Select what this role can access.</div>
+          <div class="muted" style="margin-top:4px;">Select the maximum modules this custom role may use. It can restrict a user's primary tenant role, but it cannot grant authority that primary role does not already have.</div>
 
           <div class="perm-grid" style="margin-top:10px;">
             <% permsCatalog.forEach(function(perm){ %>
               <label class="perm-item">
-                <input type="checkbox" name="perm_<%= perm.key %>" class="permCheck" value="true">
+                <input type="checkbox" name="perm_<%= perm.key %>" class="permCheck" value="true" data-permission="<%= perm.permission %>">
                 <span><%= perm.label %></span>
               </label>
             <% }) %>
@@ -410,11 +378,7 @@
     <input type="hidden" name="action" id="bulkActionInput">
   </form>
 
-  <textarea id="rolesData" class="json-data" aria-hidden="true"><%- JSON.stringify(roles || []) %></textarea>
-
-  <script>
-    window.__ROLE_PERMS__ = <%- JSON.stringify(permsCatalog || []) %>;
-  </script>
+  <textarea id="rolesData" class="json-data" aria-hidden="true"><%- JSON.stringify(roles || []).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
   <script src="/js/navbar.js"></script>
   <script src="/js/roles.js"></script>
 </body>

@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .input,.select,.textarea{
@@ -166,7 +166,7 @@
       </div>
 
       <section class="card" style="margin-top:12px;">
-        <form class="toolbar" method="GET" action="/admin/backup">
+        <form class="toolbar" method="GET" action="/admin/backups">
           <div class="left">
             <input class="input" name="q" value="<%= query?.q || '' %>" placeholder="Search backup name, type, storage, status..." />
             <select class="select" name="status">
@@ -200,7 +200,7 @@
               <button class="chip" data-view="restore" type="button"><i class="fa-solid fa-clock-rotate-left"></i> Restore</button>
             </div>
             <button class="btn light" id="btnBulk" type="button"><i class="fa-solid fa-layer-group"></i> Bulk</button>
-            <a class="btn light" href="/admin/backup"><i class="fa-solid fa-rotate-left"></i> Reset</a>
+            <a class="btn light" href="/admin/backups"><i class="fa-solid fa-rotate-left"></i> Reset</a>
             <button class="btn primary" type="submit"><i class="fa-solid fa-magnifying-glass"></i> Filter</button>
           </div>
         </form>
@@ -289,7 +289,7 @@
           </div>
 
           <div class="note" style="margin-top:12px;">
-            <strong>Backup coverage included:</strong> backup jobs, scope, storage target, size, retention, checksum/meta, and restore history.
+            <strong>Backup coverage:</strong> Full System snapshots encrypt tenant business/config database records and retain external media references; they do not copy external media binaries or runtime control-plane job/health/report/audit collections. Config Only stores configuration records only.
           </div>
         </section>
 
@@ -302,13 +302,6 @@
                 <div class="muted">Create a complete backup now</div>
               </div>
               <button class="btn-xs" id="quickFull" type="button"><i class="fa-solid fa-database"></i></button>
-            </div>
-            <div class="mini-item">
-              <div class="left">
-                <div class="strong">Database Only</div>
-                <div class="muted">Fast DB-only snapshot</div>
-              </div>
-              <button class="btn-xs" id="quickDb" type="button"><i class="fa-solid fa-server"></i></button>
             </div>
             <div class="mini-item">
               <div class="left">
@@ -330,7 +323,7 @@
         <button class="btn-xs" type="button" data-close-modal="mCreate"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
-      <form id="backupForm" method="POST" action="/admin/backup">
+      <form id="backupForm" method="POST" action="/admin/backups">
         <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
 
         <div class="modal-body">
@@ -344,26 +337,19 @@
               <select class="select" id="bType" name="type">
                 <option>Manual</option>
                 <option>Scheduled</option>
-                <option>Full</option>
-                <option>Database</option>
-                <option>Media</option>
               </select>
             </div>
             <div class="view-card">
               <div class="view-label">Scope</div>
               <select class="select" id="bScope" name="scope">
                 <option>Full System</option>
-                <option>Database Only</option>
-                <option>Media Only</option>
                 <option>Config Only</option>
               </select>
             </div>
             <div class="view-card">
               <div class="view-label">Storage Target</div>
               <select class="select" id="bStorage" name="storage">
-                <option>Local</option>
-                <option>S3</option>
-                <option>Cloudinary</option>
+                <option selected>Cloudinary</option>
               </select>
             </div>
             <div class="view-card">
@@ -421,15 +407,15 @@
     <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
   </form>
 
-  <form id="bulkForm" method="POST" action="/admin/backup/bulk" style="display:none;">
+  <form id="bulkForm" method="POST" action="/admin/backups/bulk" style="display:none;">
     <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
     <input type="hidden" name="ids" id="bulkIds">
     <input type="hidden" name="action" id="bulkActionInput">
   </form>
 
-  <textarea id="backupsData" class="json-data" aria-hidden="true"><%- JSON.stringify(backups || []) %></textarea>
-  <textarea id="storageData" class="json-data" aria-hidden="true"><%- JSON.stringify(storageSummary || []) %></textarea>
-  <textarea id="restoreData" class="json-data" aria-hidden="true"><%- JSON.stringify(restoreHistory || []) %></textarea>
+  <textarea id="backupsData" class="json-data" aria-hidden="true"><%- JSON.stringify(backups || []).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
+  <textarea id="storageData" class="json-data" aria-hidden="true"><%- JSON.stringify(storageSummary || []).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
+  <textarea id="restoreData" class="json-data" aria-hidden="true"><%- JSON.stringify(restoreHistory || []).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
 
   <script src="/js/navbar.js"></script>
   <script src="/js/backup.js"></script>

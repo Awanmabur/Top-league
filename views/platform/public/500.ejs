@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-  <style>
+  <style nonce="<%= cspNonce %>">
     *{margin:0;padding:0;box-sizing:border-box}
     :root{
       --primary:#4a90e2;
@@ -118,11 +118,12 @@
     .fab-container .sub-button i{color:#2e2e2e;font-size:20px}
     .fab-container .sub-button:hover .material-icons,.fab-container .sub-button:hover i{color:#fefefe}
   </style>
+  <script src="/js/public-image-fallback.js"></script>
 </head>
 <body>
   <div id="loader">
     <div class="academylogo">
-      <img src="/img/academylogo.png" alt="Classic Academy logo">
+      <img src="/img/academylogo.webp" alt="Classic Academy logo" decoding="async" width="396" height="415">
     </div>
     <div style="display:flex;gap:10px;">
       <div class="loader"><div class="face front"></div><div class="face back"></div></div>
@@ -135,7 +136,7 @@
 
   <header class="header" id="siteHeader">
     <a href="/" class="brand" aria-label="Classic Academy Home">
-      <img class="brand-mark" src="/img/academylogo.png" alt="Classic Academy logo">
+      <img class="brand-mark" src="/img/academylogo.webp" alt="Classic Academy logo" decoding="async" width="396" height="415">
       <div class="brand-txt">
         <span class="brand-name">Classic Academy</span>
         <span class="brand-sub">School management + admissions</span>
@@ -173,7 +174,7 @@
         </div>
       </div>
       <div class="media">
-        <img src="/img/hero.png" alt="Classic Academy">
+        <img src="/img/hero.webp" alt="Classic Academy" decoding="async" width="1600" height="1379">
       </div>
     </section>
   </main>
@@ -182,11 +183,11 @@
     <div>
       <h4>About Us</h4>
       <p>We are excited to introduce our upcoming Classic Academy Plans, where schools will be categorized.</p>
-      <a href="https://play.google.com/store" target="_blank" rel="noopener">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" style="height:50px;width:150px" alt="Google Play">
+      <a href="https://play.google.com/store" target="_blank" rel="noopener noreferrer">
+        <img src="/vendor/marketing/google-play-badge.svg" style="height:50px;width:150px" alt="Google Play" decoding="async" width="180" height="54" loading="lazy">
       </a>
-      <a href="https://apps.apple.com/" target="_blank" rel="noopener">
-        <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store" style="height:50px;">
+      <a href="https://apps.apple.com/" target="_blank" rel="noopener noreferrer">
+        <img src="/vendor/marketing/app-store-badge.svg" alt="Download on the App Store" style="height:50px;" decoding="async" width="180" height="54" loading="lazy">
       </a>
     </div>
 
@@ -219,7 +220,7 @@
         <li><a href="/admissions">Admissions</a></li>
         <li><a href="/search">Search</a></li>
         <li><a href="/blog?slug=increase-admissions">Blog</a></li>
-        <li><a href="https://chat.whatsapp.com/HRGoS3fMZoZGgXbz1HDw6a?mode=gi_t" target="_blank" rel="noopener">Join whatsapp group</a></li>
+        <li><a href="https://chat.whatsapp.com/HRGoS3fMZoZGgXbz1HDw6a?mode=gi_t" target="_blank" rel="noopener noreferrer">Join whatsapp group</a></li>
       </ul>
     </div>
   </footer>
@@ -236,12 +237,12 @@
       <a href="tel:+256781977217" aria-label="Call support"><span class="material-icons">phone</span></a>
     </div>
     <div class="sub-button shadow">
-      <a href="https://api.whatsapp.com/send?phone=256781977217" target="_blank" rel="noopener" aria-label="WhatsApp">
+      <a href="https://api.whatsapp.com/send?phone=256781977217" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
         <i class="fa-brands fa-whatsapp"></i>
       </a>
     </div>
     <div class="sub-button shadow">
-      <a href="/share" target="_blank" rel="noopener" aria-label="Share"><span class="material-icons">share</span></a>
+      <a href="/share" target="_blank" rel="noopener noreferrer" aria-label="Share"><span class="material-icons">share</span></a>
     </div>
   </div>
 

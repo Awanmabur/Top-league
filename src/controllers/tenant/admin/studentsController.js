@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
 const { body, validationResult } = require("express-validator");
+const csv = require("csv-parser");
+const { Readable } = require("stream");
 const { sendMail } = require("../../../utils/mailer");
 const { createSetPasswordInvite } = require("../../../utils/inviteService");
 const { setupPasswordEmail } = require("../../../utils/emailTemplates");
@@ -16,6 +18,18 @@ const {
   buildStudentDocSummaries,
 } = require("../../../utils/studentDocs");
 const { getSchoolUnits } = require("../../../utils/academicStructure");
+const {
+  assertTenantLimitAvailable,
+  compensateIfTenantLimitExceeded,
+} = require("../../../utils/checkTenantLimit");
+const {
+  normalizeStudentStatus,
+  csvCell,
+  allocateUniqueRegNo,
+  applyStudentLifecycle,
+  syncStudentIdentityLinks,
+  createStudentWithRegRetry,
+} = require("../../../services/tenant/studentLifecycleService");
 
 let importedNextRegNo = null;
 try {
@@ -63,10 +77,7 @@ const LEVEL_CLASS_MAP = {
 };
 const STUDENT_BASE_PATH = "/admin/students";
 
-const normalizeStatus = (value) => {
-  const status = String(value || "").trim().toLowerCase();
-  return new Set(["active", "on_hold", "suspended", "graduated", "archived"]).has(status) ? status : null;
-};
+const normalizeStatus = (value) => normalizeStudentStatus(value, null);
 
 const actorObjectId = (req) => {
   const raw = req.user?.userId || req.user?._id || req.session?.tenantUser?.id || null;
@@ -339,26 +350,50 @@ function fallbackRegNo(existingValues = [], year = new Date().getFullYear()) {
   return `REG/${year}/${String(max + 1).padStart(4, "0")}`;
 }
 
-async function generateRegNo({ req, Student, schoolLevel, classLevel }) {
-  if (typeof importedNextRegNo === "function") {
-    try {
-      const generated = await importedNextRegNo({
-        req,
-        Student,
-        schoolLevel,
-        classLevel,
-      });
-      if (generated) return String(generated).trim();
-    } catch (err) {
-      console.error("nextRegNo fallback to local generator:", err.message);
+async function generateRegNo({ req, Student }) {
+  return allocateUniqueRegNo(Student, async (attempt) => {
+    if (attempt === 0 && typeof importedNextRegNo === "function") {
+      try {
+        const generated = await importedNextRegNo(req.models || { Student });
+        if (generated) return String(generated).trim();
+      } catch (err) {
+        console.error("nextRegNo fallback to local generator:", err.message);
+      }
+    }
+    const existing = await Student.find({ isDeleted: { $ne: true } })
+      .select("regNo createdAt")
+      .sort({ createdAt: -1 })
+      .lean();
+    return fallbackRegNo(existing.map((row) => row.regNo));
+  });
+}
+
+async function assertIdentityAccountCompatibility({ req, studentId = null, studentUserId = null, studentEmail = "", guardianUserId = null, guardianEmail = "" }) {
+  const { User } = req.models || {};
+  if (!User) return;
+
+  const cleanStudentEmail = cleanEmail(studentEmail);
+  if (cleanStudentEmail) {
+    const existing = await User.findOne({ email: cleanStudentEmail, deletedAt: null })
+      .select("_id roles studentId")
+      .lean();
+    if (existing && String(existing._id) !== String(studentUserId || "")) {
+      ensureSingleRoleForUser(existing, "student", cleanStudentEmail);
+      if (existing.studentId && String(existing.studentId) !== String(studentId || "")) {
+        throw new Error(`${cleanStudentEmail} is already linked to another student record.`);
+      }
     }
   }
 
-  const existing = await Student.find({ isDeleted: { $ne: true } })
-    .select("regNo createdAt")
-    .sort({ createdAt: -1 })
-    .lean();
-  return fallbackRegNo(existing.map((row) => row.regNo));
+  const cleanGuardianEmail = cleanEmail(guardianEmail);
+  if (cleanGuardianEmail) {
+    const existing = await User.findOne({ email: cleanGuardianEmail, deletedAt: null })
+      .select("_id roles")
+      .lean();
+    if (existing && String(existing._id) !== String(guardianUserId || "")) {
+      ensureSingleRoleForUser(existing, "parent", cleanGuardianEmail);
+    }
+  }
 }
 
 async function findOrCreateStudentUser({ req, StudentDoc, User }) {
@@ -405,12 +440,18 @@ async function findOrCreateParentUser({ req, StudentDoc, User }) {
 
   if (StudentDoc?.guardianUserId && isObjId(StudentDoc.guardianUserId)) {
     const existing = await User.findOne({ _id: StudentDoc.guardianUserId, deletedAt: null }).select("+passwordHash roles status tokenVersion email firstName lastName childrenStudentIds");
-    if (existing) return ensureSingleRoleForUser(existing, "parent", guardianEmail);
+    if (existing && (!guardianEmail || cleanEmail(existing.email) === guardianEmail)) {
+      return ensureSingleRoleForUser(existing, "parent", guardianEmail);
+    }
   }
 
   if (guardianEmail) {
     const existing = await User.findOne({ email: guardianEmail, deletedAt: null }).select("+passwordHash roles status tokenVersion email firstName lastName childrenStudentIds");
-    if (existing) return ensureSingleRoleForUser(existing, "parent", guardianEmail);
+    if (existing) {
+      const parentUser = ensureSingleRoleForUser(existing, "parent", guardianEmail);
+      await safeStudentSet(req.models.Student, StudentDoc._id, { guardianUserId: parentUser._id });
+      return parentUser;
+    }
   }
 
   if (!guardianEmail) return null;
@@ -866,13 +907,13 @@ module.exports = {
       const id = cleanStr(req.params.id, 80);
       if (!isObjId(id)) {
         req.flash?.("error", "Invalid student id.");
-        return res.redirect("back");
+        return res.redirect(STUDENT_BASE_PATH);
       }
 
       const student = await Student.findOne({ _id: id, isDeleted: { $ne: true } }).lean();
       if (!student) {
         req.flash?.("error", "Student not found.");
-        return res.redirect("back");
+        return res.redirect(STUDENT_BASE_PATH);
       }
 
       const studentUser = await findOrCreateStudentUser({ req, StudentDoc: student, User });
@@ -887,11 +928,11 @@ module.exports = {
       } else {
         req.flash?.("success", `Setup link sent to ${sent} account(s).`);
       }
-      return res.redirect("back");
+      return res.redirect(STUDENT_BASE_PATH);
     } catch (err) {
       console.error("RESEND STUDENT SETUP ERROR:", err);
       req.flash?.("error", err.message || "Failed to resend setup link.");
-      return res.redirect("back");
+      return res.redirect(STUDENT_BASE_PATH);
     }
   },
 
@@ -914,7 +955,25 @@ module.exports = {
       const perPage = 10;
       const filter = buildStudentFilter({ q, schoolLevel, classLevel, term, status, schoolUnitId, campusId, classId, section });
 
-      const total = await Student.countDocuments(filter);
+      // Start independent catalog/KPI work while the filtered count resolves.
+      // The page query still waits for the count only because safePage depends on it.
+      const totalPromise = Student.countDocuments(filter);
+      const subjectsPromise = Subject
+        ? Subject.find({ status: { $ne: "archived" } })
+            .select("_id title code shortTitle schoolLevel classLevels term status")
+            .sort({ title: 1, code: 1 })
+            .lean()
+        : Promise.resolve([]);
+      const classesPromise = Class
+        ? Class.find({})
+            .select("_id name code schoolUnitId schoolUnitName schoolUnitCode campusId campusName campusCode levelType classLevel stream academicYear term status")
+            .sort({ name: 1, code: 1 })
+            .lean()
+        : Promise.resolve([]);
+      const kpisPromise = kpiAgg(Student, filter);
+      const placementPromise = loadAdmissionsPlacementData(req);
+
+      const total = await totalPromise;
       const totalPages = Math.max(Math.ceil(total / perPage), 1);
       const safePage = Math.min(page, totalPages);
       const skip = (safePage - 1) * perPage;
@@ -970,34 +1029,15 @@ module.exports = {
           .skip(skip)
           .limit(perPage)
           .lean(),
-        Subject
-          ? Subject.find({ status: { $ne: "archived" } })
-              .select("_id title code shortTitle schoolLevel classLevels term status")
-              .sort({ title: 1, code: 1 })
-              .lean()
-          : [],
-        Class
-          ? Class.find({})
-              .select("_id name code schoolUnitId schoolUnitName schoolUnitCode campusId campusName campusCode levelType classLevel stream academicYear term status")
-              .sort({ name: 1, code: 1 })
-              .lean()
-          : [],
-        kpiAgg(Student, filter),
-        loadAdmissionsPlacementData(req),
+        subjectsPromise,
+        classesPromise,
+        kpisPromise,
+        placementPromise,
       ]);
 
       const displayedStudentIds = students.map((student) => student._id);
-      if (displayedStudentIds.length && StudentDoc) {
-        await ensureStudentDocsFromApplicants({
-          StudentDoc,
-          Applicant,
-          studentIds: displayedStudentIds,
-          uploadedBy: req.user?._id || null,
-        }).catch((err) => {
-          console.error("STUDENT DOC BACKFILL ERROR:", err);
-        });
-      }
-
+      // Admissions conversion already synchronizes applicant documents into
+      // StudentDoc. Never run migration/write work on this hot GET list path.
       const studentDocRows = displayedStudentIds.length && StudentDoc
         ? await StudentDoc.find({
             student: { $in: displayedStudentIds },
@@ -1088,16 +1128,40 @@ module.exports = {
       }
 
       const payload = await buildStudentPayload({ req, body: req.body, Student, placement });
+      const autoGeneratedRegNo = !cleanStr(req.body.regNo, 60);
       const exists = await Student.findOne({ regNo: payload.regNo, isDeleted: { $ne: true } }).lean();
-      if (exists) {
+      if (exists && !autoGeneratedRegNo) {
         req.flash?.("error", "RegNo already exists.");
         return res.redirect(STUDENT_BASE_PATH);
       }
 
+      await assertIdentityAccountCompatibility({
+        req,
+        studentEmail: payload.email,
+        guardianEmail: payload.guardianEmail,
+      });
+
+      await assertTenantLimitAvailable({
+        model: Student,
+        tenantAccess: req.tenantAccess,
+        kind: "students",
+        filter: { isDeleted: { $ne: true } },
+      });
+
       const actorId = actorObjectId(req);
-      const createdStudent = await Student.create({
-        ...payload,
-        createdBy: actorId || undefined,
+      const createdStudent = await createStudentWithRegRetry(
+        Student,
+        { ...payload, createdBy: actorId || undefined },
+        () => generateRegNo({ req, Student }),
+        { autoGeneratedRegNo },
+      );
+
+      await compensateIfTenantLimitExceeded({
+        model: Student,
+        tenantAccess: req.tenantAccess,
+        kind: "students",
+        filter: { isDeleted: { $ne: true } },
+        createdId: createdStudent._id,
       });
 
       try {
@@ -1146,6 +1210,12 @@ module.exports = {
             }
           );
           await ensureParentRecord({ req, parentUser, studentId: createdStudent._id, StudentDoc: createdStudent });
+        }
+
+        const refreshedStudent = await Student.findById(createdStudent._id);
+        if (refreshedStudent) {
+          await syncStudentIdentityLinks(req, refreshedStudent, {});
+          await applyStudentLifecycle(req, refreshedStudent, refreshedStudent.status || "active", { updatedBy: actorObjectId(req) || undefined });
         }
 
         const sent = [
@@ -1212,6 +1282,15 @@ module.exports = {
         return res.redirect(STUDENT_BASE_PATH);
       }
 
+      await assertIdentityAccountCompatibility({
+        req,
+        studentId: existing._id,
+        studentUserId: existing.userId,
+        studentEmail: payload.email,
+        guardianUserId: existing.guardianUserId,
+        guardianEmail: payload.guardianEmail,
+      });
+
       const actorId = actorObjectId(req);
       await Student.updateOne(
         { _id: id },
@@ -1223,6 +1302,29 @@ module.exports = {
         },
         { runValidators: true }
       );
+
+      let updatedStudent = await Student.findOne({ _id: id, isDeleted: { $ne: true } });
+      if (updatedStudent && req.models?.User) {
+        const studentUser = await findOrCreateStudentUser({ req, StudentDoc: updatedStudent, User: req.models.User });
+        if (studentUser && String(updatedStudent.userId || "") !== String(studentUser._id)) {
+          await Student.updateOne({ _id: id }, { $set: { userId: studentUser._id } });
+        }
+
+        if (updatedStudent.guardianEmail) {
+          const parentUser = await findOrCreateParentUser({ req, StudentDoc: updatedStudent, User: req.models.User });
+          if (parentUser && String(updatedStudent.guardianUserId || "") !== String(parentUser._id)) {
+            await Student.updateOne({ _id: id }, { $set: { guardianUserId: parentUser._id } });
+          }
+          if (parentUser) await ensureParentRecord({ req, parentUser, studentId: updatedStudent._id, StudentDoc: updatedStudent });
+        } else if (updatedStudent.guardianUserId) {
+          await Student.updateOne({ _id: id }, { $set: { guardianUserId: null } });
+        }
+        updatedStudent = await Student.findById(id);
+      }
+      if (updatedStudent) {
+        await syncStudentIdentityLinks(req, updatedStudent, existing);
+        await applyStudentLifecycle(req, updatedStudent, updatedStudent.status, { updatedBy: actorId || undefined });
+      }
 
       try {
         const uploads = await syncStudentDocsFromUploads({ req, studentId: id });
@@ -1251,13 +1353,14 @@ module.exports = {
         req.flash?.("error", "Invalid student id.");
         return res.redirect(STUDENT_BASE_PATH);
       }
-
-      await Student.updateOne({ _id: id }, { $set: { status: "archived" } });
-      req.flash?.("success", "Student archived.");
+      const student = await Student.findOne({ _id: id, isDeleted: { $ne: true } });
+      if (!student) throw new Error("Student not found.");
+      await applyStudentLifecycle(req, student, "archived", { updatedBy: actorObjectId(req) || undefined });
+      req.flash?.("success", "Student archived and portal access disabled.");
       return res.redirect(STUDENT_BASE_PATH);
     } catch (err) {
       console.error("STUDENT ARCHIVE ERROR:", err);
-      req.flash?.("error", "Failed to archive student.");
+      req.flash?.("error", err.message || "Failed to archive student.");
       return res.redirect(STUDENT_BASE_PATH);
     }
   },
@@ -1270,17 +1373,17 @@ module.exports = {
         req.flash?.("error", "Invalid student id.");
         return res.redirect(STUDENT_BASE_PATH);
       }
-
-      await Student.updateOne(
-        { _id: id },
-        { $set: { isDeleted: true, deletedAt: new Date(), status: "archived" } }
-      );
-
-      req.flash?.("success", "Student deleted (soft).");
+      const student = await Student.findOne({ _id: id, isDeleted: { $ne: true } });
+      if (!student) throw new Error("Student not found.");
+      await applyStudentLifecycle(req, student, "archived", {
+        deleting: true,
+        updatedBy: actorObjectId(req) || undefined,
+      });
+      req.flash?.("success", "Student deleted (soft), access disabled, and parent links detached.");
       return res.redirect(STUDENT_BASE_PATH);
     } catch (err) {
       console.error("STUDENT DELETE ERROR:", err);
-      req.flash?.("error", "Failed to delete student.");
+      req.flash?.("error", err.message || "Failed to delete student.");
       return res.redirect(STUDENT_BASE_PATH);
     }
   },
@@ -1289,81 +1392,233 @@ module.exports = {
     try {
       const { Student } = req.models;
       const action = cleanStr(req.body.action, 40).toLowerCase();
-      const ids = String(req.body.ids || "")
+      const ids = Array.from(new Set(String(req.body.ids || "")
         .split(",")
         .map((value) => value.trim())
-        .filter((value) => isObjId(value));
+        .filter((value) => isObjId(value))));
 
       if (!ids.length) {
         req.flash?.("error", "No students selected.");
         return res.redirect(STUDENT_BASE_PATH);
       }
 
+      const students = await Student.find({ _id: { $in: ids }, isDeleted: { $ne: true } });
+      if (!students.length) throw new Error("No active student records matched the selection.");
+      const actorId = actorObjectId(req) || undefined;
+
       if (action === "set_status") {
         const status = normalizeStatus(req.body.status);
-        if (!status) {
-          req.flash?.("error", "Choose a valid status.");
-          return res.redirect(STUDENT_BASE_PATH);
-        }
-        await Student.updateMany({ _id: { $in: ids } }, { $set: { status } });
-        req.flash?.("success", `Updated status for ${ids.length} student(s).`);
+        if (!status) throw new Error("Choose a valid status.");
+        for (const student of students) await applyStudentLifecycle(req, student, status, { updatedBy: actorId });
+        req.flash?.("success", `Updated status for ${students.length} student(s).`);
         return res.redirect(STUDENT_BASE_PATH);
       }
 
       if (action === "set_hold") {
         const holdType = cleanStr(req.body.holdType, 60);
         const holdReason = cleanStr(req.body.holdReason, 200);
-        if (!holdType) {
-          req.flash?.("error", "Hold type is required.");
-          return res.redirect(STUDENT_BASE_PATH);
+        if (!holdType) throw new Error("Hold type is required.");
+        for (const student of students) {
+          student.holdType = holdType;
+          student.holdReason = holdReason;
+          await applyStudentLifecycle(req, student, "on_hold", { updatedBy: actorId });
         }
-        await Student.updateMany(
-          { _id: { $in: ids } },
-          { $set: { status: "on_hold", holdType, holdReason } }
-        );
-        req.flash?.("success", `Hold applied to ${ids.length} student(s).`);
+        req.flash?.("success", `Hold applied to ${students.length} student(s).`);
         return res.redirect(STUDENT_BASE_PATH);
       }
 
       if (action === "clear_hold") {
-        await Student.updateMany(
-          { _id: { $in: ids } },
-          { $set: { holdType: "", holdReason: "", holdUntil: null } }
-        );
-        await Student.updateMany(
-          { _id: { $in: ids }, status: "on_hold" },
-          { $set: { status: "active" } }
-        );
-        req.flash?.("success", `Hold cleared for ${ids.length} student(s).`);
+        for (const student of students) {
+          if (student.status !== "on_hold") continue;
+          student.holdType = "";
+          student.holdReason = "";
+          student.holdUntil = null;
+          await applyStudentLifecycle(req, student, "active", { updatedBy: actorId });
+        }
+        req.flash?.("success", `Hold cleared for ${students.length} student(s).`);
         return res.redirect(STUDENT_BASE_PATH);
       }
 
       if (action === "archive") {
-        await Student.updateMany({ _id: { $in: ids } }, { $set: { status: "archived" } });
-        req.flash?.("success", `Archived ${ids.length} student(s).`);
+        for (const student of students) await applyStudentLifecycle(req, student, "archived", { updatedBy: actorId });
+        req.flash?.("success", `Archived ${students.length} student(s).`);
         return res.redirect(STUDENT_BASE_PATH);
       }
 
       if (action === "delete") {
-        await Student.updateMany(
-          { _id: { $in: ids } },
-          { $set: { isDeleted: true, deletedAt: new Date(), status: "archived" } }
-        );
-        req.flash?.("success", `Deleted (soft) ${ids.length} student(s).`);
+        for (const student of students) {
+          await applyStudentLifecycle(req, student, "archived", { deleting: true, updatedBy: actorId });
+        }
+        req.flash?.("success", `Deleted (soft) ${students.length} student(s).`);
         return res.redirect(STUDENT_BASE_PATH);
       }
 
-      req.flash?.("error", "Invalid bulk action.");
-      return res.redirect(STUDENT_BASE_PATH);
+      throw new Error("Invalid bulk action.");
     } catch (err) {
       console.error("STUDENT BULK ERROR:", err);
-      req.flash?.("error", "Bulk action failed.");
+      req.flash?.("error", err.message || "Bulk action failed.");
       return res.redirect(STUDENT_BASE_PATH);
     }
   },
 
+  exportCsv: async (req, res) => {
+    try {
+      const { Student } = req.models;
+      const q = cleanStr(req.query.q, 160);
+      const schoolLevel = cleanStr(req.query.schoolLevel, 30).toLowerCase();
+      const classLevel = cleanStr(req.query.classLevel, 30).toUpperCase();
+      const term = cleanStr(req.query.term, 20);
+      const status = cleanStr(req.query.status, 20);
+      const schoolUnitId = cleanStr(req.query.schoolUnitId, 80);
+      const campusId = cleanStr(req.query.campusId, 80);
+      const classId = cleanStr(req.query.classId, 80);
+      const section = cleanStr(req.query.section, 80);
+      const filter = buildStudentFilter({ q, schoolLevel, classLevel, term, status, schoolUnitId, campusId, classId, section });
+      const rows = await Student.find(filter).sort({ fullName: 1, regNo: 1 }).lean();
+      const header = ["Reg No", "Student No", "Full Name", "Email", "Phone", "School Level", "Class Level", "Stream", "Section", "Academic Year", "Term", "Status", "Guardian", "Guardian Email", "Guardian Phone"];
+      const lines = [header.map(csvCell).join(",")];
+      for (const row of rows) {
+        lines.push([
+          row.regNo, row.studentNo, row.fullName, row.email, row.phone,
+          row.schoolLevel, row.classLevel, row.stream, row.section,
+          row.academicYear, row.term, row.status,
+          row.guardianName, row.guardianEmail, row.guardianPhone,
+        ].map(csvCell).join(","));
+      }
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="students-${new Date().toISOString().slice(0, 10)}.csv"`);
+      return res.send(`\uFEFF${lines.join("\n")}`);
+    } catch (err) {
+      console.error("STUDENT EXPORT ERROR:", err);
+      return res.status(500).send("Failed to export students.");
+    }
+  },
+
   importCsv: async (req, res) => {
-    req.flash?.("error", "CSV import was not changed in this update.");
-    return res.redirect(STUDENT_BASE_PATH);
+    try {
+      const { Student, User } = req.models || {};
+      if (!Student || !req.file?.buffer) throw new Error("Choose a valid CSV file.");
+      if (req.file.buffer.length > 5 * 1024 * 1024) throw new Error("CSV file is too large.");
+
+      const rows = [];
+      await new Promise((resolve, reject) => {
+        Readable.from(req.file.buffer)
+          .pipe(csv({ mapHeaders: ({ header }) => cleanStr(header, 80).toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") }))
+          .on("data", (row) => { if (rows.length < 2000) rows.push(row); })
+          .on("end", resolve)
+          .on("error", reject);
+      });
+      if (!rows.length) throw new Error("CSV contains no student rows.");
+      if (rows.length >= 2000) throw new Error("CSV import is limited to 1,999 rows per file.");
+
+      await assertTenantLimitAvailable({
+        model: Student,
+        tenantAccess: req.tenantAccess,
+        kind: "students",
+        filter: { isDeleted: { $ne: true } },
+      });
+
+      let created = 0;
+      let skipped = 0;
+      const errors = [];
+      for (let index = 0; index < rows.length; index += 1) {
+        const row = rows[index] || {};
+        try {
+          const firstName = cleanStr(row.first_name || row.firstname, 60);
+          const lastName = cleanStr(row.last_name || row.lastname, 60);
+          const fullName = cleanStr(row.full_name || row.name || [firstName, lastName].filter(Boolean).join(" "), 120);
+          const schoolLevelValue = normalizeSchoolLevel(row.school_level || row.schoollevel);
+          const classLevelValue = normalizeClassLevel(row.class_level || row.classlevel || row.class);
+          if (!fullName) throw new Error("full_name is required");
+          if (!schoolLevelValue) throw new Error("school_level must be nursery, primary, or secondary");
+          if (!classLevelValue) throw new Error("class_level is invalid");
+          if (!(LEVEL_CLASS_MAP[schoolLevelValue] || []).includes(classLevelValue)) throw new Error("class_level does not match school_level");
+
+          const studentEmail = normalizeEmailOptional(row.email);
+          const guardianEmail = normalizeEmailOptional(row.guardian_email);
+          await assertIdentityAccountCompatibility({ req, studentEmail, guardianEmail });
+
+          let regNo = cleanStr(row.reg_no || row.regno, 60);
+          const autoGeneratedRegNo = !regNo;
+          if (!regNo) regNo = await generateRegNo({ req, Student });
+          const duplicate = await Student.exists({ regNo, isDeleted: { $ne: true } });
+          if (duplicate && !autoGeneratedRegNo) throw new Error(`registration number ${regNo} already exists`);
+
+          await assertTenantLimitAvailable({
+            model: Student,
+            tenantAccess: req.tenantAccess,
+            kind: "students",
+            filter: { isDeleted: { $ne: true } },
+          });
+
+          const record = await createStudentWithRegRetry(Student, {
+            regNo,
+            studentNo: cleanStr(row.student_no || row.studentno, 60) || undefined,
+            fullName,
+            firstName: firstName || fullName.split(" ")[0],
+            lastName: lastName || fullName.split(" ").slice(1).join(" "),
+            email: studentEmail,
+            phone: cleanStr(row.phone, 40) || undefined,
+            schoolLevel: schoolLevelValue,
+            classLevel: classLevelValue,
+            stream: cleanStr(row.stream, 40) || undefined,
+            section: cleanStr(row.section, 40) || undefined,
+            academicYear: cleanStr(row.academic_year || row.academicyear, 20) || undefined,
+            term: [1,2,3].includes(Number(row.term)) ? Number(row.term) : 1,
+            status: normalizeStatus(row.status) || "active",
+            gender: cleanStr(row.gender, 30) || undefined,
+            nationality: cleanStr(row.nationality, 60) || undefined,
+            guardianName: cleanStr(row.guardian_name || row.guardian, 120) || undefined,
+            guardianEmail,
+            guardianPhone: cleanStr(row.guardian_phone, 40) || undefined,
+            createdBy: actorObjectId(req) || undefined,
+          }, () => generateRegNo({ req, Student }), { autoGeneratedRegNo });
+
+          await compensateIfTenantLimitExceeded({
+            model: Student,
+            tenantAccess: req.tenantAccess,
+            kind: "students",
+            filter: { isDeleted: { $ne: true } },
+            createdId: record._id,
+          });
+
+          if (User) {
+            try {
+              const studentUser = await findOrCreateStudentUser({ req, StudentDoc: record, User });
+              const parentUser = await findOrCreateParentUser({ req, StudentDoc: record, User });
+              if (parentUser) await ensureParentRecord({ req, parentUser, studentId: record._id, StudentDoc: record });
+              const refreshed = await Student.findById(record._id);
+              if (refreshed) {
+                await syncStudentIdentityLinks(req, refreshed, {});
+                await applyStudentLifecycle(req, refreshed, refreshed.status, { updatedBy: actorObjectId(req) || undefined });
+              }
+              // Imported accounts are intentionally invited but email is not blasted
+              // row-by-row; admins can use the existing resend-setup action after review.
+              void studentUser;
+            } catch (linkErr) {
+              if (errors.length < 12) errors.push(`Row ${index + 2}: student imported, but account linkage requires review: ${linkErr.message}`);
+            }
+          }
+          created += 1;
+        } catch (rowErr) {
+          if (rowErr?.code === "TENANT_LIMIT_REACHED") {
+            skipped += rows.length - index;
+            if (errors.length < 12) errors.push(`Row ${index + 2}: ${rowErr.message} Remaining rows were not attempted.`);
+            break;
+          }
+          skipped += 1;
+          if (errors.length < 12) errors.push(`Row ${index + 2}: ${rowErr.message}`);
+        }
+      }
+
+      if (created) req.flash?.("success", `Imported ${created} student(s).${skipped ? ` ${skipped} row(s) skipped.` : ""}`);
+      if (errors.length) req.flash?.("error", errors.join(" | "));
+      if (!created) req.flash?.("error", "No students were imported.");
+      return res.redirect(STUDENT_BASE_PATH);
+    } catch (err) {
+      console.error("STUDENT IMPORT ERROR:", err);
+      req.flash?.("error", err.message || "CSV import failed.");
+      return res.redirect(STUDENT_BASE_PATH);
+    }
   },
 };

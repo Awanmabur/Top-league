@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title><%= (tenant && tenant.name) ? tenant.name : "Classic Academy" %> — Assignments</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/navbar.css"/>
+  <link rel="stylesheet" href="/css/parent-portal.css" />
+  <style nonce="<%= cspNonce %>">
+    .student-tabs{margin-top:14px;display:flex;gap:10px;flex-wrap:wrap}.student-tab{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:14px;border:1px solid var(--line);background:#fff;box-shadow:var(--shadow);text-decoration:none;min-width:220px}.student-tab.active{background:var(--primary-soft);border-color:#bfd3ff}.student-tab-avatar{width:40px;height:40px;border-radius:999px;background:#eef5ff;color:var(--primary-2);display:flex;align-items:center;justify-content:center;font-weight:900}.student-tab-name{font-size:14px;font-weight:900}.student-tab-sub{font-size:12px;color:var(--muted);margin-top:3px}.summary-grid{margin-top:16px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.summary-box{border:1px solid var(--line);border-radius:14px;padding:12px;background:#fbfdff}.summary-label{color:var(--muted);font-size:12px}.summary-value{margin-top:6px;font-size:24px;font-weight:900}.table-wrap{margin-top:14px;overflow:auto;border:1px solid var(--line);border-radius:14px;background:#fff}.data-table{width:100%;min-width:980px;border-collapse:collapse}.data-table th,.data-table td{padding:11px 12px;border-bottom:1px solid #eef4fb;text-align:left;font-size:13px;vertical-align:top}.data-table th{font-size:12px;color:var(--muted);font-weight:800;background:#f8fbff}.data-table tr:last-child td{border-bottom:none}.pill{display:inline-flex;padding:6px 10px;border:1px solid var(--line);border-radius:999px;font-size:12px;font-weight:800;background:#fff}.muted{color:var(--muted)}
+    @media(max-width:800px){.summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.student-tab{min-width:0;flex:1 1 100%}}
+  </style>
+</head>
+<body>
+<%- include("./navbar") %>
+<main class="main">
+  <div class="topbar">
+    <div><div class="title">Assignments</div><div class="subtitle">Read-only coursework progress for your linked children.</div></div>
+  </div>
+
+  <% if (error) { %><section class="card" style="margin-top:14px"><div class="muted"><%= error %></div></section><% } %>
+
+  <% if (children && children.length) { %>
+    <div class="student-tabs">
+      <% children.forEach(function(c){ const active = student && String(c._id) === String(student._id); const name = c.fullName || [c.firstName,c.middleName,c.lastName].filter(Boolean).join(' ') || c.regNo || 'Student'; %>
+        <a class="student-tab <%= active ? 'active' : '' %>" href="/parent/assignments?student=<%= encodeURIComponent(String(c._id)) %>">
+          <div class="student-tab-avatar"><%= name.slice(0,1).toUpperCase() %></div>
+          <div><div class="student-tab-name"><%= name %></div><div class="student-tab-sub"><%= c.className || c.classLevel || 'Class' %> · <%= c.academicYear || '—' %> · Term <%= c.term || '—' %></div></div>
+        </a>
+      <% }) %>
+    </div>
+  <% } %>
+
+  <% if (student) { %>
+    <div class="summary-grid">
+      <div class="summary-box"><div class="summary-label">Visible coursework</div><div class="summary-value"><%= kpis.total || 0 %></div></div>
+      <div class="summary-box"><div class="summary-label">Open</div><div class="summary-value"><%= kpis.open || 0 %></div></div>
+      <div class="summary-box"><div class="summary-label">Submitted</div><div class="summary-value"><%= kpis.submitted || 0 %></div></div>
+      <div class="summary-box"><div class="summary-label">Graded</div><div class="summary-value"><%= kpis.graded || 0 %></div></div>
+    </div>
+
+    <section class="card" style="margin-top:16px">
+      <div class="section-title"><%= studentName || 'Student' %> — Coursework</div>
+      <div class="section-sub">Only published or closed assignments in this child’s current academic scope are shown.</div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Assignment</th><th>Subject</th><th>Period</th><th>Due</th><th>Points</th><th>Assignment</th><th>Submission</th><th>Grade</th><th>Feedback</th></tr></thead>
+          <tbody>
+          <% if (!assignments.length) { %><tr><td colspan="9" class="muted">No assignments are visible for this child.</td></tr><% } %>
+          <% assignments.forEach(function(a){ %>
+            <tr>
+              <td><strong><%= a.title %></strong></td>
+              <td><%= a.subjectCode ? (a.subjectCode + ' — ') : '' %><%= a.subject %></td>
+              <td><%= a.academicYear || '—' %> · Term <%= a.term || '—' %></td>
+              <td><%= a.dueDisplay || 'No deadline' %></td>
+              <td><%= a.totalPoints %></td>
+              <td><span class="pill"><%= a.status %></span></td>
+              <td><span class="pill"><%= a.submissionStatus.replace(/_/g,' ') %></span><% if (a.isLate) { %> <span class="muted">Late</span><% } %></td>
+              <td><% if (a.submissionStatus === 'graded') { %><strong><%= a.score %>/<%= a.totalPoints %></strong> (<%= a.percentage %>%)<% } else { %>—<% } %></td>
+              <td><%= a.feedback || '—' %></td>
+            </tr>
+          <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  <% } %>
+</main>
+<script src="/js/navbar.js"></script>
+</body>
+</html>

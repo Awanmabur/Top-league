@@ -78,16 +78,17 @@ module.exports = {
 
       const filter = {};
       if (q) {
+        const rx = require("../../../services/tenant/academicCatalogService").escapeRegExp(q);
         filter.$or = [
-          { name: { $regex: q, $options: "i" } },
-          { code: { $regex: q, $options: "i" } },
-          { className: { $regex: q, $options: "i" } },
-          { classLevel: { $regex: q, $options: "i" } },
-          { classStream: { $regex: q, $options: "i" } },
-          { streamName: { $regex: q, $options: "i" } },
-          { streamCode: { $regex: q, $options: "i" } },
-          { room: { $regex: q, $options: "i" } },
-          { notes: { $regex: q, $options: "i" } },
+          { name: { $regex: rx, $options: "i" } },
+          { code: { $regex: rx, $options: "i" } },
+          { className: { $regex: rx, $options: "i" } },
+          { classLevel: { $regex: rx, $options: "i" } },
+          { classStream: { $regex: rx, $options: "i" } },
+          { streamName: { $regex: rx, $options: "i" } },
+          { streamCode: { $regex: rx, $options: "i" } },
+          { room: { $regex: rx, $options: "i" } },
+          { notes: { $regex: rx, $options: "i" } },
         ];
       }
 
@@ -98,7 +99,24 @@ module.exports = {
       if (schoolUnitId) filter.schoolUnitId = schoolUnitId;
       if (campusId) filter.campusId = campusId;
 
-      const total = await Section.countDocuments(filter);
+      const kpiFilter = { ...filter };
+      delete kpiFilter.status;
+      const [total, statusRows, classes, streams, staffList] = await Promise.all([
+        Section.countDocuments(filter),
+        Section.aggregate([
+          { $match: kpiFilter },
+          { $group: { _id: "$status", count: { $sum: 1 } } },
+        ]),
+        Class
+          ? Class.find({}).select("name code schoolUnitId schoolUnitName campusId campusName levelType classLevel stream streamName academicYear term").sort({ createdAt: -1 }).lean()
+          : [],
+        Stream
+          ? Stream.find({}).select("name code schoolUnitId schoolUnitName campusId campusName levelType classId className classLevel classStream sectionId sectionName sectionCode status").sort({ name: 1, createdAt: -1 }).lean()
+          : [],
+        Staff
+          ? Staff.find({}).select("fullName name role email").sort({ fullName: 1, name: 1 }).lean()
+          : [],
+      ]);
       const totalPages = Math.max(Math.ceil(total / perPage), 1);
       const safePage = Math.min(page, totalPages);
 
@@ -111,33 +129,8 @@ module.exports = {
         .limit(perPage)
         .lean();
 
-      const classes = Class
-        ? await Class.find({})
-            .select("name code schoolUnitId schoolUnitName campusId campusName levelType classLevel stream streamName academicYear term")
-            .sort({ createdAt: -1 })
-            .lean()
-        : [];
-
-      const streams = Stream
-        ? await Stream.find({})
-            .select("name code schoolUnitId schoolUnitName campusId campusName levelType classId className classLevel classStream sectionId sectionName sectionCode status")
-            .sort({ name: 1, createdAt: -1 })
-            .lean()
-        : [];
-
-      const staffList = Staff
-        ? await Staff.find({})
-            .select("fullName name role email")
-            .sort({ fullName: 1, name: 1 })
-            .lean()
-        : [];
-
-      const kpis = {
-        total,
-        active: await Section.countDocuments({ ...filter, status: "active" }),
-        inactive: await Section.countDocuments({ ...filter, status: "inactive" }),
-        archived: await Section.countDocuments({ ...filter, status: "archived" }),
-      };
+      const statusCounts = Object.fromEntries(statusRows.map((row) => [String(row._id || ""), Number(row.count || 0)]));
+      const kpis = { total, active: statusCounts.active || 0, inactive: statusCounts.inactive || 0, archived: statusCounts.archived || 0 };
 
       return res.render("tenant/sections/index", {
         tenant: req.tenant || null,
@@ -398,3 +391,86 @@ module.exports = {
     }
   },
 };
+
+{
+  const catalog = require('../../../services/tenant/academicCatalogService');
+  const originalList = module.exports.list;
+  const originalCreate = module.exports.create;
+  const originalUpdate = module.exports.update;
+
+  module.exports.list = async function guardedSectionList(req, res) {
+    await catalog.syncEnrollmentCounts(req.models).catch((err) => console.error('SECTION ENROLLMENT SYNC ERROR:', err));
+    return originalList(req, res);
+  };
+
+  module.exports.create = async function guardedSectionCreate(req, res) {
+    req.body.enrolledCount = '0';
+    const klass = mongoose.Types.ObjectId.isValid(req.body.classId) ? await req.models.Class?.findById(req.body.classId).lean() : null;
+    if (String(req.body.status || 'active') === 'active' && klass && klass.status !== 'active') {
+      req.flash?.('error', 'Activate the parent class before creating an active section.');
+      return res.redirect('/admin/sections');
+    }
+    return originalCreate(req, res);
+  };
+
+  module.exports.update = async function guardedSectionUpdate(req, res) {
+    const id = String(req.params.id || '').trim();
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      const current = await req.models.Section.findById(id).lean();
+      if (current) {
+        try {
+          await catalog.assertStructuralMoveAllowed(req.models, 'section', id, current, { classId: req.body.classId, streamId: req.body.streamId || null });
+          await catalog.assertCapacityNotBelowEnrollment(req.models, 'section', id, req.body.capacity);
+          req.body.enrolledCount = String(current.enrolledCount || 0);
+          const klass = mongoose.Types.ObjectId.isValid(req.body.classId) ? await req.models.Class?.findById(req.body.classId).lean() : null;
+          if (String(req.body.status || current.status || 'active') === 'active' && klass && klass.status !== 'active') throw new Error('Activate the parent class before activating this section.');
+        } catch (err) { req.flash?.('error', err.message || 'Section scope cannot be changed.'); return res.redirect('/admin/sections'); }
+      }
+    }
+    const result = await originalUpdate(req, res);
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      const updated = await req.models.Section.findById(id).lean().catch(() => null);
+      if (updated) await catalog.propagateSectionMetadata(req.models, id, updated).catch((err) => console.error('SECTION METADATA PROPAGATION ERROR:', err));
+    }
+    return result;
+  };
+
+  module.exports.setStatus = async function guardedSectionStatus(req, res) {
+    const id = String(req.params.id || '').trim(); const next = String(req.body.status || '').trim();
+    try {
+      if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid section id.');
+      const doc = await req.models.Section.findById(id).lean(); if (!doc) throw new Error('Section was not found.');
+      if (next === 'active') { const parent = await req.models.Class?.findById(doc.classId).lean(); if (parent && parent.status !== 'active') throw new Error('Activate the parent class first.'); }
+      await catalog.assertStatusAllowed(req.models, 'section', id, next);
+      await req.models.Section.updateOne({ _id: id }, { $set: { status: next } }, { runValidators: true });
+      req.flash?.('success', 'Section status updated.');
+    } catch (err) { req.flash?.('error', err.message || 'Failed to update section status.'); }
+    return res.redirect('/admin/sections');
+  };
+
+  module.exports.remove = async function guardedSectionDelete(req, res) {
+    const id = String(req.params.id || '').trim();
+    try { if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid section id.'); await catalog.assertDeleteAllowed(req.models, 'section', id); await req.models.Section.deleteOne({ _id: id }); req.flash?.('success','Section deleted.'); }
+    catch (err) { req.flash?.('error', err.message || 'Failed to delete section.'); }
+    return res.redirect('/admin/sections');
+  };
+
+  module.exports.bulk = async function guardedSectionBulk(req, res) {
+    const action = String(req.body.action || '').trim(); const ids = [...new Set(String(req.body.ids || '').split(',').map((v) => v.trim()).filter((v) => mongoose.Types.ObjectId.isValid(v)))];
+    const statusMap = { activate: 'active', deactivate: 'inactive', archive: 'archived' };
+    if (!ids.length || (!statusMap[action] && action !== 'delete')) { req.flash?.('error', !ids.length ? 'No sections selected.' : 'Invalid bulk action.'); return res.redirect('/admin/sections'); }
+    let changed = 0; let skipped = 0;
+    for (const id of ids) { try { if (action === 'delete') { await catalog.assertDeleteAllowed(req.models,'section',id); await req.models.Section.deleteOne({ _id:id }); } else { const next=statusMap[action]; if(next==='active'){const doc=await req.models.Section.findById(id).lean(); const parent=doc?await req.models.Class?.findById(doc.classId).lean():null; if(parent&&parent.status!=='active') throw new Error('Parent class inactive.');} await catalog.assertStatusAllowed(req.models,'section',id,next); await req.models.Section.updateOne({_id:id},{$set:{status:next}},{runValidators:true}); } changed+=1; } catch { skipped+=1; } }
+    req.flash?.(changed?'success':'error', `${changed} section${changed===1?'':'s'} updated${skipped?`; ${skipped} skipped because of active/dependent records.`:'.'}`); return res.redirect('/admin/sections');
+  };
+
+  module.exports.exportCsv = async function exportSectionsCsv(req,res){
+    await catalog.syncEnrollmentCounts(req.models).catch(()=>null); const q=String(req.query.q||'').trim(); const filter={};
+    if(q){const rx=catalog.escapeRegExp(q); filter.$or=['name','code','className','classLevel','streamName','room','notes'].map((key)=>({[key]:{$regex:rx,$options:'i'}}));}
+    for(const key of ['status','levelType','schoolUnitId','campusId']) if(req.query[key]) filter[key]=String(req.query[key]).trim();
+    if(req.query.classId&&mongoose.Types.ObjectId.isValid(req.query.classId)) filter.classId=req.query.classId; if(req.query.streamId&&mongoose.Types.ObjectId.isValid(req.query.streamId)) filter.streamId=req.query.streamId;
+    const rows=await req.models.Section.find(filter).populate('classTeacher','fullName name').sort({createdAt:-1}).lean(); const lines=[['Name','Code','Class','Class Level','Stream','Campus','Room','Capacity','Enrolled','Status','Teacher','Notes'].map(catalog.csvCell).join(',')];
+    for(const r of rows) lines.push([r.name,r.code,r.className,r.classLevel,r.streamName,r.campusName,r.room,r.capacity,r.enrolledCount,r.status,r.classTeacher?.fullName||r.classTeacher?.name||'',r.notes].map(catalog.csvCell).join(','));
+    res.setHeader('Content-Type','text/csv; charset=utf-8'); res.setHeader('Content-Disposition','attachment; filename="sections.csv"'); return res.send(`\uFEFF${lines.join('\n')}`);
+  };
+}

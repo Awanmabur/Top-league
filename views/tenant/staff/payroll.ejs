@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .input,.select,.textarea{padding:10px 12px;border-radius:12px;border:1px solid rgba(13,64,96,.16);background:#fff;outline:none}
@@ -88,6 +88,7 @@
   <%
     const q = query || {};
     const formatMoney = (v) => Number(v || 0).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:2});
+    const safeJson = (value) => JSON.stringify(value || []).replace(/&/g,"\\u0026").replace(/</g,"\\u003c").replace(/>/g,"\\u003e");
   %>
 
   <div class="app">
@@ -190,7 +191,7 @@
             <button class="btn-xs" id="bulkProcess" type="button"><i class="fa-solid fa-gears"></i> Process</button>
             <button class="btn-xs" id="bulkApprove" type="button"><i class="fa-solid fa-circle-check"></i> Approve</button>
             <button class="btn-xs" id="bulkClose" type="button"><i class="fa-solid fa-lock"></i> Close</button>
-            <button class="btn-xs" id="bulkDraft" type="button"><i class="fa-solid fa-file"></i> Draft</button>
+            <button class="btn-xs" id="bulkPay" type="button"><i class="fa-solid fa-money-bill-wave"></i> Mark Paid</button>
             <button class="btn-xs" id="bulkDelete" type="button"><i class="fa-solid fa-trash"></i> Delete</button>
             <button class="btn-xs" id="bulkClear" type="button"><i class="fa-solid fa-xmark"></i> Clear</button>
           </div>
@@ -229,9 +230,18 @@
               </table>
             </div>
           </div>
+          <% if (pagination && pagination.pageCount > 1) { %>
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;">
+              <div class="muted">Page <strong><%= pagination.page %></strong> of <strong><%= pagination.pageCount %></strong> · <%= pagination.total %> payroll runs</div>
+              <div style="display:flex;gap:8px;">
+                <% if (pagination.prevUrl) { %><a class="btn-xs" href="<%= pagination.prevUrl %>"><i class="fa-solid fa-chevron-left"></i> Previous</a><% } %>
+                <% if (pagination.nextUrl) { %><a class="btn-xs" href="<%= pagination.nextUrl %>">Next <i class="fa-solid fa-chevron-right"></i></a><% } %>
+              </div>
+            </div>
+          <% } %>
 
           <div id="view-items" style="display:none;margin-top:10px;">
-            <div class="note">Payroll items show staff pay rows generated from the selected or available payroll runs.</div>
+            <div class="note">Payroll items show staff pay rows for the payroll runs on the current page.</div>
             <div class="table-wrap" style="margin-top:10px;">
               <table>
                 <thead>
@@ -244,6 +254,7 @@
                     <th>Deductions</th>
                     <th>Net Pay</th>
                     <th>Status</th>
+                    <th style="text-align:right;width:180px;">Actions</th>
                   </tr>
                 </thead>
                 <tbody id="tbodyItems"></tbody>
@@ -403,8 +414,36 @@
     </div>
   </div>
 
+  <div class="modal-backdrop" id="mItemEdit">
+    <div class="modal sm">
+      <div class="modal-header">
+        <div class="modal-title">Adjust Payroll Item</div>
+        <button class="btn-xs" type="button" data-close-modal="mItemEdit"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="itemForm" method="POST">
+        <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
+        <div class="modal-body">
+          <div class="view-card" style="margin-bottom:12px;"><div class="view-label">Staff</div><div class="view-value" id="itemStaffName">—</div></div>
+          <div class="form-grid">
+            <div class="field"><label>Basic Salary</label><input class="input" id="itemBasic" type="number" disabled></div>
+            <div class="field"><label>Allowances</label><input class="input" id="itemAllowances" name="allowances" type="number" min="0" step="0.01"></div>
+            <div class="field"><label>Bonuses</label><input class="input" id="itemBonuses" name="bonuses" type="number" min="0" step="0.01"></div>
+            <div class="field"><label>Deductions</label><input class="input" id="itemDeductions" name="deductions" type="number" min="0" step="0.01"></div>
+          </div>
+          <div class="field" style="margin-top:12px;"><label>Notes</label><textarea class="textarea" id="itemNotes" name="notes"></textarea></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn light" type="button" data-close-modal="mItemEdit">Cancel</button>
+          <button class="btn primary" type="submit"><i class="fa-solid fa-floppy-disk"></i> Save Adjustment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <form id="rowActionForm" method="POST" style="display:none;">
     <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
+    <input type="hidden" name="reason" id="rowReason">
+    <input type="hidden" name="paymentReference" id="rowPaymentReference">
   </form>
 
   <form id="bulkForm" method="POST" action="/admin/payroll/bulk" style="display:none;">
@@ -413,8 +452,8 @@
     <input type="hidden" name="action" id="bulkActionInput">
   </form>
 
-  <textarea id="payrollRunsData" class="json-data" aria-hidden="true"><%- JSON.stringify(payrollRuns || []) %></textarea>
-  <textarea id="payrollItemsData" class="json-data" aria-hidden="true"><%- JSON.stringify(payrollItems || []) %></textarea>
+  <textarea id="payrollRunsData" class="json-data" aria-hidden="true"><%- safeJson(payrollRuns) %></textarea>
+  <textarea id="payrollItemsData" class="json-data" aria-hidden="true"><%- safeJson(payrollItems) %></textarea>
 
   <script src="/js/navbar.js"></script>
   <script src="/js/payroll.js"></script>

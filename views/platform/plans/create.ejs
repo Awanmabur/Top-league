@@ -6,7 +6,7 @@
   <title>Create Plan — Classic Academy</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <link rel="stylesheet" href="/css/navbar.css" />
-  <style>
+  <style nonce="<%= cspNonce %>">
     body{margin:0;background:#f5f8ff;font-family:Poppins,Segoe UI,Arial,sans-serif;color:#0f172a;overflow-x:hidden}
     *{box-sizing:border-box;min-width:0}
     .main{flex:1;padding:20px 26px;display:flex;flex-direction:column;gap:16px}
@@ -41,6 +41,7 @@
       <% } %>
 
       <form action="/super-admin/plans/create" method="POST" class="form-grid">
+        <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>" />
         <div class="form-group">
           <label>Plan Name</label>
           <input type="text" name="name" value="<%= old?.name || '' %>" required />
@@ -116,6 +117,11 @@
           <input type="number" name="maxStaff" value="<%= old?.maxStaff || 0 %>" />
         </div>
 
+        <div class="form-group">
+          <label>Max Campuses</label>
+          <input type="number" min="1" name="maxCampuses" value="<%= old?.maxCampuses || 1 %>" required />
+        </div>
+
         <div class="form-group full">
           <label>Enabled Modules (comma separated)</label>
           <input type="text" name="enabledModules" value="<%= old?.enabledModules || '' %>" />
@@ -129,6 +135,7 @@
             <label><input type="checkbox" name="prioritySupport" /> Priority Support</label>
             <label><input type="checkbox" name="whiteLabel" /> White Label</label>
             <label><input type="checkbox" name="advancedReports" /> Advanced Reports</label>
+            <label><input type="checkbox" name="helpdesk" /> Helpdesk</label>
             <label><input type="checkbox" name="isPublic" checked /> Public Plan</label>
             <label><input type="checkbox" name="isActive" checked /> Active Plan</label>
           </div>

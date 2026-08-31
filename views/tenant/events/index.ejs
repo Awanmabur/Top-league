@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar {
       display: flex;
       gap: 10px;
@@ -754,6 +754,7 @@
                           <th>Status</th>
                           <th>Registered At</th>
                           <th>Checked In At</th>
+                          <th style="text-align:right;">Action</th>
                         </tr>
                       </thead>
                       <tbody id="tbodyRec"></tbody>
@@ -798,6 +799,45 @@
               </aside>
             </div>
       </main>
+  </div>
+
+  <div class="modal-backdrop" id="mTemplates">
+    <div class="modal lg">
+      <div class="modal-header">
+        <div class="modal-title">Event Templates</div>
+        <button class="btn-xs" type="button" data-close-modal="mTemplates"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="section-title">Saved Templates</div>
+        <div class="section-sub">Use a saved event as a starting point or create a reusable event template.</div>
+        <div class="table-wrap" style="margin-top:10px;">
+          <table>
+            <thead><tr><th>Name</th><th>Type</th><th>Audience</th><th style="text-align:right;">Actions</th></tr></thead>
+            <tbody id="eventTemplatesBody"></tbody>
+          </table>
+        </div>
+
+        <div class="divider"></div>
+        <div class="section-title">Create Template</div>
+        <form method="POST" action="/admin/events/templates" id="eventTemplateForm">
+          <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
+          <div class="form-grid" style="margin-top:10px;">
+            <div class="field"><label>Template Name</label><input class="input" name="name" maxlength="120" required placeholder="e.g., Career Seminar"></div>
+            <div class="field"><label>Event Title</label><input class="input" name="title" maxlength="220" required placeholder="e.g., Career Seminar 2026"></div>
+            <div class="field"><label>Type</label><select class="select" name="type"><option>General</option><option>Academic</option><option>Sports</option><option>Seminar</option><option>Workshop</option><option>Conference</option><option>Social</option></select></div>
+            <div class="field"><label>Priority</label><select class="select" name="priority"><option>Normal</option><option>Featured</option></select></div>
+            <div class="field"><label>Audience Type</label><select class="select" name="audienceType"><option>All Students</option><option>All Staff</option><option>Specific Department</option><option>Specific Program</option><option>Specific Subject</option><option>Year/Cohort</option><option>Open Event</option></select></div>
+            <div class="field"><label>Audience Value</label><input class="input" name="audienceValue" maxlength="180" placeholder="Optional for open/all audience templates"></div>
+            <div class="field"><label>Venue</label><input class="input" name="venue" maxlength="240" placeholder="e.g., Main Hall"></div>
+            <div class="field"><label>Default Duration (minutes)</label><input class="input" name="durationMinutes" type="number" min="0" max="10080" value="60"></div>
+            <div class="field"><label>Default Capacity</label><input class="input" name="capacity" type="number" min="0" value="0"></div>
+          </div>
+          <div class="field" style="margin-top:12px;"><label>Description</label><textarea class="textarea" name="description" maxlength="5000" required placeholder="Reusable event description..."></textarea></div>
+          <div style="display:flex;justify-content:flex-end;margin-top:12px;"><button class="btn primary" type="submit"><i class="fa-solid fa-floppy-disk"></i> Save Template</button></div>
+        </form>
+      </div>
+    </div>
   </div>
 
   <div class="modal-backdrop" id="mEdit">
@@ -973,6 +1013,10 @@
     </div>
   </div>
 
+  <form id="reminderForm" method="POST" style="display:none;">
+    <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
+  </form>
+
   <form id="rowActionForm" method="POST" style="display:none;">
     <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <% } %>
@@ -985,7 +1029,8 @@
         <input type="hidden" name="action" id="bulkActionInput">
   </form>
 
-  <textarea id="eventsData" class="json-data" aria-hidden="true"><%- JSON.stringify(events || []) %></textarea>
+  <textarea id="eventsData" class="json-data" aria-hidden="true"><%= JSON.stringify(events || []) %></textarea>
+  <textarea id="eventTemplatesData" class="json-data" aria-hidden="true"><%= JSON.stringify(templates || []) %></textarea>
 
   <script src="/js/navbar.js"></script>
   <script src="/js/events.js"></script>

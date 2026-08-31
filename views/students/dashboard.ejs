@@ -18,6 +18,7 @@
     const tenantAccess = locals.tenantAccess || {};
     const modelSet = new Set(Array.isArray(locals.availableModels) ? locals.availableModels : []);
     const hasAnyModel = (...names) => names.some((name) => modelSet.has(name));
+    const hasAllModels = (...names) => names.every((name) => modelSet.has(name));
     const statsData = stats || {};
     const metaInfo = meta || {};
     const subjectRows = Array.isArray(registeredCourses) ? registeredCourses : [];
@@ -26,15 +27,15 @@
     const announcementRows = Array.isArray(announcements) ? announcements : [];
     const showSubjectSelection = hasAnyModel("Subject", "CourseRegistration", "RegistrationWindow");
     const showSubjects = hasAnyModel("Subject", "CourseRegistration");
-    const showFinance = hasAnyModel("Invoice", "Payment", "FeeStructure", "Receipt");
+    const showFinance = modelSet.has("Invoice") && modelSet.has("Payment");
     const showAttendance = hasAnyModel("Attendance");
     const showResults = hasAnyModel("Result");
-    const showHostel = hasAnyModel("Hostel", "HostelAllocation", "HostelApplication");
-    const showLibrary = hasAnyModel("LibraryBook", "LibraryLoan", "LibraryReservation");
-    const showEvents = hasAnyModel("Event");
+    const showHostel = hasAllModels("Hostel", "HostelAllocation", "HostelApplication");
+    const showLibrary = hasAllModels("LibraryBook", "LibraryLoan", "LibraryReservation", "LibraryFine", "LibraryHold");
+    const showEvents = hasAllModels("Event", "EventRegistration", "EventSubscription", "EventView");
     const showSupport =
-      tenantAccess?.featureFlags?.helpdesk !== false &&
-      hasAnyModel("SupportTicket", "Ticket");
+      tenantAccess?.featureFlags?.helpdesk === true &&
+      hasAllModels("HelpdeskTicket");
     const academicSummary = [metaInfo.program, metaInfo.level].filter(Boolean).join(" - ");
   %>
 
@@ -97,7 +98,7 @@
         <div style="margin-top:8px;">
           <div style="font-size:22px;font-weight:800;">
             <% if (showFinance) { %>
-              UGX <%= Number(statsData.feesDue || 0).toLocaleString() %>
+              UGX <%= Number(statsData.feesDue || 0).toLocaleString() %><% if (Number(statsData.accountCredit || 0) > 0) { %><span class="small-muted"> · Credit UGX <%= Number(statsData.accountCredit || 0).toLocaleString() %></span><% } %>
             <% } else { %>
               <%= resultRows.length %>
             <% } %>
@@ -252,7 +253,7 @@
             <div class="mini-item"><span>Academic status</span><span><%= student?.status || "Active" %></span></div>
             <div class="mini-item"><span>Registration</span><span><%= subjectRows.length ? "Registered" : "Pending" %></span></div>
             <% if (showFinance) { %>
-              <div class="mini-item"><span>Finance</span><span><%= statsData.feesDue > 0 ? "Outstanding balance" : "Cleared" %></span></div>
+              <div class="mini-item"><span>Finance</span><span><%= statsData.feesDue > 0 ? "Outstanding balance" : (Number(statsData.accountCredit || 0) > 0 ? "Account credit" : "Cleared") %></span></div>
             <% } %>
             <% if (showHostel) { %>
               <div class="mini-item"><span>Hostel</span><span><%= statsData.hostelAssigned ? "Allocated" : "Not allocated" %></span></div>
@@ -301,7 +302,7 @@
 </div>
 
 <script src="/js/navbar.js"></script>
-<script>
+<script nonce="<%= cspNonce %>">
   (function () {
     const timeLabel = document.getElementById("localTimeLabel");
     function updateClock() {

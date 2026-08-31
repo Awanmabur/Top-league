@@ -74,12 +74,15 @@ function getPlanFeatureFlags(plan) {
   const flags = plan?.featureFlags || {};
 
   return {
-    customDomain: flags.customDomain !== false,
-    apiAccess: flags.apiAccess !== false,
-    prioritySupport: flags.prioritySupport !== false,
-    whiteLabel: flags.whiteLabel !== false,
-    advancedReports: flags.advancedReports !== false,
-    helpdesk: flags.helpdesk !== false,
+    // Premium/sensitive capabilities fail closed unless explicitly enabled.
+    customDomain: flags.customDomain === true,
+    apiAccess: flags.apiAccess === true,
+    prioritySupport: flags.prioritySupport === true,
+    whiteLabel: flags.whiteLabel === true,
+    advancedReports: flags.advancedReports === true,
+    helpdesk: flags.helpdesk === true,
+    // Operational safety features historically default on; the platform
+    // migration materializes those defaults so snapshots remain explicit.
     backups: flags.backups !== false,
     systemHealth: flags.systemHealth !== false,
   };
@@ -115,20 +118,42 @@ function hasFeature(access, featureName) {
   return !!access?.featureFlags?.[featureName];
 }
 
-function isTenantOperational(access) {
-  return ["trial", "active"].includes(normalizeTenantStatus(access?.status));
+function isTenantOperational(access, now = new Date()) {
+  const status = normalizeTenantStatus(access?.status);
+  if (!["trial", "active"].includes(status)) return false;
+
+  const current = new Date(now);
+  if (status === "trial" && access?.trialEndsAt) {
+    const trialEnd = new Date(access.trialEndsAt);
+    if (!Number.isNaN(trialEnd.getTime()) && trialEnd <= current) return false;
+  }
+
+  if (status === "active" && access?.subscriptionEndsAt) {
+    const periodEnd = new Date(access.subscriptionEndsAt);
+    if (!Number.isNaN(periodEnd.getTime()) && periodEnd <= current) return false;
+  }
+
+  return true;
 }
 
-function buildTenantAccess({ tenant, plan }) {
+function buildTenantAccess({ tenant, plan, subscription = null }) {
   const resolvedModules = getTenantModulesFromPlan(plan);
+  const status = String(subscription?.status || tenant?.status || "").trim().toLowerCase();
 
   return {
     tenantId: tenant?._id || null,
     tenant,
     plan,
+    subscription,
+    subscriptionId: subscription?._id || tenant?.subscriptionId || null,
+    subscriptionRevision: Number(subscription?.revision || tenant?.subscriptionRevision || 1),
     planCode: String(plan?.code || "").trim().toLowerCase(),
     planName: plan?.name || "",
-    status: normalizeTenantStatus(tenant?.status),
+    status: normalizeTenantStatus(status === "expired" || status === "past_due" ? "suspended" : status),
+    subscriptionStatus: status || normalizeTenantStatus(tenant?.status),
+    trialEndsAt: subscription?.trialEndsAt || tenant?.trialEndsAt || null,
+    subscriptionStartsAt: subscription?.currentPeriodStart || tenant?.subscriptionStartsAt || null,
+    subscriptionEndsAt: subscription?.currentPeriodEnd || tenant?.subscriptionEndsAt || null,
     schoolLevel: normalizeSchoolLevel(
       tenant?.settings?.schoolLevel || tenant?.schoolLevel
     ),

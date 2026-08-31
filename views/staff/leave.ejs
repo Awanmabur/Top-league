@@ -17,9 +17,7 @@
         <div class="subtitle">Submit leave and track current request status.</div>
       </div>
       <% if (mode !== "new") { %>
-        <div class="top-actions">
-          <a class="btn primary" href="/staff/leave/new"><i class="fa-solid fa-plus"></i> New Request</a>
-        </div>
+        <div class="top-actions"><a class="btn primary" href="/staff/leave/new"><i class="fa-solid fa-plus"></i> New Request</a></div>
       <% } %>
     </div>
 
@@ -28,11 +26,15 @@
     <% if (mode === "new") { %>
       <section class="card">
         <form method="post" action="/staff/leave" style="display:grid;gap:12px;">
+          <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
+          <select name="leaveType" required style="padding:12px;border:1px solid #dbe3f6;border-radius:12px;">
+            <% (leaveTypes || []).forEach(function(type){ %><option value="<%= type %>" <%= (values?.leaveType || 'Annual') === type ? 'selected' : '' %>><%= type %></option><% }) %>
+          </select>
           <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;">
-            <input style="padding:12px;border:1px solid #dbe3f6;border-radius:12px;" type="date" name="from" value="<%= values?.from || '' %>" required />
-            <input style="padding:12px;border:1px solid #dbe3f6;border-radius:12px;" type="date" name="to" value="<%= values?.to || '' %>" required />
+            <input style="padding:12px;border:1px solid #dbe3f6;border-radius:12px;" type="date" name="startDate" value="<%= values?.startDate || '' %>" required />
+            <input style="padding:12px;border:1px solid #dbe3f6;border-radius:12px;" type="date" name="endDate" value="<%= values?.endDate || '' %>" required />
           </div>
-          <textarea style="padding:12px;border:1px solid #dbe3f6;border-radius:12px;min-height:160px;" name="reason" placeholder="Reason" required><%= values?.reason || '' %></textarea>
+          <textarea style="padding:12px;border:1px solid #dbe3f6;border-radius:12px;min-height:160px;" name="reason" maxlength="2000" placeholder="Reason" required><%= values?.reason || '' %></textarea>
           <button class="btn primary" style="width:max-content;" type="submit">Submit Leave Request</button>
         </form>
       </section>
@@ -41,14 +43,20 @@
         <div class="mini-list">
           <% if (items?.length) { %>
             <% items.forEach(function(item) { %>
-              <div class="mini-item">
-                <span><%= item.from ? new Date(item.from).toDateString() : "-" %> to <%= item.to ? new Date(item.to).toDateString() : "-" %></span>
-                <span><%= item.status || "pending" %></span>
+              <div class="mini-item" style="align-items:center;gap:12px;">
+                <span><strong><%= item.leaveType || 'Leave' %></strong> · <%= item.startLabel || '-' %> to <%= item.endLabel || '-' %> · <%= item.days || 0 %> day(s)</span>
+                <span style="display:flex;gap:8px;align-items:center;">
+                  <span><%= item.status || "Pending" %></span>
+                  <% if (item.canCancel) { %>
+                    <form method="post" action="/staff/leave/<%= item._id %>/cancel" style="margin:0;">
+                      <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
+                      <button class="btn light" type="submit">Cancel</button>
+                    </form>
+                  <% } %>
+                </span>
               </div>
             <% }) %>
-          <% } else { %>
-            <div class="small-muted">No leave requests submitted yet.</div>
-          <% } %>
+          <% } else { %><div class="small-muted">No leave requests submitted yet.</div><% } %>
         </div>
       </section>
     <% } %>

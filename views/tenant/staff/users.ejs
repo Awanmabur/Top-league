@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .input,.select,.textarea{padding:10px 12px;border-radius:12px;border:1px solid rgba(13,64,96,.16);background:#fff;outline:none}
@@ -106,9 +106,9 @@
       </div>
       <div class="top-actions">
         <a class="btn light" href="/admin/staff"><i class="fa-solid fa-id-badge"></i> Staff</a>
-        <a class="btn light" href="/admin/staff-roles"><i class="fa-solid fa-user-shield"></i> Roles</a>
+        <a class="btn light" href="/admin/roles"><i class="fa-solid fa-user-shield"></i> Roles</a>
         <a class="btn light" href="/admin/staff-leave"><i class="fa-solid fa-calendar-check"></i> Leave</a>
-        <a class="btn light" href="/admin/staff-payroll"><i class="fa-solid fa-money-check-dollar"></i> Payroll</a>
+        <a class="btn light" href="/admin/payroll"><i class="fa-solid fa-money-check-dollar"></i> Payroll</a>
         <button class="btn primary" id="btnCreate" type="button"><i class="fa-solid fa-plus"></i> Create User</button>
       </div>
     </div>
@@ -137,7 +137,7 @@
     </div>
 
     <section class="card" style="margin-top:12px;">
-      <form class="toolbar" method="GET" action="/admin/staff-users">
+      <form class="toolbar" method="GET" action="/admin/users">
         <div class="left">
           <input class="input" name="q" value="<%= query?.q || '' %>" placeholder="Search name, email, phone..." />
           <select class="select" name="status">
@@ -162,7 +162,7 @@
         </div>
         <div class="right">
           <button class="btn light" id="btnBulk" type="button"><i class="fa-solid fa-layer-group"></i> Bulk</button>
-          <a class="btn light" href="/admin/staff-users"><i class="fa-solid fa-rotate-left"></i> Reset</a>
+          <a class="btn light" href="/admin/users"><i class="fa-solid fa-rotate-left"></i> Reset</a>
           <button class="btn primary" type="submit"><i class="fa-solid fa-magnifying-glass"></i> Filter</button>
         </div>
       </form>
@@ -246,7 +246,7 @@
               <div class="strong">Manage Roles</div>
               <div class="muted">Role structure and permissions</div>
             </div>
-            <a class="btn-xs" href="/admin/staff-roles"><i class="fa-solid fa-user-shield"></i></a>
+            <a class="btn-xs" href="/admin/roles"><i class="fa-solid fa-user-shield"></i></a>
           </div>
         </div>
 
@@ -265,7 +265,7 @@
       <button class="btn-xs" type="button" data-close-modal="mEdit"><i class="fa-solid fa-xmark"></i></button>
     </div>
 
-    <form id="userForm" method="POST" action="/admin/staff-users">
+    <form id="userForm" method="POST" action="/admin/users">
       <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
 
       <div class="modal-body">
@@ -413,13 +413,13 @@
   <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
 </form>
 
-<form id="bulkForm" method="POST" action="/admin/staff-users/bulk" style="display:none;">
+<form id="bulkForm" method="POST" action="/admin/users/bulk" style="display:none;">
   <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
   <input type="hidden" name="ids" id="bulkIds" />
   <input type="hidden" name="action" id="bulkActionInput" />
 </form>
 
-<textarea id="usersData" class="json-data" aria-hidden="true"><%- JSON.stringify(users || []) %></textarea>
+<textarea id="usersData" class="json-data" aria-hidden="true"><%- JSON.stringify(users || []).replace(/&/g,"\u0026").replace(/</g,"\u003c").replace(/>/g,"\u003e") %></textarea>
 
 <script src="/js/navbar.js"></script>
 <script src="/js/staff-users.js"></script>

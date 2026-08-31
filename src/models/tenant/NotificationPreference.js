@@ -12,9 +12,17 @@ module.exports = (connection) => {
       email: { type: Boolean, default: false },
       sms: { type: Boolean, default: false },
 
-      // categories you can expand later
+      // In-app category controls. Email/SMS remain future delivery channels only.
+      general: { type: Boolean, default: true },
+      academics: { type: Boolean, default: true },
       finance: { type: Boolean, default: true },
       admissions: { type: Boolean, default: true },
+      events: { type: Boolean, default: true },
+      library: { type: Boolean, default: true },
+      hostel: { type: Boolean, default: true },
+      transport: { type: Boolean, default: true },
+      discipline: { type: Boolean, default: true },
+      messages: { type: Boolean, default: true },
       system: { type: Boolean, default: true },
 
       isDeleted: { type: Boolean, default: false, index: true },

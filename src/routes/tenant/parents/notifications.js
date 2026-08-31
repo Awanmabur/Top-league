@@ -6,5 +6,6 @@ const notificationsController = require("../../../controllers/tenant/parents/not
 router.get("/notifications", notificationsController.index);
 router.post("/notifications/:id/read", notificationsController.markRead);
 router.post("/notifications/read-all", notificationsController.markAllRead);
+router.post("/notifications/preferences", notificationsController.savePreferences);
 
 module.exports = router;

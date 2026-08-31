@@ -107,7 +107,7 @@
                     "Export applicant lists for interviews and reporting",
                     "Admit → create student profile automatically (plan-based)"
                 ],
-                img: "img/hero.png",
+                img: "/img/hero.webp",
                 alt: "Admissions workflow preview"
             },
             finance: {
@@ -119,7 +119,7 @@
                     "Balances, arrears tracking, and student statements",
                     "Exports for reconciliation and end-of-term reporting"
                 ],
-                img: "https://picsum.photos/seed/finance-ca/1200/700",
+                img: "/img/feature.webp",
                 alt: "Finance dashboard preview"
             },
             academics: {
@@ -131,7 +131,7 @@
                     "Report cards and result summaries",
                     "Publish to portals (plan-based) and export PDFs/Excel"
                 ],
-                img: "https://picsum.photos/seed/exams-ca/1200/700",
+                img: "/img/feature.webp",
                 alt: "Exams and results preview"
             },
             attendance: {
@@ -143,7 +143,7 @@
                     "Spot trends early and follow-up quickly",
                     "Optional alerts via SMS/WhatsApp/Email (add-on)"
                 ],
-                img: "https://picsum.photos/seed/attendance-ca/1200/700",
+                img: "/img/feature.webp",
                 alt: "Attendance preview"
             },
             communication: {
@@ -155,7 +155,7 @@
                     "Templates for common notices",
                     "Optional SMS/WhatsApp/Email delivery (plan/add-on)"
                 ],
-                img: "https://picsum.photos/seed/communication-ca/1200/700",
+                img: "/img/feature.webp",
                 alt: "Messaging preview"
             },
             portals: {
@@ -167,7 +167,7 @@
                     "Download report cards and fee statements (plan-based)",
                     "Mobile-friendly access anywhere"
                 ],
-                img: "https://picsum.photos/seed/portal-ca/1200/700",
+                img: "/img/feature.webp",
                 alt: "Portal preview"
             },
             reports: {
@@ -179,7 +179,7 @@
                     "Attendance insights and trends",
                     "Excel/PDF exports for meetings and audits"
                 ],
-                img: "https://picsum.photos/seed/reports-ca/1200/700",
+                img: "/img/feature.webp",
                 alt: "Reports preview"
             },
             security: {
@@ -191,7 +191,7 @@
                     "Audit trail for key actions (plan-based)",
                     "Privacy-first approach: you control your school data"
                 ],
-                img: "https://picsum.photos/seed/security-ca/1200/700",
+                img: "/img/feature.webp",
                 alt: "Security preview"
             },
             core: {
@@ -203,7 +203,7 @@
                     "Term setup and academic structure",
                     "Bulk import templates to onboard fast"
                 ],
-                img: "https://picsum.photos/seed/core-ca/1200/700",
+                img: "/img/feature.webp",
                 alt: "Core operations preview"
             }
         };

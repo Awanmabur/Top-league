@@ -1,34 +1,24 @@
 const express = require("express");
 const router = express.Router();
-
-const tenantAuth = require("../../../middleware/tenant/requireTenantAuth");
 const ctrl = require("../../../controllers/tenant/admin/assignmentController");
+const { createCsvUpload, validateCsvUpload } = require("../../../middleware/csvUpload");
 
-const multer = require("multer");
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
-});
+const upload = createCsvUpload({ maxBytes: 2 * 1024 * 1024 });
 
-// Protect all admin routes
-router.use(tenantAuth("admin"));
-
-// List
 router.get("/", ctrl.list);
-router.get("/export", ctrl.exportCsv);
-
-// Create / Update
+router.get("/export.csv", ctrl.exportCsv);
 router.post("/", ctrl.assignmentRules, ctrl.create);
-
-// Bulk
+router.post("/import", upload.single("file"), validateCsvUpload, ctrl.importCsv);
 router.post("/bulk", ctrl.bulk);
 
-// Import
-router.post("/import", upload.single("file"), ctrl.importCsv);
+router.get("/:id/submissions", ctrl.submissions);
+router.post("/:id/submissions/:submissionId/grade", ctrl.gradeSubmission);
+router.post("/:id/submissions/:submissionId/reopen", ctrl.reopenSubmission);
 
-// Actions
 router.post("/:id/publish", ctrl.publish);
 router.post("/:id/unpublish", ctrl.unpublish);
+router.post("/:id/close", ctrl.close);
+router.post("/:id/reopen", ctrl.reopen);
 router.post("/:id/archive", ctrl.archive);
 router.post("/:id/delete", ctrl.remove);
 router.post("/:id", ctrl.assignmentRules, ctrl.update);

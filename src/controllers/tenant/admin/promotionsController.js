@@ -1,5 +1,11 @@
 const mongoose = require("mongoose");
 const { getSchoolUnits } = require("../../../utils/academicStructure");
+const {
+  applyPromotionBatch,
+  normalizeAcademicYear,
+  normalizePromotionStatus,
+  csvCell,
+} = require("../../../services/tenant/promotionService");
 
 const SCHOOL_LEVELS = ["nursery", "primary", "secondary"];
 const CLASS_LEVELS = [
@@ -60,39 +66,6 @@ function normalizeStatus(value, fallback = "") {
   return STUDENT_STATUSES.includes(v) ? v : fallback;
 }
 
-function classPatchFromClass(classDoc, fallback = {}) {
-  if (!classDoc) return {};
-  return {
-    schoolUnitId: safeStr(classDoc.schoolUnitId || fallback.schoolUnitId, 80),
-    schoolUnitName: safeStr(classDoc.schoolUnitName || fallback.schoolUnitName, 180),
-    schoolUnitCode: safeStr(classDoc.schoolUnitCode || fallback.schoolUnitCode, 40),
-    campusId: safeStr(classDoc.campusId || fallback.campusId, 80),
-    campusName: safeStr(classDoc.campusName || fallback.campusName, 180),
-    campusCode: safeStr(classDoc.campusCode || fallback.campusCode, 40),
-    classId: String(classDoc._id || fallback.classId || ""),
-    className: safeStr(classDoc.name || fallback.className, 180),
-    classCode: safeStr(classDoc.code || fallback.classCode, 40),
-    section: safeStr(classDoc.stream || classDoc.sectionName || fallback.section, 40),
-    stream: safeStr(classDoc.stream || classDoc.sectionName || fallback.stream, 40),
-    schoolLevel: normalizeSchoolLevel(classDoc.levelType || fallback.schoolLevel) || fallback.schoolLevel,
-    classLevel: normalizeClassLevel(classDoc.classLevel || fallback.classLevel) || fallback.classLevel,
-  };
-}
-
-async function recountClassLearners(Student, Class, classIds) {
-  if (!Student || !Class) return;
-  const ids = [...new Set((classIds || []).filter(Boolean).map(String))];
-  for (const id of ids) {
-    if (!isOid(id)) continue;
-    const count = await Student.countDocuments({
-      classId: id,
-      isDeleted: { $ne: true },
-      status: { $nin: ["archived", "graduated"] },
-    });
-    await Class.updateOne({ _id: id }, { $set: { enrolledCount: count } }).catch(() => {});
-  }
-}
-
 function buildStudentFilter(req) {
   const q = safeStr(req.query.q, 120);
   const schoolUnitId = safeStr(req.query.schoolUnitId, 80);
@@ -150,7 +123,7 @@ module.exports = {
       const limit = Math.min(50, Math.max(10, toInt(req.query.limit, 24)));
       const skip = (page - 1) * limit;
 
-      const [total, students, classes, logs, totalStudents, activeStudents, graduatedStudents] = await Promise.all([
+      const [total, students, classes, logs, studentStatusRows] = await Promise.all([
         Student.countDocuments(filter),
         Student.find(filter)
           .select("regNo fullName email phone schoolUnitName campusName classId className classCode section stream schoolLevel classLevel term academicYear status")
@@ -168,10 +141,17 @@ module.exports = {
           .sort({ createdAt: -1, _id: -1 })
           .limit(10)
           .lean(),
-        Student.countDocuments({ isDeleted: { $ne: true } }),
-        Student.countDocuments({ isDeleted: { $ne: true }, status: "active" }),
-        Student.countDocuments({ isDeleted: { $ne: true }, status: "graduated" }),
+        Student.aggregate([
+          { $match: { isDeleted: { $ne: true } } },
+          { $group: { _id: "$status", count: { $sum: 1 } } },
+        ]),
       ]);
+      const studentStatusCounts = Object.fromEntries(
+        studentStatusRows.map((row) => [String(row._id || ""), Number(row.count || 0)])
+      );
+      const totalStudents = Object.values(studentStatusCounts).reduce((sum, value) => sum + Number(value || 0), 0);
+      const activeStudents = studentStatusCounts.active || 0;
+      const graduatedStudents = studentStatusCounts.graduated || 0;
 
       const totalPages = Math.max(1, Math.ceil(total / limit));
 
@@ -214,112 +194,60 @@ module.exports = {
 
   async applyBulk(req, res) {
     try {
-      const { Student, PromotionLog, Class } = req.models;
-
-      const ids = safeStr(req.body.ids)
-        .split(",")
-        .map((s) => s.trim())
-        .filter(isOid);
-
+      const { Class } = req.models;
+      const ids = [...new Set(safeStr(req.body.ids, 5000).split(",").map((s) => s.trim()).filter(isOid))].slice(0, 200);
       if (!ids.length) {
-        req.flash?.("error", "Select students to promote.");
+        req.flash?.("error", "Select active students to promote.");
         return res.redirect("/admin/promotions");
       }
 
-      const toAcademicYear = safeStr(req.body.toAcademicYear, 20);
+      const toAcademicYear = normalizeAcademicYear(req.body.toAcademicYear);
       const toTerm = Math.max(1, Math.min(3, toInt(req.body.toTerm || req.body.toSemester, 1)));
+      const toStatus = normalizePromotionStatus(req.body.toStatus || "active");
       const toClassId = safeStr(req.body.toClassId || req.body.toClassGroup, 80);
-      const toStatus = normalizeStatus(req.body.toStatus, "active");
       const reason = safeStr(req.body.reason, 300);
+      if (!toAcademicYear || !toStatus) throw new Error("A valid destination academic year and status are required.");
 
-      if (!toAcademicYear || !isOid(toClassId)) {
-        req.flash?.("error", "Destination academic year and class are required.");
-        return res.redirect("/admin/promotions");
+      let destinationClass = null;
+      if (toStatus !== "graduated") {
+        if (!isOid(toClassId)) throw new Error("Destination class is required.");
+        destinationClass = await Class.findOne({ _id: toClassId, status: "active" }).lean();
+        if (!destinationClass) throw new Error("Selected destination class is not Active or was not found.");
       }
 
-      const nextClass = await Class.findOne({ _id: toClassId, status: { $ne: "archived" } }).lean();
-      if (!nextClass) {
-        req.flash?.("error", "Selected destination class was not found.");
-        return res.redirect("/admin/promotions");
-      }
-
-      const destination = classPatchFromClass(nextClass);
-
-      const students = await Student.find({
-        _id: { $in: ids },
-        isDeleted: { $ne: true },
+      const result = await applyPromotionBatch(req, {
+        ids, destinationClass, toAcademicYear, toTerm, toStatus, reason, actorId: actorId(req),
       });
-
-      if (!students.length) {
-        req.flash?.("error", "No valid students found.");
-        return res.redirect("/admin/promotions");
-      }
-
-      let changed = 0;
-      let skipped = 0;
-      const touchedClassIds = new Set([toClassId]);
-
-      for (const s of students) {
-        const noChange =
-          safeStr(s.academicYear) === toAcademicYear &&
-          Number(s.term || 1) === toTerm &&
-          safeStr(s.classId) === toClassId &&
-          safeStr(s.classLevel) === safeStr(destination.classLevel) &&
-          normalizeStatus(s.status, "active") === toStatus;
-
-        if (noChange) {
-          skipped += 1;
-          continue;
-        }
-
-        if (s.classId) touchedClassIds.add(String(s.classId));
-
-        await PromotionLog.create({
-          student: s._id,
-          fromAcademicYear: safeStr(s.academicYear),
-          toAcademicYear,
-          fromSemester: Number(s.term || 1),
-          toSemester: toTerm,
-          fromTerm: Number(s.term || 1),
-          toTerm,
-          fromYearLevel: safeStr(s.classLevel),
-          toYearLevel: safeStr(destination.classLevel),
-          fromClassLevel: safeStr(s.classLevel),
-          toClassLevel: safeStr(destination.classLevel),
-          fromSchoolLevel: safeStr(s.schoolLevel),
-          toSchoolLevel: safeStr(destination.schoolLevel),
-          fromClassGroup: isOid(s.classId) ? s.classId : null,
-          toClassGroup: nextClass._id,
-          fromClassId: safeStr(s.classId),
-          toClassId,
-          fromSection: safeStr(s.section || s.stream),
-          toSection: safeStr(destination.section || destination.stream),
-          fromStatus: safeStr(s.status || "active"),
-          toStatus,
-          reason,
-          createdBy: actorId(req),
-        });
-
-        s.set({
-          ...destination,
-          academicYear: toAcademicYear,
-          term: toTerm,
-          status: toStatus,
-          updatedBy: actorId(req),
-        });
-
-        await s.save();
-        changed += 1;
-      }
-
-      await recountClassLearners(Student, Class, Array.from(touchedClassIds));
-
-      req.flash?.("success", `Promotion complete. Updated ${changed} student(s), skipped ${skipped}.`);
+      req.flash?.("success", `Promotion batch ${result.batchId} complete. Updated ${result.changed} student(s), skipped ${result.skipped}.`);
       return res.redirect("/admin/promotions");
     } catch (err) {
       console.error("PROMOTIONS APPLY ERROR:", err);
       req.flash?.("error", err.message || "Failed to apply promotions.");
       return res.redirect("/admin/promotions");
+    }
+  },
+
+  async exportCsv(req, res) {
+    try {
+      const { PromotionLog } = req.models;
+      if (!PromotionLog) return res.status(503).send("Promotion history is unavailable.");
+      const logs = await PromotionLog.find({}).populate("student", "fullName regNo").sort({ createdAt: -1, _id: -1 }).limit(10000).lean();
+      const header = ["Batch ID","Action","Student","Registration No","From Year","To Year","From Class","To Class","From Term","To Term","From Status","To Status","Reason","Created At"];
+      const lines = [header.map(csvCell).join(",")];
+      for (const row of logs) {
+        lines.push([
+          row.batchId, row.action, row.student?.fullName || "", row.student?.regNo || "",
+          row.fromAcademicYear, row.toAcademicYear, row.fromClassLevel || row.fromYearLevel, row.toClassLevel || row.toYearLevel,
+          row.fromTerm || row.fromSemester, row.toTerm || row.toSemester, row.fromStatus, row.toStatus, row.reason,
+          row.createdAt?.toISOString?.() || row.createdAt || "",
+        ].map(csvCell).join(","));
+      }
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="promotion-history-${new Date().toISOString().slice(0,10)}.csv"`);
+      return res.send(`\uFEFF${lines.join("\n")}`);
+    } catch (err) {
+      console.error("PROMOTIONS EXPORT ERROR:", err);
+      return res.status(500).send("Failed to export promotion history.");
     }
   },
 };

@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
@@ -690,6 +690,7 @@
 
       <form id="docForm" method="POST" action="/admin/student-docs" enctype="multipart/form-data">
         <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
+        <input type="hidden" name="revision" id="mRevision" value="0">
 
         <div class="modal-body">
           <div class="form-grid">
@@ -719,6 +720,12 @@
               <input class="input" id="mTitleInput" name="title" required />
             </div>
 
+            <div class="field"><label>Status</label><select class="select" id="mStatus" name="status"><option value="pending">Pending</option><option value="verified">Verified</option><option value="rejected">Rejected</option><option value="expired">Expired</option></select></div>
+            <div class="field"><label>Issue Date</label><input class="input" id="mIssueDate" name="issueDate" type="date" /></div>
+            <div class="field"><label>Expiry Date</label><input class="input" id="mExpiryDate" name="expiryDate" type="date" /></div>
+            <div class="field"><label>Rejection Reason</label><input class="input" id="mRejectionReason" name="rejectionReason" /></div>
+            <div class="field"><label><input type="checkbox" id="mStudentVisible" name="studentVisible" value="1" checked> Student can view</label></div>
+            <div class="field"><label><input type="checkbox" id="mParentVisible" name="parentVisible" value="1" checked> Parent can view</label></div>
             <div class="field" style="grid-column:1/-1;">
               <label>Replace / Upload File</label>
               <input class="input" id="mFile" name="file" type="file" />
@@ -787,24 +794,32 @@
 
   <form id="rowDeleteForm" method="POST" style="display:none;">
     <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
+    <input type="hidden" name="revision" id="rowDeleteRevision" value="0">
   </form>
 
-  <script id="docsData" type="application/json"><%- JSON.stringify((docs || []).map(function(d){
+  <script nonce="<%= cspNonce %>" id="docsData" type="application/json"><%- JSON.stringify((docs || []).map(function(d){
     return {
       id: String(d._id || ""),
       studentId: d.student?._id ? String(d.student._id) : "",
       studentLabel: ((d.student?.regNo ? d.student.regNo + " — " : "") + (d.student?.fullName || d.student?.email || "Student")).trim(),
       type: d.type || "other",
       title: d.title || "",
-      url: d.doc?.url || "",
+      url: d.downloadUrl || (d._id ? "/admin/student-docs/" + String(d._id) + "/file" : ""),
       originalName: d.doc?.originalName || "",
       bytes: Number(d.doc?.bytes || 0),
       mimeType: d.doc?.mimeType || "",
-      uploadedAt: d.createdAt || null
+      uploadedAt: d.doc?.uploadedAt || d.createdAt || null,
+      status: d.effectiveStatus || d.status || "pending",
+      issueDate: d.issueDate ? new Date(d.issueDate).toISOString().slice(0,10) : "",
+      expiryDate: d.expiryDate ? new Date(d.expiryDate).toISOString().slice(0,10) : "",
+      rejectionReason: d.rejectionReason || "",
+      studentVisible: d.studentVisible !== false,
+      parentVisible: d.parentVisible !== false,
+      revision: Number(d.revision || 0)
     };
-  })) %></script>
+  })).replace(/&/g,"\\u0026").replace(/</g,"\\u003c").replace(/>/g,"\\u003e") %></script>
 
-  <script id="studentDocSummariesData" type="application/json"><%- JSON.stringify(studentDocSummaries || []) %></script>
+  <script nonce="<%= cspNonce %>" id="studentDocSummariesData" type="application/json"><%- JSON.stringify(studentDocSummaries || []).replace(/&/g,"\\u0026").replace(/</g,"\\u003c").replace(/>/g,"\\u003e") %></script>
 
   <script src="/js/navbar.js"></script>
   <script src="/js/student-docs.js" defer></script>

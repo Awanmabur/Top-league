@@ -148,11 +148,20 @@
   }
 
   function statusPill(status) {
-    if (status === "active") return '<span class="pill ok"><i class="fa-solid fa-circle-check"></i> Active</span>';
-    if (status === "on_hold") return '<span class="pill warn"><i class="fa-solid fa-ban"></i> On Hold</span>';
-    if (status === "suspended") return '<span class="pill bad"><i class="fa-solid fa-triangle-exclamation"></i> Suspended</span>';
-    if (status === "graduated") return '<span class="pill info"><i class="fa-solid fa-graduation-cap"></i> Graduated</span>';
-    return '<span class="pill arch"><i class="fa-solid fa-box-archive"></i> Archived</span>';
+    const map = {
+      active: ["ok", "fa-circle-check", "Active"],
+      on_hold: ["warn", "fa-ban", "On Hold"],
+      suspended: ["bad", "fa-triangle-exclamation", "Suspended"],
+      graduated: ["info", "fa-graduation-cap", "Graduated"],
+      archived: ["arch", "fa-box-archive", "Archived"],
+    };
+    const [tone, icon, label] = map[status] || map.archived;
+    const span = document.createElement("span");
+    span.className = `pill ${tone}`;
+    const i = document.createElement("i");
+    i.className = `fa-solid ${icon}`;
+    span.append(i, document.createTextNode(` ${label}`));
+    return span;
   }
 
   function docCount(docState) {
@@ -170,13 +179,21 @@
   function docPill(docState) {
     const requiredCount = docCount(docState);
     const extras = extraDocCount(docState);
+    const span = document.createElement("span");
+    const i = document.createElement("i");
+    i.className = "fa-solid fa-folder-open";
+    let text = "Missing";
+    let tone = "bad";
     if (requiredCount === 3) {
-      return `<span class="pill ok"><i class="fa-solid fa-folder-open"></i> Complete${extras ? ` +${extras}` : ""}</span>`;
+      tone = "ok";
+      text = `Complete${extras ? ` +${extras}` : ""}`;
+    } else if (requiredCount > 0) {
+      tone = "warn";
+      text = `${requiredCount}/3 uploaded${extras ? ` +${extras}` : ""}`;
     }
-    if (requiredCount > 0) {
-      return `<span class="pill warn"><i class="fa-solid fa-folder-open"></i> ${requiredCount}/3 uploaded${extras ? ` +${extras}` : ""}</span>`;
-    }
-    return '<span class="pill bad"><i class="fa-solid fa-folder-open"></i> Missing</span>';
+    span.className = `pill ${tone}`;
+    span.append(i, document.createTextNode(` ${text}`));
+    return span;
   }
 
   function documentSummaryText(docState) {
@@ -217,45 +234,74 @@
   }
 
   function renderTable() {
-    $("tbodyStudents").innerHTML =
-      STUDENTS.map((student) => {
-        const checked = state.selected.has(student.id) ? "checked" : "";
-        const fullName = student.fullName || [student.firstName, student.middleName, student.lastName].filter(Boolean).join(" ");
-        const docs = cloneDocState(student.documents);
+    const tbody = $("tbodyStudents");
+    const fragment = document.createDocumentFragment();
 
-        return `
-          <tr class="row-clickable" data-id="${escapeHtml(student.id)}">
-            <td class="col-check"><input type="checkbox" class="rowCheck" data-id="${escapeHtml(student.id)}" ${checked}></td>
-            <td class="col-student">
-              <div class="student-main">
-                <div class="student-title" title="${escapeHtml(fullName || "-")}">${escapeHtml(fullName || "-")}</div>
-                <div class="student-sub" title="${escapeHtml(student.regNo || "-")}">${escapeHtml(student.regNo || "-")}</div>
-              </div>
-            </td>
-            <td class="col-placement"><span class="cell-ellipsis" title="${escapeHtml(placementText(student))}">${escapeHtml(placementText(student))}</span></td>
-            <td class="col-docs">
-              <div class="doc-summary">
-                <div>${docPill(docs)}</div>
-                <strong title="${escapeHtml(documentSummaryText(docs))}">${escapeHtml(documentSummaryText(docs))}</strong>
-              </div>
-            </td>
-            <td class="col-contacts"><span class="cell-ellipsis" title="${escapeHtml(contactsText(student))}">${escapeHtml(contactsText(student))}</span></td>
-            <td class="col-status">${statusPill(student.status)}</td>
-            <td class="col-hold"><span class="cell-ellipsis" title="${escapeHtml(holdText(student))}">${escapeHtml(holdText(student))}</span></td>
-            <td class="col-actions">
-              <div class="actions">
-                <button class="btn-xs actView" type="button" title="View"><i class="fa-solid fa-eye"></i></button>
-                <button class="btn-xs actEdit" type="button" title="Edit"><i class="fa-solid fa-pen"></i></button>
-                <button class="btn-xs actResend" type="button" title="Resend Setup"><i class="fa-solid fa-envelope"></i></button>
-                <button class="btn-xs actArchive" type="button" title="Archive"><i class="fa-solid fa-box-archive"></i></button>
-                <button class="btn-xs actDelete" type="button" title="Delete"><i class="fa-solid fa-trash"></i></button>
-              </div>
-            </td>
-          </tr>
-        `;
-      }).join("") ||
-      `<tr><td colspan="8" style="padding:18px;"><div class="muted">No students found.</div></td></tr>`;
+    if (!STUDENTS.length) {
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.colSpan = 8;
+      td.style.padding = "18px";
+      const empty = document.createElement("div");
+      empty.className = "muted";
+      empty.textContent = "No students found.";
+      td.appendChild(empty);
+      tr.appendChild(td);
+      fragment.appendChild(tr);
+    }
 
+    STUDENTS.forEach((student) => {
+      const tr = document.createElement("tr");
+      tr.className = "row-clickable";
+      tr.dataset.id = String(student.id || "");
+
+      const checkTd = document.createElement("td");
+      checkTd.className = "col-check";
+      const check = document.createElement("input");
+      check.type = "checkbox";
+      check.className = "rowCheck";
+      check.dataset.id = String(student.id || "");
+      check.checked = state.selected.has(student.id);
+      checkTd.appendChild(check);
+      tr.appendChild(checkTd);
+
+      const studentTd = document.createElement("td");
+      studentTd.className = "col-student";
+      const main = document.createElement("div");
+      main.className = "student-main";
+      const fullName = student.fullName || [student.firstName, student.middleName, student.lastName].filter(Boolean).join(" ") || "-";
+      const title = document.createElement("div"); title.className = "student-title"; title.title = fullName; title.textContent = fullName;
+      const sub = document.createElement("div"); sub.className = "student-sub"; sub.title = student.regNo || "-"; sub.textContent = student.regNo || "-";
+      main.append(title, sub); studentTd.appendChild(main); tr.appendChild(studentTd);
+
+      const placementTd = document.createElement("td"); placementTd.className = "col-placement";
+      const placement = document.createElement("span"); placement.className = "cell-ellipsis"; placement.title = placementText(student); placement.textContent = placementText(student); placementTd.appendChild(placement); tr.appendChild(placementTd);
+
+      const docsTd = document.createElement("td"); docsTd.className = "col-docs";
+      const docSummary = document.createElement("div"); docSummary.className = "doc-summary";
+      const pillWrap = document.createElement("div"); pillWrap.appendChild(docPill(cloneDocState(student.documents)));
+      const docText = document.createElement("strong"); docText.title = documentSummaryText(student.documents); docText.textContent = documentSummaryText(student.documents);
+      docSummary.append(pillWrap, docText); docsTd.appendChild(docSummary); tr.appendChild(docsTd);
+
+      const contactTd = document.createElement("td"); contactTd.className = "col-contacts";
+      const contact = document.createElement("span"); contact.className = "cell-ellipsis"; contact.title = contactsText(student); contact.textContent = contactsText(student); contactTd.appendChild(contact); tr.appendChild(contactTd);
+
+      const statusTd = document.createElement("td"); statusTd.className = "col-status"; statusTd.appendChild(statusPill(student.status)); tr.appendChild(statusTd);
+
+      const holdTd = document.createElement("td"); holdTd.className = "col-hold";
+      const hold = document.createElement("span"); hold.className = "cell-ellipsis"; hold.title = holdText(student); hold.textContent = holdText(student); holdTd.appendChild(hold); tr.appendChild(holdTd);
+
+      const actionsTd = document.createElement("td"); actionsTd.className = "col-actions";
+      const actions = document.createElement("div"); actions.className = "actions";
+      [["actView","View","fa-eye"],["actEdit","Edit","fa-pen"],["actResend","Resend Setup","fa-envelope"],["actArchive","Archive","fa-box-archive"],["actDelete","Delete","fa-trash"]].forEach(([cls,label,icon]) => {
+        const button = document.createElement("button"); button.className = `btn-xs ${cls}`; button.type = "button"; button.title = label;
+        const i = document.createElement("i"); i.className = `fa-solid ${icon}`; button.appendChild(i); actions.appendChild(button);
+      });
+      actionsTd.appendChild(actions); tr.appendChild(actionsTd);
+      fragment.appendChild(tr);
+    });
+
+    tbody.replaceChildren(fragment);
     $("checkAll").checked = STUDENTS.length > 0 && STUDENTS.every((student) => state.selected.has(student.id));
     syncBulkbar();
   }
@@ -264,19 +310,24 @@
     if (!select) return;
     const selected = String(selectedValue == null ? "" : selectedValue);
     const seen = new Set();
-    const html = [`<option value="">${escapeHtml(placeholder || "Select")}</option>`];
+    const fragment = document.createDocumentFragment();
+    const placeholderOption = document.createElement("option");
+    placeholderOption.value = "";
+    placeholderOption.textContent = placeholder || "Select";
+    fragment.appendChild(placeholderOption);
 
     options.forEach((option) => {
       const value = String(option.value ?? "");
       if (seen.has(value)) return;
       seen.add(value);
-      const attrs = Object.entries(option.data || {})
-        .map(([key, val]) => ` data-${escapeHtml(key)}="${escapeHtml(val)}"`)
-        .join("");
-      html.push(`<option value="${escapeHtml(value)}"${attrs} ${value === selected ? "selected" : ""}>${escapeHtml(option.label ?? value)}</option>`);
+      const node = document.createElement("option");
+      node.value = value;
+      node.textContent = String(option.label ?? value);
+      Object.entries(option.data || {}).forEach(([key, val]) => { node.dataset[key] = String(val ?? ""); });
+      node.selected = value === selected;
+      fragment.appendChild(node);
     });
-
-    select.innerHTML = html.join("");
+    select.replaceChildren(fragment);
     select.value = selected && seen.has(selected) ? selected : "";
   }
 
@@ -398,14 +449,16 @@
   function setHint(id, text, tone, url) {
     const el = $(id);
     if (!el) return;
-    if (!text) {
-      el.textContent = "";
-      return;
-    }
-    const color = tone === "error" ? "#b91c1c" : tone === "ok" ? "#15803d" : "#6b7280";
-    el.style.color = color;
-    if (url) {
-      el.innerHTML = `<a href="${escapeHtml(url)}" target="_blank" rel="noreferrer">${escapeHtml(text)}</a>`;
+    el.replaceChildren();
+    if (!text) return;
+    el.style.color = tone === "error" ? "#b91c1c" : tone === "ok" ? "#15803d" : "#6b7280";
+    if (url && /^https?:\/\//i.test(String(url))) {
+      const a = document.createElement("a");
+      a.href = String(url);
+      a.target = "_blank";
+      a.rel = "noreferrer";
+      a.textContent = text;
+      el.appendChild(a);
     } else {
       el.textContent = text;
     }
@@ -476,33 +529,29 @@
     if (!fileList) return;
     const savedDocs = Array.isArray(state.currentDocs?.otherDocs) ? state.currentDocs.otherDocs : [];
     const pendingDocs = otherDocsInput.files ? Array.from(otherDocsInput.files) : [];
-    const blocks = [];
+    const fragment = document.createDocumentFragment();
 
-    savedDocs.forEach((doc) => {
-      blocks.push(`
-        <div class="file-row">
-          <div style="min-width:0">
-            <div class="name">${escapeHtml(doc.originalName || "Saved document")}</div>
-            <div class="meta">${escapeHtml(humanSize(doc.bytes))}</div>
-          </div>
-          <a class="pill ok" href="${escapeHtml(doc.url || "#")}" target="_blank" rel="noreferrer"><i class="fa-solid fa-check"></i> Saved</a>
-        </div>
-      `);
-    });
+    const addRow = (name, size, status, url) => {
+      const row = document.createElement("div"); row.className = "file-row";
+      const left = document.createElement("div"); left.style.minWidth = "0";
+      const n = document.createElement("div"); n.className = "name"; n.textContent = name || "Document";
+      const meta = document.createElement("div"); meta.className = "meta"; meta.textContent = size ? humanSize(size) : "";
+      left.append(n, meta);
+      let badge;
+      if (url && /^https?:\/\//i.test(String(url))) {
+        badge = document.createElement("a"); badge.href = String(url); badge.target = "_blank"; badge.rel = "noreferrer";
+      } else badge = document.createElement("span");
+      badge.className = status === "Saved" ? "pill ok" : "pill warn";
+      badge.textContent = status;
+      row.append(left, badge); fragment.appendChild(row);
+    };
 
-    pendingDocs.forEach((file) => {
-      blocks.push(`
-        <div class="file-row">
-          <div style="min-width:0">
-            <div class="name">${escapeHtml(file.name)}</div>
-            <div class="meta">${escapeHtml(humanSize(file.size))}</div>
-          </div>
-          <span class="pill warn"><i class="fa-solid fa-arrow-up"></i> Pending</span>
-        </div>
-      `);
-    });
-
-    fileList.innerHTML = blocks.length ? blocks.join("") : '<div class="muted">No extra files selected yet.</div>';
+    savedDocs.forEach((doc) => addRow(doc.originalName || "Saved document", doc.bytes, "Saved", doc.url));
+    pendingDocs.forEach((file) => addRow(file.name, file.size, "Pending", null));
+    if (!savedDocs.length && !pendingDocs.length) {
+      const empty = document.createElement("div"); empty.className = "muted"; empty.textContent = "No extra files selected yet."; fragment.appendChild(empty);
+    }
+    fileList.replaceChildren(fragment);
   }
 
   function mergeIntoOtherDocs(newFiles) {
@@ -587,28 +636,24 @@
   }
 
   function renderDocumentLinks(docState) {
+    const fragment = document.createDocumentFragment();
     const docs = [];
     if (docState?.passportPhoto) docs.push({ label: "Passport Photo", doc: docState.passportPhoto });
     if (docState?.idDocument) docs.push({ label: "National ID / Passport", doc: docState.idDocument });
     if (docState?.transcript) docs.push({ label: "Transcript / Results Slip", doc: docState.transcript });
     (docState?.otherDocs || []).forEach((doc, index) => docs.push({ label: doc.originalName || `Other Document ${index + 1}`, doc }));
-
     if (!docs.length) {
-      return '<div class="muted">No documents uploaded yet.</div>';
+      const empty = document.createElement("div"); empty.className = "muted"; empty.textContent = "No documents uploaded yet."; fragment.appendChild(empty); return fragment;
     }
-
-    return docs.map((item) => {
-      const bytes = item.doc?.bytes ? humanSize(item.doc.bytes) : "";
-      return `
-        <a class="doc-link" href="${escapeHtml(item.doc?.url || "#")}" target="_blank" rel="noreferrer">
-          <div style="min-width:0">
-            <div class="strong">${escapeHtml(item.label)}</div>
-            <div class="meta">${escapeHtml(item.doc?.originalName || "")}${bytes ? ` - ${escapeHtml(bytes)}` : ""}</div>
-          </div>
-          <i class="fa-solid fa-arrow-up-right-from-square"></i>
-        </a>
-      `;
-    }).join("");
+    docs.forEach((item) => {
+      const safeUrl = /^https?:\/\//i.test(String(item.doc?.url || "")) ? String(item.doc.url) : "#";
+      const a = document.createElement("a"); a.className = "doc-link"; a.href = safeUrl; a.target = "_blank"; a.rel = "noreferrer";
+      const left = document.createElement("div"); left.style.minWidth = "0";
+      const strong = document.createElement("div"); strong.className = "strong"; strong.textContent = item.label;
+      const meta = document.createElement("div"); meta.className = "meta"; meta.textContent = `${item.doc?.originalName || ""}${item.doc?.bytes ? ` - ${humanSize(item.doc.bytes)}` : ""}`;
+      left.append(strong, meta); const i = document.createElement("i"); i.className = "fa-solid fa-arrow-up-right-from-square"; a.append(left, i); fragment.appendChild(a);
+    });
+    return fragment;
   }
 
   function openViewModal(student) {
@@ -619,7 +664,7 @@
 
     $("vFullName").textContent = fullName || "-";
     $("vRegNo").textContent = student.regNo || "-";
-    $("vStatus").innerHTML = statusPill(student.status || "active");
+    $("vStatus").replaceChildren(statusPill(student.status || "active"));
     $("vTerm").textContent = termLabel(student);
     $("vAcademicYear").textContent = student.academicYear || "-";
     $("vSchoolLevel").textContent = schoolLevelLabel(student.schoolLevel);
@@ -638,7 +683,7 @@
     $("vAddress").textContent = student.address || "-";
     $("vNotes").textContent = student.notes || "-";
     $("vHold").textContent = holdText(student);
-    $("vDocuments").innerHTML = renderDocumentLinks(student.documents || emptyDocState());
+    $("vDocuments").replaceChildren(renderDocumentLinks(student.documents || emptyDocState()));
 
     openModal("mView");
   }
@@ -726,6 +771,12 @@
   $("btnImport").addEventListener("click", () => openModal("mImport"));
   $("quickImport").addEventListener("click", () => openModal("mImport"));
   $("btnPrint").addEventListener("click", () => window.print());
+  $("btnExport")?.addEventListener("click", () => {
+    const params = new URLSearchParams(window.location.search);
+    params.delete("page");
+    params.delete("perPage");
+    window.location.href = `/admin/students/export${params.toString() ? `?${params.toString()}` : ""}`;
+  });
   $("btnBulk").addEventListener("click", () => {
     if (!state.selected.size) return alert("Select at least one student.");
     $("bulkbar").classList.add("show");

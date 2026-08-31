@@ -1,0 +1,10 @@
+const express = require("express");
+const ctrl = require("../../../controllers/tenant/admin/departmentsController");
+const router = express.Router();
+router.get("/", ctrl.index);
+router.get("/export.csv", ctrl.exportCsv);
+router.post("/", ctrl.create);
+router.post("/:id/update", ctrl.update);
+router.post("/:id/status", ctrl.status);
+router.post("/:id/delete", ctrl.delete);
+module.exports = router;

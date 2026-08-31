@@ -4,6 +4,7 @@ const router = express.Router();
 const ctrl = require("../../../controllers/tenant/admin/invoicesController");
 
 router.get("/", ctrl.index);
+router.get("/export.csv", ctrl.exportCsv);
 router.post("/", ctrl.create);
 router.post("/bulk", ctrl.bulkAction);
 router.post("/:id/update", ctrl.update);

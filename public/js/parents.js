@@ -20,15 +20,6 @@
     currentViewId: null,
   };
 
-  function escapeHtml(v) {
-    return String(v ?? "")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#39;");
-  }
-
   function splitComma(text) {
     return String(text || "")
       .split(",")
@@ -69,16 +60,35 @@
   }
 
   function statusPill(status) {
-    if (status === "active") {
-      return '<span class="pill ok"><i class="fa-solid fa-circle-check"></i> Active</span>';
-    }
-    if (status === "on_hold") {
-      return '<span class="pill warn"><i class="fa-solid fa-pause"></i> On Hold</span>';
-    }
-    if (status === "suspended") {
-      return '<span class="pill bad"><i class="fa-solid fa-ban"></i> Suspended</span>';
-    }
-    return '<span class="pill info"><i class="fa-solid fa-box-archive"></i> Archived</span>';
+    const pill = document.createElement("span");
+    const icon = document.createElement("i");
+    const labels = {
+      active: ["ok", "fa-circle-check", "Active"],
+      on_hold: ["warn", "fa-pause", "On Hold"],
+      suspended: ["bad", "fa-ban", "Suspended"],
+      archived: ["info", "fa-box-archive", "Archived"],
+    };
+    const [tone, iconName, label] = labels[status] || labels.archived;
+    pill.className = `pill ${tone}`;
+    icon.className = `fa-solid ${iconName}`;
+    pill.append(icon, document.createTextNode(` ${label}`));
+    return pill;
+  }
+
+  function el(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = String(text);
+    return node;
+  }
+
+  function actionButton(className, title, iconClass) {
+    const button = el("button", `btn-xs ${className}`);
+    button.type = "button";
+    button.title = title;
+    const icon = el("i", `fa-solid ${iconClass}`);
+    button.appendChild(icon);
+    return button;
   }
 
   function formatDate(value) {
@@ -93,74 +103,81 @@
   }
 
   function renderTable() {
-    $("tbodyParents").innerHTML =
-      PARENTS.map((p) => {
-        const checked = state.selected.has(p.id) ? "checked" : "";
+    const tbody = $("tbodyParents");
+    const fragment = document.createDocumentFragment();
+
+    if (!PARENTS.length) {
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.colSpan = 9;
+      td.style.padding = "18px";
+      td.appendChild(el("div", "muted", "No parents found."));
+      tr.appendChild(td);
+      fragment.appendChild(tr);
+    } else {
+      PARENTS.forEach((p) => {
         const kids = Array.isArray(p.childrenStudentIds) ? p.childrenStudentIds : [];
-        return `
-          <tr class="row-clickable" data-id="${escapeHtml(p.id)}">
-            <td class="col-check">
-              <input type="checkbox" class="rowCheck" data-id="${escapeHtml(p.id)}" ${checked}>
-            </td>
+        const tr = el("tr", "row-clickable");
+        tr.dataset.id = String(p.id || "");
 
-            <td class="col-parent">
-              <div class="parent-main">
-                <div class="parent-title" title="${escapeHtml(p.fullName || "—")}">${escapeHtml(p.fullName || "—")}</div>
-                <div class="parent-sub" title="${escapeHtml(p.relationship || "—")}">${escapeHtml(p.relationship || "—")}</div>
-              </div>
-            </td>
+        const checkTd = el("td", "col-check");
+        const checkbox = el("input", "rowCheck");
+        checkbox.type = "checkbox";
+        checkbox.dataset.id = String(p.id || "");
+        checkbox.checked = state.selected.has(p.id);
+        checkTd.appendChild(checkbox);
 
-            <td class="col-email">
-              <span class="cell-ellipsis" title="${escapeHtml(p.email || "—")}">${escapeHtml(p.email || "—")}</span>
-            </td>
+        const parentTd = el("td", "col-parent");
+        const parentMain = el("div", "parent-main");
+        const title = el("div", "parent-title", p.fullName || "—");
+        title.title = p.fullName || "—";
+        const sub = el("div", "parent-sub", p.relationship || "—");
+        sub.title = p.relationship || "—";
+        parentMain.append(title, sub);
+        parentTd.appendChild(parentMain);
 
-            <td class="col-phone">
-              <span class="cell-ellipsis" title="${escapeHtml(p.phone || "—")}">${escapeHtml(p.phone || "—")}</span>
-            </td>
+        const valueCell = (className, value) => {
+          const td = el("td", className);
+          const span = el("span", "cell-ellipsis", value || "—");
+          span.title = value || "—";
+          td.appendChild(span);
+          return td;
+        };
 
-            <td class="col-relationship">
-              <span class="cell-ellipsis" title="${escapeHtml(p.relationship || "—")}">${escapeHtml(p.relationship || "—")}</span>
-            </td>
+        const kidsTd = el("td", "col-kids");
+        kidsTd.appendChild(el("span", "cell-ellipsis", String(kids.length)));
+        const statusTd = el("td", "col-status");
+        statusTd.appendChild(statusPill(p.status));
+        const createdTd = el("td", "col-created");
+        createdTd.appendChild(el("span", "cell-ellipsis", formatDate(p.createdAt)));
 
-            <td class="col-kids">
-              <span class="cell-ellipsis">${escapeHtml(String(kids.length || 0))}</span>
-            </td>
+        const actionsTd = el("td", "col-actions");
+        const actions = el("div", "actions");
+        actions.append(
+          actionButton("actView", "View", "fa-eye"),
+          actionButton("actEdit", "Edit", "fa-pen"),
+          actionButton("actResend", "Resend Setup", "fa-paper-plane"),
+          actionButton("actArchive", "Archive", "fa-box-archive"),
+          actionButton("actDelete", "Delete", "fa-trash")
+        );
+        actionsTd.appendChild(actions);
 
-            <td class="col-status">
-              ${statusPill(p.status)}
-            </td>
+        tr.append(
+          checkTd, parentTd, valueCell("col-email", p.email), valueCell("col-phone", p.phone),
+          valueCell("col-relationship", p.relationship), kidsTd, statusTd, createdTd, actionsTd
+        );
+        fragment.appendChild(tr);
+      });
+    }
 
-            <td class="col-created">
-              <span class="cell-ellipsis">${escapeHtml(formatDate(p.createdAt))}</span>
-            </td>
-
-            <td class="col-actions">
-              <div class="actions">
-                <button class="btn-xs actView" type="button" title="View"><i class="fa-solid fa-eye"></i></button>
-                <button class="btn-xs actEdit" type="button" title="Edit"><i class="fa-solid fa-pen"></i></button>
-                <button class="btn-xs actResend" type="button" title="Resend Setup"><i class="fa-solid fa-paper-plane"></i></button>
-                <button class="btn-xs actArchive" type="button" title="Archive"><i class="fa-solid fa-box-archive"></i></button>
-                <button class="btn-xs actDelete" type="button" title="Delete"><i class="fa-solid fa-trash"></i></button>
-              </div>
-            </td>
-          </tr>
-        `;
-      }).join("") ||
-      `
-      <tr>
-        <td colspan="9" style="padding:18px;">
-          <div class="muted">No parents found.</div>
-        </td>
-      </tr>
-      `;
-
+    tbody.replaceChildren(fragment);
     $("checkAll").checked = PARENTS.length > 0 && PARENTS.every((p) => state.selected.has(p.id));
     syncBulkbar();
   }
 
   function fillHiddenKids(values) {
     const wrap = $("mKidsWrap");
-    wrap.innerHTML = "";
+    wrap.replaceChildren();
 
     values.forEach((v) => {
       const input = document.createElement("input");
@@ -191,7 +208,7 @@
     $("mKids").value = p ? (Array.isArray(p.childrenStudentIds) ? p.childrenStudentIds.join(", ") : "") : "";
     $("mNotes").value = p ? p.notes || "" : "";
     $("mChildrenCount").value = p ? String((p.childrenStudentIds || []).length) : "0";
-    $("mKidsWrap").innerHTML = "";
+    $("mKidsWrap").replaceChildren();
 
     updateCounters();
     openModal("mEdit");
@@ -199,32 +216,28 @@
 
   function openViewModal(p) {
     if (!p) return;
-
     state.currentViewId = p.id;
-
     $("vFullName").textContent = p.fullName || "—";
     $("vEmail").textContent = p.email || "—";
     $("vPhone").textContent = p.phone || "—";
     $("vRelationship").textContent = p.relationship || "—";
     $("vChildrenCount").textContent = String((p.childrenStudentIds || []).length || 0);
-    $("vStatus").innerHTML = statusPill(p.status || "active");
+    $("vStatus").replaceChildren(statusPill(p.status || "active"));
     $("vNotes").textContent = p.notes || "—";
 
     const host = $("vKids");
-    host.innerHTML = "";
-
     const kids = Array.isArray(p.childrenStudentIds) ? p.childrenStudentIds : [];
     if (!kids.length) {
-      host.innerHTML = '<span class="muted">No student IDs</span>';
+      host.replaceChildren(el("span", "muted", "No student IDs"));
     } else {
-      kids.forEach((id) => {
-        const span = document.createElement("span");
-        span.className = "tag";
-        span.innerHTML = `<i class="fa-solid fa-user-graduate"></i> ${escapeHtml(id)}`;
-        host.appendChild(span);
+      const nodes = kids.map((id) => {
+        const span = el("span", "tag");
+        const icon = el("i", "fa-solid fa-user-graduate");
+        span.append(icon, document.createTextNode(` ${id}`));
+        return span;
       });
+      host.replaceChildren(...nodes);
     }
-
     openModal("mView");
   }
 
@@ -273,21 +286,10 @@
   }
 
   function exportParents() {
-    const rows = [
-      ["Full Name", "Email", "Phone", "Relationship", "Status", "ChildrenStudentIds", "Notes", "CreatedAt"],
-      ...PARENTS.map((p) => [
-        p.fullName || "",
-        p.email || "",
-        p.phone || "",
-        p.relationship || "",
-        p.status || "",
-        (p.childrenStudentIds || []).join(" | "),
-        p.notes || "",
-        formatDate(p.createdAt),
-      ]),
-    ];
-
-    downloadCsv("parents-export.csv", rows);
+    const params = new URLSearchParams(window.location.search);
+    params.delete("page");
+    const query = params.toString();
+    window.location.assign(`/admin/parents/export${query ? `?${query}` : ""}`);
   }
 
   function downloadTemplate() {

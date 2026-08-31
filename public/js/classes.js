@@ -436,7 +436,7 @@
     fillStreamOptions("");
   });
 
-  $("btnExport").addEventListener("click", exportClasses);
+  $("btnExport").addEventListener("click", function () { window.location.href = "/admin/classes/export.csv" + (window.location.search || ""); });
   $("btnPrint").addEventListener("click", function () { window.print(); });
 
   $("btnBulk").addEventListener("click", function () {

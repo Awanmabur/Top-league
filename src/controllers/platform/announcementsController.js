@@ -30,19 +30,29 @@ async function writeAudit(req, payload) {
 module.exports = {
   listAnnouncements: async (req, res) => {
     try {
-      const announcements = await PlatformAnnouncement.find({})
-        .sort({ createdAt: -1 })
-        .populate("createdBy")
-        .lean();
+      const page = Math.max(1, Number.parseInt(String(req.query?.page || "1"), 10) || 1);
+      const pageSize = 100;
+      const [announcements, total] = await Promise.all([
+        PlatformAnnouncement.find({})
+          .sort({ createdAt: -1 })
+          .populate("createdBy")
+          .skip((page - 1) * pageSize)
+          .limit(pageSize)
+          .lean(),
+        PlatformAnnouncement.countDocuments({}),
+      ]);
+      const pages = Math.max(1, Math.ceil(total / pageSize));
 
       return res.render("platform/announcements/index", {
         announcements,
+        pagination: { page: Math.min(page, pages), pages, total },
         error: null,
       });
     } catch (err) {
       console.error("❌ listAnnouncements error:", err);
       return res.status(500).render("platform/announcements/index", {
         announcements: [],
+        pagination: { page: 1, pages: 1, total: 0 },
         error: "Failed to load announcements.",
       });
     }

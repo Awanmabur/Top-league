@@ -163,9 +163,7 @@ module.exports = {
 
       const [
         total,
-        activeCount,
-        inactiveCount,
-        archivedCount,
+        statusRows,
         staffList,
         sections,
         streams,
@@ -173,9 +171,7 @@ module.exports = {
         classLevelsRaw,
       ] = await Promise.all([
         Class.countDocuments(filter),
-        Class.countDocuments({ ...kpiFilter, status: "active" }),
-        Class.countDocuments({ ...kpiFilter, status: "inactive" }),
-        Class.countDocuments({ ...kpiFilter, status: "archived" }),
+        Class.aggregate([{ $match: kpiFilter }, { $group: { _id: "$status", count: { $sum: 1 } } }]),
         Staff
           ? Staff.find({})
               .select("fullName name email role")
@@ -214,12 +210,8 @@ module.exports = {
       const academicYears = academicYearsRaw.filter(Boolean).sort();
       const classLevels = classLevelsRaw.filter(Boolean).sort();
 
-      const kpis = {
-        total,
-        active: activeCount,
-        inactive: inactiveCount,
-        archived: archivedCount,
-      };
+      const statusCounts = Object.fromEntries(statusRows.map((row) => [String(row._id || ""), Number(row.count || 0)]));
+      const kpis = { total, active: statusCounts.active || 0, inactive: statusCounts.inactive || 0, archived: statusCounts.archived || 0 };
 
       return res.render("tenant/classes/index", {
         tenant: req.tenant || null,
@@ -570,3 +562,112 @@ module.exports = {
   },
 };
 
+
+// Production academic-catalog guards: keep enrollment counts authoritative and
+// prevent lifecycle/destructive actions from orphaning dependent academic data.
+{
+  const catalog = require('../../../services/tenant/academicCatalogService');
+  const originalList = module.exports.list;
+  const originalCreate = module.exports.create;
+  const originalUpdate = module.exports.update;
+
+  module.exports.list = async function guardedClassList(req, res) {
+    await catalog.syncEnrollmentCounts(req.models).catch((err) => console.error('CLASS ENROLLMENT SYNC ERROR:', err));
+    return originalList(req, res);
+  };
+
+  module.exports.create = async function guardedClassCreate(req, res) {
+    req.body.enrolledCount = '0';
+    return originalCreate(req, res);
+  };
+
+  module.exports.update = async function guardedClassUpdate(req, res) {
+    const id = String(req.params.id || '').trim();
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      const current = await req.models.Class.findById(id).lean();
+      if (current) {
+        try {
+          await catalog.assertStructuralMoveAllowed(req.models, 'class', id, current, {
+            schoolUnitId: req.body.schoolUnitId,
+            campusId: req.body.campusId,
+            levelType: req.body.levelType,
+            classLevel: normalizeClassLevel(req.body.classLevel),
+            academicYear: String(req.body.academicYear || '').trim(),
+            term: Math.max(1, Math.min(Number(req.body.term || 1), 3)),
+          });
+          await catalog.assertCapacityNotBelowEnrollment(req.models, 'class', id, req.body.capacity);
+          req.body.enrolledCount = String(current.enrolledCount || 0);
+        } catch (err) {
+          req.flash?.('error', err.message || 'Class placement cannot be changed.');
+          return res.redirect('/admin/classes');
+        }
+      }
+    }
+    const result = await originalUpdate(req, res);
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      const updated = await req.models.Class.findById(id).lean().catch(() => null);
+      if (updated) await catalog.propagateClassMetadata(req.models, id, updated).catch((err) => console.error('CLASS METADATA PROPAGATION ERROR:', err));
+    }
+    return result;
+  };
+
+  module.exports.setStatus = async function guardedClassStatus(req, res) {
+    const id = String(req.params.id || '').trim();
+    const next = String(req.body.status || '').trim();
+    try {
+      if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid class id.');
+      const doc = await req.models.Class.findById(id).lean();
+      if (!doc) throw new Error('Class was not found.');
+      await catalog.assertStatusAllowed(req.models, 'class', id, next);
+      await req.models.Class.updateOne({ _id: id }, { $set: { status: next } }, { runValidators: true });
+      req.flash?.('success', 'Class status updated.');
+    } catch (err) { req.flash?.('error', err.message || 'Failed to update class status.'); }
+    return res.redirect('/admin/classes');
+  };
+
+  module.exports.remove = async function guardedClassDelete(req, res) {
+    const id = String(req.params.id || '').trim();
+    try {
+      if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid class id.');
+      const doc = await req.models.Class.findById(id).lean();
+      if (!doc) throw new Error('Class was not found.');
+      await catalog.assertDeleteAllowed(req.models, 'class', id);
+      await req.models.Class.deleteOne({ _id: id });
+      req.flash?.('success', 'Class deleted.');
+    } catch (err) { req.flash?.('error', err.message || 'Failed to delete class.'); }
+    return res.redirect('/admin/classes');
+  };
+
+  module.exports.bulk = async function guardedClassBulk(req, res) {
+    const action = String(req.body.action || '').trim();
+    const ids = [...new Set(String(req.body.ids || '').split(',').map((v) => v.trim()).filter((v) => mongoose.Types.ObjectId.isValid(v)))];
+    if (!ids.length) { req.flash?.('error', 'No classes selected.'); return res.redirect('/admin/classes'); }
+    const statusMap = { activate: 'active', deactivate: 'inactive', archive: 'archived' };
+    if (!statusMap[action] && action !== 'delete') { req.flash?.('error', 'Invalid bulk action.'); return res.redirect('/admin/classes'); }
+    let changed = 0; const skipped = [];
+    for (const id of ids) {
+      try {
+        if (action === 'delete') { await catalog.assertDeleteAllowed(req.models, 'class', id); await req.models.Class.deleteOne({ _id: id }); }
+        else { const next = statusMap[action]; await catalog.assertStatusAllowed(req.models, 'class', id, next); await req.models.Class.updateOne({ _id: id }, { $set: { status: next } }, { runValidators: true }); }
+        changed += 1;
+      } catch (err) { skipped.push(err.message || id); }
+    }
+    req.flash?.(changed ? 'success' : 'error', `${changed} class${changed === 1 ? '' : 'es'} updated${skipped.length ? `; ${skipped.length} skipped because of active/dependent records.` : '.'}`);
+    return res.redirect('/admin/classes');
+  };
+
+  module.exports.exportCsv = async function exportClassesCsv(req, res) {
+    await catalog.syncEnrollmentCounts(req.models).catch(() => null);
+    const q = String(req.query.q || '').trim(); const filter = {};
+    if (q) { const rx = catalog.escapeRegExp(q); filter.$or = ['name','code','classLevel','sectionName','streamName','campusName','room'].map((key) => ({ [key]: { $regex: rx, $options: 'i' } })); }
+    for (const key of ['status','levelType','classLevel','academicYear','schoolUnitId','campusId']) if (req.query[key]) filter[key] = String(req.query[key]).trim();
+    if (req.query.term && !Number.isNaN(Number(req.query.term))) filter.term = Number(req.query.term);
+    if (req.query.sectionId && mongoose.Types.ObjectId.isValid(req.query.sectionId)) filter.sectionId = req.query.sectionId;
+    if (req.query.streamId && mongoose.Types.ObjectId.isValid(req.query.streamId)) filter.streamId = req.query.streamId;
+    const rows = await req.models.Class.find(filter).populate('classTeacher','fullName name').sort({ createdAt: -1 }).lean();
+    const header = ['Name','Code','School Unit','Campus','Level','Class Level','Section','Stream','Term','Academic Year','Teacher','Shift','Capacity','Enrolled','Room','Status','Description'];
+    const lines = [header.map(catalog.csvCell).join(',')];
+    for (const row of rows) lines.push([row.name,row.code,row.schoolUnitName,row.campusName,row.levelType,row.classLevel,row.sectionName,row.streamName || row.stream,row.term,row.academicYear,row.classTeacher?.fullName || row.classTeacher?.name || '',row.shift,row.capacity,row.enrolledCount,row.room,row.status,row.description].map(catalog.csvCell).join(','));
+    res.setHeader('Content-Type','text/csv; charset=utf-8'); res.setHeader('Content-Disposition','attachment; filename="classes.csv"'); return res.send(`\uFEFF${lines.join('\n')}`);
+  };
+}

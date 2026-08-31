@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/parent-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{
       margin-top:16px;
       display:flex;
@@ -426,13 +426,13 @@
             <b><%= Number(stats.totalChildren || kids.length || 0) %></b>
           </div>
 
-          <button class="btn light" type="button" onclick="window.location.href='/parent/attendance'">
+          <a class="btn light" href="/parent/attendance">
             <i class="fa-solid fa-user-check"></i> Attendance
-          </button>
+          </a>
 
-          <button class="btn primary" type="button" onclick="window.location.href='/parent/results'">
+          <a class="btn primary" href="/parent/results">
             <i class="fa-solid fa-file-lines"></i> Results
-          </button>
+          </a>
         </div>
       </div>
 
@@ -466,19 +466,19 @@
             <div class="empty-text">
               Your account does not yet have any linked student records. Contact the school administrator to connect your profile.
             </div>
-            <button class="btn light" type="button" onclick="window.location.href='/parent/support'">
+            <a class="btn light" href="/parent/support">
               <i class="fa-solid fa-headset"></i> Contact Support
-            </button>
+            </a>
           </div>
         </section>
       <% } else { %>
         <div class="children-stack" id="childrenStack">
-          <% kids.forEach(function(c){ 
+          <% kids.forEach(function(c){
             const studentName = fullNameOfStudent(c);
             const regNo = c && c.regNo ? c.regNo : "—";
             const status = c && c.status ? String(c.status).toLowerCase() : "active";
-            const className = c && c.classGroup && (c.classGroup.title || c.classGroup.name) ? (c.classGroup.title || c.classGroup.name) : "—";
-            const programName = c && c.program && (c.program.title || c.program.name) ? (c.program.title || c.program.name) : "—";
+            const className = c && (c.className || c.classLevel) ? (c.className || c.classLevel) : "—";
+            const programName = c && c.programId && (c.programId.title || c.programId.name || c.programId.shortTitle || c.programId.code) ? (c.programId.title || c.programId.name || c.programId.shortTitle || c.programId.code) : "—";
             const academicYear = c && c.academicYear ? c.academicYear : "—";
             const yearLevel = c && c.yearLevel ? c.yearLevel : "—";
             const semester = (c && (c.semester || c.semester === 0)) ? c.semester : "—";
@@ -660,7 +660,7 @@
     </main>
   </div>
 
-  <script>
+  <script nonce="<%= cspNonce %>">
     (function () {
       const searchInput = document.getElementById("childSearch");
       const statusFilter = document.getElementById("statusFilter");

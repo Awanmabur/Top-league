@@ -15,7 +15,7 @@ module.exports = function StaffRoleModel(conn) {
       code: {
         type: String,
         trim: true,
-        default: "",
+        default: null,
         maxlength: 80,
       },
 
@@ -69,6 +69,7 @@ module.exports = function StaffRoleModel(conn) {
   );
 
   StaffRoleSchema.index({ name: 1, isDeleted: 1 }, { unique: true, partialFilterExpression: { isDeleted: false } });
+  StaffRoleSchema.index({ code: 1 }, { unique: true, partialFilterExpression: { isDeleted: false, code: { $type: "string" } } });
   StaffRoleSchema.index({ status: 1, createdAt: -1 });
   StaffRoleSchema.index({ isDeleted: 1, createdAt: -1 });
 

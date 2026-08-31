@@ -49,9 +49,10 @@
       track.dataset.duplicated = "true";
     })();
 
-    // Swiper for testimonials
+    // Swiper is an enhancement. If the CDN is unavailable the testimonial
+    // cards remain usable and the rest of the marketing JS still runs.
     const isMobile = window.matchMedia("(max-width: 700px)").matches;
-    new Swiper(".testimonial-wrapper", {
+    if (window.Swiper && document.querySelector(".testimonial-wrapper")) new Swiper(".testimonial-wrapper", {
       slidesPerView: 1,
       spaceBetween: 18,
       loop: true,

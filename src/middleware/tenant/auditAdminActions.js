@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { redact, maskIp, ipHash } = require("../../services/tenant/auditControlService");
 
 const SENSITIVE_KEYS = new Set([
   "password",
@@ -65,17 +66,7 @@ function getActorUserId(req) {
 }
 
 function normalizeBody(body) {
-  if (!body || typeof body !== "object") return {};
-
-  return Object.fromEntries(
-    Object.entries(body).slice(0, 40).map(([key, value]) => {
-      const normalizedKey = String(key || "").toLowerCase();
-      if (SENSITIVE_KEYS.has(normalizedKey)) return [key, "[redacted]"];
-      if (Array.isArray(value)) return [key, value.slice(0, 10).map((x) => String(x).slice(0, 120))];
-      if (value && typeof value === "object") return [key, "[object]"];
-      return [key, String(value ?? "").slice(0, 250)];
-    }),
-  );
+  return redact(body || {});
 }
 
 function parseAdminPath(req) {
@@ -144,7 +135,8 @@ module.exports = function auditAdminActions(req, res, next) {
       entityId,
       entityLabel: entityId ? String(entityId) : "",
       severity: severityFor(method, actionHint, res.statusCode),
-      ipAddress: req.ip || "",
+      ipAddress: maskIp(req.ip || ""),
+      ipHash: ipHash(req.ip || "", String(req.tenant?._id || req.tenant?.code || "tenant")),
       source: "admin",
       metadata: {
         method,

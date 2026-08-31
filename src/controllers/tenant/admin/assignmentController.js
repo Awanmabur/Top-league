@@ -5,653 +5,377 @@ const {
   resolveAcademicScope,
   buildAcademicScopeFilter,
 } = require("../../../utils/tenantAcademicScope");
+const {
+  str,
+  idText,
+  escapeRegExp,
+  csvCell,
+  normalizeUrlList,
+  normalizeDueDateInput,
+  formatInTimezone,
+  formatDateTimeLocal,
+  assertSubjectMatchesScope,
+  assignmentTargetStudentFilter,
+  assertAssignmentEditable,
+  assertAssignmentDeleteAllowed,
+  assignmentStatusUpdate,
+  gradeSubmissionUpdate,
+  reopenSubmissionUpdate,
+} = require("../../../services/tenant/assignmentService");
 
-/* -----------------------
-   Helpers
------------------------- */
-const cleanStr = (v, max = 5000) => String(v || "").trim().slice(0, max);
 const isObjId = (v) => mongoose.Types.ObjectId.isValid(String(v || ""));
 
-const cleanList = (vals, maxItems = 30, maxLen = 500) => {
-  const arr = Array.isArray(vals) ? vals : (vals ? [vals] : []);
-  return arr
-    .map((s) => cleanStr(s, maxLen).replace(/\s+/g, " "))
-    .filter(Boolean)
-    .slice(0, maxItems);
-};
-
-const parseDateTime = (v) => {
-  if (!v) return null;
-  const s = String(v).trim();
-  // Accept "YYYY-MM-DD HH:mm" or "YYYY-MM-DDTHH:mm"
-  const fixed = s.includes("T") ? s : s.replace(" ", "T");
-  const d = new Date(fixed);
-  return isNaN(d.getTime()) ? null : d;
-};
-
-// Simple CSV parser (handles quoted commas)
-function parseCsv(text) {
-  const rows = [];
-  let row = [];
-  let cur = "";
-  let inQuotes = false;
-
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    const next = text[i + 1];
-
-    if (ch === '"' && inQuotes && next === '"') { cur += '"'; i++; continue; }
-    if (ch === '"') { inQuotes = !inQuotes; continue; }
-
-    if (!inQuotes && ch === ",") { row.push(cur); cur = ""; continue; }
-    if (!inQuotes && ch === "\n") { row.push(cur); rows.push(row); row = []; cur = ""; continue; }
-    if (ch !== "\r") cur += ch;
+function requireTenantModels(req, names) {
+  if (!req?.models) throw new Error("Tenant models are not attached to this request.");
+  const out = {};
+  for (const name of names) {
+    if (!req.models[name]) throw new Error(`Tenant model ${name} is not loaded.`);
+    out[name] = req.models[name];
   }
-  row.push(cur);
-  rows.push(row);
-  return rows.filter(r => r.some(x => String(x || "").trim() !== ""));
+  return out;
 }
 
-const csvEsc = (s) => {
-  const v = String(s ?? "");
-  if (/[,"\n]/.test(v)) return `"${v.replace(/"/g, '""')}"`;
-  return v;
-};
+function parseCsv(text) {
+  const rows=[]; let row=[]; let cur=""; let quoted=false;
+  for(let i=0;i<String(text||"").length;i+=1){
+    const ch=text[i], next=text[i+1];
+    if(ch==='"'&&quoted&&next==='"'){cur+='"';i+=1;continue;}
+    if(ch==='"'){quoted=!quoted;continue;}
+    if(!quoted&&ch===','){row.push(cur);cur="";continue;}
+    if(!quoted&&ch==='\n'){row.push(cur);rows.push(row);row=[];cur="";continue;}
+    if(ch!=='\r')cur+=ch;
+  }
+  row.push(cur); rows.push(row);
+  return rows.filter((r)=>r.some((v)=>String(v||"").trim()));
+}
 
-const kpiAgg = async (Assignment, baseMatch) => {
-  const rows = await Assignment.aggregate([
-    { $match: baseMatch },
-    { $group: { _id: "$status", c: { $sum: 1 } } },
+function actorId(req) {
+  return req.user?._id || req.user?.userId || null;
+}
+
+function assignmentQuery(req) {
+  const q=str(req.query.q,120);
+  const course=str(req.query.course,80);
+  const classGroup=str(req.query.classGroup,80);
+  const sectionId=str(req.query.sectionId,80);
+  const streamId=str(req.query.streamId,80);
+  const status=str(req.query.status,20).toLowerCase();
+  const filter={isDeleted:{$ne:true},migrationQuarantinedAt:null};
+  if(q){ const rx=escapeRegExp(q); filter.$or=[{title:{$regex:rx,$options:"i"}},{instructions:{$regex:rx,$options:"i"}},{rubric:{$regex:rx,$options:"i"}},{courseName:{$regex:rx,$options:"i"}}]; }
+  if(course&&isObjId(course))filter.course=course;
+  Object.assign(filter,buildAcademicScopeFilter({classGroup,sectionId,streamId}));
+  if(["draft","published","closed","archived"].includes(status))filter.status=status;
+  return {filter,params:{q,course,classGroup,sectionId,streamId,status}};
+}
+
+async function submissionCounts(AssignmentSubmission, assignmentIds) {
+  const ids=(assignmentIds||[]).filter(Boolean);
+  if(!ids.length)return new Map();
+  const rows=await AssignmentSubmission.aggregate([
+    {$match:{assignment:{$in:ids},migrationQuarantinedAt:null}},
+    {$group:{_id:"$assignment",total:{$sum:1},submitted:{$sum:{$cond:[{$eq:["$status","submitted"]},1,0]}},graded:{$sum:{$cond:[{$eq:["$status","graded"]},1,0]}}}},
   ]);
-  const m = Object.fromEntries(rows.map((r) => [r._id, r.c]));
+  return new Map(rows.map((r)=>[String(r._id),r]));
+}
+
+async function countAssignmentSubmissions(AssignmentSubmission, assignmentId) {
+  return AssignmentSubmission.countDocuments({assignment:assignmentId,migrationQuarantinedAt:null});
+}
+
+async function prepareAssignmentValues(req, current=null) {
+  const { Subject }=requireTenantModels(req,["Subject"]);
+  const courseId=str(req.body.course,80);
+  if(!isObjId(courseId))throw new Error("Subject is required.");
+  const subject=await Subject.findById(courseId).select("title code name classId className sectionId sectionName streamId streamName academicYear term status").lean();
+  if(!subject)throw new Error("Subject not found.");
+  const scope=await resolveAcademicScope(req,{classId:req.body.classGroup||subject.classId,sectionId:req.body.sectionId||subject.sectionId,streamId:req.body.streamId||subject.streamId});
+  if(scope.errors.length)throw new Error(scope.errors.join(" "));
+  assertSubjectMatchesScope(subject,{...scope.payload,classId:scope.payload.classId});
+  const totalPoints=Number(req.body.totalPoints ?? current?.totalPoints ?? 100);
+  if(!Number.isFinite(totalPoints)||totalPoints<0||totalPoints>1000)throw new Error("Total points must be between 0 and 1000.");
+  const dueDate=normalizeDueDateInput(req.body.dueDate,req.tenant?.timezone||"UTC");
   return {
-    total: Object.values(m).reduce((a, b) => a + b, 0),
-    published: m.published || 0,
-    draft: m.draft || 0,
-    archived: m.archived || 0,
-    closed: m.closed || 0,
+    title:str(req.body.title,200),
+    course:subject._id,
+    courseName:subject.title||subject.code||subject.name||"",
+    classGroup:scope.payload.classId||null,
+    className:scope.payload.className||subject.className||"",
+    sectionId:scope.payload.sectionId||null,
+    sectionName:scope.payload.sectionName||subject.sectionName||"",
+    sectionCode:scope.payload.sectionCode||"",
+    streamId:scope.payload.streamId||null,
+    streamName:scope.payload.streamName||subject.streamName||"",
+    streamCode:scope.payload.streamCode||"",
+    academicYear:str(subject.academicYear||scope.payload.academicYear,20),
+    term:Number(subject.term||scope.payload.term||1),
+    dueDate,
+    totalPoints,
+    allowLateSubmissions:["1","true","on","yes"].includes(String(req.body.allowLateSubmissions||"").toLowerCase()),
+    instructions:str(req.body.instructions,4000),
+    rubric:str(req.body.rubric,4000),
+    attachments:normalizeUrlList(req.body["attachments[]"]??req.body.attachments,30),
+    updatedBy:actorId(req),
   };
-};
+}
 
-// ✅ Strong guard so you never get "Cannot read ... of undefined" again
-const requireTenantModel = (req, name) => {
-  const models = req?.models;
-  if (!models) {
-    const e = new Error("Tenant models not attached to request (req.models is missing). Check tenant middleware order.");
-    e.code = "TENANT_MODELS_MISSING";
-    throw e;
-  }
-  const model = models[name];
-  if (!model) {
-    // log keys once to make debugging fast
-    console.log(`[ASSIGNMENTS] Missing model "${name}". Available models:`, Object.keys(models));
-    const e = new Error(`Tenant model "${name}" not loaded. Add it to tenant model registry/loader.`);
-    e.code = "TENANT_MODEL_NOT_LOADED";
-    throw e;
-  }
-  return model;
-};
+async function syncAssignmentNotifications(req, assignment, action="published") {
+  const { Student, Notification }=req.models||{};
+  if(!Student||!Notification||!["published","updated"].includes(action))return 0;
+  const students=await Student.find(assignmentTargetStudentFilter(assignment)).select("userId").lean();
+  const users=[...new Set(students.map((s)=>idText(s.userId)).filter((id)=>isObjId(id)))];
+  const due=assignment.dueDate?` Due ${formatInTimezone(assignment.dueDate,req.tenant?.timezone||"UTC")}.`:"";
+  const title=action==="published"?"New assignment":"Assignment updated";
+  const message=`${assignment.title||"Assignment"} — ${assignment.courseName||"Subject"}.${due}`;
+  if(!users.length)return 0;
+  const ops=users.map((userId)=>({updateOne:{filter:{userId,entityType:"assignment",entityId:assignment._id,entityAction:action},update:{$set:{audience:"student",title,message,type:"info",url:`/student/assignments/${assignment._id}`,isDeleted:false,deletedAt:null,updatedBy:actorId(req)},$setOnInsert:{createdBy:actorId(req)}},upsert:true}}));
+  await Notification.bulkWrite(ops,{ordered:false});
+  return users.length;
+}
 
-/* -----------------------
-   Validation Rules
------------------------- */
-const assignmentRules = [
-  body("title").trim().isLength({ min: 2, max: 200 }).withMessage("Title is required (2-200 chars)."),
-  body("course").custom((v) => isObjId(v)).withMessage("Subject is required."),
-  body("classGroup").optional({ checkFalsy: true }).custom((v) => !v || isObjId(v)).withMessage("Invalid class."),
-  body("sectionId").optional({ checkFalsy: true }).custom((v) => !v || isObjId(v)).withMessage("Invalid section."),
-  body("streamId").optional({ checkFalsy: true }).custom((v) => !v || isObjId(v)).withMessage("Invalid stream."),
-  body("dueDate").optional({ checkFalsy: true }).custom((v) => !!parseDateTime(v)).withMessage("Invalid due date."),
-  body("totalPoints").optional({ checkFalsy: true }).isInt({ min: 0, max: 1000 }).toInt(),
-  body("status")
-    .optional({ checkFalsy: true })
-    .isIn(["draft", "published", "closed", "archived"])
-    .withMessage("Invalid status."),
-  body("instructions").optional({ checkFalsy: true }).trim().isLength({ max: 4000 }),
-  body("rubric").optional({ checkFalsy: true }).trim().isLength({ max: 4000 }),
+async function retireAssignmentNotifications(req, assignmentId) {
+  const { Notification }=req.models||{};
+  if(!Notification)return 0;
+  const result=await Notification.updateMany({entityType:"assignment",entityId:assignmentId,isDeleted:{$ne:true}},{$set:{isDeleted:true,deletedAt:new Date(),updatedBy:actorId(req)}});
+  return result.modifiedCount||0;
+}
+
+async function notifyGrade(req, submission, assignment) {
+  const { Student, Notification }=req.models||{};
+  if(!Student||!Notification)return;
+  const student=await Student.findById(submission.student).select("userId").lean();
+  if(!student?.userId)return;
+  await Notification.findOneAndUpdate(
+    {userId:student.userId,entityType:"assignment_submission",entityId:submission._id,entityAction:"graded"},
+    {$set:{audience:"student",title:"Assignment graded",message:`${assignment.title}: ${submission.score}/${assignment.totalPoints} (${submission.percentage}%).`,type:"success",url:`/student/assignments/${assignment._id}`,isDeleted:false,deletedAt:null,updatedBy:actorId(req)},$setOnInsert:{createdBy:actorId(req)}},
+    {upsert:true,new:true,setDefaultsOnInsert:true}
+  );
+}
+
+async function changeStatus(req, nextStatus) {
+  const { Assignment, AssignmentSubmission }=requireTenantModels(req,["Assignment","AssignmentSubmission"]);
+  const id=str(req.params.id,80);
+  if(!isObjId(id))throw new Error("Invalid assignment id.");
+  const current=await Assignment.findOne({_id:id,isDeleted:{$ne:true},migrationQuarantinedAt:null}).lean();
+  if(!current)throw new Error("Assignment not found.");
+  const submissions=await countAssignmentSubmissions(AssignmentSubmission,id);
+  const update=assignmentStatusUpdate(current,nextStatus,actorId(req),submissions,new Date());
+  const result=await Assignment.updateOne({_id:id,status:current.status,isDeleted:{$ne:true},migrationQuarantinedAt:null},{$set:{...update,updatedAt:new Date()}},{runValidators:true});
+  if(result.modifiedCount!==1&&current.status!==nextStatus)throw new Error("Assignment changed in another session. Reload and try again.");
+  const after={...current,...update,_id:current._id};
+  if(nextStatus==="published")await syncAssignmentNotifications(req,after,current.status==="published"?"updated":"published").catch((e)=>console.error("ASSIGNMENT NOTIFICATION ERROR:",e));
+  if(["draft","archived"].includes(nextStatus))await retireAssignmentNotifications(req,id).catch(()=>null);
+  return after;
+}
+
+async function applyBulkWithCompensation(req, ids, nextStatus) {
+  const { Assignment, AssignmentSubmission }=requireTenantModels(req,["Assignment","AssignmentSubmission"]);
+  const rows=await Assignment.find({_id:{$in:ids},isDeleted:{$ne:true},migrationQuarantinedAt:null}).lean();
+  if(rows.length!==ids.length)throw new Error("One or more selected assignments no longer exist.");
+  const countMap=await submissionCounts(AssignmentSubmission,rows.map((row)=>row._id));
+  const prepared=rows.map((row)=>{
+    const count=Number(countMap.get(String(row._id))?.total||0);
+    return {row,update:assignmentStatusUpdate(row,nextStatus,actorId(req),count,new Date())};
+  });
+  const changed=[];
+  try{
+    for(const item of prepared){
+      const result=await Assignment.updateOne({_id:item.row._id,status:item.row.status},{$set:{...item.update,updatedAt:new Date()}},{runValidators:true});
+      if(result.modifiedCount!==1&&item.row.status!==nextStatus)throw new Error("A selected assignment changed in another session.");
+      changed.push(item);
+      const after={...item.row,...item.update};
+      if(nextStatus==="published")await syncAssignmentNotifications(req,after,item.row.status==="published"?"updated":"published").catch(()=>null);
+      if(["draft","archived"].includes(nextStatus))await retireAssignmentNotifications(req,item.row._id).catch(()=>null);
+    }
+  }catch(err){
+    for(const item of changed.reverse()){
+      await Assignment.updateOne({_id:item.row._id},{$set:{status:item.row.status,publishedAt:item.row.publishedAt||null,publishedBy:item.row.publishedBy||null,closedAt:item.row.closedAt||null,closedBy:item.row.closedBy||null,archivedAt:item.row.archivedAt||null,archivedBy:item.row.archivedBy||null,revision:Number(item.row.revision||0)}}).catch(()=>null);
+    }
+    throw err;
+  }
+  return changed.length;
+}
+
+async function insertPreparedWithCompensation(Assignment, docs) {
+  const prepared=docs.map((d)=>({_id:d._id||new mongoose.Types.ObjectId(),...d}));
+  try { await Assignment.insertMany(prepared,{ordered:true}); return prepared; }
+  catch(err){ await Assignment.deleteMany({_id:{$in:prepared.map((d)=>d._id)}}).catch(()=>null); throw err; }
+}
+
+const assignmentRules=[
+  body("title").trim().isLength({min:2,max:200}).withMessage("Title is required (2-200 chars)."),
+  body("course").custom((v)=>isObjId(v)).withMessage("Subject is required."),
+  body("classGroup").optional({checkFalsy:true}).custom((v)=>!v||isObjId(v)).withMessage("Invalid class."),
+  body("sectionId").optional({checkFalsy:true}).custom((v)=>!v||isObjId(v)).withMessage("Invalid section."),
+  body("streamId").optional({checkFalsy:true}).custom((v)=>!v||isObjId(v)).withMessage("Invalid stream."),
+  body("totalPoints").optional({checkFalsy:true}).isFloat({min:0,max:1000}).withMessage("Total points must be between 0 and 1000."),
+  body("instructions").optional({checkFalsy:true}).trim().isLength({max:4000}),
+  body("rubric").optional({checkFalsy:true}).trim().isLength({max:4000}),
 ];
 
-/* -----------------------
-   Controller
------------------------- */
-module.exports = {
+module.exports={
   assignmentRules,
 
-  // GET /admin/assignments
-  list: async (req, res) => {
-    try {
-      const Assignment = requireTenantModel(req, "Assignment");
-      // Assignments use Subject as their coursework source.
-      const Subject = req.models?.Subject || null;
-
-      const q = cleanStr(req.query.q, 120);
-      const course = cleanStr(req.query.course, 80);
-      const classGroup = cleanStr(req.query.classGroup, 80);
-      const sectionId = cleanStr(req.query.sectionId, 80);
-      const streamId = cleanStr(req.query.streamId, 80);
-      const status = cleanStr(req.query.status, 20);
-
-      const page = Math.max(parseInt(req.query.page || "1", 10), 1);
-      const perPage = 18;
-
-      const filter = { isDeleted: { $ne: true } };
-
-      if (q) {
-        filter.$or = [
-          { title: { $regex: q, $options: "i" } },
-          { instructions: { $regex: q, $options: "i" } },
-          { rubric: { $regex: q, $options: "i" } },
-          { courseName: { $regex: q, $options: "i" } },
-        ];
-      }
-      if (course && isObjId(course)) filter.course = course;
-      Object.assign(filter, buildAcademicScopeFilter({ classGroup, sectionId, streamId }));
-      if (status) filter.status = status;
-
-      const total = await Assignment.countDocuments(filter);
-      const totalPages = Math.max(Math.ceil(total / perPage), 1);
-
-      const assignments = await Assignment.find(filter)
-        .populate({ path: "course", select: "title code name classId sectionId streamId" })
-        .populate({ path: "classGroup", select: "name code classLevel" })
-        .populate({ path: "sectionId", select: "name code" })
-        .populate({ path: "streamId", select: "name code" })
-        .sort({ dueDate: 1, createdAt: -1 })
-        .skip((page - 1) * perPage)
-        .limit(perPage)
-        .lean();
-
-      const scopeLists = await loadAcademicScopeLists(req);
-      const courses = Subject
-        ? await Subject.find({ status: { $ne: "archived" } })
-            .sort({ title: 1, code: 1 })
-            .select("title code name classId className sectionId sectionName streamId streamName academicYear term")
-            .lean()
-        : [];
-
-      const kpis = await kpiAgg(Assignment, { isDeleted: { $ne: true } });
-
-      return res.render("tenant/assignments/index", {
-        tenant: req.tenant || null,
-        assignments,
-        courses,
-        subjects: courses,
-        classes: scopeLists.classes,
-        sections: scopeLists.sections,
-        streams: scopeLists.streams,
-        subjectOptions: scopeLists.subjects,
-        kpis,
-        csrfToken: res.locals.csrfToken || null,
-        query: { q, course, classGroup, sectionId, streamId, status, page, perPage, total, totalPages },
-        messages: {
-          success: req.flash ? req.flash("success") : [],
-          error: req.flash ? req.flash("error") : [],
-        },
-      });
-    } catch (err) {
-      console.error("ASSIGNMENTS LIST ERROR:", err);
-      // More helpful message in dev; keep generic in prod
-      return res.status(500).send("Failed to load assignments.");
-    }
+  list:async(req,res)=>{
+    try{
+      const { Assignment, AssignmentSubmission, Subject }=requireTenantModels(req,["Assignment","AssignmentSubmission","Subject"]);
+      const {filter,params}=assignmentQuery(req);
+      const page=Math.max(parseInt(req.query.page||"1",10),1), perPage=18;
+      const [total,assignments,scopeLists,kpiRows]=await Promise.all([
+        Assignment.countDocuments(filter),
+        Assignment.find(filter).populate({path:"course",select:"title code name"}).populate({path:"classGroup",select:"name code classLevel"}).populate({path:"sectionId",select:"name code"}).populate({path:"streamId",select:"name code"}).sort({dueDate:1,createdAt:-1}).skip((page-1)*perPage).limit(perPage).lean(),
+        loadAcademicScopeLists(req),
+        Assignment.aggregate([{$match:{isDeleted:{$ne:true},migrationQuarantinedAt:null}},{$group:{_id:"$status",c:{$sum:1}}}]),
+      ]);
+      const counts=await submissionCounts(AssignmentSubmission,assignments.map((a)=>a._id));
+      const timezone=req.tenant?.timezone||"UTC";
+      const serial=assignments.map((a)=>{const c=counts.get(String(a._id))||{};return {...a,id:String(a._id),courseId:idText(a.course?._id||a.course),classId:idText(a.classGroup?._id||a.classGroup),sectionId:idText(a.sectionId?._id||a.sectionId),streamId:idText(a.streamId?._id||a.streamId),courseName:a.course?.title||a.course?.code||a.courseName||"",className:a.classGroup?.name||a.className||"",sectionName:a.sectionId?.name||a.sectionName||"",streamName:a.streamId?.name||a.streamName||"",dueInput:formatDateTimeLocal(a.dueDate,timezone),dueDisplay:formatInTimezone(a.dueDate,timezone),submissionCount:c.total||0,submittedCount:c.submitted||0,gradedCount:c.graded||0};});
+      const m=Object.fromEntries(kpiRows.map((r)=>[r._id,r.c]));
+      return res.render("tenant/assignments/index",{tenant:req.tenant||null,assignments:serial,courses:scopeLists.subjects,subjects:scopeLists.subjects,classes:scopeLists.classes,sections:scopeLists.sections,streams:scopeLists.streams,subjectOptions:scopeLists.subjects,kpis:{total:Object.values(m).reduce((a,b)=>a+b,0),published:m.published||0,draft:m.draft||0,closed:m.closed||0,archived:m.archived||0},csrfToken:res.locals.csrfToken||null,query:{...params,page,perPage,total,totalPages:Math.max(Math.ceil(total/perPage),1)},messages:{success:req.flash?req.flash("success"):[],error:req.flash?req.flash("error"):[]}});
+    }catch(err){console.error("ASSIGNMENTS LIST ERROR:",err);return res.status(500).send("Failed to load assignments.");}
   },
 
-  // POST /admin/assignments
-  create: async (req, res) => {
-    try {
-      const Assignment = requireTenantModel(req, "Assignment");
-      const Subject = requireTenantModel(req, "Subject");
-
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        req.flash?.("error", errors.array().map((e) => e.msg).join(" "));
-        return res.redirect("/admin/assignments");
-      }
-
-      const title = cleanStr(req.body.title, 200);
-      const courseId = cleanStr(req.body.course, 80);
-
-      const course = await Subject.findById(courseId)
-        .select("title code name classId className sectionId sectionName streamId streamName")
-        .lean();
-      if (!course) {
-        req.flash?.("error", "Subject not found.");
-        return res.redirect("/admin/assignments");
-      }
-
-      const scope = await resolveAcademicScope(req, {
-        classId: req.body.classGroup || course.classId,
-        sectionId: req.body.sectionId || course.sectionId,
-        streamId: req.body.streamId || course.streamId,
-      });
-      if (scope.errors.length) {
-        req.flash?.("error", scope.errors.join(" "));
-        return res.redirect("/admin/assignments");
-      }
-
-      const dueDate = parseDateTime(req.body.dueDate);
-      const totalPoints = Math.max(0, Math.min(Number(req.body.totalPoints || 100), 1000));
-
-      const status = ["draft", "published", "closed", "archived"].includes(req.body.status)
-        ? req.body.status
-        : "draft";
-
-      const instructions = cleanStr(req.body.instructions, 4000);
-      const rubric = cleanStr(req.body.rubric, 4000);
-      const attachments = cleanList(req.body["attachments[]"] ?? req.body.attachments, 30, 500);
-
-      await Assignment.create({
-        title,
-        course: courseId,
-        courseName: course.title || course.code || course.name || "",
-        classGroup: scope.payload.classId || null,
-        className: scope.payload.className || course.className || "",
-        sectionId: scope.payload.sectionId || null,
-        sectionName: scope.payload.sectionName || course.sectionName || "",
-        sectionCode: scope.payload.sectionCode || "",
-        streamId: scope.payload.streamId || null,
-        streamName: scope.payload.streamName || course.streamName || "",
-        streamCode: scope.payload.streamCode || "",
-        dueDate,
-        totalPoints,
-        status,
-        instructions,
-        rubric,
-        attachments,
-        createdBy: req.user?._id || null,
-      });
-
-      req.flash?.("success", "Assignment created.");
-      return res.redirect("/admin/assignments");
-    } catch (err) {
-      console.error("ASSIGNMENT CREATE ERROR:", err);
-      req.flash?.("error", "Failed to create assignment.");
-      return res.redirect("/admin/assignments");
-    }
+  create:async(req,res)=>{
+    try{
+      const { Assignment }=requireTenantModels(req,["Assignment"]);
+      const errors=validationResult(req); if(!errors.isEmpty())throw new Error(errors.array().map((e)=>e.msg).join(" "));
+      const values=await prepareAssignmentValues(req);
+      if(!values.title)throw new Error("Title is required.");
+      let doc={...values,status:"draft",createdBy:actorId(req),updatedBy:actorId(req),migrationQuarantinedAt:null};
+      if(String(req.body.status||"").toLowerCase()==="published")doc={...doc,...assignmentStatusUpdate(doc,"published",actorId(req),0,new Date())};
+      const created=await Assignment.create(doc);
+      if(created.status==="published")await syncAssignmentNotifications(req,created.toObject?created.toObject():created,"published").catch((e)=>console.error("ASSIGNMENT NOTIFICATION ERROR:",e));
+      req.flash?.("success","Assignment created.");
+    }catch(err){console.error("ASSIGNMENT CREATE ERROR:",err);req.flash?.("error",err.message||"Failed to create assignment.");}
+    return res.redirect("/admin/assignments");
   },
 
-  // POST /admin/assignments/:id
-  update: async (req, res) => {
-    try {
-      const Assignment = requireTenantModel(req, "Assignment");
-      const Subject = requireTenantModel(req, "Subject");
-
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        req.flash?.("error", errors.array().map((e) => e.msg).join(" "));
-        return res.redirect("/admin/assignments");
-      }
-
-      const id = cleanStr(req.params.id, 80);
-      if (!isObjId(id)) {
-        req.flash?.("error", "Invalid assignment id.");
-        return res.redirect("/admin/assignments");
-      }
-
-      const title = cleanStr(req.body.title, 200);
-      const courseId = cleanStr(req.body.course, 80);
-
-      const course = await Subject.findById(courseId)
-        .select("title code name classId className sectionId sectionName streamId streamName")
-        .lean();
-      if (!course) {
-        req.flash?.("error", "Subject not found.");
-        return res.redirect("/admin/assignments");
-      }
-
-      const scope = await resolveAcademicScope(req, {
-        classId: req.body.classGroup || course.classId,
-        sectionId: req.body.sectionId || course.sectionId,
-        streamId: req.body.streamId || course.streamId,
-      });
-      if (scope.errors.length) {
-        req.flash?.("error", scope.errors.join(" "));
-        return res.redirect("/admin/assignments");
-      }
-
-      const update = {
-        title,
-        course: courseId,
-        courseName: course.title || course.code || course.name || "",
-        classGroup: scope.payload.classId || null,
-        className: scope.payload.className || course.className || "",
-        sectionId: scope.payload.sectionId || null,
-        sectionName: scope.payload.sectionName || course.sectionName || "",
-        sectionCode: scope.payload.sectionCode || "",
-        streamId: scope.payload.streamId || null,
-        streamName: scope.payload.streamName || course.streamName || "",
-        streamCode: scope.payload.streamCode || "",
-        dueDate: parseDateTime(req.body.dueDate),
-        totalPoints: Math.max(0, Math.min(Number(req.body.totalPoints || 100), 1000)),
-        status: ["draft", "published", "closed", "archived"].includes(req.body.status) ? req.body.status : "draft",
-        instructions: cleanStr(req.body.instructions, 4000),
-        rubric: cleanStr(req.body.rubric, 4000),
-        attachments: cleanList(req.body["attachments[]"] ?? req.body.attachments, 30, 500),
-        updatedBy: req.user?._id || null,
-        updatedAt: new Date(),
-      };
-
-      await Assignment.updateOne({ _id: id, isDeleted: { $ne: true } }, { $set: update }, { runValidators: true });
-
-      req.flash?.("success", "Assignment updated.");
-      return res.redirect("/admin/assignments");
-    } catch (err) {
-      console.error("ASSIGNMENT UPDATE ERROR:", err);
-      req.flash?.("error", "Failed to update assignment.");
-      return res.redirect("/admin/assignments");
-    }
+  update:async(req,res)=>{
+    try{
+      const { Assignment, AssignmentSubmission }=requireTenantModels(req,["Assignment","AssignmentSubmission"]);
+      const errors=validationResult(req); if(!errors.isEmpty())throw new Error(errors.array().map((e)=>e.msg).join(" "));
+      const id=str(req.params.id,80); if(!isObjId(id))throw new Error("Invalid assignment id.");
+      const current=await Assignment.findOne({_id:id,isDeleted:{$ne:true},migrationQuarantinedAt:null}).lean(); if(!current)throw new Error("Assignment not found.");
+      const values=await prepareAssignmentValues(req,current);
+      const count=await countAssignmentSubmissions(AssignmentSubmission,id);
+      assertAssignmentEditable(current,values,count);
+      const result=await Assignment.updateOne({_id:id,status:current.status,revision:Number(current.revision||0),isDeleted:{$ne:true}},{$set:{...values,status:current.status,updatedAt:new Date()}},{runValidators:true});
+      if(result.modifiedCount!==1)throw new Error("Assignment changed in another session. Reload and try again.");
+      if(current.status==="published")await syncAssignmentNotifications(req,{...current,...values},"updated").catch(()=>null);
+      req.flash?.("success","Assignment updated.");
+    }catch(err){console.error("ASSIGNMENT UPDATE ERROR:",err);req.flash?.("error",err.message||"Failed to update assignment.");}
+    return res.redirect("/admin/assignments");
   },
 
-  // POST /admin/assignments/:id/publish
-  publish: async (req, res) => {
-    try {
-      const Assignment = requireTenantModel(req, "Assignment");
-      const id = cleanStr(req.params.id, 80);
-      if (!isObjId(id)) {
-        req.flash?.("error", "Invalid assignment id.");
-        return res.redirect("/admin/assignments");
-      }
-      await Assignment.updateOne(
-        { _id: id, isDeleted: { $ne: true } },
-        { $set: { status: "published", updatedAt: new Date() } }
-      );
-      req.flash?.("success", "Assignment published.");
-      return res.redirect("/admin/assignments");
-    } catch (err) {
-      console.error("ASSIGNMENT PUBLISH ERROR:", err);
-      req.flash?.("error", "Failed to publish assignment.");
-      return res.redirect("/admin/assignments");
-    }
+  publish:async(req,res)=>{try{await changeStatus(req,"published");req.flash?.("success","Assignment published.");}catch(err){req.flash?.("error",err.message);}return res.redirect("/admin/assignments");},
+  unpublish:async(req,res)=>{try{await changeStatus(req,"draft");req.flash?.("success","Assignment returned to Draft.");}catch(err){req.flash?.("error",err.message);}return res.redirect("/admin/assignments");},
+  close:async(req,res)=>{try{await changeStatus(req,"closed");req.flash?.("success","Assignment closed. Existing submissions remain visible and gradable.");}catch(err){req.flash?.("error",err.message);}return res.redirect("/admin/assignments");},
+  reopen:async(req,res)=>{try{await changeStatus(req,"published");req.flash?.("success","Assignment reopened for submissions subject to its deadline rules.");}catch(err){req.flash?.("error",err.message);}return res.redirect("/admin/assignments");},
+  archive:async(req,res)=>{try{await changeStatus(req,"archived");req.flash?.("success","Assignment archived.");}catch(err){req.flash?.("error",err.message);}return res.redirect("/admin/assignments");},
+
+  remove:async(req,res)=>{
+    try{
+      const { Assignment, AssignmentSubmission }=requireTenantModels(req,["Assignment","AssignmentSubmission"]);
+      const id=str(req.params.id,80); if(!isObjId(id))throw new Error("Invalid assignment id.");
+      const current=await Assignment.findOne({_id:id,isDeleted:{$ne:true},migrationQuarantinedAt:null}).lean(); if(!current)throw new Error("Assignment not found.");
+      const count=await countAssignmentSubmissions(AssignmentSubmission,id); assertAssignmentDeleteAllowed(current,count);
+      const result=await Assignment.updateOne({_id:id,status:"draft",isDeleted:{$ne:true}},{$set:{isDeleted:true,deletedAt:new Date(),deletedBy:actorId(req),updatedBy:actorId(req)}});
+      if(result.modifiedCount!==1)throw new Error("Assignment changed in another session. Reload and try again.");
+      await retireAssignmentNotifications(req,id).catch(()=>null); req.flash?.("success","Draft assignment deleted.");
+    }catch(err){console.error("ASSIGNMENT DELETE ERROR:",err);req.flash?.("error",err.message||"Failed to delete assignment.");}
+    return res.redirect("/admin/assignments");
   },
 
-  // POST /admin/assignments/:id/unpublish
-  unpublish: async (req, res) => {
-    try {
-      const Assignment = requireTenantModel(req, "Assignment");
-      const id = cleanStr(req.params.id, 80);
-      if (!isObjId(id)) {
-        req.flash?.("error", "Invalid assignment id.");
-        return res.redirect("/admin/assignments");
-      }
-      await Assignment.updateOne(
-        { _id: id, isDeleted: { $ne: true } },
-        { $set: { status: "draft", updatedAt: new Date() } }
-      );
-      req.flash?.("success", "Assignment set to draft.");
-      return res.redirect("/admin/assignments");
-    } catch (err) {
-      console.error("ASSIGNMENT UNPUBLISH ERROR:", err);
-      req.flash?.("error", "Failed to unpublish assignment.");
-      return res.redirect("/admin/assignments");
-    }
+  bulk:async(req,res)=>{
+    try{
+      const action=str(req.body.action,30).toLowerCase();
+      const statusMap={publish:"published",unpublish:"draft",close:"closed",reopen:"published",archive:"archived"};
+      if(!statusMap[action])throw new Error("Invalid bulk action.");
+      const ids=[...new Set(String(req.body.ids||"").split(",").map((x)=>x.trim()).filter(isObjId))]; if(!ids.length)throw new Error("No assignments selected."); if(ids.length>300)throw new Error("Bulk actions are limited to 300 assignments.");
+      const changed=await applyBulkWithCompensation(req,ids,statusMap[action]); req.flash?.("success",`Bulk ${action} applied to ${changed} assignment(s).`);
+    }catch(err){console.error("ASSIGNMENT BULK ERROR:",err);req.flash?.("error",err.message||"Bulk action failed.");}
+    return res.redirect("/admin/assignments");
   },
 
-  // POST /admin/assignments/:id/archive
-  archive: async (req, res) => {
-    try {
-      const Assignment = requireTenantModel(req, "Assignment");
-      const id = cleanStr(req.params.id, 80);
-      if (!isObjId(id)) {
-        req.flash?.("error", "Invalid assignment id.");
-        return res.redirect("/admin/assignments");
+  importCsv:async(req,res)=>{
+    try{
+      const { Assignment, Subject }=requireTenantModels(req,["Assignment","Subject"]);
+      if(!req.file?.buffer)throw new Error("CSV file is required.");
+      const rows=parseCsv(req.file.buffer.toString("utf8")); if(rows.length<2)throw new Error("CSV is empty."); if(rows.length-1>1000)throw new Error("Import is limited to 1,000 assignment rows.");
+      const headers=rows[0].map((h)=>str(h,60).toLowerCase()); const idx=(n)=>headers.indexOf(n.toLowerCase());
+      const iTitle=idx("title"), iSubject=idx("subjectcode")>=0?idx("subjectcode"):idx("coursecode"), iDue=idx("duedate"), iPoints=idx("totalpoints"), iStatus=idx("status"), iInstr=idx("instructions"), iRubric=idx("rubric"), iAttach=idx("attachments");
+      if(iTitle<0||iSubject<0)throw new Error("CSV must include title and subjectCode.");
+      const subjects=await Subject.find({status:"active"}).select("_id title code name classId className sectionId sectionName streamId streamName academicYear term status").lean();
+      const byCode=new Map(subjects.map((s)=>[String(s.code||"").trim().toUpperCase(),s]));
+      const docs=[], errors=[];
+      for(let r=1;r<rows.length;r+=1){
+        const row=rows[r], line=r+1, title=str(row[iTitle],200), code=str(row[iSubject],40).toUpperCase();
+        if(!title||!code){errors.push(`Row ${line}: title and subjectCode are required.`);continue;}
+        const subject=byCode.get(code); if(!subject){errors.push(`Row ${line}: unknown active subjectCode ${code}.`);continue;}
+        const totalPoints=iPoints>=0&&String(row[iPoints]||"").trim()?Number(row[iPoints]):100; if(!Number.isFinite(totalPoints)||totalPoints<0||totalPoints>1000){errors.push(`Row ${line}: invalid totalPoints.`);continue;}
+        let dueDate=null; try{dueDate=iDue>=0&&String(row[iDue]||"").trim()?normalizeDueDateInput(row[iDue],req.tenant?.timezone||"UTC"):null;}catch(e){errors.push(`Row ${line}: ${e.message}`);continue;}
+        const rawStatus=iStatus>=0?str(row[iStatus],20).toLowerCase():"draft"; if(!["draft","published"].includes(rawStatus)){errors.push(`Row ${line}: import status must be draft or published.`);continue;}
+        if(!subject.classId){errors.push(`Row ${line}: subject has no class scope.`);continue;}
+        const now=new Date(); let doc={title,course:subject._id,courseName:subject.title||subject.code||subject.name||"",classGroup:subject.classId,className:subject.className||"",sectionId:isObjId(subject.sectionId)?subject.sectionId:null,sectionName:subject.sectionName||"",streamId:isObjId(subject.streamId)?subject.streamId:null,streamName:subject.streamName||"",academicYear:str(subject.academicYear,20),term:Number(subject.term||1),dueDate,totalPoints,allowLateSubmissions:false,instructions:iInstr>=0?str(row[iInstr],4000):"",rubric:iRubric>=0?str(row[iRubric],4000):"",attachments:iAttach>=0?normalizeUrlList(str(row[iAttach],5000).split("||"),30):[],status:"draft",createdBy:actorId(req),updatedBy:actorId(req),migrationQuarantinedAt:null};
+        if(rawStatus==="published")doc={...doc,...assignmentStatusUpdate(doc,"published",actorId(req),0,now)};
+        docs.push(doc);
       }
-      await Assignment.updateOne(
-        { _id: id, isDeleted: { $ne: true } },
-        { $set: { status: "archived", updatedAt: new Date() } }
-      );
-      req.flash?.("success", "Assignment archived.");
-      return res.redirect("/admin/assignments");
-    } catch (err) {
-      console.error("ASSIGNMENT ARCHIVE ERROR:", err);
-      req.flash?.("error", "Failed to archive assignment.");
-      return res.redirect("/admin/assignments");
-    }
+      if(errors.length)throw new Error(`Import rejected before writing: ${errors.slice(0,8).join(" ")}${errors.length>8?` (+${errors.length-8} more)`:""}`);
+      if(!docs.length)throw new Error("No valid rows to import.");
+      const insertedDocs=await insertPreparedWithCompensation(Assignment,docs);
+      for(const doc of insertedDocs.filter((d)=>d.status==="published"))await syncAssignmentNotifications(req,doc,"published").catch(()=>null);
+      req.flash?.("success",`Imported ${insertedDocs.length} assignment(s).`);
+    }catch(err){console.error("ASSIGNMENT IMPORT ERROR:",err);req.flash?.("error",err.message||"Import failed.");}
+    return res.redirect("/admin/assignments");
   },
 
-  // POST /admin/assignments/:id/delete  (✅ soft delete to match your filters)
-  remove: async (req, res) => {
-    try {
-      const Assignment = requireTenantModel(req, "Assignment");
-      const id = cleanStr(req.params.id, 80);
-      if (!isObjId(id)) {
-        req.flash?.("error", "Invalid assignment id.");
-        return res.redirect("/admin/assignments");
-      }
-
-      await Assignment.updateOne(
-        { _id: id, isDeleted: { $ne: true } },
-        {
-          $set: {
-            isDeleted: true,
-            deletedAt: new Date(),
-            deletedBy: req.user?._id || null,
-          },
-        }
-      );
-
-      req.flash?.("success", "Assignment deleted.");
-      return res.redirect("/admin/assignments");
-    } catch (err) {
-      console.error("ASSIGNMENT DELETE ERROR:", err);
-      req.flash?.("error", "Failed to delete assignment.");
-      return res.redirect("/admin/assignments");
-    }
+  exportCsv:async(req,res)=>{
+    try{
+      const { Assignment }=requireTenantModels(req,["Assignment"]); const {filter}=assignmentQuery(req);
+      const rows=await Assignment.find(filter).populate({path:"course",select:"code title"}).populate({path:"classGroup",select:"name code"}).populate({path:"sectionId",select:"name code"}).populate({path:"streamId",select:"name code"}).sort({dueDate:1,createdAt:-1}).lean();
+      const header=["title","subjectCode","class","section","stream","academicYear","term","dueDate","totalPoints","allowLateSubmissions","status","instructions","rubric","attachments"];
+      const lines=[header.map(csvCell).join(",")];
+      for(const a of rows)lines.push([a.title,a.course?.code||"",a.classGroup?.name||a.className||"",a.sectionId?.name||a.sectionName||"",a.streamId?.name||a.streamName||"",a.academicYear||"",a.term||"",a.dueDate?new Date(a.dueDate).toISOString():"",a.totalPoints??100,a.allowLateSubmissions?"yes":"no",a.status||"draft",a.instructions||"",a.rubric||"",Array.isArray(a.attachments)?a.attachments.join("||"):""].map(csvCell).join(","));
+      res.setHeader("Content-Type","text/csv; charset=utf-8");res.setHeader("Content-Disposition",'attachment; filename="assignments.csv"');return res.send(lines.join("\n"));
+    }catch(err){console.error("ASSIGNMENT EXPORT ERROR:",err);return res.status(500).send("Export failed.");}
   },
 
-  // POST /admin/assignments/bulk
-  bulk: async (req, res) => {
-    try {
-      const Assignment = requireTenantModel(req, "Assignment");
-
-      const action = cleanStr(req.body.action, 30).toLowerCase();
-      const ids = String(req.body.ids || "")
-        .split(",")
-        .map((x) => x.trim())
-        .filter((x) => isObjId(x));
-
-      if (!ids.length) {
-        req.flash?.("error", "No assignments selected.");
-        return res.redirect("/admin/assignments");
-      }
-
-      const statusMap = {
-        publish: "published",
-        archive: "archived",
-        unpublish: "draft",
-        close: "closed",
-      };
-
-      if (!statusMap[action]) {
-        req.flash?.("error", "Invalid bulk action.");
-        return res.redirect("/admin/assignments");
-      }
-
-      await Assignment.updateMany(
-        { _id: { $in: ids }, isDeleted: { $ne: true } },
-        { $set: { status: statusMap[action], updatedAt: new Date() } }
-      );
-
-      req.flash?.("success", `Bulk "${action}" applied to ${ids.length} assignment(s).`);
-      return res.redirect("/admin/assignments");
-    } catch (err) {
-      console.error("ASSIGNMENT BULK ERROR:", err);
-      req.flash?.("error", "Bulk action failed.");
-      return res.redirect("/admin/assignments");
-    }
+  submissions:async(req,res)=>{
+    try{
+      const { Assignment, AssignmentSubmission, Student }=requireTenantModels(req,["Assignment","AssignmentSubmission","Student"]);
+      const id=str(req.params.id,80); if(!isObjId(id))return res.status(404).send("Assignment not found.");
+      const assignment=await Assignment.findOne({_id:id,isDeleted:{$ne:true},migrationQuarantinedAt:null}).populate({path:"course",select:"title code"}).lean(); if(!assignment)return res.status(404).send("Assignment not found.");
+      const rows=await AssignmentSubmission.find({assignment:id,migrationQuarantinedAt:null}).populate({path:"student",model:Student,select:"fullName regNo studentNo className section stream"}).sort({status:1,lastSubmittedAt:-1,createdAt:-1}).lean();
+      return res.render("tenant/assignments/submissions",{tenant:req.tenant||null,assignment,submissions:rows,csrfToken:res.locals.csrfToken||null,messages:{success:req.flash?req.flash("success"):[],error:req.flash?req.flash("error"):[]}});
+    }catch(err){console.error("ASSIGNMENT SUBMISSIONS ERROR:",err);return res.status(500).send("Failed to load submissions.");}
   },
 
-  // POST /admin/assignments/import
-  importCsv: async (req, res) => {
-    try {
-      const Assignment = requireTenantModel(req, "Assignment");
-      const Subject = requireTenantModel(req, "Subject");
-
-      if (!req.file?.buffer) {
-        req.flash?.("error", "CSV file is required.");
-        return res.redirect("/admin/assignments");
-      }
-
-      const text = req.file.buffer.toString("utf8");
-      const rows = parseCsv(text);
-      if (!rows.length) {
-        req.flash?.("error", "CSV is empty.");
-        return res.redirect("/admin/assignments");
-      }
-
-      const headers = rows[0].map(h => cleanStr(h, 60));
-      const idx = (name) => headers.findIndex(h => h.toLowerCase() === name.toLowerCase());
-
-      const iTitle = idx("title");
-      const iCourseCode = idx("courseCode");
-      const iSubjectCode = idx("subjectCode");
-      const iDue = idx("dueDate");
-      const iPoints = idx("totalPoints");
-      const iStatus = idx("status");
-      const iInstr = idx("instructions");
-      const iRubric = idx("rubric");
-      const iAttach = idx("attachments");
-
-      if (iTitle < 0 || (iCourseCode < 0 && iSubjectCode < 0)) {
-        req.flash?.("error", "CSV must include headers: title and subjectCode (or legacy courseCode).");
-        return res.redirect("/admin/assignments");
-      }
-
-      const allCourses = await Subject.find({ status: { $ne: "archived" } })
-        .select("title code name classId className sectionId sectionName streamId streamName")
-        .lean();
-
-      const courseByCode = new Map();
-      allCourses.forEach(c => {
-        const code = String(c.code || "").trim().toUpperCase();
-        if (code) courseByCode.set(code, c);
-      });
-
-      const docs = [];
-      for (let r = 1; r < rows.length; r++) {
-        const row = rows[r];
-
-        const title = cleanStr(row[iTitle], 200);
-        const codeIndex = iSubjectCode >= 0 ? iSubjectCode : iCourseCode;
-        const courseCode = cleanStr(row[codeIndex], 40).toUpperCase();
-
-        if (!title || !courseCode) continue;
-
-        const course = courseByCode.get(courseCode);
-        if (!course) continue; // skip unknown course codes
-
-        const dueDate = iDue >= 0 ? parseDateTime(row[iDue]) : null;
-
-        const totalPoints = iPoints >= 0
-          ? Math.max(0, Math.min(Number(row[iPoints] || 100), 1000))
-          : 100;
-
-        const rawStatus = iStatus >= 0 ? cleanStr(row[iStatus], 20).toLowerCase() : "draft";
-        const status = ["draft","published","closed","archived"].includes(rawStatus) ? rawStatus : "draft";
-
-        const instructions = iInstr >= 0 ? cleanStr(row[iInstr], 4000) : "";
-        const rubric = iRubric >= 0 ? cleanStr(row[iRubric], 4000) : "";
-
-        const attachments = iAttach >= 0
-          ? cleanStr(row[iAttach], 5000).split("||").map(x => x.trim()).filter(Boolean).slice(0, 30)
-          : [];
-
-        docs.push({
-          title,
-          course: course._id,
-          courseName: course.title || course.code || course.name || "",
-          classGroup: isObjId(course.classId) ? course.classId : null,
-          className: course.className || "",
-          sectionId: isObjId(course.sectionId) ? course.sectionId : null,
-          sectionName: course.sectionName || "",
-          streamId: isObjId(course.streamId) ? course.streamId : null,
-          streamName: course.streamName || "",
-          dueDate,
-          totalPoints,
-          status,
-          instructions,
-          rubric,
-          attachments,
-          createdBy: req.user?._id || null,
-        });
-      }
-
-      if (!docs.length) {
-        req.flash?.("error", "No valid rows imported. Ensure subjectCode matches an existing subject code.");
-        return res.redirect("/admin/assignments");
-      }
-
-      await Assignment.insertMany(docs, { ordered: false });
-      req.flash?.("success", `Imported ${docs.length} assignment(s).`);
-      return res.redirect("/admin/assignments");
-    } catch (err) {
-      console.error("ASSIGNMENT IMPORT ERROR:", err);
-      req.flash?.("error", "Import failed. Check CSV format and subject codes.");
-      return res.redirect("/admin/assignments");
-    }
+  gradeSubmission:async(req,res)=>{
+    const assignmentId=str(req.params.id,80), submissionId=str(req.params.submissionId,80);
+    try{
+      const { Assignment, AssignmentSubmission }=requireTenantModels(req,["Assignment","AssignmentSubmission"]);
+      if(!isObjId(assignmentId)||!isObjId(submissionId))throw new Error("Invalid submission.");
+      const [assignment,submission]=await Promise.all([Assignment.findOne({_id:assignmentId,isDeleted:{$ne:true},migrationQuarantinedAt:null}).lean(),AssignmentSubmission.findOne({_id:submissionId,assignment:assignmentId,migrationQuarantinedAt:null}).lean()]);
+      if(!assignment||!submission)throw new Error("Submission not found.");
+      const update=gradeSubmissionUpdate(submission,assignment,req.body.score,req.body.feedback,actorId(req),new Date());
+      const result=await AssignmentSubmission.updateOne({_id:submissionId,status:"submitted",gradeRevision:Number(submission.gradeRevision||0)},{$set:{...update,updatedAt:new Date()}},{runValidators:true});
+      if(result.modifiedCount!==1)throw new Error("Submission changed in another session. Reload and try again.");
+      await notifyGrade(req,{...submission,...update},assignment).catch((e)=>console.error("GRADE NOTIFICATION ERROR:",e));
+      req.flash?.("success","Submission graded.");
+    }catch(err){console.error("ASSIGNMENT GRADE ERROR:",err);req.flash?.("error",err.message||"Failed to grade submission.");}
+    return res.redirect(`/admin/assignments/${encodeURIComponent(assignmentId)}/submissions`);
   },
 
-  // GET /admin/assignments/export
-  exportCsv: async (req, res) => {
-    try {
-      const Assignment = requireTenantModel(req, "Assignment");
-
-      const q = cleanStr(req.query.q, 120);
-      const course = cleanStr(req.query.course, 80);
-      const classGroup = cleanStr(req.query.classGroup, 80);
-      const sectionId = cleanStr(req.query.sectionId, 80);
-      const streamId = cleanStr(req.query.streamId, 80);
-      const status = cleanStr(req.query.status, 20);
-
-      const filter = { isDeleted: { $ne: true } };
-      if (q) {
-        filter.$or = [
-          { title: { $regex: q, $options: "i" } },
-          { instructions: { $regex: q, $options: "i" } },
-          { rubric: { $regex: q, $options: "i" } },
-          { courseName: { $regex: q, $options: "i" } },
-        ];
-      }
-      if (course && isObjId(course)) filter.course = course;
-      Object.assign(filter, buildAcademicScopeFilter({ classGroup, sectionId, streamId }));
-      if (status) filter.status = status;
-
-      const rows = await Assignment.find(filter)
-        .populate({ path: "course", select: "code title" })
-        .populate({ path: "classGroup", select: "name code" })
-        .populate({ path: "sectionId", select: "name code" })
-        .populate({ path: "streamId", select: "name code" })
-        .sort({ dueDate: 1, createdAt: -1 })
-        .lean();
-
-      const header = ["title","subjectCode","class","section","stream","dueDate","totalPoints","status","instructions","rubric","attachments"];
-      const lines = [header.join(",")];
-
-      rows.forEach(a => {
-        const courseCode = a.course?.code || "";
-        const due = a.dueDate ? new Date(a.dueDate).toISOString().slice(0,16).replace("T"," ") : "";
-        const attachments = Array.isArray(a.attachments) ? a.attachments.join("||") : "";
-
-        lines.push([
-          csvEsc(a.title),
-          csvEsc(courseCode),
-          csvEsc(a.classGroup?.name || a.className || ""),
-          csvEsc(a.sectionId?.name || a.sectionName || ""),
-          csvEsc(a.streamId?.name || a.streamName || ""),
-          csvEsc(due),
-          csvEsc(a.totalPoints ?? 100),
-          csvEsc(a.status || "draft"),
-          csvEsc(a.instructions || ""),
-          csvEsc(a.rubric || ""),
-          csvEsc(attachments),
-        ].join(","));
-      });
-
-      const csv = lines.join("\n");
-      res.setHeader("Content-Type", "text/csv; charset=utf-8");
-      res.setHeader("Content-Disposition", 'attachment; filename="assignments.csv"');
-      return res.send(csv);
-    } catch (err) {
-      console.error("ASSIGNMENT EXPORT ERROR:", err);
-      return res.status(500).send("Export failed.");
-    }
+  reopenSubmission:async(req,res)=>{
+    const assignmentId=str(req.params.id,80), submissionId=str(req.params.submissionId,80);
+    try{
+      const { AssignmentSubmission }=requireTenantModels(req,["AssignmentSubmission"]); if(!isObjId(assignmentId)||!isObjId(submissionId))throw new Error("Invalid submission.");
+      const submission=await AssignmentSubmission.findOne({_id:submissionId,assignment:assignmentId,migrationQuarantinedAt:null}).lean(); if(!submission)throw new Error("Submission not found.");
+      const update=reopenSubmissionUpdate(submission,actorId(req),new Date());
+      const result=await AssignmentSubmission.updateOne({_id:submissionId,status:"graded",gradeRevision:Number(submission.gradeRevision||0)},{$set:{...update,updatedAt:new Date()}},{runValidators:true});
+      if(result.modifiedCount!==1)throw new Error("Submission changed in another session. Reload and try again."); req.flash?.("success","Submission reopened for grading correction.");
+    }catch(err){console.error("ASSIGNMENT REOPEN GRADE ERROR:",err);req.flash?.("error",err.message||"Failed to reopen submission.");}
+    return res.redirect(`/admin/assignments/${encodeURIComponent(assignmentId)}/submissions`);
   },
+
+  _test:{assignmentQuery,parseCsv,prepareAssignmentValues,applyBulkWithCompensation,insertPreparedWithCompensation},
 };

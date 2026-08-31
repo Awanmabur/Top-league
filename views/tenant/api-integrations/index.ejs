@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .input,.select,.textarea{
@@ -136,7 +136,6 @@
         </div>
 
         <div class="top-actions">
-          <button class="btn light" id="btnDocs" type="button"><i class="fa-solid fa-book"></i> Docs</button>
           <button class="btn light" id="btnRefresh" type="button"><i class="fa-solid fa-rotate"></i> Refresh</button>
           <button class="btn primary" id="btnCreate" type="button"><i class="fa-solid fa-plus"></i> Add Integration</button>
         </div>
@@ -166,7 +165,7 @@
       </div>
 
       <section class="card" style="margin-top:12px;">
-        <form class="toolbar" method="GET" action="/admin/api-integrations">
+        <form class="toolbar" method="GET" action="/admin/integrations">
           <div class="left">
             <input class="input" name="q" value="<%= query?.q || '' %>" placeholder="Search name, provider, base URL..." />
             <select class="select" name="status">
@@ -199,7 +198,7 @@
               <button class="chip" data-view="logs" type="button"><i class="fa-solid fa-scroll"></i> Logs</button>
             </div>
             <button class="btn light" id="btnBulk" type="button"><i class="fa-solid fa-layer-group"></i> Bulk</button>
-            <a class="btn light" href="/admin/api-integrations"><i class="fa-solid fa-rotate-left"></i> Reset</a>
+            <a class="btn light" href="/admin/integrations"><i class="fa-solid fa-rotate-left"></i> Reset</a>
             <button class="btn primary" type="submit"><i class="fa-solid fa-magnifying-glass"></i> Filter</button>
           </div>
         </form>
@@ -279,7 +278,7 @@
                 </select>
               </div>
               <div class="right">
-                <button class="btn light" id="btnLogExport" type="button"><i class="fa-solid fa-file-export"></i> Export Logs</button>
+                <a class="btn light" id="btnLogExport" href="/admin/integrations/logs/export"><i class="fa-solid fa-file-export"></i> Export Logs</a>
               </div>
             </div>
 
@@ -328,9 +327,10 @@
         <button class="btn-xs" type="button" data-close-modal="mCreate"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
-      <form id="integrationForm" method="POST" action="/admin/api-integrations">
+      <form id="integrationForm" method="POST" action="/admin/integrations">
         <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
         <input type="hidden" name="integrationId" id="integrationId" value="">
+        <input type="hidden" name="integrationRevision" id="integrationRevision" value="">
 
         <div class="modal-body">
           <div class="view-grid">
@@ -372,16 +372,20 @@
               <select class="select" id="iStatus" name="status">
                 <option>Active</option>
                 <option>Disabled</option>
-                <option>Error</option>
               </select>
             </div>
             <div class="view-card">
               <div class="view-label">API Key / Token</div>
-              <input class="input" id="iApiKey" name="apiKey" placeholder="secret key">
+              <input class="input" id="iApiKey" name="apiKey" type="password" autocomplete="new-password" placeholder="Enter new credential">
+              <div class="muted" style="margin-top:6px;">Leave blank while editing to keep the encrypted credential unchanged.</div>
             </div>
             <div class="view-card">
               <div class="view-label">Default Endpoint</div>
               <input class="input" id="iEndpoint" name="endpoint" placeholder="/v1/messages">
+            </div>
+            <div class="view-card">
+              <div class="view-label">Probe Method</div>
+              <select class="select" id="iTestMethod" name="testMethod"><option value="HEAD">HEAD</option><option value="GET">GET</option></select>
             </div>
           </div>
 
@@ -430,14 +434,14 @@
     <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
   </form>
 
-  <form id="bulkForm" method="POST" action="/admin/api-integrations/bulk" style="display:none;">
+  <form id="bulkForm" method="POST" action="/admin/integrations/bulk" style="display:none;">
     <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
     <input type="hidden" name="ids" id="bulkIds">
     <input type="hidden" name="action" id="bulkActionInput">
   </form>
 
-  <textarea id="integrationsData" class="json-data" aria-hidden="true"><%- JSON.stringify(integrations || []) %></textarea>
-  <textarea id="logsData" class="json-data" aria-hidden="true"><%- JSON.stringify(requestLogs || []) %></textarea>
+  <textarea id="integrationsData" class="json-data" aria-hidden="true"><%- JSON.stringify(integrations || []).replace(/&/g,"\\u0026").replace(/</g,"\\u003c").replace(/>/g,"\\u003e") %></textarea>
+  <textarea id="logsData" class="json-data" aria-hidden="true"><%- JSON.stringify(requestLogs || []).replace(/&/g,"\\u0026").replace(/</g,"\\u003c").replace(/>/g,"\\u003e") %></textarea>
 
   <script src="/js/navbar.js"></script>
   <script src="/js/api-integrations.js"></script>

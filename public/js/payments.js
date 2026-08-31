@@ -1,302 +1,90 @@
 (function () {
   const $ = (id) => document.getElementById(id);
-
-  function readJson(id) {
-    const el = $(id);
-    if (!el) return [];
-    try {
-      return JSON.parse(el.value || "[]");
-    } catch (err) {
-      console.error(`Failed to parse ${id}:`, err);
-      return [];
-    }
-  }
-
-  const PAY = readJson("paymentsData");
-  const INV = readJson("invoicesData");
-
+  const PAY = readJson("paymentsData", []);
+  const INV = readJson("invoicesData", []);
   if (!$("tbody")) return;
+  const state = { view: "list", selected: new Set() };
 
-  const state = {
-    view: "list",
-    selected: new Set(),
-  };
-
-  function money(v) {
-    return Number(v || 0).toLocaleString(undefined, {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    });
+  function readJson(id, fallback) { const el = $(id); if (!el) return fallback; try { return JSON.parse(el.value || JSON.stringify(fallback)); } catch (_) { return fallback; } }
+  function money(v) { return Number(v || 0).toLocaleString(undefined, { maximumFractionDigits: 2 }); }
+  function node(tag, className, text) { const n = document.createElement(tag); if (className) n.className = className; if (text !== undefined && text !== null) n.textContent = String(text); return n; }
+  function icon(name) { return node("i", `fa-solid ${name}`); }
+  function button(cls, title, iconName) { const b = node("button", cls); b.type = "button"; b.title = title; b.appendChild(icon(iconName)); return b; }
+  function openModal(id) { $(id)?.classList.add("show"); }
+  function closeModal(id) { $(id)?.classList.remove("show"); }
+  function submitRowAction(url) { const f = $("rowActionForm"); if (!f) return; f.action = url; f.submit(); }
+  function bulkSubmit(action) { const ids = [...state.selected]; if (!ids.length) return; $("bulkIds").value = ids.join(","); $("bulkActionInput").value = action; $("bulkForm").submit(); }
+  function statusPill(status) {
+    const map = { Completed: ["pill ok", "fa-circle-check"], Pending: ["pill warn", "fa-clock"], Voided: ["pill bad", "fa-ban"], Refunded: ["pill info", "fa-rotate-left"] };
+    const [cls, ic] = map[status] || ["pill info", "fa-circle-info"]; const s = node("span", cls); s.append(icon(ic), document.createTextNode(` ${status || "Pending"}`)); return s;
   }
-
-  function openModal(id) {
-    const el = $(id);
-    if (!el) return;
-    el.classList.add("show");
-  }
-
-  function closeModal(id) {
-    const el = $(id);
-    if (!el) return;
-    el.classList.remove("show");
-  }
-
-  function submitRowAction(actionUrl) {
-    const form = $("rowActionForm");
-    if (!form) return;
-    form.action = actionUrl;
-    form.submit();
-  }
-
-  function bulkSubmit(action) {
-    const ids = Array.from(state.selected);
-    if (!ids.length) return;
-    $("bulkIds").value = ids.join(",");
-    $("bulkActionInput").value = action;
-    $("bulkForm").submit();
-  }
-
-  function pillStatus(a) {
-    if (a.status === "Completed") return '<span class="pill ok"><i class="fa-solid fa-circle-check"></i> Completed</span>';
-    if (a.status === "Pending") return '<span class="pill warn"><i class="fa-solid fa-clock"></i> Pending</span>';
-    if (a.status === "Voided") return '<span class="pill bad"><i class="fa-solid fa-ban"></i> Voided</span>';
-    return '<span class="pill info"><i class="fa-solid fa-rotate-left"></i> Refunded</span>';
-  }
-
-  function syncBulkbar() {
-    $("selCount").textContent = state.selected.size;
-    $("bulkbar").classList.toggle("show", state.selected.size > 0 && state.view === "list");
-  }
-
+  function methodPill(method) { const s = node("span", "pill info"); s.append(icon("fa-wallet"), document.createTextNode(` ${method || "Other"}`)); return s; }
+  function syncBulkbar() { $("selCount").textContent = state.selected.size; $("bulkbar")?.classList.toggle("show", state.selected.size > 0 && state.view === "list"); }
   function setView(v) {
-    state.view = v;
-
-    document.querySelectorAll("#viewChips .chip").forEach((b) => b.classList.remove("active"));
-    const activeBtn = document.querySelector(`#viewChips .chip[data-view="${v}"]`);
-    if (activeBtn) activeBtn.classList.add("active");
-
-    $("view-list").style.display = v === "list" ? "" : "none";
-    $("view-allocations").style.display = v === "allocations" ? "" : "none";
-    $("view-summary").style.display = v === "summary" ? "" : "none";
-
-    const titles = {
-      list: ["Payments", "Manage payment entries, receipts and settlement activity."],
-      allocations: ["Allocations", "Review how payments are linked to invoice records."],
-      summary: ["Summary", "Payment status summary and collection snapshot."],
-    };
-
-    $("panelTitle").textContent = titles[v][0];
-    $("panelSub").textContent = titles[v][1];
-
-    syncBulkbar();
-    render();
+    state.view = v; document.querySelectorAll("#viewChips .chip").forEach((b) => b.classList.toggle("active", b.dataset.view === v));
+    ["list", "allocations", "summary"].forEach((name) => { const x = $(`view-${name}`); if (x) x.style.display = v === name ? "" : "none"; });
+    const titles = { list: ["Payments", "Manage payment entries, receipts and settlement activity."], allocations: ["Allocations", "Review how payments are linked to invoice records."], summary: ["Summary", "Payment status summary and collection snapshot."] };
+    $("panelTitle").textContent = titles[v]?.[0] || "Payments"; $("panelSub").textContent = titles[v]?.[1] || ""; render();
   }
-
+  function td(text, className) { return node("td", className || "", text); }
   function renderList() {
-    $("resultMeta").textContent = `${PAY.length} payment(s)`;
-    $("checkAll").checked = PAY.length > 0 && PAY.every((x) => state.selected.has(x.id));
-
-    $("tbody").innerHTML =
-      PAY.map((a) => {
-        const checked = state.selected.has(a.id) ? "checked" : "";
-        return `
-          <tr data-id="${a.id}">
-            <td><input type="checkbox" class="rowCheck" data-id="${a.id}" ${checked}></td>
-            <td>
-              <div class="strong">${a.receiptNo || ""}</div>
-              <div class="muted">${a.reference || "No reference"}</div>
-            </td>
-            <td>
-              <div class="strong">${a.studentName || "—"}</div>
-              <div class="muted">${a.academicYear || "—"} ${a.term ? `• ${a.term}` : ""}</div>
-            </td>
-            <td>${a.invoiceNo || "Unallocated"}</td>
-            <td>${a.programName || "—"}</td>
-            <td>${money(a.amount)}</td>
-            <td><span class="pill info"><i class="fa-solid fa-wallet"></i> ${a.method || "Cash"}</span></td>
-            <td class="muted">${a.paymentDate || "—"}</td>
-            <td>${pillStatus(a)}</td>
-            <td>
-              <div class="actions">
-                <button class="btn-xs actView" type="button" title="View"><i class="fa-solid fa-eye"></i></button>
-                <button class="btn-xs actEdit" type="button" title="Edit"><i class="fa-solid fa-pen"></i></button>
-                <button class="btn-xs actVoid" type="button" title="Void"><i class="fa-solid fa-ban"></i></button>
-                <button class="btn-xs actDelete" type="button" title="Delete"><i class="fa-solid fa-trash"></i></button>
-              </div>
-            </td>
-          </tr>
-        `;
-      }).join("") ||
-      '<tr><td colspan="10" style="padding:18px;"><div class="muted">No payments found.</div></td></tr>';
+    const body = $("tbody"); body.replaceChildren(); $("resultMeta").textContent = `${PAY.length} payment(s)`; $("checkAll").checked = PAY.length > 0 && PAY.every((x) => state.selected.has(x.id));
+    if (!PAY.length) { const tr = node("tr"); const c = td("No payments found.", "muted"); c.colSpan = 10; c.style.padding = "18px"; tr.appendChild(c); body.appendChild(tr); return; }
+    PAY.forEach((a) => {
+      const tr = node("tr"); tr.dataset.id = a.id;
+      const ctd = node("td"); const cb = node("input", "rowCheck"); cb.type = "checkbox"; cb.dataset.id = a.id; cb.checked = state.selected.has(a.id); ctd.appendChild(cb); tr.appendChild(ctd);
+      const receiptTd = node("td"); const link = node("a", "strong", a.receiptNo || ""); link.href = `/admin/payments/${encodeURIComponent(a.id)}/receipt`; receiptTd.append(link, node("div", "muted", a.reference || "No reference")); tr.appendChild(receiptTd);
+      const st = node("td"); st.append(node("div", "strong", a.studentName || "—"), node("div", "muted", `${a.academicYear || "—"}${a.term ? ` • ${a.term}` : ""}`)); tr.appendChild(st);
+      tr.append(td(a.invoiceNo || "Unallocated"), td(a.programName || "—"), td(money(a.amount)));
+      const method = node("td"); method.appendChild(methodPill(a.method)); tr.append(method, td(a.paymentDate || "—", "muted"));
+      const status = node("td"); status.appendChild(statusPill(a.status)); tr.appendChild(status);
+      const actionTd = node("td"); const actions = node("div", "actions"); actions.append(button("btn-xs actView", "View", "fa-eye"));
+      if (a.status === "Pending") actions.append(button("btn-xs actEdit", "Edit", "fa-pen"), button("btn-xs actComplete", "Complete", "fa-circle-check"), button("btn-xs actDelete", "Archive", "fa-trash"));
+      if (["Pending", "Completed"].includes(a.status)) actions.appendChild(button("btn-xs actVoid", "Void", "fa-ban"));
+      if (a.status === "Completed") actions.appendChild(button("btn-xs actRefund", "Refund", "fa-rotate-left"));
+      actionTd.appendChild(actions); tr.appendChild(actionTd); body.appendChild(tr);
+    });
   }
-
   function renderAllocations() {
-    $("resultMeta").textContent = `${PAY.length} payment(s)`;
-    $("tbodyAlloc").innerHTML =
-      PAY.map((p) => `
-        <tr>
-          <td><div class="strong">${p.receiptNo || ""}</div></td>
-          <td>${p.studentName || "—"}</td>
-          <td>${p.invoiceNo || "Unallocated"}</td>
-          <td>${money(p.amount)}</td>
-          <td>${pillStatus(p)}</td>
-          <td class="muted">${p.paymentDate || "—"}</td>
-        </tr>
-      `).join("") ||
-      '<tr><td colspan="6" style="padding:18px;"><div class="muted">No allocation data found.</div></td></tr>';
+    const body = $("tbodyAlloc"); if (!body) return; body.replaceChildren(); $("resultMeta").textContent = `${PAY.length} payment(s)`;
+    if (!PAY.length) { const tr = node("tr"); const c = td("No allocation data found.", "muted"); c.colSpan = 6; c.style.padding = "18px"; tr.appendChild(c); body.appendChild(tr); return; }
+    PAY.forEach((p) => { const tr = node("tr"); const r = node("td"); const a = node("a", "strong", p.receiptNo || ""); a.href = `/admin/payments/${encodeURIComponent(p.id)}/receipt`; r.appendChild(a); tr.append(r, td(p.studentName || "—"), td(p.invoiceNo || "Unallocated"), td(money(p.amount))); const st = node("td"); st.appendChild(statusPill(p.status)); tr.append(st, td(p.paymentDate || "—", "muted")); body.appendChild(tr); });
   }
-
-  function render() {
-    syncBulkbar();
-    if (state.view === "list") renderList();
-    if (state.view === "allocations") renderAllocations();
-  }
-
+  function render() { syncBulkbar(); if (state.view === "list") renderList(); else if (state.view === "allocations") renderAllocations(); }
   function openEditor(pref) {
-    pref = pref || null;
-
-    $("mTitle").textContent = pref ? "Edit Payment" : "Record Payment";
-    const form = $("paymentForm");
-    form.action = pref ? `/admin/payments/${pref.id}/update` : "/admin/payments";
-
-    $("pStudent").value = pref ? (pref.studentId || "") : "";
-    $("pInvoice").value = pref ? (pref.invoiceId || "") : "";
-    $("pProgram").value = pref ? (pref.programId || "") : "";
-    $("pReference").value = pref ? (pref.reference || "") : "";
-    $("pAmount").value = pref ? Number(pref.amount || 0) : "";
-    $("pMethod").value = pref ? (pref.method || "Cash") : "Cash";
-    $("pStatus").value = pref ? (pref.status || "Completed") : "Completed";
-    $("pPaymentDate").value = pref ? (pref.paymentDate || "") : "";
-    $("pAcademicYear").value = pref ? (pref.academicYear || "") : "";
-    $("pTerm").value = pref ? (pref.term || "") : "";
-    $("pNotes").value = pref ? (pref.notes || "") : "";
-
-    syncInvoicePreview();
-    openModal("mEdit");
+    if (pref && pref.status !== "Pending") return alert("Only Pending payments can be edited. Use Void or Refund for completed records.");
+    $("mTitle").textContent = pref ? "Edit Pending Payment" : "Record Payment"; $("paymentForm").action = pref ? `/admin/payments/${encodeURIComponent(pref.id)}/update` : "/admin/payments";
+    $("pStudent").value = pref?.studentId || ""; $("pInvoice").value = pref?.invoiceId || ""; $("pProgram").value = pref?.programId || ""; $("pReference").value = pref?.reference || "";
+    $("pAmount").value = pref ? Number(pref.amount || 0) : ""; $("pMethod").value = pref?.method || "Cash"; $("pStatus").value = pref?.status || "Completed"; $("pPaymentDate").value = pref?.paymentDate || "";
+    $("pAcademicYear").value = pref?.academicYear || ""; $("pTerm").value = pref?.term || ""; $("pNotes").value = pref?.notes || ""; syncInvoicePreview(); openModal("mEdit");
   }
-
-  function openViewModal(a) {
-    if (!a) return;
-
-    $("vReceiptNo").textContent = a.receiptNo || "—";
-    $("vStudent").textContent = a.studentName || "—";
-    $("vInvoiceNo").textContent = a.invoiceNo || "Unallocated";
-    $("vProgram").textContent = a.programName || "—";
-    $("vAmount").textContent = money(a.amount || 0);
-    $("vMethod").textContent = a.method || "—";
-    $("vStatus").textContent = a.status || "—";
-    $("vPaymentDate").textContent = a.paymentDate || "—";
-    $("vNotes").textContent = a.notes || "—";
-
-    openModal("mView");
+  function openView(a) {
+    $("vReceiptNo").textContent = a.receiptNo || "—"; $("vStudent").textContent = a.studentName || "—"; $("vInvoiceNo").textContent = a.invoiceNo || "Unallocated"; $("vProgram").textContent = a.programName || "—";
+    $("vAmount").textContent = money(a.amount); $("vMethod").textContent = a.method || "—"; $("vStatus").textContent = a.status || "—"; $("vPaymentDate").textContent = a.paymentDate || "—"; $("vNotes").textContent = a.notes || "—"; openModal("mView");
   }
+  function syncInvoicePreview() { const inv = INV.find((x) => x.id === $("pInvoice").value); $("selectedInvoiceNo").textContent = inv?.invoiceNo || "Unallocated"; $("selectedInvoiceBalance").textContent = inv ? money(inv.balance || 0) : "0"; if (inv && !$("pStudent").value) $("pStudent").value = inv.studentId || ""; }
 
-  function syncInvoicePreview() {
-    const selectedId = $("pInvoice").value;
-    const inv = INV.find((x) => x.id === selectedId);
-
-    $("selectedInvoiceNo").textContent = inv ? (inv.invoiceNo || "—") : "Unallocated";
-    $("selectedInvoiceBalance").textContent = inv ? money(inv.balance || 0) : "0";
-  }
-
-  $("btnCreate").addEventListener("click", function () {
-    openEditor();
+  $("btnCreate")?.addEventListener("click", () => openEditor()); $("quickNewPayment")?.addEventListener("click", () => openEditor());
+  $("viewChips")?.addEventListener("click", (e) => { const b = e.target.closest(".chip"); if (b) setView(b.dataset.view); });
+  $("checkAll")?.addEventListener("change", (e) => { if (e.target.checked) PAY.forEach((x) => state.selected.add(x.id)); else state.selected.clear(); render(); });
+  $("tbody")?.addEventListener("change", (e) => { if (!e.target.classList.contains("rowCheck")) return; e.target.checked ? state.selected.add(e.target.dataset.id) : state.selected.delete(e.target.dataset.id); render(); });
+  $("tbody")?.addEventListener("click", (e) => {
+    const tr = e.target.closest("tr[data-id]"); if (!tr) return; const a = PAY.find((x) => x.id === tr.dataset.id); if (!a) return;
+    if (e.target.closest(".actView")) return openView(a); if (e.target.closest(".actEdit")) return openEditor(a);
+    if (e.target.closest(".actComplete") && confirm(`Complete payment ${a.receiptNo}?`)) return submitRowAction(`/admin/payments/${encodeURIComponent(a.id)}/complete`);
+    if (e.target.closest(".actVoid") && confirm(`Void payment ${a.receiptNo}?`)) return submitRowAction(`/admin/payments/${encodeURIComponent(a.id)}/void`);
+    if (e.target.closest(".actRefund") && confirm(`Refund payment ${a.receiptNo}?`)) return submitRowAction(`/admin/payments/${encodeURIComponent(a.id)}/refund`);
+    if (e.target.closest(".actDelete") && confirm(`Archive pending payment ${a.receiptNo}?`)) return submitRowAction(`/admin/payments/${encodeURIComponent(a.id)}/delete`);
   });
+  $("btnBulk")?.addEventListener("click", () => { if (!state.selected.size) return alert("Select at least one payment."); $("bulkbar").classList.add("show"); });
+  $("bulkClear")?.addEventListener("click", () => { state.selected.clear(); render(); });
+  $("bulkComplete")?.addEventListener("click", () => bulkSubmit("complete")); $("bulkVoid")?.addEventListener("click", () => bulkSubmit("void")); $("bulkRefund")?.addEventListener("click", () => bulkSubmit("refund"));
+  $("bulkDelete")?.addEventListener("click", () => { if (state.selected.size && confirm("Archive selected Pending payments?")) bulkSubmit("delete"); });
+  $("pInvoice")?.addEventListener("change", syncInvoicePreview);
+  document.querySelectorAll("[data-close-modal]").forEach((b) => b.addEventListener("click", () => closeModal(b.dataset.closeModal)));
+  ["mEdit", "mView"].forEach((id) => $(id)?.addEventListener("click", (e) => { if (e.target.id === id) closeModal(id); }));
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") document.querySelectorAll(".modal-backdrop.show").forEach((x) => x.classList.remove("show")); });
+  $("btnExport")?.addEventListener("click", () => { window.location.href = `/admin/payments/export.csv${window.location.search || ""}`; });
 
-  $("quickNewPayment").addEventListener("click", function () {
-    openEditor();
-  });
-
-  $("viewChips").addEventListener("click", function (e) {
-    const btn = e.target.closest(".chip");
-    if (!btn) return;
-    setView(btn.dataset.view);
-  });
-
-  $("checkAll").addEventListener("change", function (e) {
-    if (e.target.checked) PAY.forEach((a) => state.selected.add(a.id));
-    else PAY.forEach((a) => state.selected.delete(a.id));
-    render();
-  });
-
-  $("tbody").addEventListener("change", function (e) {
-    if (!e.target.classList.contains("rowCheck")) return;
-    const id = e.target.dataset.id;
-    if (e.target.checked) state.selected.add(id);
-    else state.selected.delete(id);
-    render();
-  });
-
-  $("tbody").addEventListener("click", function (e) {
-    const tr = e.target.closest("tr[data-id]");
-    if (!tr) return;
-
-    const a = PAY.find((x) => x.id === tr.dataset.id);
-    if (!a) return;
-
-    if (e.target.closest(".actView")) return openViewModal(a);
-    if (e.target.closest(".actEdit")) return openEditor(a);
-
-    if (e.target.closest(".actVoid")) {
-      if (window.confirm(`Void payment "${a.receiptNo}"?`)) {
-        return submitRowAction(`/admin/payments/${a.id}/void`);
-      }
-    }
-
-    if (e.target.closest(".actDelete")) {
-      if (window.confirm(`Delete payment "${a.receiptNo}"?`)) {
-        return submitRowAction(`/admin/payments/${a.id}/delete`);
-      }
-    }
-  });
-
-  $("btnBulk").addEventListener("click", function () {
-    if (!state.selected.size) return alert("Select at least one payment.");
-    $("bulkbar").classList.add("show");
-  });
-
-  $("bulkClear").addEventListener("click", function () {
-    state.selected.clear();
-    render();
-  });
-
-  $("bulkComplete").addEventListener("click", function () { bulkSubmit("complete"); });
-  $("bulkPending").addEventListener("click", function () { bulkSubmit("pending"); });
-  $("bulkVoid").addEventListener("click", function () { bulkSubmit("void"); });
-  $("bulkDelete").addEventListener("click", function () {
-    if (!state.selected.size) return;
-    if (window.confirm("Delete selected payments?")) bulkSubmit("delete");
-  });
-
-  $("pInvoice").addEventListener("change", syncInvoicePreview);
-
-  document.querySelectorAll("[data-close-modal]").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      closeModal(btn.dataset.closeModal);
-    });
-  });
-
-  ["mEdit", "mView"].forEach(function (mid) {
-    const el = $(mid);
-    if (!el) return;
-    el.addEventListener("click", function (e) {
-      if (e.target.id === mid) closeModal(mid);
-    });
-  });
-
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape") {
-      document.querySelectorAll(".modal-backdrop.show").forEach(function (el) {
-        el.classList.remove("show");
-      });
-    }
-  });
-
-  $("btnExport").addEventListener("click", function () {
-    alert("Hook export route later.");
-  });
-
-  syncInvoicePreview();
-  setView("list");
-  render();
+  syncInvoicePreview(); setView("list"); render();
 })();

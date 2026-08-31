@@ -1,7 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const tenantsController = require("../../controllers/platform/tenantsController");
-const { platformRequire } = require("../../middleware/platform/guards");
+const { platformAdminOnly, platformRequire } = require("../../middleware/platform/guards");
+const { csrfProtection, attachCsrfToken } = require("../../middleware/tenant/csrf");
+
+router.use(csrfProtection, attachCsrfToken);
 
 router.get("/super-admin/schools", platformRequire("schools.view"), tenantsController.listTenants);
 router.get("/super-admin/schools/create", platformRequire("schools.manage"), tenantsController.createTenantForm);
@@ -12,7 +15,8 @@ router.get("/super-admin/schools/:id/edit", platformRequire("schools.manage"), t
 router.post("/super-admin/schools/:id/edit", platformRequire("schools.manage"), tenantsController.updateTenant);
 
 router.post("/super-admin/schools/:id/status", platformRequire("schools.manage"), tenantsController.updateTenantStatus);
-router.post("/super-admin/schools/:id/delete", platformRequire("schools.manage"), tenantsController.deleteTenant);
+router.post("/super-admin/schools/:id/manual-activate", platformRequire("billing.manage"), tenantsController.manualActivateTenant);
+router.post("/super-admin/schools/:id/delete", platformAdminOnly, tenantsController.deleteTenant);
 
 router.post("/super-admin/schools/:id/resend-invite", platformRequire("schools.manage"), tenantsController.resendTenantInvite);
 

@@ -112,7 +112,7 @@ module.exports = function LibraryBookModel(conn) {
 
   const libraryBookSchema = new mongoose.Schema(
     {
-      bookId: { type: String, trim: true, index: true },
+      bookId: { type: String, trim: true, maxlength: 80 },
       title: { type: String, trim: true, required: true, index: true },
       author: { type: String, trim: true, required: true, index: true },
       isbn: { type: String, trim: true, required: true },
@@ -124,6 +124,8 @@ module.exports = function LibraryBookModel(conn) {
       },
       publisher: { type: String, trim: true, default: "" },
       year: { type: Number, min: 0, default: null },
+      format: { type: String, enum: ["Book", "E-book", "Journal"], default: "Book", index: true },
+      location: { type: String, trim: true, maxlength: 160, default: "Main library", index: true },
       copies: { type: Number, min: 0, default: 1 },
       available: { type: Number, min: 0, default: 1 },
       status: {
@@ -134,6 +136,9 @@ module.exports = function LibraryBookModel(conn) {
       },
       shelf: { type: String, trim: true, default: "" },
       notes: { type: String, trim: true, default: "" },
+      isDeleted: { type: Boolean, default: false, index: true },
+      deletedAt: { type: Date, default: null },
+      archivedAt: { type: Date, default: null },
 
       borrows: [borrowSchema],
       reservations: [reservationSchema],
@@ -148,6 +153,10 @@ module.exports = function LibraryBookModel(conn) {
   );
 
   libraryBookSchema.index({ isbn: 1 }, { unique: true });
+  libraryBookSchema.index(
+    { bookId: 1 },
+    { name: "uniq_library_book_id", unique: true, partialFilterExpression: { bookId: { $gt: "" } } }
+  );
 
   return conn.model("LibraryBook", libraryBookSchema);
 };

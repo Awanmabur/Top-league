@@ -10,7 +10,7 @@
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
         crossorigin="anonymous" referrerpolicy="no-referrer"/>
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     @font-face{font-family:'PoppinsLocal';src:local('Poppins'),local('Inter'),local('Segoe UI')}
 
     :root{
@@ -426,7 +426,7 @@
       <div class="logo-wrap">
         <div class="logo">
           <% if (b.logoUrl) { %>
-            <img src="<%= b.logoUrl %>" alt="Logo" style="width:100%;height:100%;border-radius:14px;object-fit:cover"/>
+            <img src="<%= b.logoUrl %>" alt="Logo" decoding="async" fetchpriority="high" style="width:100%;height:100%;border-radius:14px;object-fit:cover"/>
           <% } else { %>
             <%= (tenant.name || 'S').split(' ').map(x=>x[0]).slice(0,2).join('').toUpperCase() %>
           <% } %>
@@ -453,7 +453,7 @@
         </div>
 
         <div class="cta-row">
-          <a class="btn btn-primary" href="/apply" target="_blank" rel="noopener">
+          <a class="btn btn-primary" href="/apply" target="_blank" rel="noopener noreferrer">
             <i class="fa fa-file-circle-plus"></i> Apply Now
           </a>
 
@@ -611,7 +611,7 @@
         </div>
 
         <div class="cta-row">
-          <a class="btn btn-primary" href="/apply" target="_blank" rel="noopener">
+          <a class="btn btn-primary" href="/apply" target="_blank" rel="noopener noreferrer">
             <i class="fa fa-file-circle-plus"></i> Start Application
           </a>
 
@@ -678,7 +678,7 @@
       <div class="gallery" id="galleryGrid">
         <% gallery.slice(0,12).forEach(img => { %>
           <button class="g-item" data-src="<%= img.url %>" aria-label="Open photo">
-            <img alt="Gallery" src="<%= img.url %>">
+            <img alt="Gallery" src="<%= img.url %>" loading="lazy" decoding="async">
           </button>
         <% }) %>
         <% if (!gallery.length) { %><div class="muted">No gallery images yet.</div><% } %>
@@ -688,7 +688,7 @@
     <div class="lightbox" id="lightbox" aria-hidden="true">
       <button class="lb-close" id="lbClose" aria-label="Close"><i class="fa fa-xmark"></i></button>
       <button class="lb-nav lb-prev" id="lbPrev" aria-label="Previous"><i class="fa fa-chevron-left"></i></button>
-      <img id="lbImg" alt="Preview"/>
+      <img id="lbImg" alt="Preview" decoding="async"/>
       <button class="lb-nav lb-next" id="lbNext" aria-label="Next"><i class="fa fa-chevron-right"></i></button>
     </div>
   </section>
@@ -903,5 +903,6 @@
 </footer>
 
 <script defer src="/js/school-profile-public.js?v=20260421subjects1"></script>
+<script defer src="/js/public-image-fallback.js"></script>
 </body>
 </html>

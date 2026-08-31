@@ -117,6 +117,35 @@ module.exports = (connection) => {
         index: true,
       },
 
+      deletedAt: { type: Date, default: null, index: true },
+      deletedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
+      deletionReason: { type: String, default: "", trim: true, maxlength: 500 },
+
+      revision: { type: Number, default: 0, min: 0 },
+      firstRecordedAt: { type: Date, default: null },
+      correctedAt: { type: Date, default: null },
+      correctedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
+      lastCorrectionReason: { type: String, default: "", trim: true, maxlength: 500 },
+      corrections: {
+        type: [{
+          at: { type: Date, required: true },
+          by: { type: Schema.Types.ObjectId, ref: "User", default: null },
+          reason: { type: String, trim: true, maxlength: 500, default: "" },
+          fromStatus: { type: String, enum: ["present", "absent", "late", "excused"] },
+          toStatus: { type: String, enum: ["present", "absent", "late", "excused"] },
+          fromNotes: { type: String, trim: true, maxlength: 500, default: "" },
+          toNotes: { type: String, trim: true, maxlength: 500, default: "" },
+          fromSessionAt: { type: Date, default: null },
+          toSessionAt: { type: Date, default: null },
+          fromSubject: { type: Schema.Types.ObjectId, ref: "Subject", default: null },
+          toSubject: { type: Schema.Types.ObjectId, ref: "Subject", default: null },
+        }],
+        default: [],
+      },
+
+      migrationQuarantinedAt: { type: Date, default: null, index: true },
+      migrationQuarantineReason: { type: String, default: "", trim: true, maxlength: 500 },
+
       createdBy: {
         type: Schema.Types.ObjectId,
         ref: "User",
@@ -133,14 +162,19 @@ module.exports = (connection) => {
   );
 
   AttendanceSchema.index(
-    { student: 1, subject: 1, sessionAt: 1, isDeleted: 1 },
-    { unique: true, partialFilterExpression: { isDeleted: { $eq: false } } }
+    { student: 1, subject: 1, sessionAt: 1 },
+    {
+      unique: true,
+      name: "uniq_active_attendance_student_subject_session",
+      partialFilterExpression: { isDeleted: false, migrationQuarantinedAt: null },
+    }
   );
 
   AttendanceSchema.index({ classGroup: 1, attendanceDate: 1, term: 1 });
   AttendanceSchema.index({ classGroup: 1, sectionId: 1, streamId: 1, attendanceDate: 1, term: 1 });
   AttendanceSchema.index({ subject: 1, attendanceDate: 1, term: 1 });
   AttendanceSchema.index({ student: 1, attendanceDate: 1 });
+  AttendanceSchema.index({ student: 1, subject: 1, isDeleted: 1, migrationQuarantinedAt: 1, sessionAt: -1 });
 
   return connection.model("Attendance", AttendanceSchema);
 };

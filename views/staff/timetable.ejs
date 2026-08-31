@@ -8,32 +8,23 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 </head>
-<body>
+<body data-portal="staff">
   <%- include("./navbar") %>
   <main class="main">
-    <div class="topbar">
-      <div>
-        <div class="title">Timetable</div>
-        <div class="subtitle">Your assigned teaching or duty schedule.</div>
-      </div>
-    </div>
-
+    <div class="topbar"><div><div class="title">Teaching Timetable</div><div class="subtitle">Your published teaching schedule. Today is <strong><%= todayName || "" %></strong>; current week is <strong><%= weekParity || "all" %></strong>.</div></div></div>
     <section class="card">
       <div class="mini-list">
         <% if (items?.length) { %>
           <% items.forEach(function(item) { %>
             <div class="mini-item">
-              <span><%= item.day || "-" %> - <%= item.subjectName || item.subject || item.title || "Session" %></span>
-              <span><%= item.startTime || "-" %> to <%= item.endTime || "-" %></span>
+              <span><strong><%= item.dayLabel || item.day || "-" %></strong> · <%= item.subjectCode ? (item.subjectCode + " - ") : "" %><%= item.subjectName || "Subject" %> · <%= item.className || "Class" %><%= item.sectionName ? (" / " + item.sectionName) : "" %><%= item.streamName ? (" / " + item.streamName) : "" %></span>
+              <span><%= item.startTime || "-" %> to <%= item.endTime || "-" %> · <%= item.room || "TBA" %> · <%= item.weekPattern === "all" ? "Every week" : (item.weekPattern + " weeks") %><%= item.isToday && item.appliesThisWeek ? " · Today" : "" %></span>
             </div>
           <% }) %>
-        <% } else { %>
-          <div class="small-muted">No timetable entries found.</div>
-        <% } %>
+        <% } else { %><div class="small-muted">No published timetable entries found.</div><% } %>
       </div>
     </section>
   </main>
-  </div>
   <script src="/js/navbar.js"></script>
 </body>
 </html>

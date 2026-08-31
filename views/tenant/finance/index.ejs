@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .input,.select,.textarea{
@@ -559,7 +559,7 @@
     </main>
   </div>
 
-  <textarea id="financeData" class="json-data" aria-hidden="true"><%- JSON.stringify(finance || {}) %></textarea>
+  <textarea id="financeData" class="json-data" aria-hidden="true"><%- JSON.stringify(finance || {}).replace(/</g, "\\u003c") %></textarea>
 
   <script src="/js/navbar.js"></script>
   <script src="/js/finance.js"></script>

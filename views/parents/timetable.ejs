@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="/css/navbar.css"/>
   <link rel="stylesheet" href="/css/parent-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .student-tabs{
       margin-top:14px;
       display:flex;
@@ -382,13 +382,13 @@
             <b><%= Number(s.totalSessions || 0) %></b>
           </div>
 
-          <button class="btn light" type="button" onclick="window.location.href='/parent/attendance<%= student ? ('?student=' + student._id) : '' %>'">
+          <a class="btn light" href="/parent/attendance<%= student ? ('?student=' + student._id) : '' %>">
             <i class="fa-solid fa-user-check"></i> Attendance
-          </button>
+          </a>
 
-          <button class="btn primary" type="button" onclick="window.location.href='/parent/children'">
+          <a class="btn primary" href="/parent/children">
             <i class="fa-solid fa-children"></i> My Children
-          </button>
+          </a>
         </div>
       </div>
 
@@ -408,7 +408,7 @@
               <div class="student-tab-avatar"><%= initials(fullNameOfStudent(c)) %></div>
               <div>
                 <div class="student-tab-name"><%= fullNameOfStudent(c) %></div>
-                <div class="student-tab-sub"><%= c.regNo || "—" %> • <%= (c.classGroup && (c.classGroup.title || c.classGroup.name)) || "—" %></div>
+                <div class="student-tab-sub"><%= c.regNo || "—" %> • <%= c.className || "—" %></div>
               </div>
             </a>
           <% }); %>
@@ -424,12 +424,12 @@
             <div class="summary-value"><%= Number(s.activeDays || 0) %></div>
           </div>
           <div class="summary-box">
-            <div class="summary-label">On-campus</div>
-            <div class="summary-value"><%= Number(s.onCampusSessions || 0) %></div>
+            <div class="summary-label">Odd-week slots</div>
+            <div class="summary-value"><%= Number(s.oddWeekSessions || 0) %></div>
           </div>
           <div class="summary-box">
-            <div class="summary-label">Online / Remote</div>
-            <div class="summary-value"><%= Number(s.onlineSessions || 0) %></div>
+            <div class="summary-label">Even-week slots</div>
+            <div class="summary-value"><%= Number(s.evenWeekSessions || 0) %></div>
           </div>
         </div>
 
@@ -513,7 +513,7 @@
           <aside class="side-stack">
             <section class="card">
               <div class="section-title">Schedule Summary</div>
-              <div class="section-sub">Quick overview of the current study timetable.</div>
+              <div class="section-sub">Quick overview of the published timetable. Current week: <strong><%= weekParity || "all" %></strong>.</div>
 
               <div class="metric-list">
                 <div class="metric-item">
@@ -529,12 +529,12 @@
                   <strong><%= today %></strong>
                 </div>
                 <div class="metric-item">
-                  <span>On-campus sessions</span>
-                  <strong><%= Number(s.onCampusSessions || 0) %></strong>
+                  <span>Odd-week slots</span>
+                  <strong><%= Number(s.oddWeekSessions || 0) %></strong>
                 </div>
                 <div class="metric-item">
-                  <span>Online sessions</span>
-                  <strong><%= Number(s.onlineSessions || 0) %></strong>
+                  <span>Even-week slots</span>
+                  <strong><%= Number(s.evenWeekSessions || 0) %></strong>
                 </div>
               </div>
             </section>

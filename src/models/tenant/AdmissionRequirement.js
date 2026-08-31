@@ -35,6 +35,9 @@ module.exports = (conn) => {
 
       createdBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
       updatedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
+      revision: { type: Number, default: 1, min: 1 },
+      migrationQuarantined: { type: Boolean, default: false, index: true },
+      quarantineReason: { type: String, trim: true, maxlength: 500, default: "" },
 
       isDeleted: { type: Boolean, default: false, index: true },
       deletedAt: { type: Date, default: null },

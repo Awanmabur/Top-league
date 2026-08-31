@@ -1,218 +1,73 @@
 const { getParent, canAccessChild } = require("./_helpers");
+const { studentAttendanceFilter, attendanceSummary, formatInTimezone, idText } = require("../../../services/tenant/attendanceService");
 
-function normalizeAttendanceRows(rows = []) {
-  return rows.map((r) => ({
-    ...r,
-    course: r.courseName || r.course || r.subject || "Class",
-    subject: r.subject || r.courseName || r.course || "Class",
-    teacher: r.teacherName || r.teacher || "—",
-    time: r.time || r.sessionTime || "—",
-    note: r.note || r.remarks || "—",
-    status: String(r.status || "present").toLowerCase(),
-    date: r.date
-      ? new Date(r.date).toLocaleDateString()
-      : r.createdAt
-        ? new Date(r.createdAt).toLocaleDateString()
-        : "—",
-  }));
-}
-
-function buildAttendanceSummary(entries = []) {
-  const totalSessions = entries.length;
-  const present = entries.filter((x) => x.status === "present").length;
-  const absent = entries.filter((x) => x.status === "absent").length;
-  const late = entries.filter((x) => x.status === "late").length;
-  const excused = entries.filter((x) => x.status === "excused").length;
-
-  const countedPresent = present + late + excused;
-  const rate = totalSessions
-    ? Math.round((countedPresent / totalSessions) * 100)
-    : 0;
-
-  const lastUpdated = entries.length ? entries[0]?.date || "—" : "—";
-
-  let riskNote = "Attendance is on track.";
-  if (rate < 50) riskNote = "Attendance is critically low and needs immediate follow-up.";
-  else if (rate < 75) riskNote = "Attendance is below the recommended threshold.";
-
-  return {
-    totalSessions,
-    present,
-    absent,
-    late,
-    excused,
-    rate,
-    lastUpdated,
-    riskNote,
-  };
-}
-
-function summarizeAttendanceByCourse(entries = []) {
+function summarizeBySubject(entries = []) {
   const map = new Map();
-
   for (const row of entries) {
-    const title = row.course || row.subject || "Class";
-
-    if (!map.has(title)) {
-      map.set(title, {
-        title,
-        teacher: row.teacher || "—",
-        sessions: 0,
-        presentWeighted: 0,
-      });
-    }
-
-    const item = map.get(title);
-    item.sessions += 1;
-
-    if (row.status === "present") item.presentWeighted += 1;
-    else if (row.status === "late") item.presentWeighted += 0.75;
-    else if (row.status === "excused") item.presentWeighted += 1;
+    const key = idText(row.subject?._id || row.subject) || "unknown";
+    if (!map.has(key)) map.set(key, { title: row.subject?.title || row.subject?.shortTitle || row.subject?.code || "Subject", teacher: row.teacher?.fullName || row.teacher?.name || "â€”", rows: [] });
+    map.get(key).rows.push(row);
   }
-
-  return [...map.values()].map((x) => ({
-    ...x,
-    rate: x.sessions ? Math.round((x.presentWeighted / x.sessions) * 100) : 0,
-  }));
+  return [...map.values()].map((x) => ({ ...x, sessions: x.rows.length, rate: attendanceSummary(x.rows).rate }));
 }
 
-function buildAttendanceAlerts(summary, entries = []) {
+function buildAlerts(summary, entries, timezone) {
   const alerts = [];
-
-  if (summary.rate < 75) {
-    alerts.push({
-      title: "Low attendance alert",
-      date: summary.lastUpdated,
-      message:
-        summary.rate < 50
-          ? "Attendance is critically low. Please contact the school."
-          : "Attendance is below the recommended threshold.",
-    });
-  }
-
-  const recentAbsences = entries
-    .filter((x) => x.status === "absent")
-    .slice(0, 3);
-
-  recentAbsences.forEach((a) => {
-    alerts.push({
-      title: "Recent absence recorded",
-      date: a.date || "—",
-      message: `${a.course || a.subject || "Class"} was marked absent.`,
-    });
-  });
-
+  if (summary.rate < 75) alerts.push({ title: "Low attendance alert", date: summary.lastUpdated || "â€”", message: summary.rate < 50 ? "Attendance is critically low. Please contact the school." : "Attendance is below the recommended threshold." });
+  for (const row of entries.filter((x) => x.status === "absent").slice(0, 3)) alerts.push({ title: "Recent absence recorded", date: formatInTimezone(row.sessionAt, timezone) || "â€”", message: `${row.subject?.title || row.subject?.shortTitle || row.subject?.code || "Subject"} was marked absent.` });
   return alerts.slice(0, 5);
 }
 
 module.exports = {
   async index(req, res) {
-    const log = (...a) =>
-      console.log(
-        `[PARENT-ATTENDANCE] tenant=${req.tenant?.code || req.tenant?._id || "?"}`,
-        ...a
-      );
-
     try {
-      const { Student, Attendance } = req.models || {};
-
+      const { Student, Attendance, Subject, Staff } = req.models || {};
+      if (!Student || !Attendance || !Subject) return res.status(503).send("Attendance is not available.");
       const { user, parent } = await getParent(req);
       if (!user) return res.redirect("/login");
-
-      const childIds = Array.isArray(parent?.childrenStudentIds)
-        ? parent.childrenStudentIds
+      const childIds = Array.isArray(parent?.childrenStudentIds) ? parent.childrenStudentIds : [];
+      const children = parent && childIds.length
+        ? await Student.find({ _id: { $in: childIds }, isDeleted: { $ne: true }, status: { $ne: 'archived' } })
+            .select("firstName lastName middleName fullName regNo classId className classLevel academicYear term status photoUrl")
+            .sort({ fullName: 1 }).lean()
         : [];
-
-      const children =
-        parent && Student && childIds.length
-          ? await Student.find({ _id: { $in: childIds } })
-              .select(
-                "firstName lastName middleName fullName regNo program classGroup yearLevel academicYear semester status photoUrl attendanceRate"
-              )
-              .populate({
-                path: "program",
-                select: "code name title level faculty",
-              })
-              .populate({
-                path: "classGroup",
-                select: "code name title",
-              })
-              .sort({ firstName: 1, lastName: 1 })
-              .lean()
-              .catch(() => [])
-          : [];
-
-      const selectedStudentId = req.query?.student
-        ? String(req.query.student)
-        : null;
-
+      const timezone = req.tenant?.timezone || "UTC";
       const attendanceByStudent = {};
-
+      let attendanceQuery = childIds.length
+        ? Attendance.find({ student: { $in: childIds }, isDeleted: { $ne: true }, migrationQuarantinedAt: null })
+            .populate({ path: "subject", model: Subject, select: "code title shortTitle" })
+        : null;
+      if (attendanceQuery && Staff) attendanceQuery = attendanceQuery.populate({ path: "teacher", model: Staff, select: "fullName name" });
+      const allAttendance = attendanceQuery
+        ? await attendanceQuery.sort({ sessionAt: -1, createdAt: -1 }).limit(Math.min(2500, Math.max(500, childIds.length * 500))).lean()
+        : [];
+      const groupedAttendance = new Map();
+      for (const row of allAttendance) {
+        const key = idText(row.student);
+        if (!groupedAttendance.has(key)) groupedAttendance.set(key, []);
+        const bucket = groupedAttendance.get(key);
+        if (bucket.length < 500) bucket.push(row);
+      }
       for (const child of children) {
-        const rawEntries =
-          Attendance
-            ? await Attendance.find({
-                deletedAt: null,
-                $or: [{ student: child._id }, { studentId: child._id }],
-              })
-                .sort({ date: -1, createdAt: -1 })
-                .limit(100)
-                .lean()
-                .catch(() => [])
-            : [];
-
-        const entries = normalizeAttendanceRows(rawEntries);
-        const summary = buildAttendanceSummary(entries);
-        const courses = summarizeAttendanceByCourse(entries);
-        const alerts = buildAttendanceAlerts(summary, entries);
-
-        attendanceByStudent[String(child._id)] = {
-          summary,
-          entries,
-          courses,
-          alerts,
-        };
+        const raw = groupedAttendance.get(String(child._id)) || [];
+        const base = attendanceSummary(raw);
+        const entries = raw.map((r) => ({
+          ...r,
+          course: r.subject?.title || r.subject?.shortTitle || r.subject?.code || "Subject",
+          subject: r.subject?.title || r.subject?.shortTitle || r.subject?.code || "Subject",
+          teacher: r.teacher?.fullName || r.teacher?.name || "â€”",
+          time: formatInTimezone(r.sessionAt, timezone) || "â€”",
+          note: r.notes || "â€”",
+          status: String(r.status || "present").toLowerCase(),
+          date: formatInTimezone(r.sessionAt || r.attendanceDate, timezone) || "â€”",
+        }));
+        const summary = { totalSessions: base.total, present: base.present, absent: base.absent, late: base.late, excused: base.excused, rate: base.rate, lastUpdated: entries[0]?.date || "â€”", riskNote: base.rate < 50 ? "Attendance is critically low and needs immediate follow-up." : base.rate < 75 ? "Attendance is below the recommended threshold." : "Attendance is on track." };
+        attendanceByStudent[String(child._id)] = { summary, entries, courses: summarizeBySubject(raw), alerts: buildAlerts(summary, raw, timezone) };
       }
-
-      let student = null;
-
-      if (selectedStudentId && canAccessChild(parent, selectedStudentId)) {
-        student =
-          children.find((c) => String(c._id) === selectedStudentId) || null;
-      }
-
-      if (!student && children.length) {
-        student = children[0];
-      }
-
-      log(
-        "user:",
-        user ? { id: user._id, email: user.email, roles: user.roles } : null
-      );
-      log(
-        "parent:",
-        parent
-          ? {
-              id: parent._id,
-              email: parent.email,
-              kids: (parent.childrenStudentIds || []).length,
-            }
-          : null
-      );
-      log("children:", children.length);
-      log("selectedStudent:", student ? String(student._id) : null);
-
-      return res.render("parents/attendance", {
-        tenant: req.tenant,
-        user,
-        parent,
-        children,
-        student,
-        attendanceByStudent,
-        stats: {
-          children: children.length,
-        },
-      });
+      const requested = req.query?.student ? String(req.query.student) : "";
+      let student = requested && canAccessChild(parent, requested) ? children.find((c) => String(c._id) === requested) || null : null;
+      if (!student && children.length) student = children[0];
+      return res.render("parents/attendance", { tenant: req.tenant, user, parent, children, student, attendanceByStudent, stats: { children: children.length } });
     } catch (err) {
       console.error("PARENT ATTENDANCE ERROR:", err);
       return res.status(500).send("Failed to load parent attendance page");

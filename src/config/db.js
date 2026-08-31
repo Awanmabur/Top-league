@@ -3,10 +3,49 @@ const mongoose = require("mongoose");
 
 mongoose.set("bufferCommands", false);
 
+const DB_PERF_ENABLED = process.env.DB_PERF_LOGS === "1";
+const DB_SLOW_QUERY_MS = Math.min(10000, Math.max(50, Number(process.env.DB_SLOW_QUERY_MS || 250)));
+
+if (DB_PERF_ENABLED) {
+  mongoose.plugin((schema) => {
+    const operations = ["find", "findOne", "countDocuments", "estimatedDocumentCount", "updateOne", "updateMany", "findOneAndUpdate", "deleteOne", "deleteMany"];
+    for (const operation of operations) {
+      schema.pre(operation, function slowQueryStart() {
+        this.__classicPerfStartedAt = process.hrtime.bigint();
+      });
+      schema.post(operation, function slowQueryEnd() {
+        if (!this.__classicPerfStartedAt) return;
+        const elapsedMs = Number(process.hrtime.bigint() - this.__classicPerfStartedAt) / 1e6;
+        if (elapsedMs >= DB_SLOW_QUERY_MS) {
+          const collection = this.model?.collection?.name || this.mongooseCollection?.name || "unknown";
+          console.warn(`[slow-query] ${collection}.${operation} ${elapsedMs.toFixed(1)}ms`);
+        }
+      });
+    }
+    schema.pre("aggregate", function slowAggregateStart() {
+      this.__classicPerfStartedAt = process.hrtime.bigint();
+    });
+    schema.post("aggregate", function slowAggregateEnd() {
+      if (!this.__classicPerfStartedAt) return;
+      const elapsedMs = Number(process.hrtime.bigint() - this.__classicPerfStartedAt) / 1e6;
+      if (elapsedMs >= DB_SLOW_QUERY_MS) {
+        const collection = this._model?.collection?.name || "unknown";
+        console.warn(`[slow-query] ${collection}.aggregate ${elapsedMs.toFixed(1)}ms`);
+      }
+    });
+  });
+}
+
 function boolEnv(name, fallback = false) {
   const v = process.env[name];
   if (v === undefined) return fallback;
   return String(v).toLowerCase() === "true";
+}
+
+function boundedIntEnv(name, fallback, min, max) {
+  const parsed = Number(process.env[name]);
+  if (!Number.isInteger(parsed)) return fallback;
+  return Math.min(max, Math.max(min, parsed));
 }
 
 const platformUri = process.env.PLATFORM_DB_URI;
@@ -20,12 +59,20 @@ if (!tenantBaseUri) {
   throw new Error("Missing MONGO_URI_BASE or MONGO_URI");
 }
 
-// keep index creation off for speed
+// Keep index creation off at runtime. Production gets a larger shared pool so
+// platform routing/session-independent traffic does not serialize behind the
+// small development default. Values stay bounded to avoid connection storms.
+const DEFAULT_MAX_POOL_SIZE = process.env.NODE_ENV === "production" ? 30 : 10;
+const DEFAULT_MIN_POOL_SIZE = process.env.NODE_ENV === "production" ? 2 : 0;
 const COMMON_OPTS = {
-  maxPoolSize: 10,
-  serverSelectionTimeoutMS: 20000,
-  connectTimeoutMS: 20000,
-  socketTimeoutMS: 30000,
+  maxPoolSize: boundedIntEnv("MONGO_MAX_POOL_SIZE", DEFAULT_MAX_POOL_SIZE, 5, 100),
+  minPoolSize: boundedIntEnv("MONGO_MIN_POOL_SIZE", DEFAULT_MIN_POOL_SIZE, 0, 20),
+  maxConnecting: boundedIntEnv("MONGO_MAX_CONNECTING", 4, 1, 16),
+  waitQueueTimeoutMS: boundedIntEnv("MONGO_WAIT_QUEUE_TIMEOUT_MS", 5000, 500, 30000),
+  serverSelectionTimeoutMS: boundedIntEnv("MONGO_SERVER_SELECTION_TIMEOUT_MS", 10000, 2000, 30000),
+  connectTimeoutMS: boundedIntEnv("MONGO_CONNECT_TIMEOUT_MS", 10000, 2000, 30000),
+  socketTimeoutMS: boundedIntEnv("MONGO_SOCKET_TIMEOUT_MS", 30000, 5000, 120000),
+  maxIdleTimeMS: boundedIntEnv("MONGO_MAX_IDLE_TIME_MS", 60000, 10000, 300000),
   autoIndex: false,
   autoCreate: false,
   bufferCommands: false,
@@ -53,6 +100,8 @@ async function waitForPlatform() {
 
 const TENANT_CACHE = new Map();
 const TENANT_CONNECTING = new Map();
+const TENANT_FAILURES = new Map();
+const TENANT_CONNECT_FAILURE_BACKOFF_MS = boundedIntEnv("TENANT_CONNECT_FAILURE_BACKOFF_MS", 3000, 500, 30000);
 
 function getMongoHost(uri) {
   try {
@@ -124,6 +173,15 @@ async function createTenantConnection(dbName) {
 async function getTenantConnection(dbName) {
   if (!dbName) throw new Error("getTenantConnection: dbName is required");
 
+  const recentFailure = TENANT_FAILURES.get(dbName);
+  if (recentFailure && recentFailure.until > Date.now()) {
+    const err = new Error("Tenant database connection is temporarily unavailable.");
+    err.code = "TENANT_DB_BACKOFF";
+    err.cause = recentFailure.error;
+    throw err;
+  }
+  if (recentFailure) TENANT_FAILURES.delete(dbName);
+
   const cached = TENANT_CACHE.get(dbName);
   if (cached && cached.readyState === 1) {
     return cached;
@@ -137,11 +195,13 @@ async function getTenantConnection(dbName) {
     .then((conn) => {
       TENANT_CACHE.set(dbName, conn);
       TENANT_CONNECTING.delete(dbName);
+      TENANT_FAILURES.delete(dbName);
       return conn;
     })
     .catch((err) => {
       TENANT_CACHE.delete(dbName);
       TENANT_CONNECTING.delete(dbName);
+      TENANT_FAILURES.set(dbName, { until: Date.now() + TENANT_CONNECT_FAILURE_BACKOFF_MS, error: err });
       throw err;
     });
 
@@ -154,4 +214,6 @@ module.exports = {
   waitForPlatform,
   getTenantConnection,
   boolEnv,
+  boundedIntEnv,
+  COMMON_OPTS,
 };

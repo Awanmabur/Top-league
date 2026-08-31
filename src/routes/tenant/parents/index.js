@@ -10,15 +10,22 @@ const setLocals = require("../../../middleware/tenant/setLocals");
 // ✅ Protect ALL parent routes
 router.use(resolveTenantAccess);
 router.use(tenantAuth("parent"));
+router.use(requireTenantModels(["Parent"], { match: "all" }));
 router.use(setLocals);
 
 // Core pages
 router.use("/", require("./dashboard"));
 router.use("/", requireTenantModels(["Student"], { match: "any" }), require("./children"));
-router.use("/", requireTenantModels(["Attendance"], { match: "any" }), require("./attendance"));
-router.use("/", requireTenantModels(["Result"], { match: "any" }), require("./results"));
-router.use("/", requireTenantModels(["FeeInvoice", "FeePayment", "Payment", "Fee", "Invoice"], { match: "any" }), require("./fees"));
-router.use("/", requireTenantModels(["Timetable", "ClassTimetable", "Schedule"], { match: "any" }), require("./timetable"));
+router.use("/", requireTenantModels(["Parent", "Student", "Attendance", "Subject"], { match: "all" }), require("./attendance"));
+router.use("/", requireTenantModels(["Student", "Result", "Exam", "Subject"], { match: "all" }), requireTenantModels(["Transcript"], { match: "all" }), require("./results"));
+router.use("/", requireTenantModels(["Student", "Assignment", "AssignmentSubmission", "Subject"], { match: "all" }), require("./assignments"));
+router.use("/", requireTenantModels(["Invoice", "Payment"], { match: "all" }), require("./fees"));
+router.use("/", requireTenantModels(["Student", "TimetableEntry", "Subject", "Staff"], { match: "all" }), require("./timetable"));
+router.use("/", requireTenantModels(["Parent", "Student", "AcademicEvent"], { match: "all" }), require("./calendar"));
+router.use("/", requireTenantModels(["Parent", "Student", "DisciplineCase"], { match: "all" }), require("./discipline"));
+router.use("/", requireTenantModels(["Parent", "Student", "StudentDoc"], { match: "all" }), require("./documents"));
+router.use("/", requireTenantModels(["Parent", "Student", "Transport", "TransportAssignment"], { match: "all" }), require("./transport"));
+router.use("/", requireTenantModels(["Parent", "Student", "Asset"], { match: "all" }), require("./assets"));
 router.use("/", require("./profile"));
 
 // Child views
@@ -27,6 +34,6 @@ router.use("/", requireTenantModels(["Student"], { match: "any" }), require("./c
 // Announcements / notifications / support
 router.use("/", requireTenantModels(["Announcement"], { match: "any" }), require("./announcements"));
 router.use("/", requireTenantModels(["Notification"], { match: "any" }), require("./notifications"));
-router.use("/", requireTenantFeature("helpdesk"), requireTenantModels(["SupportTicket", "Ticket"], { match: "any" }), require("./support"));
+router.use("/", requireTenantFeature("helpdesk"), requireTenantModels(["HelpdeskTicket"], { match: "all" }), require("./support"));
 
 module.exports = router;

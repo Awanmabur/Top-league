@@ -1,4 +1,5 @@
 const isProduction = process.env.NODE_ENV === "production";
+const { assertProductionReadiness } = require("./productionReadiness");
 const SESSION_TTL_SECONDS = 7 * 24 * 60 * 60;
 const SESSION_TTL_MS = SESSION_TTL_SECONDS * 1000;
 const SESSION_TOUCH_AFTER_SECONDS = 24 * 60 * 60;
@@ -110,31 +111,13 @@ function validateRuntimeConfig() {
   requireEnv("JWT_SECRET", { minLength: isProduction ? 32 : 12 });
 
   if (isProduction) {
-    requireEnv("BASE_DOMAIN");
-    requireEnv("INVITE_TOKEN_SECRET", { minLength: 32 });
-    requireEnv("TRANSCRIPT_SIGNING_SECRET", { minLength: 32 });
-    requireEnv("SMTP_HOST");
-    requireEnv("SMTP_PORT");
-    requireEnv("SMTP_USER");
-    requireEnv("SMTP_PASS");
-
-    const blockedDebugFlags = [
-      "DEBUG_AUTH_TOKENS",
-      "DEBUG_PERF",
-      "HTTP_LOGS",
-      "AUTO_CREATE_PARENT_PROFILE",
-    ].filter((name) => boolEnv(name, false));
-
-    if (blockedDebugFlags.length) {
-      throw new Error(
-        `Disable debug-only flags in production: ${blockedDebugFlags.join(", ")}`,
-      );
-    }
+    assertProductionReadiness(process.env);
   }
 }
 
 function isPoisonKey(key) {
-  return POISON_KEYS.has(String(key || ""));
+  const raw = String(key || "");
+  return POISON_KEYS.has(raw) || raw.startsWith("$") || raw.includes(".") || raw.includes("\0");
 }
 
 module.exports = {

@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
@@ -538,17 +538,18 @@
 
       <form id="requirementForm" method="POST" action="/admin/admissions/requirements">
         <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
+        <input type="hidden" name="revision" id="mRevision" value="">
 
         <div class="modal-body">
           <div class="form-grid">
             <div class="field">
               <label>Title</label>
-              <input class="input" id="mReqTitleInput" name="title" required maxlength="160" />
+              <input class="input" id="mReqTitleInput" name="title" required maxlength="120" />
             </div>
 
             <div class="field">
               <label>Code</label>
-              <input class="input" id="mCode" name="code" readonly maxlength="80" placeholder="Auto-normalized" />
+              <input class="input" id="mCode" name="code" readonly maxlength="40" placeholder="Auto-normalized" />
             </div>
 
             <div class="field">
@@ -598,8 +599,8 @@
 
           <div class="field">
             <label>Description</label>
-            <textarea class="textarea" id="mDescription" name="description" maxlength="1200"></textarea>
-            <div class="muted" id="descCount">0 / 1200</div>
+            <textarea class="textarea" id="mDescription" name="description" maxlength="700"></textarea>
+            <div class="muted" id="descCount">0 / 700</div>
           </div>
 
           <div class="divider"></div>
@@ -711,17 +712,19 @@
 
   <form id="rowActionForm" method="POST" style="display:none;">
     <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
+    <input type="hidden" name="revision" id="rowActionRevision" value="">
   </form>
 
   <form id="bulkForm" method="POST" action="/admin/admissions/requirements/bulk-action" style="display:none;">
     <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
-    <input type="hidden" name="ids" id="bulkIds">
+    <input type="hidden" name="items" id="bulkItems">
     <input type="hidden" name="action" id="bulkAction">
   </form>
 
   <textarea id="requirementsData" class="json-data" aria-hidden="true"><%- JSON.stringify((itemsArr || []).map(function(r){
     return {
       id: String(r._id || ''),
+      revision: Number(r.revision || 1),
       title: r.title || '',
       code: r.code || '',
       category: r.category || 'document',
@@ -736,12 +739,12 @@
       programs: Array.isArray(r.programs) ? r.programs.map(function(x){ return String(x._id || x); }) : [],
       intakes: Array.isArray(r.intakes) ? r.intakes.map(function(x){ return String(x._id || x); }) : []
     };
-  })) %></textarea>
+  })).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
 
   <textarea id="lookupData" class="json-data" aria-hidden="true"><%- JSON.stringify({
     programs: (programsArr || []).map(function(p){ return { id: String(p._id || ''), name: p.name || p.className || 'Section' }; }),
     intakes: (intakesArr || []).map(function(i){ return { id: String(i._id || ''), name: i.name || i.term || i.title || 'Term' }; })
-  }) %></textarea>
+  }).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
 
   <script src="/js/navbar.js"></script>
   <script src="/js/requirements-index.js"></script>

@@ -10,7 +10,7 @@
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
         crossorigin="anonymous" referrerpolicy="no-referrer"/>
 <link rel="stylesheet" href="/css/navbar.css" />
-  <style>
+  <style nonce="<%= cspNonce %>">
     :root{
       --blue:#0a3d62; --blue2:#083454; --accent:#0a6fbf;
       --bg:#f4f8ff; --card:#fff; --muted:#6b7280;
@@ -177,16 +177,20 @@
     (statusRaw === "interview" || statusRaw === "under_review" || statusRaw === "review") ? "warnpill" :
     "infopill";
 
-  const payStatus = a ? s(a.paymentStatus,"") : "";
-  const payLabel = payStatus === "paid" ? "Paid" : (payStatus === "partial" ? "Partial" : (payStatus ? payStatus : "Not Paid"));
-  const payPillClass = payStatus === "paid" ? "ok" : (payStatus === "partial" ? "warnpill" : "bad");
+  const payLabel = "Not linked";
+  const payPillClass = "warnpill";
+  const latestOffer = a && a.latestOfferLetter ? a.latestOfferLetter : null;
 
+  const safeHttpUrl = (value) => {
+    const raw = s(value, "").trim();
+    return /^https?:\/\//i.test(raw) ? raw : "";
+  };
   const docUrl = (key) => {
     if (!a) return "";
     const d = a[key];
     if (!d) return "";
-    if (typeof d === "string") return d;
-    if (d.url) return s(d.url,"");
+    if (typeof d === "string") return safeHttpUrl(d);
+    if (d.url) return safeHttpUrl(d.url);
     return "";
   };
 
@@ -200,17 +204,17 @@
   const REQUIRED = [
     { key:"idDocument", label:"National ID / Passport", required:true },
     { key:"passportPhoto", label:"Passport Photo", required:true },
-    { key:"transcript", label:"Transcript / Results Slip", required:true },
-    { key:"certificates", label:"Certificates", required:false }
+    { key:"transcript", label:"Transcript / Results Slip", required:true }
   ];
 
   const missingDocs = REQUIRED
     .filter(r => !docUrl(r.key))
     .map(r => ({ key:r.key, label:r.label, required:r.required }));
 
-  const docsTotal = REQUIRED.length;
-  const docsUploaded = REQUIRED.filter(r => !!docUrl(r.key)).length;
-  const docsVerified = REQUIRED.filter(r => !!docUrl(r.key) && docVerified(r.key)).length;
+  const docStats = a && a.documentStats ? a.documentStats : null;
+  const docsTotal = docStats ? Number(docStats.total || 3) : REQUIRED.length;
+  const docsUploaded = docStats ? Number(docStats.uploaded || 0) : REQUIRED.filter(r => !!docUrl(r.key)).length;
+  const docsVerified = docStats ? Number(docStats.verified || 0) : REQUIRED.filter(r => !!docUrl(r.key) && docVerified(r.key)).length;
   const docsShown = docsUploaded;
 
   const academics =
@@ -289,6 +293,7 @@
       <div id="pageData"
            data-applicant-id="<%= encodeURIComponent(String(a._id)) %>"
            data-missing="<%= encodedMissing %>"
+           data-tags="<%= encodeURIComponent(JSON.stringify(Array.isArray(a.tags) ? a.tags : [])) %>"
            data-dv="<%= docsVerified %>"
            data-du="<%= docsUploaded %>"
            data-dt="<%= docsTotal %>"></div>
@@ -417,7 +422,7 @@
                     </table>
                   </div>
                   <div class="divider"></div>
-                  <div class="muted">Tip: You can add “verify academic record” endpoints later; this UI is ready.</div>
+                  <div class="muted">Transcript verification is managed from the Documents tab and is reflected here automatically.</div>
                 </div>
               </div>
 
@@ -478,10 +483,12 @@
                             </button>
                           <% } %>
 
-                          <!-- Optional: later you can wire verification endpoints -->
-                          <button class="btn success small" type="button" data-ui-only="verify-doc">
-                            <i class="fa-solid fa-check"></i> Verify
-                          </button>
+                          <% if (uploaded && !verified) { %>
+                            <form method="POST" action="/admin/admissions/applicants/<%= a._id %>/documents/<%= r.key %>/verify" style="margin:0">
+                              <% if (csrf) { %><input type="hidden" name="_csrf" value="<%= csrf %>"><% } %>
+                              <button class="btn success small" type="submit"><i class="fa-solid fa-check"></i> Verify</button>
+                            </form>
+                          <% } %>
                         </div>
                       </div>
                     <% }) %>
@@ -507,8 +514,11 @@
                   <div class="divider"></div>
 
                   <div class="no-print" style="display:flex;gap:8px;flex-wrap:wrap">
-                    <button class="btn light" type="button" data-ui-only="upload-doc"><i class="fa-solid fa-upload"></i> Upload Doc</button>
-                    <button class="btn success" type="button" data-ui-only="verify-all"><i class="fa-solid fa-check-double"></i> Verify All</button>
+                    <button class="btn light" type="button" data-open-modal="mUpload"><i class="fa-solid fa-upload"></i> Upload Doc</button>
+                    <form method="POST" action="/admin/admissions/applicants/<%= a._id %>/documents/verify-all" style="margin:0">
+                      <% if (csrf) { %><input type="hidden" name="_csrf" value="<%= csrf %>"><% } %>
+                      <button class="btn success" type="submit"><i class="fa-solid fa-check-double"></i> Verify All</button>
+                    </form>
                     <button class="btn warn" type="button" data-open-modal="mReq"><i class="fa-solid fa-paper-plane"></i> Request Missing</button>
                   </div>
                 </div>
@@ -520,21 +530,40 @@
                   <div class="note">
                     <div class="strong"><i class="fa-solid fa-receipt"></i> Application Fee</div>
                     <div class="divider"></div>
-                    <div class="muted">Status: <span class="strong"><%= payLabel %></span></div>
-                    <div class="muted">Amount: <span class="strong"><%= s(a.feeAmount, s(a.applicationFee,"—")) %></span></div>
-                    <div class="muted">Method: <span class="strong"><%= s(a.paymentMethod,"—") %></span></div>
-                    <div class="muted">Reference: <span class="strong"><%= s(a.paymentRef,"—") %></span></div>
-                    <div class="muted">Paid on: <span class="strong"><%= a.paidAt ? new Date(a.paidAt).toLocaleString() : "—" %></span></div>
+                    <div class="muted">Status: <span class="strong">Not linked to this Applicant record</span></div>
                     <div class="divider"></div>
-                    <div class="muted">If you want “Mark Paid / Waive / Refund” to persist, add endpoints later—UI is ready.</div>
+                    <div class="muted">Use the Finance module for authoritative invoices, receipts, waivers and refunds. This review page does not invent payment state.</div>
                   </div>
 
                   <div class="note">
-                    <div class="strong"><i class="fa-solid fa-file-invoice"></i> Offer / Deposit</div>
+                    <div class="strong"><i class="fa-solid fa-file-invoice"></i> Offer Letter</div>
                     <div class="divider"></div>
-                    <div class="muted">Offer Letter: <span class="strong"><%= s(a.offerStatus,"Not Issued") %></span></div>
-                    <div class="muted">Deposit Required: <span class="strong"><%= s(a.depositAmount,"—") %></span></div>
-                    <div class="muted">Deposit Status: <span class="strong"><%= s(a.depositStatus,"—") %></span></div>
+                    <div class="muted">Status: <span class="strong"><%= latestOffer ? s(latestOffer.status,"draft") : "Not Issued" %></span></div>
+                    <div class="muted">Letter No: <span class="strong"><%= latestOffer ? s(latestOffer.letterNo,"—") : "—" %></span></div>
+                    <div class="muted">Issued: <span class="strong"><%= latestOffer && latestOffer.issuedAt ? new Date(latestOffer.issuedAt).toLocaleString() : "—" %></span></div>
+                    <div class="muted">Sent: <span class="strong"><%= latestOffer && latestOffer.sentAt ? new Date(latestOffer.sentAt).toLocaleString() : "—" %></span></div>
+                    <div class="divider"></div>
+                    <div class="no-print" style="display:flex;gap:8px;flex-wrap:wrap">
+                      <a class="btn light small" href="/admin/admissions/offer-letters?q=<%= encodeURIComponent(applicantId) %>"><i class="fa-solid fa-list"></i> Manage Letters</a>
+                      <% if (latestOffer && latestOffer.status === "draft" && latestOffer.deliveryStatus !== "sending") { %>
+                        <form method="POST" action="/admin/admissions/offer-letters/<%= latestOffer._id %>/send" style="margin:0">
+                          <% if (csrf) { %><input type="hidden" name="_csrf" value="<%= csrf %>"><% } %>
+                          <input type="hidden" name="to" value="<%= email === '—' ? '' : email %>">
+                          <input type="hidden" name="revision" value="<%= Number(latestOffer.revision || 1) %>">
+                          <input type="hidden" name="returnTo" value="/admin/admissions/applicants/<%= a._id %>">
+                          <button class="btn success small" type="submit"><i class="fa-solid fa-paper-plane"></i> Send</button>
+                        </form>
+                      <% } %>
+                      <% if (latestOffer && latestOffer.status !== "void" && latestOffer.deliveryStatus !== "sending") { %>
+                        <form method="POST" action="/admin/admissions/offer-letters/<%= latestOffer._id %>/void" style="margin:0;display:flex;gap:6px;align-items:center" data-confirm-form="Void this offer letter?">
+                          <% if (csrf) { %><input type="hidden" name="_csrf" value="<%= csrf %>"><% } %>
+                          <input type="hidden" name="revision" value="<%= Number(latestOffer.revision || 1) %>">
+                          <input type="hidden" name="returnTo" value="/admin/admissions/applicants/<%= a._id %>">
+                          <input class="input" style="max-width:180px" type="text" name="reason" required minlength="5" maxlength="500" placeholder="Void reason">
+                          <button class="btn danger small" type="submit"><i class="fa-solid fa-ban"></i> Void</button>
+                        </form>
+                      <% } %>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -546,30 +575,27 @@
                     <div class="strong"><i class="fa-solid fa-clipboard-check"></i> Review Checklist</div>
                     <div class="divider"></div>
 
-                    <!-- UI checklist (optional; persist later if you want) -->
-                    <div id="checklist">
-                      <div class="check-item">
+                    <form id="checklist" method="POST" action="/admin/admissions/applicants/<%= a._id %>/checklist">
+                      <% if (csrf) { %><input type="hidden" name="_csrf" value="<%= csrf %>"><% } %>
+                      <label class="check-item">
                         <div class="strong">Identity verified</div>
-                        <input type="checkbox" data-ui-only="check"/>
-                      </div>
-                      <div class="check-item">
+                        <input type="checkbox" name="identityVerified" <%= a.reviewChecklist && a.reviewChecklist.identityVerified ? "checked" : "" %>/>
+                      </label>
+                      <label class="check-item">
                         <div class="strong">Academics reviewed</div>
-                        <input type="checkbox" data-ui-only="check"/>
-                      </div>
-                      <div class="check-item">
+                        <input type="checkbox" name="academicsReviewed" <%= a.reviewChecklist && a.reviewChecklist.academicsReviewed ? "checked" : "" %>/>
+                      </label>
+                      <label class="check-item">
                         <div class="strong">Documents complete</div>
-                        <input type="checkbox" data-ui-only="check"/>
-                      </div>
-                      <div class="check-item">
+                        <input type="checkbox" name="documentsComplete" <%= a.reviewChecklist && a.reviewChecklist.documentsComplete ? "checked" : "" %>/>
+                      </label>
+                      <label class="check-item">
                         <div class="strong">Fee cleared</div>
-                        <input type="checkbox" data-ui-only="check"/>
-                      </div>
-                    </div>
-
-                    <div class="divider"></div>
-                    <button class="btn light small no-print" type="button" data-ui-only="save-checklist">
-                      <i class="fa-solid fa-check"></i> Save Checklist
-                    </button>
+                        <input type="checkbox" name="feeCleared" <%= a.reviewChecklist && a.reviewChecklist.feeCleared ? "checked" : "" %>/>
+                      </label>
+                      <div class="divider"></div>
+                      <button class="btn light small no-print" type="submit"><i class="fa-solid fa-check"></i> Save Checklist</button>
+                    </form>
                   </div>
 
                   <div class="note">
@@ -584,7 +610,10 @@
                     <div class="no-print" style="display:flex;gap:8px;flex-wrap:wrap">
                       <button class="btn warn small" type="button" data-open-modal="mInt"><i class="fa-solid fa-calendar-plus"></i> Schedule</button>
                       <button class="btn light small" type="button" data-open-modal="mInt"><i class="fa-solid fa-arrows-rotate"></i> Reschedule</button>
-                      <button class="btn danger small" type="button" data-ui-only="cancel-interview"><i class="fa-solid fa-ban"></i> Cancel</button>
+                      <form method="POST" action="/admin/admissions/applicants/<%= a._id %>/cancel-interview" style="margin:0" data-confirm-form="Cancel this interview?">
+                        <% if (csrf) { %><input type="hidden" name="_csrf" value="<%= csrf %>"><% } %>
+                        <button class="btn danger small" type="submit"><i class="fa-solid fa-ban"></i> Cancel</button>
+                      </form>
                     </div>
                   </div>
                 </div>
@@ -597,7 +626,7 @@
 
                   <div class="grid-3">
                     <div class="field">
-                      <label>Decision (UI selector)</label>
+                      <label>Decision</label>
                       <select class="select" id="decValue">
                         <option value="review" <%= (statusRaw==="review"||statusRaw==="under_review") ? "selected":"" %>>Keep Under Review</option>
                         <option value="shortlist" <%= (statusRaw==="shortlist"||statusRaw==="shortlisted") ? "selected":"" %>>Shortlist</option>
@@ -608,11 +637,11 @@
                     </div>
                     <div class="field">
                       <label>Effective Term</label>
-                      <input class="input" id="decIntake" value="<%= s(a.academicYear,'') %>" placeholder="e.g. 2026/2027">
+                      <input class="input" id="decIntake" value="<%= s(a.academicYear,'') %>" placeholder="e.g. 2026/2027" readonly>
                     </div>
                     <div class="field">
                       <label>Section (final)</label>
-                      <input class="input" id="decProgram" value="<%= program1 %>" placeholder="Final section">
+                      <input class="input" id="decProgram" value="<%= program1 %>" placeholder="Final section" readonly>
                     </div>
                   </div>
 
@@ -646,7 +675,7 @@
 
                     <div class="field">
                       <label>Decision note (sent with accept)</label>
-                      <textarea class="textarea" name="decisionNote" placeholder="Fees paid, verified docs, conditions..."><%= s(a.decisionNote,"") %></textarea>
+                      <textarea class="textarea" name="decisionNote" id="acceptDecisionNote" placeholder="Fees paid, verified docs, conditions..."><%= s(a.decisionNote,"") %></textarea>
                     </div>
 
                     <div class="divider"></div>
@@ -674,8 +703,13 @@
 
                   <div class="divider"></div>
 
+                  <form id="formReview" method="POST" action="/admin/admissions/applicants/<%= a._id %>/status" style="display:none">
+                    <% if (csrf) { %><input type="hidden" name="_csrf" value="<%= csrf %>"><% } %>
+                    <input type="hidden" name="status" value="under_review">
+                    <input type="hidden" name="decisionNote" id="reviewDecisionNote" value="">
+                  </form>
                   <div class="no-print" style="display:flex;gap:8px;flex-wrap:wrap">
-                    <button class="btn light" type="button" data-ui-only="save-decision"><i class="fa-solid fa-floppy-disk"></i> Save Decision</button>
+                    <button class="btn light" type="button" id="btnSaveDecision"><i class="fa-solid fa-floppy-disk"></i> Save Decision</button>
                     <button class="btn primary" type="button" data-open-modal="mLetter"><i class="fa-solid fa-file-signature"></i> Generate Letter</button>
                     <button class="btn success" type="button" id="btnFinalize"><i class="fa-solid fa-check"></i> Finalize</button>
                   </div>
@@ -687,6 +721,7 @@
                     Rejected → submits Reject form.
                     Shortlist → submits Shortlist form.
                     Interview → opens Schedule Interview modal.
+                    Under Review → persists status and decision notes.
                   </div>
                 </div>
               </div>
@@ -746,7 +781,7 @@
                 <form method="POST" action="/admin/admissions/applicants/<%= a._id %>/notes" class="no-print" id="formAdminNotes">
                   <% if (csrf) { %><input type="hidden" name="_csrf" value="<%= csrf %>"><% } %>
 
-                  <input type="hidden" name="tags" id="tagsField" value="">
+                  <input type="hidden" name="tags" id="tagsField" value="<%= Array.isArray(a.tags) ? a.tags.join(',') : '' %>">
 
                   <div class="field">
                     <label>Internal Notes</label>
@@ -755,8 +790,8 @@
                   <div class="divider"></div>
                   <div class="no-print" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
                     <button class="btn light small" type="submit"><i class="fa-solid fa-check"></i> Save Notes</button>
-                    <button class="btn light small" type="button" data-ui-only="email"><i class="fa-solid fa-envelope"></i> Email</button>
-                    <button class="btn light small" type="button" data-ui-only="sms"><i class="fa-solid fa-comment-sms"></i> SMS</button>
+                    <button class="btn light small" type="button" data-open-modal="mEmail"><i class="fa-solid fa-envelope"></i> Email</button>
+                    <button class="btn light small" type="submit" formaction="/admin/admissions/applicants/<%= a._id %>/sms" formmethod="POST"><i class="fa-solid fa-comment-sms"></i> SMS</button>
                   </div>
                 </form>
 
@@ -893,56 +928,91 @@
   </div>
 </div>
 
-<!-- MODAL: Generate Letter (UI-only) -->
+<!-- MODAL: Generate Offer Letter -->
 <div class="modal-backdrop" id="mLetter" aria-hidden="true">
-  <div class="modal" role="dialog" aria-modal="true" aria-label="Generate Letter">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Generate Offer Letter">
     <div class="modal-header">
-      <div class="modal-title">Generate Letter</div>
+      <div class="modal-title">Generate Offer Letter</div>
       <button class="btn light small" type="button" data-close-modal="mLetter"><i class="fa-solid fa-xmark"></i></button>
     </div>
-    <div class="modal-body">
-      <div class="grid-2">
+    <% if (a) { %>
+      <form class="modal-body" method="POST" action="/admin/admissions/offer-letters/generate">
+        <% if (csrf) { %><input type="hidden" name="_csrf" value="<%= csrf %>"><% } %>
+        <input type="hidden" name="applicantId" value="<%= a._id %>">
+        <input type="hidden" name="returnTo" value="/admin/admissions/applicants/<%= a._id %>">
         <div class="field">
           <label>Template</label>
-          <select class="select" id="lTemplate">
-            <option selected>Offer Letter</option>
-            <option>Conditional Offer</option>
-            <option>Rejection Letter</option>
-            <option>Waitlist Letter</option>
-            <option>Document Request</option>
-          </select>
+          <select class="select" name="templateType" disabled><option selected>Active Offer Letter Template</option></select>
         </div>
-        <div class="field">
-          <label>Output</label>
-          <select class="select" id="lOutput">
-            <option selected>PDF</option>
-            <option>DOCX</option>
-            <option>Email Body</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="divider"></div>
-
-      <div class="field">
-        <label>Letter Notes / Conditions</label>
-        <textarea class="textarea" id="lNotes" placeholder="Conditions, deposit deadlines, scholarship details..."></textarea>
-      </div>
-
-      <div class="divider"></div>
-
-      <div class="note">
-        <div class="strong"><i class="fa-solid fa-circle-info"></i> Preview</div>
         <div class="divider"></div>
-        <div class="muted" id="lPreview">
-          This is UI-ready. When you add backend templates, this modal can generate PDF/DOCX and attach to the applicant.
+        <div class="field">
+          <label>Letter Notes / Conditions</label>
+          <textarea class="textarea" name="notes" placeholder="Conditions, reporting instructions, scholarship details..."></textarea>
         </div>
-      </div>
+        <div class="divider"></div>
+        <div class="note">
+          <div class="strong"><i class="fa-solid fa-circle-info"></i> Draft generation</div>
+          <div class="divider"></div>
+          <div class="muted">A real OfferLetter record will be generated from the active Admissions template. The applicant must already be accepted.</div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn light" type="button" data-close-modal="mLetter">Cancel</button>
+          <button class="btn primary" type="submit" <%= ["accepted","converted"].includes(statusRaw) ? "" : "disabled" %>><i class="fa-solid fa-wand-magic-sparkles"></i> Generate</button>
+        </div>
+      </form>
+    <% } %>
+  </div>
+</div>
+
+<!-- MODAL: Upload Applicant Document -->
+<div class="modal-backdrop" id="mUpload" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Upload Applicant Document">
+    <div class="modal-header">
+      <div class="modal-title">Upload Applicant Document</div>
+      <button class="btn light small" type="button" data-close-modal="mUpload"><i class="fa-solid fa-xmark"></i></button>
     </div>
-    <div class="modal-footer">
-      <button class="btn light" type="button" data-close-modal="mLetter">Cancel</button>
-      <button class="btn primary" type="button" id="btnDoLetter"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate</button>
+    <% if (a) { %>
+      <form class="modal-body" method="POST" enctype="multipart/form-data" action="/admin/admissions/applicants/<%= a._id %>/documents/upload">
+        <% if (csrf) { %><input type="hidden" name="_csrf" value="<%= csrf %>"><% } %>
+        <div class="field">
+          <label>Document Type</label>
+          <select class="select" name="key" required>
+            <option value="idDocument">National ID / Passport</option>
+            <option value="passportPhoto">Passport Photo</option>
+            <option value="transcript">Transcript / Results Slip</option>
+            <option value="otherDocs">Other Supporting Document</option>
+          </select>
+        </div>
+        <div class="divider"></div>
+        <div class="field"><label>File</label><input class="input" type="file" name="file" required></div>
+        <div class="modal-footer">
+          <button class="btn light" type="button" data-close-modal="mUpload">Cancel</button>
+          <button class="btn primary" type="submit"><i class="fa-solid fa-upload"></i> Upload</button>
+        </div>
+      </form>
+    <% } %>
+  </div>
+</div>
+
+<!-- MODAL: Email Applicant -->
+<div class="modal-backdrop" id="mEmail" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Email Applicant">
+    <div class="modal-header">
+      <div class="modal-title">Email Applicant</div>
+      <button class="btn light small" type="button" data-close-modal="mEmail"><i class="fa-solid fa-xmark"></i></button>
     </div>
+    <% if (a) { %>
+      <form class="modal-body" method="POST" action="/admin/admissions/applicants/<%= a._id %>/email">
+        <% if (csrf) { %><input type="hidden" name="_csrf" value="<%= csrf %>"><% } %>
+        <div class="field"><label>To</label><input class="input" value="<%= email %>" disabled></div>
+        <div class="field"><label>Subject</label><input class="input" name="subject" maxlength="160" required value="Admission application update • <%= applicantId %>"></div>
+        <div class="field"><label>Message</label><textarea class="textarea" name="message" maxlength="4000" required placeholder="Write the message to the applicant..."></textarea></div>
+        <div class="modal-footer">
+          <button class="btn light" type="button" data-close-modal="mEmail">Cancel</button>
+          <button class="btn primary" type="submit"><i class="fa-solid fa-paper-plane"></i> Send Email</button>
+        </div>
+      </form>
+    <% } %>
   </div>
 </div>
 

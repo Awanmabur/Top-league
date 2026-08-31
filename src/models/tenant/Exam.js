@@ -165,6 +165,11 @@ module.exports = (connection) => {
         index: true,
       },
 
+      publishedAt: { type: Date, default: null, index: true },
+      scheduleUpdatedAt: { type: Date, default: null },
+      completedAt: { type: Date, default: null },
+      archivedAt: { type: Date, default: null },
+
       createdBy: {
         type: Schema.Types.ObjectId,
         ref: "User",
@@ -182,7 +187,11 @@ module.exports = (connection) => {
 
   ExamSchema.index(
     { classGroup: 1, sectionId: 1, streamId: 1, subject: 1, academicYear: 1, term: 1, examType: 1, examDate: 1 },
-    { unique: true }
+    {
+      unique: true,
+      name: "uniq_active_exam_scope_schedule",
+      partialFilterExpression: { archivedAt: null },
+    }
   );
 
   ExamSchema.index({ status: 1, examDate: -1 });

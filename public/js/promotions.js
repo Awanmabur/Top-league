@@ -53,7 +53,7 @@
   const promoCount = qs("#promoCount");
 
   function rowChks() {
-    return qsa(".rowChk");
+    return qsa(".rowChk:not(:disabled)");
   }
 
   function selectedIds() {
@@ -114,10 +114,11 @@
 
       const toAcademicYear = qs('[name="toAcademicYear"]', promoForm)?.value?.trim();
       const toClassId = qs('[name="toClassId"]', promoForm)?.value?.trim();
+      const toStatus = qs('[name="toStatus"]', promoForm)?.value?.trim();
 
-      if (!toAcademicYear || !toClassId) {
+      if (!toAcademicYear || (toStatus !== "graduated" && !toClassId)) {
         e.preventDefault();
-        window.alert("Destination academic year and class are required.");
+        window.alert(toStatus === "graduated" ? "Destination academic year is required." : "Destination academic year and class are required.");
         return;
       }
 
@@ -126,6 +127,18 @@
       }
     });
   }
+
+  const statusSelect = qs("#toStatus");
+  const classSelect = qs("#toClassId");
+  function syncDestinationRequirement() {
+    if (!classSelect || !statusSelect) return;
+    const graduating = statusSelect.value === "graduated";
+    classSelect.required = !graduating;
+    classSelect.disabled = graduating;
+    if (graduating) classSelect.value = "";
+  }
+  statusSelect?.addEventListener("change", syncDestinationRequirement);
+  syncDestinationRequirement();
 
   sync();
 })();

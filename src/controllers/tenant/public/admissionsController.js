@@ -1,4 +1,5 @@
-const { makeApplicationId } = require("../../../utils/id");
+const { allocateApplicationId } = require("../../../services/tenant/admissionsService");
+const { intakeAllowsSection, isIntakePubliclyOpen, requirementSnapshot } = require("../../../services/tenant/admissionsOperationsService");
 const { uploadBuffer, safeDestroy } = require("../../../utils/cloudinaryUpload");
 
 function pickFirst(files, key) {
@@ -107,14 +108,17 @@ async function loadPlacementData(req) {
   const Intake = req.models ? req.models.Intake : null;
   const Stream = req.models ? req.models.Stream : null;
   const Section = req.models ? req.models.Section : null;
+  const AdmissionRequirement = req.models ? req.models.AdmissionRequirement : null;
   const selectedSchoolUnitId = getRequestedSchoolUnitId(req);
   const selectedSchoolUnit = findRequestedSchoolUnit(req, selectedSchoolUnitId);
 
-  const [terms, streams, sections] = await Promise.all([
-    Intake ? Intake.find({ isDeleted: { $ne: true }, status: { $in: ["draft", "open", "closed"] } }).select("_id name year term code status isActive").sort({ isActive: -1, year: -1, name: 1 }).lean() : [],
+  const [rawTerms, streams, sections, requirements] = await Promise.all([
+    Intake ? Intake.find({ isDeleted: { $ne: true }, status: "open" }).select("_id name year term code status isActive applicationOpenDate applicationCloseDate programs revision").sort({ isActive: -1, year: -1, name: 1 }).lean() : [],
     Stream ? Stream.find({ status: { $ne: "archived" } }).select("_id name levelType classLevel classId className classStream campusName campusCode schoolUnitId schoolUnitName schoolUnitCode").sort({ levelType: 1, classLevel: 1, name: 1 }).lean() : [],
-    Section ? Section.find({ status: { $ne: "archived" } }).select("_id name levelType classLevel classId className classStream campusName campusCode schoolUnitId schoolUnitName schoolUnitCode").sort({ levelType: 1, classLevel: 1, classStream: 1, name: 1 }).lean() : [],
+    Section ? Section.find({ status: { $ne: "archived" } }).select("_id name code levelType classLevel classId className classStream campusName campusCode schoolUnitId schoolUnitName schoolUnitCode").sort({ levelType: 1, classLevel: 1, classStream: 1, name: 1 }).lean() : [],
+    AdmissionRequirement ? AdmissionRequirement.find({ isDeleted: { $ne: true }, isActive: true }).select("_id code title category description feeAmount currency appliesToAllPrograms programs appliesToAllIntakes intakes isMandatory sortOrder").sort({ sortOrder: 1, createdAt: 1 }).lean() : [],
   ]);
+  const terms = rawTerms.filter((term) => isIntakePubliclyOpen(term));
 
   const mappedStreams = streams.map((s) => ({
     _id: String(s._id),
@@ -166,9 +170,22 @@ async function loadPlacementData(req) {
       code: norm(t.code),
       status: norm(t.status),
       isActive: !!t.isActive,
+      applicationOpenDate: t.applicationOpenDate || null,
+      applicationCloseDate: t.applicationCloseDate || null,
+      programs: Array.isArray(t.programs) ? t.programs.map((row) => ({ program: String(row?.program?._id || row?.program || ""), isOpen: row?.isOpen !== false, capacity: Number(row?.capacity || 0) })) : [],
+      revision: Number(t.revision || 1),
     })),
     streams: unitScopedStreams,
     sections: unitScopedSections,
+    requirements: requirements.map((r) => ({
+      _id: String(r._id), code: norm(r.code), title: norm(r.title), category: norm(r.category), description: norm(r.description),
+      feeAmount: Number(r.feeAmount || 0), currency: norm(r.currency || "UGX"), isMandatory: r.isMandatory !== false,
+      appliesToAllPrograms: r.appliesToAllPrograms === true,
+      programs: Array.isArray(r.programs) ? r.programs.map((x) => String(x)) : [],
+      appliesToAllIntakes: r.appliesToAllIntakes === true,
+      intakes: Array.isArray(r.intakes) ? r.intakes.map((x) => String(x)) : [],
+      sortOrder: Number(r.sortOrder || 0),
+    })),
     selectedSchoolUnitId,
     selectedSchoolUnit: selectedSchoolUnit
       ? {
@@ -207,7 +224,8 @@ function buildErrors(body, files, terms, streams, sections, storedDocs = {}) {
 
   const termId = norm(body ? body.termId : "");
   const termDoc = (terms || []).find((t) => String(t._id) === termId);
-  if (!termDoc) e.termId = "Select a valid term";
+  if (!termDoc) e.termId = "Select an Intake that is currently open for applications";
+  else if (!isIntakePubliclyOpen(termDoc)) e.termId = "Applications are not currently open for this Intake";
   const selectedAcademicYear = norm(body ? body.academicYear : "");
   const termYear = termDoc ? norm(termDoc.year) : "";
   if (termDoc && selectedAcademicYear && termYear && selectedAcademicYear !== termYear) e.academicYear = "Academic year must match the selected term";
@@ -219,6 +237,7 @@ function buildErrors(body, files, terms, streams, sections, storedDocs = {}) {
   const secId = norm(body ? body.section1 : "");
   const secDoc = (sections || []).find((s) => String(s._id) === secId);
   if (!secDoc) e.section1 = "Select a valid section";
+  if (termDoc && secDoc && !intakeAllowsSection(termDoc, secDoc._id)) e.section1 = "This Section is not open for the selected Intake";
 
   if (streamDoc) {
     if (streamDoc.levelType !== normLower(body.schoolLevel)) e.streamId = "Stream does not match school level";
@@ -259,6 +278,7 @@ function buildViewData(req, placement, formData, errors, applicationId) {
     terms,
     streams,
     sections,
+    requirements: placement && Array.isArray(placement.requirements) ? placement.requirements : [],
     selectedSchoolUnitId,
     selectedSchoolUnit: placement?.selectedSchoolUnit || null,
     applyAction: `/admissions/apply${schoolUnitQuery}`,
@@ -334,12 +354,7 @@ module.exports = {
           freshOtherDocs.push(mkDoc(f, up));
         }
         const otherDocs = [...(storedDocs.otherDocs || []), ...freshOtherDocs];
-        let applicationId = makeApplicationId();
-        for (let i = 0; i < 5; i++) {
-          const exists = await Applicant.findOne({ applicationId, isDeleted: { $ne: true } }).lean();
-          if (!exists) break;
-          applicationId = makeApplicationId();
-        }
+        const applicationId = await allocateApplicationId(Applicant);
         const termId = norm(req.body.termId);
         const termDoc = placement.terms.find((t) => String(t._id) === termId) || null;
         const streamId = norm(req.body.streamId);
@@ -347,6 +362,7 @@ module.exports = {
         const section1 = norm(req.body.section1);
         const section2 = norm(req.body.section2);
         const selectedSchoolUnit = placement.selectedSchoolUnit || null;
+        const applicableRequirements = requirementSnapshot(placement.requirements || [], section1, termDoc ? termDoc._id : null);
         const doc = await Applicant.create({
           applicationId,
           firstName: norm(req.body.firstName),
@@ -390,6 +406,7 @@ module.exports = {
           yearCompleted: noPrev ? null : Number(req.body.yearCompleted || 0),
           grades: norm(req.body.grades),
           notes: norm(req.body.notes),
+          admissionRequirementsSnapshot: applicableRequirements,
           passportPhoto: upPassport ? mkDoc(passportFile, upPassport) : storedDocs.passportPhoto,
           idDocument: upId ? mkDoc(idFile, upId) : storedDocs.idDocument,
           transcript: noPrev ? null : (upTranscript ? mkDoc(transcriptFile, upTranscript) : storedDocs.transcript),
@@ -400,7 +417,7 @@ module.exports = {
       } catch (err) {
         for (const u of uploaded) await safeDestroy(u.publicId, u.resourceType || "auto");
         console.error("Application submit error:", err);
-        return res.status(500).render("tenant/public/admissions/apply", buildViewData(req, placement, req.body, { general: err.message || "Failed to submit application" }, null));
+        return res.status(500).render("tenant/public/admissions/apply", buildViewData(req, placement, req.body, { general: "Failed to submit application. Please try again." }, null));
       }
     } catch (err) {
       console.error("Application submit bootstrap error:", err);
@@ -454,7 +471,7 @@ module.exports = {
       req.session.save(() => res.json({ ok: true, saved, uploads: getStoredDocs(req) }));
     } catch (err) {
       console.error("Draft upload error:", err);
-      return res.status(500).json({ ok: false, message: err.message || "Upload failed" });
+      return res.status(500).json({ ok: false, message: "Upload failed" });
     }
   },
   statusPage: async (req, res) => {

@@ -23,9 +23,9 @@
       <a class="btn light" href="/student/dashboard">
         <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
       </a>
-      <button class="btn primary" type="button" disabled>
+      <a class="btn primary" href="#hostel-options">
         <i class="fa-solid fa-bed"></i> Apply / Change Hostel
-      </button>
+      </a>
     </div>
   </div>
 
@@ -98,19 +98,32 @@
     </section>
 
     <aside>
-      <section class="card">
+      <section class="card" id="hostel-options">
         <div class="section-title">Available hostel options</div>
         <div class="section-sub">Configured hostel choices.</div>
+        <% if (policy && policy.applicationsOpen === false) { %>
+          <div class="small-muted" style="margin-top:8px;">Hostel applications are currently closed by the school.</div>
+        <% } else if (policy?.policyText) { %>
+          <div class="small-muted" style="margin-top:8px;"><%= policy.policyText %></div>
+        <% } %>
 
         <div class="notif-list" style="margin-top:10px;">
           <% if (options?.length) { %>
             <% options.forEach(function(h){ %>
               <div class="notif-item">
                 <div class="notif-icon"><i class="fa-solid fa-bed"></i></div>
-                <div>
+                <div style="flex:1;min-width:0;">
                   <div class="notif-title"><%= h.name %></div>
                   <div class="notif-meta"><%= h.roomType %> • <%= h.gender %> • <%= h.location %></div>
-                  <div class="small-muted">Fee: UGX <%= Number(h.fee || 0).toLocaleString() %> • Available: <%= h.available %></div>
+                  <div class="small-muted">Fee: UGX <%= Number(h.fee || 0).toLocaleString() %> • Available: <%= h.available %> • <%= h.status %></div>
+                  <% if (policy?.applicationsOpen && !["Maintenance","Closed"].includes(h.status) && !(application?.isCurrent && ["Pending","Waitlist","Approved"].includes(application.status))) { %>
+                    <form method="POST" action="/student/hostel/apply" style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                      <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>">
+                      <input type="hidden" name="roomId" value="<%= h.id %>">
+                      <input type="hidden" name="preference" value="<%= h.roomType %>">
+                      <button class="btn primary small" type="submit"><i class="fa-solid fa-paper-plane"></i> <%= h.available > 0 ? "Apply" : "Join Waitlist" %></button>
+                    </form>
+                  <% } %>
                 </div>
               </div>
             <% }) %>

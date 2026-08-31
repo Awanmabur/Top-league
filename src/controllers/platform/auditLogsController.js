@@ -9,7 +9,9 @@ function escRegex(value) {
 module.exports = {
   listAuditLogs: async (req, res) => {
     try {
-      const { q = "", action = "" } = req.query;
+      res.set("Cache-Control", "no-store");
+      const q = String(req.query.q || "").trim().slice(0, 120);
+      const action = String(req.query.action || "").trim().slice(0, 120);
 
       const filter = {};
 
@@ -47,7 +49,8 @@ module.exports = {
 
   showAuditLog: async (req, res) => {
     try {
-      const log = await AuditLog.findById(req.params.id).lean();
+      res.set("Cache-Control", "no-store");
+      const log = await AuditLog.findById(req.params.id).select("createdAt actorName actorRole action entityType entityId tenantId description ipAddress userAgent meta").lean();
 
       if (!log) {
         return res.status(404).render("platform/audit-logs/show", {

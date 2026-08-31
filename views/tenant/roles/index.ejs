@@ -4,7 +4,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Roles — <%= (tenant && tenant.name) ? tenant.name : "Classic Academy" %></title>
-<style>
+<style nonce="<%= cspNonce %>">
   :root{--accent:#0a6fbf;--bg:#f4f8ff;--line:rgba(13,64,96,.12);--muted:#6b7280}
   *{box-sizing:border-box}
   body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial;background:var(--bg);color:#0f172a}
@@ -104,7 +104,7 @@
 
 <script nonce="<%= cspNonce %>">
 (function(){
-  const ALL = <%- JSON.stringify(roles || []) %>;
+  const ALL = <%- JSON.stringify(roles || []).replace(/&/g,"\u0026").replace(/</g,"\u003c").replace(/>/g,"\u003e") %>;
   function pickRoles(current){
     const cur = Array.isArray(current)? current : [];
     const raw = prompt("Enter roles comma-separated:\n"+ALL.join(", "), cur.join(", "));

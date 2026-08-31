@@ -153,14 +153,15 @@ module.exports = {
 
       const filter = {};
       if (q) {
+        const rx = require("../../../services/tenant/academicCatalogService").escapeRegExp(q);
         filter.$or = [
-          { title: { $regex: q, $options: "i" } },
-          { shortTitle: { $regex: q, $options: "i" } },
-          { code: { $regex: q, $options: "i" } },
-          { className: { $regex: q, $options: "i" } },
-          { classLevel: { $regex: q, $options: "i" } },
-          { sectionName: { $regex: q, $options: "i" } },
-          { description: { $regex: q, $options: "i" } },
+          { title: { $regex: rx, $options: "i" } },
+          { shortTitle: { $regex: rx, $options: "i" } },
+          { code: { $regex: rx, $options: "i" } },
+          { className: { $regex: rx, $options: "i" } },
+          { classLevel: { $regex: rx, $options: "i" } },
+          { sectionName: { $regex: rx, $options: "i" } },
+          { description: { $regex: rx, $options: "i" } },
         ];
       }
 
@@ -175,16 +176,25 @@ module.exports = {
       if (academicYear) filter.academicYear = academicYear;
       if (term && !Number.isNaN(Number(term))) filter.term = Number(term);
 
-      const total = await Subject.countDocuments(filter);
+      const kpiFilter = { ...filter };
+      delete kpiFilter.status;
+      const [total, statusRows, classes, staffList, scopeLists, academicYearsRaw] = await Promise.all([
+        Subject.countDocuments(filter),
+        Subject.aggregate([
+          { $match: kpiFilter },
+          { $group: { _id: "$status", count: { $sum: 1 } } },
+        ]),
+        Class
+          ? Class.find({}).select("name code schoolUnitId schoolUnitName campusId campusName campusCode levelType classLevel stream academicYear term").sort({ createdAt: -1 }).lean()
+          : [],
+        Staff
+          ? Staff.find({}).select("fullName name role email").sort({ fullName: 1, name: 1 }).lean()
+          : [],
+        loadAcademicScopeLists(req),
+        Subject.distinct("academicYear"),
+      ]);
       const totalPages = Math.max(Math.ceil(total / perPage), 1);
       const safePage = Math.min(page, totalPages);
-
-      const classes = Class
-        ? await Class.find({})
-            .select("name code schoolUnitId schoolUnitName campusId campusName campusCode levelType classLevel stream academicYear term")
-            .sort({ createdAt: -1 })
-            .lean()
-        : [];
 
       const subjects = await Subject.find(filter)
         .populate("teacher", "fullName name email role")
@@ -194,22 +204,9 @@ module.exports = {
         .limit(perPage)
         .lean();
 
-      const staffList = Staff
-        ? await Staff.find({})
-            .select("fullName name role email")
-            .sort({ fullName: 1, name: 1 })
-            .lean()
-        : [];
-
-      const scopeLists = await loadAcademicScopeLists(req);
-      const academicYears = (await Subject.distinct("academicYear")).filter(Boolean).sort();
-
-      const kpis = {
-        total,
-        active: await Subject.countDocuments({ ...filter, status: "active" }),
-        draft: await Subject.countDocuments({ ...filter, status: "draft" }),
-        archived: await Subject.countDocuments({ ...filter, status: "archived" }),
-      };
+      const academicYears = academicYearsRaw.filter(Boolean).sort();
+      const statusCounts = Object.fromEntries(statusRows.map((row) => [String(row._id || ""), Number(row.count || 0)]));
+      const kpis = { total, active: statusCounts.active || 0, draft: statusCounts.draft || 0, archived: statusCounts.archived || 0 };
 
       return res.render(VIEW_PATH, {
         tenant: req.tenant || null,
@@ -497,3 +494,43 @@ module.exports = {
     }
   },
 };
+
+{
+  const catalog = require('../../../services/tenant/academicCatalogService');
+  const originalList = module.exports.list;
+  const originalCreate = module.exports.create;
+  const originalUpdate = module.exports.update;
+
+  module.exports.list = async function guardedSubjectList(req,res){
+    if(req.query.q) req.query.q = String(req.query.q).trim();
+    return originalList(req,res);
+  };
+
+  module.exports.create = async function guardedSubjectCreate(req,res){
+    try{
+      if(mongoose.Types.ObjectId.isValid(req.body.classId)){
+        const klass=await req.models.Class?.findById(req.body.classId).lean();
+        const section=req.body.sectionId&&mongoose.Types.ObjectId.isValid(req.body.sectionId)?await req.models.Section?.findById(req.body.sectionId).lean():null;
+        const stream=req.body.streamId&&mongoose.Types.ObjectId.isValid(req.body.streamId)?await req.models.Stream?.findById(req.body.streamId).lean():null;
+        if(String(req.body.status||'active')==='active'&&((klass&&klass.status!=='active')||(section&&section.status!=='active')||(stream&&stream.status!=='active'))) throw new Error('Activate the parent class/section/stream before creating an active subject.');
+      }
+    }catch(err){req.flash?.('error',err.message||'Invalid subject scope.');return res.redirect(BASE_PATH);}
+    return originalCreate(req,res);
+  };
+
+  module.exports.update = async function guardedSubjectUpdate(req,res){
+    const id=String(req.params.id||'').trim();
+    if(mongoose.Types.ObjectId.isValid(id)){
+      const current=await req.models.Subject.findById(id).lean();
+      if(current){try{await catalog.assertStructuralMoveAllowed(req.models,'subject',id,current,{classId:req.body.classId,sectionId:req.body.sectionId||'',streamId:req.body.streamId||'',academicYear:String(req.body.academicYear||'').trim(),term:Number(req.body.term||1)});}catch(err){req.flash?.('error',err.message||'Subject scope cannot be changed.');return res.redirect(BASE_PATH);}}
+    }
+    const result=await originalUpdate(req,res);
+    if(mongoose.Types.ObjectId.isValid(id)){const updated=await req.models.Subject.findById(id).lean().catch(()=>null);if(updated)await catalog.propagateSubjectMetadata(req.models,id,updated).catch((err)=>console.error('SUBJECT METADATA PROPAGATION ERROR:',err));}
+    return result;
+  };
+
+  module.exports.setStatus = async function guardedSubjectStatus(req,res){const id=String(req.params.id||'').trim(),next=String(req.body.status||'').trim();try{if(!mongoose.Types.ObjectId.isValid(id))throw new Error('Invalid subject id.');const doc=await req.models.Subject.findById(id).lean();if(!doc)throw new Error('Subject was not found.');if(next==='active'){const klass=await req.models.Class?.findById(doc.classId).lean();const section=doc.sectionId&&mongoose.Types.ObjectId.isValid(doc.sectionId)?await req.models.Section?.findById(doc.sectionId).lean():null;const stream=doc.streamId&&mongoose.Types.ObjectId.isValid(doc.streamId)?await req.models.Stream?.findById(doc.streamId).lean():null;if((klass&&klass.status!=='active')||(section&&section.status!=='active')||(stream&&stream.status!=='active'))throw new Error('Activate the parent class/section/stream first.');}await catalog.assertStatusAllowed(req.models,'subject',id,next);await req.models.Subject.updateOne({_id:id},{$set:{status:next}},{runValidators:true});req.flash?.('success','Subject status updated.');}catch(err){req.flash?.('error',err.message||'Failed to update subject status.');}return res.redirect(BASE_PATH);};
+  module.exports.remove = async function guardedSubjectDelete(req,res){const id=String(req.params.id||'').trim();try{if(!mongoose.Types.ObjectId.isValid(id))throw new Error('Invalid subject id.');await catalog.assertDeleteAllowed(req.models,'subject',id);await req.models.Subject.deleteOne({_id:id});req.flash?.('success','Subject deleted.');}catch(err){req.flash?.('error',err.message||'Failed to delete subject.');}return res.redirect(BASE_PATH);};
+  module.exports.bulk = async function guardedSubjectBulk(req,res){const action=String(req.body.action||'').trim();const ids=[...new Set(String(req.body.ids||'').split(',').map(v=>v.trim()).filter(v=>mongoose.Types.ObjectId.isValid(v)))];const statusMap={activate:'active',draft:'draft',archive:'archived'};if(!ids.length||(!statusMap[action]&&action!=='delete')){req.flash?.('error',!ids.length?'No subjects selected.':'Invalid bulk action.');return res.redirect(BASE_PATH);}let changed=0,skipped=0;for(const id of ids){try{if(action==='delete'){await catalog.assertDeleteAllowed(req.models,'subject',id);await req.models.Subject.deleteOne({_id:id});}else{await catalog.assertStatusAllowed(req.models,'subject',id,statusMap[action]);await req.models.Subject.updateOne({_id:id},{$set:{status:statusMap[action]}},{runValidators:true});}changed+=1;}catch{skipped+=1;}}req.flash?.(changed?'success':'error',`${changed} subject${changed===1?'':'s'} updated${skipped?`; ${skipped} skipped because of dependent records.`:'.'}`);return res.redirect(BASE_PATH);};
+  module.exports.exportCsv = async function exportSubjectsCsv(req,res){const q=String(req.query.q||'').trim();const filter={};if(q){const rx=catalog.escapeRegExp(q);filter.$or=['title','shortTitle','code','className','classLevel','sectionName','streamName','description'].map(key=>({[key]:{$regex:rx,$options:'i'}}));}for(const key of ['status','category','levelType','schoolUnitId','campusId','academicYear'])if(req.query[key])filter[key]=String(req.query[key]).trim();if(req.query.classId&&mongoose.Types.ObjectId.isValid(req.query.classId))filter.classId=req.query.classId;if(req.query.sectionId)filter.sectionId=String(req.query.sectionId);if(req.query.streamId)filter.streamId=String(req.query.streamId);if(req.query.term&&!Number.isNaN(Number(req.query.term)))filter.term=Number(req.query.term);const rows=await req.models.Subject.find(filter).populate('teacher','fullName name').sort({createdAt:-1}).lean();const lines=[['Title','Code','Short Title','Class','Class Level','Section','Stream','Term','Academic Year','Category','Compulsory','Weekly Periods','Pass Mark','Teacher','Status','Description'].map(catalog.csvCell).join(',')];for(const r of rows)lines.push([r.title,r.code,r.shortTitle,r.className,r.classLevel,r.sectionName,r.streamName,r.term,r.academicYear,r.category,r.isCompulsory?'Yes':'No',r.weeklyPeriods,r.passMark,r.teacher?.fullName||r.teacher?.name||'',r.status,r.description].map(catalog.csvCell).join(','));res.setHeader('Content-Type','text/csv; charset=utf-8');res.setHeader('Content-Disposition','attachment; filename="subjects.csv"');return res.send(`\uFEFF${lines.join('\n')}`);};
+}

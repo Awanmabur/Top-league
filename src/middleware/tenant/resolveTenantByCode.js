@@ -13,28 +13,6 @@ function wantsJson(req) {
   );
 }
 
-const TENANT_CODE_CACHE = new Map();
-const TENANT_CODE_TTL_MS = 5 * 60 * 1000;
-
-function cacheGet(code) {
-  const hit = TENANT_CODE_CACHE.get(code);
-  if (!hit) return null;
-
-  if (Date.now() > hit.exp) {
-    TENANT_CODE_CACHE.delete(code);
-    return null;
-  }
-
-  return hit.tenant;
-}
-
-function cacheSet(code, tenant) {
-  TENANT_CODE_CACHE.set(code, {
-    tenant,
-    exp: Date.now() + TENANT_CODE_TTL_MS,
-  });
-}
-
 module.exports = async function resolveTenantByCode(req, res, next) {
   try {
     const code = safeLower(req.params.code);
@@ -46,20 +24,10 @@ module.exports = async function resolveTenantByCode(req, res, next) {
       return res.status(400).send("Missing school code.");
     }
 
-    let tenant = req.tenant && safeLower(req.tenant.code) === code
-      ? req.tenant
-      : cacheGet(code);
-
-    if (!tenant) {
-      tenant = await Tenant.findOne({
-        code,
-        isDeleted: { $ne: true },
-      }).lean();
-
-      if (tenant) {
-        cacheSet(code, tenant);
-      }
-    }
+    const tenant = await Tenant.findOne({
+      code,
+      isDeleted: { $ne: true },
+    }).lean();
 
     if (!tenant) {
       if (wantsJson(req)) {

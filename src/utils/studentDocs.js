@@ -147,6 +147,10 @@ async function syncApplicantDocsToStudentDocs({
       },
       uploadedBy: uploadedBy || null,
       sourceApplicant: applicant._id || null,
+      status: "pending",
+      studentVisible: false,
+      parentVisible: false,
+      revision: 0,
     });
 
     existingPublicIds.add(sourceDoc.doc.publicId);

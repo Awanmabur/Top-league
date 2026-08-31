@@ -19,6 +19,7 @@ module.exports = (connection) => {
       teacher: { type: Schema.Types.ObjectId, ref: "Staff", default: null, index: true },
 
       room: { type: String, default: "", trim: true, index: true },
+      roomKey: { type: String, default: "", trim: true, lowercase: true, index: true },
       campus: { type: String, default: "", trim: true },
 
       dayOfWeek: {
@@ -42,8 +43,14 @@ module.exports = (connection) => {
         index: true,
       },
 
-      note: { type: String, default: "", trim: true },
+      note: { type: String, default: "", trim: true, maxlength: 500 },
+      revision: { type: Number, default: 1, min: 1 },
+      publishedAt: { type: Date, default: null, index: true },
+      archivedAt: { type: Date, default: null, index: true },
+      migrationQuarantinedAt: { type: Date, default: null, index: true },
+      migrationQuarantineReason: { type: String, default: "", trim: true, maxlength: 500 },
       createdBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
+      updatedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
     },
     { timestamps: true }
   );
@@ -51,7 +58,8 @@ module.exports = (connection) => {
   TimetableEntrySchema.index({ classGroup: 1, dayOfWeek: 1, startMinutes: 1, academicYear: 1, term: 1 });
   TimetableEntrySchema.index({ classGroup: 1, sectionId: 1, streamId: 1, academicYear: 1, term: 1 });
   TimetableEntrySchema.index({ teacher: 1, dayOfWeek: 1, startMinutes: 1, academicYear: 1, term: 1 });
-  TimetableEntrySchema.index({ room: 1, dayOfWeek: 1, startMinutes: 1, academicYear: 1, term: 1 });
+  TimetableEntrySchema.index({ roomKey: 1, dayOfWeek: 1, startMinutes: 1, academicYear: 1, term: 1, status: 1 });
+  TimetableEntrySchema.index({ status: 1, migrationQuarantinedAt: 1, academicYear: 1, term: 1, dayOfWeek: 1 });
 
   return connection.model("TimetableEntry", TimetableEntrySchema);
 };

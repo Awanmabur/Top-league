@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .input,.select,.textarea{padding:10px 12px;border-radius:12px;border:1px solid rgba(13,64,96,.16);background:#fff;outline:none}
@@ -105,9 +105,9 @@
       </div>
       <div class="top-actions">
         <a class="btn light" href="/admin/staff"><i class="fa-solid fa-id-badge"></i> Staff</a>
-        <a class="btn light" href="/admin/staff-users"><i class="fa-solid fa-users"></i> Users</a>
-        <a class="btn light" href="/admin/staff-roles"><i class="fa-solid fa-user-shield"></i> Roles</a>
-        <a class="btn light" href="/admin/staff-payroll"><i class="fa-solid fa-money-check-dollar"></i> Payroll</a>
+        <a class="btn light" href="/admin/users"><i class="fa-solid fa-users"></i> Users</a>
+        <a class="btn light" href="/admin/roles"><i class="fa-solid fa-user-shield"></i> Roles</a>
+        <a class="btn light" href="/admin/payroll"><i class="fa-solid fa-money-check-dollar"></i> Payroll</a>
         <button class="btn primary" id="btnCreate" type="button"><i class="fa-solid fa-plus"></i> New Leave</button>
       </div>
     </div>
@@ -245,7 +245,7 @@
               <div class="strong">HR Roles</div>
               <div class="muted">Manage role permissions</div>
             </div>
-            <a class="btn-xs" href="/admin/staff-roles"><i class="fa-solid fa-user-shield"></i></a>
+            <a class="btn-xs" href="/admin/roles"><i class="fa-solid fa-user-shield"></i></a>
           </div>
 
           <div class="mini-item">
@@ -258,8 +258,7 @@
         </div>
 
         <div class="hint" style="margin-top:12px;">
-          <strong>Tip:</strong> approving a leave request can also set the linked staff record to
-          <strong>On Leave</strong>. Cancelling can move staff back to <strong>Active</strong>.
+          <strong>Tip:</strong> approved leave automatically sets the linked staff record to <strong>On Leave</strong> only during the approved date range. Future leave stays <strong>Active</strong>.
         </div>
       </aside>
     </div>
@@ -408,9 +407,10 @@
   <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
   <input type="hidden" name="ids" id="bulkIds" />
   <input type="hidden" name="action" id="bulkActionInput" />
+  <input type="hidden" name="rejectionReason" id="bulkRejectionReason" />
 </form>
 
-<textarea id="leaveData" class="json-data" aria-hidden="true"><%- JSON.stringify(leave || []) %></textarea>
+<textarea id="leaveData" class="json-data" aria-hidden="true"><%- JSON.stringify(leave || []).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
 
 <script src="/js/navbar.js"></script>
 <script src="/js/staff-leave.js"></script>

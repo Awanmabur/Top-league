@@ -1,0 +1,1 @@
+const router=require("express").Router();const c=require("../../../controllers/tenant/students/documentsController");router.get("/documents",c.index);router.get("/documents/:id/file",c.file);module.exports=router;

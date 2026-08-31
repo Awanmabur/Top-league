@@ -6,7 +6,7 @@
   <title>Plans — Classic Academy</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <link rel="stylesheet" href="/css/navbar.css" />
-  <style>
+  <style nonce="<%= cspNonce %>">
     body { margin:0; background:#f5f8ff; font-family:Poppins,Segoe UI,Arial,sans-serif; color:#0f172a; overflow-x:hidden; }
     * { box-sizing:border-box; min-width:0; }
     .main { flex:1; padding:20px 26px; display:flex; flex-direction:column; gap:16px; }
@@ -70,6 +70,7 @@
               <div class="meta">Per Student: <strong>$<%= Number(plan.pricePerStudent || 0).toLocaleString() %></strong></div>
               <div class="meta">Revenue Share: <strong><%= Number(plan.platformSharePercent || 0) %>%</strong></div>
               <div class="meta">Max Students: <strong><%= Number(plan.maxStudents || 0).toLocaleString() %></strong></div>
+              <div class="meta">Max Staff: <strong><%= Number(plan.maxStaff || 0).toLocaleString() %></strong> • Max Campuses: <strong><%= Number(plan.maxCampuses || 1).toLocaleString() %></strong></div>
               <div class="meta">Schools Using Plan: <strong><%= plan.totalTenants || 0 %></strong></div>
 
               <div class="meta">
@@ -80,7 +81,9 @@
               <% if (canManagePlans) { %>
                 <div class="actions">
                   <a href="/super-admin/plans/<%= plan._id %>/edit" class="btn">Edit</a>
-                  <form action="/super-admin/plans/<%= plan._id %>/delete" method="POST" onsubmit="return confirm('Delete this plan?');">
+                  <form action="/super-admin/plans/<%= plan._id %>/delete" method="POST">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>" />
+                    <input type="hidden" name="revision" value="<%= plan.revision || 1 %>" />
                     <button class="btn" type="submit">Delete</button>
                   </form>
                 </div>

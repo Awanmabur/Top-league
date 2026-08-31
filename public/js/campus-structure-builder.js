@@ -6,7 +6,6 @@
 
   function q(id) { return document.getElementById(id); }
   function trim(v) { return String(v || "").trim(); }
-  function esc(v) { return String(v || "").replace(/[&<>"']/g, function (c) { return ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[c]; }); }
   function slugify(v) { return trim(v).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); }
   function activeLabel(v) { return v === false ? 'Inactive' : 'Active'; }
   function ensureArray(v) { return Array.isArray(v) ? v : []; }
@@ -18,16 +17,6 @@
       seen.add(key);
       return true;
     });
-  }
-  function selectOptions(currentValue, options, placeholder) {
-    const current = trim(currentValue);
-    const isCustom = current && options.indexOf(current) === -1;
-    return ['<option value="">' + esc(placeholder) + '</option>']
-      .concat(options.map(function (option) {
-        return '<option value="' + esc(option) + '" ' + (current === option ? 'selected' : '') + '>' + esc(option.toUpperCase()) + '</option>';
-      }))
-      .concat(['<option value="__custom__" ' + (isCustom ? 'selected' : '') + '>Custom</option>'])
-      .join('');
   }
   function toast(msg) {
     const el = q('campusBuilderToast');
@@ -125,111 +114,254 @@
     });
     return normalized;
   }
-  function unitHtml(unit, unitIndex, totalUnits) {
-    const campusesHtml = (unit.campuses || []).length
-      ? unit.campuses.map(function (campus, campusIndex) { return campusHtml(campus, unit, unitIndex, campusIndex, unit.campuses.length); }).join('')
-      : '<div class="empty">No campuses yet.</div>';
+  function makeNode(tag, className, text) {
+    const el = document.createElement(tag);
+    if (className) el.className = className;
+    if (text !== undefined && text !== null) el.textContent = String(text);
+    return el;
+  }
+  function applyData(el, data) {
+    Object.keys(data || {}).forEach(function (key) {
+      const value = data[key];
+      if (value === undefined || value === null || Number.isNaN(value)) return;
+      el.dataset[key] = String(value);
+    });
+    return el;
+  }
+  function addIcon(parent, iconClass) {
+    const icon = makeNode('i', 'fa-solid ' + iconClass);
+    icon.setAttribute('aria-hidden', 'true');
+    parent.appendChild(icon);
+    return icon;
+  }
+  function makeButton(label, iconClass, className, action, data, disabled, ariaLabel) {
+    const btn = makeNode('button', className || 'btn');
+    btn.type = 'button';
+    if (action) btn.dataset.action = action;
+    applyData(btn, data);
+    if (disabled) btn.disabled = true;
+    if (ariaLabel) btn.setAttribute('aria-label', ariaLabel);
+    if (iconClass) addIcon(btn, iconClass);
+    if (label) btn.appendChild(document.createTextNode((iconClass ? ' ' : '') + label));
+    return btn;
+  }
+  function makeGroup(labelText, control, extraClass) {
+    const group = makeNode('div', 'group' + (extraClass ? ' ' + extraClass : ''));
+    group.appendChild(makeNode('label', '', labelText));
+    group.appendChild(control);
+    return group;
+  }
+  function makeInput(value, field, data, placeholder) {
+    const input = makeNode('input');
+    input.value = value == null ? '' : String(value);
+    if (field) input.dataset.field = field;
+    applyData(input, data);
+    if (placeholder) input.placeholder = placeholder;
+    return input;
+  }
+  function addOption(select, value, label, selected) {
+    const option = makeNode('option', '', label);
+    option.value = value;
+    option.selected = !!selected;
+    select.appendChild(option);
+  }
+  function makeChoiceSelect(currentValue, options, placeholder, field, data) {
+    const select = makeNode('select');
+    if (field) select.dataset.field = field;
+    applyData(select, data);
+    const current = trim(currentValue);
+    const isCustom = !!(current && options.indexOf(current) === -1);
+    addOption(select, '', placeholder, !current);
+    options.forEach(function (option) {
+      addOption(select, option, option.toUpperCase(), current === option);
+    });
+    addOption(select, '__custom__', 'Custom', isCustom);
+    return select;
+  }
+  function makeStatusSelect(isActive, field, data) {
+    const select = makeNode('select');
+    select.dataset.field = field;
+    applyData(select, data);
+    addOption(select, 'active', 'Active', isActive !== false);
+    addOption(select, 'inactive', 'Inactive', isActive === false);
+    return select;
+  }
+  function makeBooleanSelect(value, field, data) {
+    const select = makeNode('select');
+    select.dataset.field = field;
+    applyData(select, data);
+    addOption(select, 'true', 'Yes', value === true);
+    addOption(select, 'false', 'No', value !== true);
+    return select;
+  }
+  function makeEmpty(message, compact) {
+    return makeNode('div', 'empty' + (compact ? ' compact' : ''), message);
+  }
+  function makeSummaryToggle(title, subtitle, open, action, data) {
+    const button = makeNode('button', 'campus-toggle');
+    button.type = 'button';
+    button.dataset.action = action;
+    applyData(button, data);
+    const iconWrap = makeNode('span', 'campus-toggle-icon');
+    addIcon(iconWrap, open ? 'fa-chevron-down' : 'fa-chevron-right');
+    button.appendChild(iconWrap);
+    const copy = makeNode('span');
+    copy.appendChild(makeNode('span', 'campus-title', title));
+    copy.appendChild(makeNode('span', 'muted block', subtitle));
+    button.appendChild(copy);
+    return button;
+  }
+  function unitNode(unit, unitIndex, totalUnits) {
+    const card = makeNode('div', 'campus-card');
+    const head = makeNode('div', 'campus-head');
+    head.appendChild(makeSummaryToggle(
+      unit.name || ('School Unit ' + (unitIndex + 1)),
+      unit.category + ' · ' + unit.schoolType + ' · ' + ensureArray(unit.campuses).length + ' campuses · ' + activeLabel(unit.isActive),
+      unit.open,
+      'toggle-school-unit',
+      { unitIndex: unitIndex }
+    ));
+    const toolbar = makeNode('div', 'toolbar');
+    toolbar.appendChild(makeButton('Add Campus', 'fa-plus', 'btn', 'add-campus', { unitIndex: unitIndex }));
+    toolbar.appendChild(makeButton('', 'fa-arrow-up', 'btn icon-btn', 'move-school-unit-up', { unitIndex: unitIndex }, unitIndex === 0, 'Move school unit up'));
+    toolbar.appendChild(makeButton('', 'fa-arrow-down', 'btn icon-btn', 'move-school-unit-down', { unitIndex: unitIndex }, unitIndex === totalUnits - 1, 'Move school unit down'));
+    toolbar.appendChild(makeButton('', 'fa-trash', 'btn danger icon-btn', 'delete-school-unit', { unitIndex: unitIndex }, false, 'Delete school unit'));
+    head.appendChild(toolbar);
+    card.appendChild(head);
+
+    const panel = makeNode('div', 'panel' + (unit.open ? ' open' : ''));
+    const grid = makeNode('div', 'grid compact-grid');
+    grid.appendChild(makeGroup('School Unit Name', makeInput(unit.name, 'unit-name', { unitIndex: unitIndex })));
+    grid.appendChild(makeGroup('Code', makeInput(unit.code, 'unit-code', { unitIndex: unitIndex })));
+    grid.appendChild(makeGroup('Slug', makeInput(unit.slug, 'unit-slug', { unitIndex: unitIndex })));
+
     const customSchoolType = DEFAULT_SCHOOL_TYPE_OPTIONS.indexOf(unit.schoolType) === -1;
+    grid.appendChild(makeGroup('School Type', makeChoiceSelect(unit.schoolType, DEFAULT_SCHOOL_TYPE_OPTIONS, 'Select school type', 'unit-school-type', { unitIndex: unitIndex })));
+    grid.appendChild(makeGroup('Custom School Type', makeInput(customSchoolType ? unit.schoolType : '', 'unit-school-type-custom', { unitIndex: unitIndex }), customSchoolType ? '' : 'hidden'));
+
     const customCategory = DEFAULT_SCHOOL_CATEGORY_OPTIONS.indexOf(unit.category) === -1;
-    return '' +
-      '<div class="campus-card">' +
-        '<div class="campus-head">' +
-          '<button type="button" class="campus-toggle" data-action="toggle-school-unit" data-unit-index="' + unitIndex + '">' +
-            '<span class="campus-toggle-icon"><i class="fa-solid ' + (unit.open ? 'fa-chevron-down' : 'fa-chevron-right') + '"></i></span>' +
-            '<span><span class="campus-title">' + esc(unit.name || ('School Unit ' + (unitIndex + 1))) + '</span><span class="muted block">' + esc(unit.category + ' · ' + unit.schoolType + ' · ' + (unit.campuses || []).length + ' campuses · ' + activeLabel(unit.isActive)) + '</span></span>' +
-          '</button>' +
-          '<div class="toolbar">' +
-            '<button type="button" class="btn" data-action="add-campus" data-unit-index="' + unitIndex + '"><i class="fa-solid fa-plus"></i> Add Campus</button>' +
-            '<button type="button" class="btn icon-btn" data-action="move-school-unit-up" data-unit-index="' + unitIndex + '" ' + (unitIndex === 0 ? 'disabled' : '') + '><i class="fa-solid fa-arrow-up"></i></button>' +
-            '<button type="button" class="btn icon-btn" data-action="move-school-unit-down" data-unit-index="' + unitIndex + '" ' + (unitIndex === totalUnits - 1 ? 'disabled' : '') + '><i class="fa-solid fa-arrow-down"></i></button>' +
-            '<button type="button" class="btn danger icon-btn" data-action="delete-school-unit" data-unit-index="' + unitIndex + '"><i class="fa-solid fa-trash"></i></button>' +
-          '</div>' +
-        '</div>' +
-        '<div class="panel ' + (unit.open ? 'open' : '') + '">' +
-          '<div class="grid compact-grid">' +
-            '<div class="group"><label>School Unit Name</label><input value="' + esc(unit.name) + '" data-unit-index="' + unitIndex + '" data-field="unit-name"></div>' +
-            '<div class="group"><label>Code</label><input value="' + esc(unit.code) + '" data-unit-index="' + unitIndex + '" data-field="unit-code"></div>' +
-            '<div class="group"><label>Slug</label><input value="' + esc(unit.slug) + '" data-unit-index="' + unitIndex + '" data-field="unit-slug"></div>' +
-            '<div class="group"><label>School Type</label><select data-unit-index="' + unitIndex + '" data-field="unit-school-type">' + selectOptions(unit.schoolType, DEFAULT_SCHOOL_TYPE_OPTIONS, 'Select school type') + '</select></div>' +
-            '<div class="group ' + (customSchoolType ? '' : 'hidden') + '"><label>Custom School Type</label><input value="' + esc(customSchoolType ? unit.schoolType : '') + '" data-unit-index="' + unitIndex + '" data-field="unit-school-type-custom"></div>' +
-            '<div class="group"><label>Category</label><select data-unit-index="' + unitIndex + '" data-field="unit-category">' + selectOptions(unit.category, DEFAULT_SCHOOL_CATEGORY_OPTIONS, 'Select category') + '</select></div>' +
-            '<div class="group ' + (customCategory ? '' : 'hidden') + '"><label>Custom Category</label><input value="' + esc(customCategory ? unit.category : '') + '" data-unit-index="' + unitIndex + '" data-field="unit-category-custom"></div>' +
-            '<div class="group"><label>Status</label><select data-unit-index="' + unitIndex + '" data-field="unit-status"><option value="active" ' + (unit.isActive !== false ? 'selected' : '') + '>Active</option><option value="inactive" ' + (unit.isActive === false ? 'selected' : '') + '>Inactive</option></select></div>' +
-          '</div>' +
-          '<div class="inline-note"><i class="fa-solid fa-wand-magic-sparkles"></i><div>Automation: first campus becomes main campus, category can prefill levels, and levels can prefill default sections.</div></div>' +
-          '<div class="levels-wrap">' + campusesHtml + '</div>' +
-        '</div>' +
-      '</div>';
+    grid.appendChild(makeGroup('Category', makeChoiceSelect(unit.category, DEFAULT_SCHOOL_CATEGORY_OPTIONS, 'Select category', 'unit-category', { unitIndex: unitIndex })));
+    grid.appendChild(makeGroup('Custom Category', makeInput(customCategory ? unit.category : '', 'unit-category-custom', { unitIndex: unitIndex }), customCategory ? '' : 'hidden'));
+    grid.appendChild(makeGroup('Status', makeStatusSelect(unit.isActive, 'unit-status', { unitIndex: unitIndex })));
+    panel.appendChild(grid);
+
+    const note = makeNode('div', 'inline-note');
+    addIcon(note, 'fa-wand-magic-sparkles');
+    note.appendChild(makeNode('div', '', 'Automation: first campus becomes main campus, category can prefill levels, and levels can prefill default sections.'));
+    panel.appendChild(note);
+
+    const campusesWrap = makeNode('div', 'levels-wrap');
+    if (ensureArray(unit.campuses).length) {
+      unit.campuses.forEach(function (campus, campusIndex) {
+        campusesWrap.appendChild(campusNode(campus, unit, unitIndex, campusIndex, unit.campuses.length));
+      });
+    } else {
+      campusesWrap.appendChild(makeEmpty('No campuses yet.'));
+    }
+    panel.appendChild(campusesWrap);
+    card.appendChild(panel);
+    return card;
   }
-  function campusHtml(campus, unit, unitIndex, campusIndex, totalCampuses) {
+  function campusNode(campus, unit, unitIndex, campusIndex, totalCampuses) {
+    const card = makeNode('div', 'campus-card');
+    const head = makeNode('div', 'campus-head');
+    const subtitle = (campus.city || 'No city yet') + ' · ' + ensureArray(campus.levels).length + ' levels · ' + activeLabel(campus.isActive) + (campus.isMain ? ' · Main campus' : '');
+    head.appendChild(makeSummaryToggle(campus.name, subtitle, campus.open, 'toggle-campus', { unitIndex: unitIndex, campusIndex: campusIndex }));
+    const toolbar = makeNode('div', 'toolbar');
+    toolbar.appendChild(makeButton('Add Level', 'fa-plus', 'btn', 'add-level', { unitIndex: unitIndex, campusIndex: campusIndex }));
+    toolbar.appendChild(makeButton('', 'fa-arrow-up', 'btn icon-btn', 'move-campus-up', { unitIndex: unitIndex, campusIndex: campusIndex }, campusIndex === 0, 'Move campus up'));
+    toolbar.appendChild(makeButton('', 'fa-arrow-down', 'btn icon-btn', 'move-campus-down', { unitIndex: unitIndex, campusIndex: campusIndex }, campusIndex === totalCampuses - 1, 'Move campus down'));
+    toolbar.appendChild(makeButton('', 'fa-trash', 'btn danger icon-btn', 'delete-campus', { unitIndex: unitIndex, campusIndex: campusIndex }, false, 'Delete campus'));
+    head.appendChild(toolbar);
+    card.appendChild(head);
+
+    const panel = makeNode('div', 'panel' + (campus.open ? ' open' : ''));
+    const grid = makeNode('div', 'grid compact-grid');
+    const data = { unitIndex: unitIndex, campusIndex: campusIndex };
+    grid.appendChild(makeGroup('Campus Name', makeInput(campus.name, 'campus-name', data)));
+    grid.appendChild(makeGroup('Campus Code', makeInput(campus.code, 'campus-code', data)));
+    grid.appendChild(makeGroup('Main Campus', makeBooleanSelect(campus.isMain, 'campus-main', data)));
+    grid.appendChild(makeGroup('City', makeInput(campus.city, 'campus-city', data)));
+    grid.appendChild(makeGroup('District', makeInput(campus.district, 'campus-district', data)));
+    grid.appendChild(makeGroup('Country', makeInput(campus.country, 'campus-country', data)));
+    grid.appendChild(makeGroup('Phone', makeInput(campus.contactPhone, 'campus-phone', data)));
+    grid.appendChild(makeGroup('Email', makeInput(campus.contactEmail, 'campus-email', data)));
+    grid.appendChild(makeGroup('Status', makeStatusSelect(campus.isActive, 'campus-status', data)));
+    grid.appendChild(makeGroup('Address', makeInput(campus.address, 'campus-address', data), 'full'));
+    panel.appendChild(grid);
+
+    const levelsWrap = makeNode('div', 'levels-wrap');
     const levelOptions = getDefaultLevelsByCategory(unit.category);
-    const levelsHtml = (campus.levels || []).length
-      ? campus.levels.map(function (level, levelIndex) { return levelHtml(level, unit, unitIndex, campusIndex, levelIndex, levelOptions, campus.levels.length); }).join('')
-      : '<div class="empty">No levels yet.</div>';
-    return '' +
-      '<div class="campus-card">' +
-        '<div class="campus-head">' +
-          '<button type="button" class="campus-toggle" data-action="toggle-campus" data-unit-index="' + unitIndex + '" data-campus-index="' + campusIndex + '">' +
-            '<span class="campus-toggle-icon"><i class="fa-solid ' + (campus.open ? 'fa-chevron-down' : 'fa-chevron-right') + '"></i></span>' +
-            '<span><span class="campus-title">' + esc(campus.name) + '</span><span class="muted block">' + esc((campus.city || 'No city yet') + ' · ' + (campus.levels || []).length + ' levels · ' + activeLabel(campus.isActive) + (campus.isMain ? ' · Main campus' : '')) + '</span></span>' +
-          '</button>' +
-          '<div class="toolbar">' +
-            '<button type="button" class="btn" data-action="add-level" data-unit-index="' + unitIndex + '" data-campus-index="' + campusIndex + '"><i class="fa-solid fa-plus"></i> Add Level</button>' +
-            '<button type="button" class="btn icon-btn" data-action="move-campus-up" data-unit-index="' + unitIndex + '" data-campus-index="' + campusIndex + '" ' + (campusIndex === 0 ? 'disabled' : '') + '><i class="fa-solid fa-arrow-up"></i></button>' +
-            '<button type="button" class="btn icon-btn" data-action="move-campus-down" data-unit-index="' + unitIndex + '" data-campus-index="' + campusIndex + '" ' + (campusIndex === totalCampuses - 1 ? 'disabled' : '') + '><i class="fa-solid fa-arrow-down"></i></button>' +
-            '<button type="button" class="btn danger icon-btn" data-action="delete-campus" data-unit-index="' + unitIndex + '" data-campus-index="' + campusIndex + '"><i class="fa-solid fa-trash"></i></button>' +
-          '</div>' +
-        '</div>' +
-        '<div class="panel ' + (campus.open ? 'open' : '') + '">' +
-          '<div class="grid compact-grid">' +
-            '<div class="group"><label>Campus Name</label><input value="' + esc(campus.name) + '" data-unit-index="' + unitIndex + '" data-campus-index="' + campusIndex + '" data-field="campus-name"></div>' +
-            '<div class="group"><label>Campus Code</label><input value="' + esc(campus.code) + '" data-unit-index="' + unitIndex + '" data-campus-index="' + campusIndex + '" data-field="campus-code"></div>' +
-            '<div class="group"><label>Main Campus</label><select data-unit-index="' + unitIndex + '" data-campus-index="' + campusIndex + '" data-field="campus-main"><option value="true" ' + (campus.isMain ? 'selected' : '') + '>Yes</option><option value="false" ' + (!campus.isMain ? 'selected' : '') + '>No</option></select></div>' +
-            '<div class="group"><label>City</label><input value="' + esc(campus.city) + '" data-unit-index="' + unitIndex + '" data-campus-index="' + campusIndex + '" data-field="campus-city"></div>' +
-            '<div class="group"><label>District</label><input value="' + esc(campus.district) + '" data-unit-index="' + unitIndex + '" data-campus-index="' + campusIndex + '" data-field="campus-district"></div>' +
-            '<div class="group"><label>Country</label><input value="' + esc(campus.country) + '" data-unit-index="' + unitIndex + '" data-campus-index="' + campusIndex + '" data-field="campus-country"></div>' +
-            '<div class="group"><label>Phone</label><input value="' + esc(campus.contactPhone) + '" data-unit-index="' + unitIndex + '" data-campus-index="' + campusIndex + '" data-field="campus-phone"></div>' +
-            '<div class="group"><label>Email</label><input value="' + esc(campus.contactEmail) + '" data-unit-index="' + unitIndex + '" data-campus-index="' + campusIndex + '" data-field="campus-email"></div>' +
-            '<div class="group"><label>Status</label><select data-unit-index="' + unitIndex + '" data-campus-index="' + campusIndex + '" data-field="campus-status"><option value="active" ' + (campus.isActive !== false ? 'selected' : '') + '>Active</option><option value="inactive" ' + (campus.isActive === false ? 'selected' : '') + '>Inactive</option></select></div>' +
-            '<div class="group full"><label>Address</label><input value="' + esc(campus.address) + '" data-unit-index="' + unitIndex + '" data-campus-index="' + campusIndex + '" data-field="campus-address"></div>' +
-          '</div>' +
-          '<div class="levels-wrap">' + levelsHtml + '</div>' +
-        '</div>' +
-      '</div>';
+    if (ensureArray(campus.levels).length) {
+      campus.levels.forEach(function (level, levelIndex) {
+        levelsWrap.appendChild(levelNode(level, unit, unitIndex, campusIndex, levelIndex, levelOptions, campus.levels.length));
+      });
+    } else {
+      levelsWrap.appendChild(makeEmpty('No levels yet.'));
+    }
+    panel.appendChild(levelsWrap);
+    card.appendChild(panel);
+    return card;
   }
-  function levelHtml(level, unit, unitIndex, campusIndex, levelIndex, levelOptions, totalLevels) {
-    const customLevel = trim(level.name) && levelOptions.indexOf(level.name) === -1;
-    const sectionOptions = DEFAULT_SECTION_OPTIONS.slice();
-    const sectionsHtml = (level.sections || []).length
-      ? level.sections.map(function (section, sectionIndex) { return sectionHtml(section, unitIndex, campusIndex, levelIndex, sectionIndex); }).join('')
-      : '<div class="empty compact">No sections yet for this level.</div>';
-    return '' +
-      '<div class="level-card">' +
-        '<div class="level-card-top">' +
-          '<div><div class="level-title">Level ' + (levelIndex + 1) + '</div><div class="muted">' + esc(level.name || 'Not selected') + ' · ' + (level.sections || []).length + ' sections · ' + activeLabel(level.isActive) + '</div></div>' +
-          '<div class="toolbar">' +
-            '<button type="button" class="btn icon-btn" data-action="move-level-up" data-unit-index="' + unitIndex + '" data-campus-index="' + campusIndex + '" data-level-index="' + levelIndex + '" ' + (levelIndex === 0 ? 'disabled' : '') + '><i class="fa-solid fa-arrow-up"></i></button>' +
-            '<button type="button" class="btn icon-btn" data-action="move-level-down" data-unit-index="' + unitIndex + '" data-campus-index="' + campusIndex + '" data-level-index="' + levelIndex + '" ' + (levelIndex === totalLevels - 1 ? 'disabled' : '') + '><i class="fa-solid fa-arrow-down"></i></button>' +
-            '<button type="button" class="btn danger icon-btn" data-action="delete-level" data-unit-index="' + unitIndex + '" data-campus-index="' + campusIndex + '" data-level-index="' + levelIndex + '"><i class="fa-solid fa-trash"></i></button>' +
-          '</div>' +
-        '</div>' +
-        '<div class="grid compact-grid">' +
-          '<div class="group"><label>Level</label><select data-unit-index="' + unitIndex + '" data-campus-index="' + campusIndex + '" data-level-index="' + levelIndex + '" data-field="level-name-select">' + selectOptions(level.name, levelOptions, 'Select level') + '</select></div>' +
-          '<div class="group ' + (customLevel ? '' : 'hidden') + '"><label>Custom Level Name</label><input value="' + esc(customLevel ? level.name : '') + '" placeholder="Example: S3" data-unit-index="' + unitIndex + '" data-campus-index="' + campusIndex + '" data-level-index="' + levelIndex + '" data-field="level-name-custom"></div>' +
-          '<div class="group"><label>Status</label><select data-unit-index="' + unitIndex + '" data-campus-index="' + campusIndex + '" data-level-index="' + levelIndex + '" data-field="level-status"><option value="active" ' + (level.isActive !== false ? 'selected' : '') + '>Active</option><option value="inactive" ' + (level.isActive === false ? 'selected' : '') + '>Inactive</option></select></div>' +
-        '</div>' +
-        '<div class="group" style="margin-top:14px"><label>Sections</label><div class="section-add-bar"><select class="js-new-section-select">' + selectOptions('', sectionOptions, 'Select section') + '</select><input class="js-new-section-custom hidden" placeholder="Custom section name"><button type="button" class="btn" data-action="add-section" data-unit-index="' + unitIndex + '" data-campus-index="' + campusIndex + '" data-level-index="' + levelIndex + '"><i class="fa-solid fa-plus"></i> Add Section</button><button type="button" class="btn" data-action="fill-default-sections" data-unit-index="' + unitIndex + '" data-campus-index="' + campusIndex + '" data-level-index="' + levelIndex + '"><i class="fa-solid fa-wand-magic-sparkles"></i> Defaults</button></div><div class="sections-stack">' + sectionsHtml + '</div></div>' +
-      '</div>';
+  function levelNode(level, unit, unitIndex, campusIndex, levelIndex, levelOptions, totalLevels) {
+    const card = makeNode('div', 'level-card');
+    const top = makeNode('div', 'level-card-top');
+    const titleWrap = makeNode('div');
+    titleWrap.appendChild(makeNode('div', 'level-title', 'Level ' + (levelIndex + 1)));
+    titleWrap.appendChild(makeNode('div', 'muted', (level.name || 'Not selected') + ' · ' + ensureArray(level.sections).length + ' sections · ' + activeLabel(level.isActive)));
+    top.appendChild(titleWrap);
+    const toolbar = makeNode('div', 'toolbar');
+    const data = { unitIndex: unitIndex, campusIndex: campusIndex, levelIndex: levelIndex };
+    toolbar.appendChild(makeButton('', 'fa-arrow-up', 'btn icon-btn', 'move-level-up', data, levelIndex === 0, 'Move level up'));
+    toolbar.appendChild(makeButton('', 'fa-arrow-down', 'btn icon-btn', 'move-level-down', data, levelIndex === totalLevels - 1, 'Move level down'));
+    toolbar.appendChild(makeButton('', 'fa-trash', 'btn danger icon-btn', 'delete-level', data, false, 'Delete level'));
+    top.appendChild(toolbar);
+    card.appendChild(top);
+
+    const grid = makeNode('div', 'grid compact-grid');
+    const customLevel = !!(trim(level.name) && levelOptions.indexOf(level.name) === -1);
+    grid.appendChild(makeGroup('Level', makeChoiceSelect(level.name, levelOptions, 'Select level', 'level-name-select', data)));
+    grid.appendChild(makeGroup('Custom Level Name', makeInput(customLevel ? level.name : '', 'level-name-custom', data, 'Example: S3'), customLevel ? '' : 'hidden'));
+    grid.appendChild(makeGroup('Status', makeStatusSelect(level.isActive, 'level-status', data)));
+    card.appendChild(grid);
+
+    const sectionsGroup = makeNode('div', 'group');
+    sectionsGroup.style.marginTop = '14px';
+    sectionsGroup.appendChild(makeNode('label', '', 'Sections'));
+    const addBar = makeNode('div', 'section-add-bar');
+    const newSectionSelect = makeChoiceSelect('', DEFAULT_SECTION_OPTIONS, 'Select section', '', {});
+    newSectionSelect.className = 'js-new-section-select';
+    addBar.appendChild(newSectionSelect);
+    const customSection = makeInput('', '', {}, 'Custom section name');
+    customSection.className = 'js-new-section-custom hidden';
+    addBar.appendChild(customSection);
+    addBar.appendChild(makeButton('Add Section', 'fa-plus', 'btn', 'add-section', data));
+    addBar.appendChild(makeButton('Defaults', 'fa-wand-magic-sparkles', 'btn', 'fill-default-sections', data));
+    sectionsGroup.appendChild(addBar);
+    const sectionsStack = makeNode('div', 'sections-stack');
+    if (ensureArray(level.sections).length) {
+      level.sections.forEach(function (section, sectionIndex) {
+        sectionsStack.appendChild(sectionNode(section, unitIndex, campusIndex, levelIndex, sectionIndex));
+      });
+    } else {
+      sectionsStack.appendChild(makeEmpty('No sections yet for this level.', true));
+    }
+    sectionsGroup.appendChild(sectionsStack);
+    card.appendChild(sectionsGroup);
+    return card;
   }
-  function sectionHtml(section, unitIndex, campusIndex, levelIndex, sectionIndex) {
-    return '' +
-      '<div class="section-row">' +
-        '<div class="section-name"><i class="fa-solid fa-tag"></i> ' + esc(section.name) + '</div>' +
-        '<div class="section-actions">' +
-          '<select data-unit-index="' + unitIndex + '" data-campus-index="' + campusIndex + '" data-level-index="' + levelIndex + '" data-section-index="' + sectionIndex + '" data-field="section-status"><option value="active" ' + (section.isActive !== false ? 'selected' : '') + '>Active</option><option value="inactive" ' + (section.isActive === false ? 'selected' : '') + '>Inactive</option></select>' +
-          '<button type="button" class="btn danger icon-btn" data-action="delete-section" data-unit-index="' + unitIndex + '" data-campus-index="' + campusIndex + '" data-level-index="' + levelIndex + '" data-section-index="' + sectionIndex + '"><i class="fa-solid fa-trash"></i></button>' +
-        '</div>' +
-      '</div>';
+  function sectionNode(section, unitIndex, campusIndex, levelIndex, sectionIndex) {
+    const row = makeNode('div', 'section-row');
+    const name = makeNode('div', 'section-name');
+    addIcon(name, 'fa-tag');
+    name.appendChild(document.createTextNode(' ' + section.name));
+    row.appendChild(name);
+    const actions = makeNode('div', 'section-actions');
+    const data = { unitIndex: unitIndex, campusIndex: campusIndex, levelIndex: levelIndex, sectionIndex: sectionIndex };
+    actions.appendChild(makeStatusSelect(section.isActive, 'section-status', data));
+    actions.appendChild(makeButton('', 'fa-trash', 'btn danger icon-btn', 'delete-section', data, false, 'Delete section'));
+    row.appendChild(actions);
+    return row;
   }
   function syncUnitLinks(unit) {
     unit.code = trim(unit.code) || slugify(unit.name);
@@ -292,9 +424,10 @@
     }
   }
   function render() {
-    list.innerHTML = state.schoolUnits.length
-      ? state.schoolUnits.map(function (unit, unitIndex) { return unitHtml(unit, unitIndex, state.schoolUnits.length); }).join('')
-      : '<div class="empty">No school units yet. Add one to start the structure.</div>';
+    const nodes = state.schoolUnits.length
+      ? state.schoolUnits.map(function (unit, unitIndex) { return unitNode(unit, unitIndex, state.schoolUnits.length); })
+      : [makeEmpty('No school units yet. Add one to start the structure.')];
+    list.replaceChildren.apply(list, nodes);
     serialize();
   }
   function swap(items, fromIndex, toIndex) {

@@ -99,11 +99,12 @@
   });
 
   $("btnResetDefaults").addEventListener("click", function () {
-    alert("Hook reset defaults route later.");
+    if (!window.confirm("Reset these settings to safe school defaults? This replaces the currently saved Settings values.")) return;
+    $("resetDefaultsForm")?.requestSubmit();
   });
 
   $("btnTestConfig").addEventListener("click", function () {
-    alert("Hook test configuration actions later.");
+    $("testConfigForm")?.requestSubmit();
   });
 
   $("sectionTabs").addEventListener("click", function (e) {
@@ -142,5 +143,6 @@
     }
   });
 
-  setTab("general");
+  const requestedTab = new URLSearchParams(window.location.search).get("tab");
+  setTab(["general", "branding", "communication", "portal", "integrations"].includes(requestedTab) ? requestedTab : "general");
 })();

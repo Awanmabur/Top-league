@@ -6,6 +6,8 @@ module.exports = (connection) => {
   const PromotionLogSchema = new Schema(
     {
       student: { type: Schema.Types.ObjectId, ref: "Student", required: true, index: true },
+      batchId: { type: String, trim: true, maxlength: 80, index: true },
+      action: { type: String, enum: ["promoted", "advanced_term", "repeated", "graduated"], default: "promoted", index: true },
 
       fromAcademicYear: { type: String, trim: true, maxlength: 20 },
       toAcademicYear: { type: String, trim: true, maxlength: 20 },
@@ -38,6 +40,7 @@ module.exports = (connection) => {
   );
 
   PromotionLogSchema.index({ createdAt: -1 });
+  PromotionLogSchema.index({ batchId: 1, student: 1 });
 
   return connection.model("PromotionLog", PromotionLogSchema);
 };

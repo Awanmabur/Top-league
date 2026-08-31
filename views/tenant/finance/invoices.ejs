@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .input,.select,.textarea{padding:10px 12px;border-radius:12px;border:1px solid rgba(13,64,96,.16);background:#fff;outline:none}
@@ -239,6 +239,18 @@
                 <tbody id="tbody"></tbody>
               </table>
             </div>
+
+            <% const page = Number(q?.page || 1); const totalPages = Number(q?.totalPages || 1); function buildPage(n){ const params = new URLSearchParams(); if(q?.q) params.set('q', q.q); if(q?.status && q.status !== 'all') params.set('status', q.status); if(q?.student && q.student !== 'all') params.set('student', q.student); if(q?.program && q.program !== 'all') params.set('program', q.program); params.set('page', String(n)); return '/admin/invoices?' + params.toString(); } %>
+            <div class="pagination">
+              <div class="muted">Showing page <%= page %> of <%= totalPages %> - <%= q?.total || 0 %> invoice(s)</div>
+              <div class="pagination-links">
+                <a class="page-link <%= page <= 1 ? 'disabled' : '' %>" href="<%= page <= 1 ? '#' : buildPage(page - 1) %>">Prev</a>
+                <% for(let i=1;i<=totalPages;i++){ if(i===1 || i===totalPages || Math.abs(i-page)<=1){ %>
+                  <a class="page-link <%= i===page ? 'active' : '' %>" href="<%= buildPage(i) %>"><%= i %></a>
+                <% } } %>
+                <a class="page-link <%= page >= totalPages ? 'disabled' : '' %>" href="<%= page >= totalPages ? '#' : buildPage(page + 1) %>">Next</a>
+              </div>
+            </div>
           </div>
 
           <div id="view-payments" style="display:none;margin-top:10px;">
@@ -336,6 +348,7 @@
       </div>
 
       <form id="invoiceForm" method="POST" action="/admin/invoices">
+        <input type="hidden" id="iFeeStructure" name="feeStructureId" value="">
         <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
 
         <div class="modal-body">
@@ -544,8 +557,10 @@
     <input type="hidden" name="action" id="bulkActionInput">
   </form>
 
-  <textarea id="invoicesData" class="json-data" aria-hidden="true"><%- JSON.stringify(invoices || []) %></textarea>
-  <textarea id="paymentsData" class="json-data" aria-hidden="true"><%- JSON.stringify(payments || []) %></textarea>
+  <textarea id="invoicesData" class="json-data" aria-hidden="true"><%- JSON.stringify(invoices || []).replace(/</g, "\\u003c") %></textarea>
+  <textarea id="paymentsData" class="json-data" aria-hidden="true"><%- JSON.stringify(payments || []).replace(/</g, "\\u003c") %></textarea>
+  <textarea id="invoicesTotalData" class="json-data" aria-hidden="true"><%= Number(q?.total || 0) %></textarea>
+  <textarea id="invoiceTemplateData" class="json-data" aria-hidden="true"><%- JSON.stringify(invoiceTemplate || null).replace(/</g, "\\u003c") %></textarea>
 
   <script src="/js/navbar.js"></script>
   <script src="/js/invoices.js"></script>

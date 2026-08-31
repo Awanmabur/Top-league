@@ -1,35 +1,30 @@
-const { getParent } = require("./_helpers");
+const { getParent, loadLinkedChildren } = require("./_helpers");
+const {
+  assertParentEmailOwnership,
+  syncParentIdentity,
+} = require("../../../services/tenant/parentLifecycleService");
 
-function clean(v) {
-  return String(v || "").trim();
+function clean(v, max = 200) {
+  return String(v || "").trim().replace(/\s+/g, " ").slice(0, max);
 }
 
 function lower(v) {
-  return clean(v).toLowerCase();
+  return clean(v, 120).toLowerCase();
+}
+
+function validEmail(v) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v || ""));
 }
 
 module.exports = {
   async index(req, res) {
     try {
       const { Student } = req.models || {};
-
       const { user, parent } = await getParent(req);
       if (!user) return res.redirect("/login");
 
-      const childIds = Array.isArray(parent?.childrenStudentIds)
-        ? parent.childrenStudentIds
-        : [];
+      const children = await loadLinkedChildren(req, parent);
 
-      const children =
-        parent && Student && childIds.length
-          ? await Student.find({ _id: { $in: childIds }, deletedAt: null })
-              .select("firstName lastName middleName fullName regNo classGroup program yearLevel academicYear semester status")
-              .populate({ path: "classGroup", select: "code name title" })
-              .populate({ path: "program", select: "code name title" })
-              .sort({ firstName: 1, lastName: 1 })
-              .lean()
-              .catch(() => [])
-          : [];
 
       return res.render("parents/profile", {
         tenant: req.tenant,
@@ -61,56 +56,38 @@ module.exports = {
   async update(req, res) {
     try {
       const { Parent } = req.models || {};
-
       const { user, parent } = await getParent(req);
       if (!user) return res.redirect("/login");
-
       if (!Parent || !parent?._id) {
         req.flash?.("error", "Parent profile not found. Contact admin.");
         return res.redirect("/parent/profile");
       }
 
-      const firstName = clean(req.body?.firstName);
-      const lastName = clean(req.body?.lastName);
+      const firstName = clean(req.body?.firstName, 80);
+      const lastName = clean(req.body?.lastName, 80);
       const email = lower(req.body?.email);
-      const phone = clean(req.body?.phone);
-      const relationship = clean(req.body?.relationship) || "Guardian";
-      const addressLine1 = clean(req.body?.addressLine1);
-      const addressLine2 = clean(req.body?.addressLine2);
-      const city = clean(req.body?.city);
-      const country = clean(req.body?.country);
-      const occupation = clean(req.body?.occupation);
-      const notes = clean(req.body?.notes);
+      const phone = clean(req.body?.phone, 40);
+      const relationship = clean(req.body?.relationship, 60) || "Guardian";
+      const addressLine1 = clean(req.body?.addressLine1, 160);
+      const addressLine2 = clean(req.body?.addressLine2, 160);
+      const city = clean(req.body?.city, 100);
+      const country = clean(req.body?.country, 100);
+      const occupation = clean(req.body?.occupation, 120);
+      const notes = clean(req.body?.notes, 1200);
 
-      if (!firstName || !lastName) {
-        req.flash?.("error", "First name and last name are required.");
-        return res.redirect("/parent/profile");
-      }
+      if (!firstName || !lastName) throw new Error("First name and last name are required.");
+      if (!validEmail(email)) throw new Error("A valid email is required.");
+      await assertParentEmailOwnership(req, parent, email);
 
-      if (!email) {
-        req.flash?.("error", "Email is required.");
-        return res.redirect("/parent/profile");
-      }
-
+      const previous = { ...parent };
       await Parent.updateOne(
-        { _id: parent._id, deletedAt: null },
-        {
-          $set: {
-            firstName,
-            lastName,
-            email,
-            phone,
-            relationship,
-            addressLine1,
-            addressLine2,
-            city,
-            country,
-            occupation,
-            notes,
-            updatedAt: new Date(),
-          },
-        }
+        { _id: parent._id, isDeleted: { $ne: true }, status: { $in: ["active", "on_hold"] } },
+        { $set: { firstName, lastName, email, phone, relationship, addressLine1, addressLine2, city, country, occupation, notes, updatedBy: user._id } },
+        { runValidators: true },
       );
+      const updated = await Parent.findById(parent._id);
+      if (!updated) throw new Error("Parent profile not found.");
+      await syncParentIdentity(req, updated, previous);
 
       req.flash?.("success", "Parent profile updated successfully.");
       return res.redirect("/parent/profile");

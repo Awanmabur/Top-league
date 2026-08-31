@@ -37,8 +37,10 @@
     if (!el) return fallback;
     try { return JSON.parse(el.value || "null") || fallback; } catch (_) { return fallback; }
   }
+  const terms = readJson("termsData", []);
   const streams = readJson("streamsData", []);
   const sections = readJson("sectionsData", []);
+  const requirements = readJson("requirementsData", []);
   const qualificationMap = readJson("qualificationMapData", {});
   let storedUploads = readJson("storedUploadsData", { passportPhoto: null, idDocument: null, transcript: null, otherDocs: [] });
 
@@ -126,25 +128,84 @@
     refillSelect(streamId, opts, streamId.value, "Select stream");
   }
 
+  function selectedTerm() {
+    return terms.find((t) => String(t._id || "") === String(termId?.value || "")) || null;
+  }
+
+  function termAllowsSection(term, sectionId) {
+    if (!term) return false;
+    const configured = Array.isArray(term.programs) ? term.programs : [];
+    if (!configured.length) return true;
+    return configured.some((row) => String(row.program || "") === String(sectionId || "") && row.isOpen !== false);
+  }
+
   function syncSections() {
     if (!section1) return;
     const level = String(schoolLevel?.value || "").toLowerCase();
     const klass = String(classLevel?.value || "").toUpperCase();
     const selectedStream = streams.find((s) => String(s._id) === String(streamId?.value || ""));
     const classId = selectedStream ? String(selectedStream.classId || "") : "";
+    const term = selectedTerm();
 
     let filtered = sections.filter((s) =>
       (!level || s.levelType === level) &&
       (!klass || s.classLevel === klass) &&
-      (!classId || String(s.classId || "") === classId)
+      (!classId || String(s.classId || "") === classId) &&
+      (!term || termAllowsSection(term, s._id))
     );
-    if (!filtered.length) {
-      filtered = sections.filter((s) => (!level || s.levelType === level) && (!klass || s.classLevel === klass));
+    if (!filtered.length && !classId) {
+      filtered = sections.filter((s) =>
+        (!level || s.levelType === level) &&
+        (!klass || s.classLevel === klass) &&
+        (!term || termAllowsSection(term, s._id))
+      );
     }
     const opts = filtered.map((s) => ({ value: s._id, label: s.name }));
     const selectedStillExists = opts.some((opt) => String(opt.value) === String(section1.value || ""));
-    refillSelect(section1, opts, selectedStillExists ? section1.value : "", "Select section");
-    section1.disabled = !opts.length;
+    refillSelect(section1, opts, selectedStillExists ? section1.value : "", term ? "Select section" : "Select Intake first");
+    section1.disabled = !term || !opts.length;
+  }
+
+  function renderRequirements() {
+    const host = byId("dynamicRequirements");
+    if (!host) return;
+    const sectionId = String(section1?.value || "");
+    const intakeId = String(termId?.value || "");
+    host.replaceChildren();
+    if (!sectionId || !intakeId) {
+      host.textContent = "Select an Intake and Section to see the applicable requirements.";
+      return;
+    }
+    const applicable = requirements.filter((r) => {
+      const sectionOk = r.appliesToAllPrograms === true || (Array.isArray(r.programs) && r.programs.map(String).includes(sectionId));
+      const intakeOk = r.appliesToAllIntakes === true || (Array.isArray(r.intakes) && r.intakes.map(String).includes(intakeId));
+      return sectionOk && intakeOk;
+    }).sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0));
+    if (!applicable.length) {
+      host.textContent = "No additional active requirements are configured for this Intake and Section.";
+      return;
+    }
+    const title = document.createElement("div");
+    title.style.fontWeight = "900";
+    title.textContent = "Applicable admission requirements";
+    const list = document.createElement("ul");
+    list.style.margin = "8px 0 0";
+    list.style.paddingLeft = "20px";
+    applicable.forEach((r) => {
+      const li = document.createElement("li");
+      const parts = [String(r.title || r.code || "Requirement")];
+      if (r.isMandatory !== false) parts.push("mandatory");
+      if (String(r.category || "") === "fee" && Number(r.feeAmount || 0) > 0) parts.push(`${String(r.currency || "UGX")} ${Number(r.feeAmount).toLocaleString()}`);
+      li.textContent = parts.join(" — ");
+      if (r.description) {
+        const desc = document.createElement("div");
+        desc.className = "muted";
+        desc.textContent = String(r.description);
+        li.appendChild(desc);
+      }
+      list.appendChild(li);
+    });
+    host.append(title, list);
   }
 
   function syncQualifications() {
@@ -318,10 +379,11 @@
     form.requestSubmit ? form.requestSubmit() : form.submit();
   });
 
-  termId?.addEventListener("change", syncAcademicYear);
-  schoolLevel?.addEventListener("change", () => { syncClassLevels(); syncStreams(); syncSections(); syncQualifications(); });
-  classLevel?.addEventListener("change", () => { syncStreams(); syncSections(); });
-  streamId?.addEventListener("change", syncSections);
+  termId?.addEventListener("change", () => { syncAcademicYear(); syncSections(); renderRequirements(); });
+  schoolLevel?.addEventListener("change", () => { syncClassLevels(); syncStreams(); syncSections(); syncQualifications(); renderRequirements(); });
+  classLevel?.addEventListener("change", () => { syncStreams(); syncSections(); renderRequirements(); });
+  streamId?.addEventListener("change", () => { syncSections(); renderRequirements(); });
+  section1?.addEventListener("change", renderRequirements);
   qualification?.addEventListener("change", syncEducationFields);
 
   loadDraft();
@@ -330,5 +392,6 @@
   syncStreams();
   syncSections();
   syncQualifications();
+  renderRequirements();
   refreshUploadUi();
 })();

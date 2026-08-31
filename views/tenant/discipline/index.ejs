@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
@@ -250,6 +250,7 @@
           <div class="subtitle">Open cases, manage actions, upload statements & attachments, and resolve outcomes.</div>
         </div>
         <div class="top-actions">
+          <a class="btn light" href="/admin/discipline/export.csv"><i class="fa-solid fa-file-arrow-down"></i> Export CSV</a>
           <button class="btn primary" type="button" data-open="mCase" data-mode="create">
             <i class="fa-solid fa-plus"></i> Open Case
           </button>
@@ -357,15 +358,19 @@
                         <button class="btn-xs" type="button" title="View" data-case-action="view" data-id="<%= c._id %>">
                           <i class="fa-solid fa-eye"></i>
                         </button>
-                        <button class="btn-xs" type="button" title="Edit" data-open="mCase" data-mode="edit" data-id="<%= c._id %>">
-                          <i class="fa-solid fa-pen"></i>
-                        </button>
-                        <button class="btn-xs" type="button" title="More" data-case-action="more" data-id="<%= c._id %>">
-                          <i class="fa-solid fa-ellipsis"></i>
-                        </button>
-                        <button class="btn-xs" type="button" title="Delete" data-open="mDelete" data-id="<%= c._id %>" data-name="<%= c.caseNo || 'Case' %>">
-                          <i class="fa-solid fa-trash"></i>
-                        </button>
+                        <% if (!["resolved","dismissed"].includes(c.status || "open")) { %>
+                          <button class="btn-xs" type="button" title="Edit" data-open="mCase" data-mode="edit" data-id="<%= c._id %>">
+                            <i class="fa-solid fa-pen"></i>
+                          </button>
+                          <button class="btn-xs" type="button" title="More" data-case-action="more" data-id="<%= c._id %>">
+                            <i class="fa-solid fa-ellipsis"></i>
+                          </button>
+                        <% } %>
+                        <% if ((c.status || "open") === "open" && !c.publishedAt && !c.studentVisible && !c.parentVisible && !(c.actions || []).length && !c.studentStatement && !(c.attachments || []).length) { %>
+                          <button class="btn-xs" type="button" title="Delete empty unpublished case" data-open="mDelete" data-id="<%= c._id %>" data-name="<%= c.caseNo || 'Case' %>" data-revision="<%= Number(c.revision || 0) %>">
+                            <i class="fa-solid fa-trash"></i>
+                          </button>
+                        <% } %>
                       </div>
                     </td>
                   </tr>
@@ -429,6 +434,7 @@
 
       <form id="caseForm" method="POST" action="/admin/discipline">
         <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>"/>
+        <input type="hidden" name="revision" id="fRevision" value="0"/>
         <div class="modal-body">
           <div class="grid2" id="caseMainFields">
             <div class="field" style="grid-column:1/-1">
@@ -472,6 +478,17 @@
               <textarea class="textarea" name="note" id="fNote" placeholder="Internal note (optional)"></textarea>
             </div>
 
+            <div class="field" style="grid-column:1/-1">
+              <label>Resolution Summary</label>
+              <textarea class="textarea" name="resolutionSummary" id="fResolutionSummary" placeholder="Required when resolving or dismissing a case"></textarea>
+            </div>
+            <div class="field">
+              <label><input type="checkbox" name="studentVisible" id="fStudentVisible" value="1"> Share safe case summary with student</label>
+            </div>
+            <div class="field">
+              <label><input type="checkbox" name="parentVisible" id="fParentVisible" value="1"> Share safe case summary with parent</label>
+            </div>
+
             <input type="hidden" id="caseId" value="">
           </div>
 
@@ -491,6 +508,12 @@
               <div class="field">
                 <label>Details</label>
                 <input class="input" id="aDetails" placeholder="e.g Written warning issued">
+              </div>
+              <div class="field">
+                <label><input type="checkbox" id="aStudentVisible" value="1"> Share this action with student</label>
+              </div>
+              <div class="field">
+                <label><input type="checkbox" id="aParentVisible" value="1"> Share this action with parent</label>
               </div>
               <div class="field" style="grid-column:1/-1">
                 <button class="btn light" type="button" id="btnAddAction"><i class="fa-solid fa-plus"></i> Add Action</button>
@@ -577,6 +600,9 @@
             <div class="view-input multiline" id="vNote">&mdash;</div>
           </div>
 
+          <div class="field" style="grid-column:1/-1"><label>Resolution Summary</label><div class="view-input multiline" id="vResolution">&mdash;</div></div>
+          <div class="field" style="grid-column:1/-1"><label>Portal Visibility</label><div class="view-input" id="vVisibility">Admin only</div></div>
+
           <div class="field" style="grid-column:1/-1">
             <label>Files</label>
             <div class="view-input multiline" id="vFiles">&mdash;</div>
@@ -591,6 +617,7 @@
 
       <div class="modal-footer">
         <button class="btn light" type="button" data-close="mView">Close</button>
+        <button class="btn light" type="button" id="viewReopenBtn" style="display:none"><i class="fa-solid fa-rotate-left"></i> Reopen</button>
         <button class="btn light" type="button" id="viewMoreBtn"><i class="fa-solid fa-ellipsis"></i> More</button>
         <button class="btn primary" type="button" id="viewEditBtn"><i class="fa-solid fa-pen"></i> Edit</button>
       </div>
@@ -599,10 +626,12 @@
 
   <form id="statementForm" method="POST" action="#" enctype="multipart/form-data" style="display:none;">
     <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>"/>
+        <input type="hidden" name="revision" id="statementRevision" value="0"/>
   </form>
 
   <form id="attachForm" method="POST" action="#" enctype="multipart/form-data" style="display:none;">
     <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>"/>
+        <input type="hidden" name="revision" id="attachRevision" value="0"/>
   </form>
 
   <div class="modal-backdrop" id="mDelete">
@@ -619,13 +648,14 @@
         <button class="btn light" type="button" data-close="mDelete">Cancel</button>
         <form id="delForm" method="POST" action="#">
           <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>"/>
+        <input type="hidden" name="revision" id="deleteRevision" value="0"/>
           <button class="btn danger" type="submit"><i class="fa-solid fa-trash"></i> Delete</button>
         </form>
       </div>
     </div>
   </div>
 
-  <script type="application/json" nonce="<%= cspNonce || '' %>" id="disciplineData"><%- JSON.stringify(meta).replace(/</g,"\\u003c") %></script>
+  <script type="application/json" nonce="<%= cspNonce || '' %>" id="disciplineData"><%- JSON.stringify(meta).replace(/&/g,"\\u0026").replace(/</g,"\\u003c").replace(/>/g,"\\u003e") %></script>
   <script defer src="/js/navbar.js"></script>
   <script defer src="/js/discipline.js"></script>
 </body>

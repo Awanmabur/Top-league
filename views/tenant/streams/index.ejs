@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .input,.select,.textarea,.view-input{padding:10px 12px;border-radius:12px;border:1px solid rgba(13,64,96,.16);background:#fff;outline:none}
@@ -145,7 +145,7 @@
             <div class="field"><label>Section <span class="muted">(optional)</span></label><select class="select" id="mSectionId" name="sectionId"><option value="">- No Section -</option></select></div>
             <div class="field"><label>Teacher</label><select class="select" id="mClassTeacher" name="classTeacher"><option value="">- Select Teacher -</option><% (staffList || []).forEach(function(s){ %><option value="<%= String(s._id) %>"><%= s.fullName || s.name || 'Staff' %><%= s.role ? (' - ' + s.role) : '' %></option><% }) %></select></div>
             <div class="field"><label>Capacity</label><input class="input" id="mCapacity" name="capacity" type="number" min="0" /></div>
-            <div class="field"><label>Enrolled Count</label><input class="input" id="mEnrolledCount" name="enrolledCount" type="number" min="0" /></div>
+            <div class="field"><label>Enrolled Count</label><input class="input" id="mEnrolledCount" name="enrolledCount" type="number" min="0" readonly aria-readonly="true" title="Derived from active student enrolments" /></div>
             <div class="field"><label>Room</label><input class="input" id="mRoom" name="room" /></div>
             <div class="field full"><label>Notes</label><textarea class="textarea" id="mNotes" name="notes" maxlength="1200"></textarea><div class="char-count" id="notesCount">0 / 1200</div></div>
           </div>
@@ -219,7 +219,7 @@
       status: s.status || 'active',
       notes: s.notes || ''
     };
-  })) %></textarea>
+  })).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
   <textarea id="classesData" class="json-data"><%- JSON.stringify((classes || []).map(function(c){
     return {
       id: String(c._id || ''),
@@ -230,7 +230,7 @@
       stream: c.sectionName || c.stream || '',
       academicYear: c.academicYear || ''
     };
-  })) %></textarea>
+  })).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
   <textarea id="sectionsData" class="json-data"><%- JSON.stringify((sections || []).map(function(s){
     return {
       id: String(s._id || ''),
@@ -242,8 +242,8 @@
       classId: s.classId?._id ? String(s.classId._id) : String(s.classId || ''),
       className: s.className || s.classId?.name || ''
     };
-  })) %></textarea>
-  <textarea id="structureData" class="json-data"><%- JSON.stringify(structure || []) %></textarea>
+  })).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
+  <textarea id="structureData" class="json-data"><%- JSON.stringify(structure || []).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
 
   <script src="/js/navbar.js"></script>
   <script src="/js/streams.js"></script>

@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .input,.select{padding:10px 12px;border-radius:12px;border:1px solid rgba(13,64,96,.16);background:#fff;outline:none}
@@ -111,17 +111,22 @@
         <div class="card">
           <div class="section-title">Collected</div>
           <div class="kpi-value" style="color:#15803d"><%= formatMoney(overview.collected || 0) %></div>
-          <div class="muted">Payments in range</div>
+          <div class="muted">Completed payments in range</div>
         </div>
         <div class="card">
           <div class="section-title">Outstanding</div>
           <div class="kpi-value" style="color:#b91c1c"><%= formatMoney(overview.outstanding || 0) %></div>
-          <div class="muted">Remaining balances</div>
+          <div class="muted">Net amount due after account credit</div>
         </div>
         <div class="card">
           <div class="section-title">Net Position</div>
-          <div class="kpi-value" style="color:<%= (overview.net || 0) >= 0 ? '#15803d' : '#b91c1c' %>"><%= formatMoney(overview.net || 0) %></div>
-          <div class="muted">Collections minus expenses</div>
+          <% if (overview.netComparable !== false) { %>
+            <div class="kpi-value" style="color:<%= Number(overview.net || 0) >= 0 ? '#15803d' : '#b91c1c' %>"><%= formatMoney(overview.net || 0) %></div>
+            <div class="muted">Collections minus school-wide expenses</div>
+          <% } else { %>
+            <div class="kpi-value">N/A</div>
+            <div class="muted">Expenses have no student/program scope, so a scoped net is not calculated.</div>
+          <% } %>
         </div>
       </div>
 
@@ -139,7 +144,7 @@
             </select>
 
             <select class="select" name="program">
-              <option value="all" <%= q.program === 'all' ? 'selected' : '' %>>All Subjects</option>
+              <option value="all" <%= q.program === 'all' ? 'selected' : '' %>>All Programs</option>
               <% (programs || []).forEach(function(p){ %>
                 <option value="<%= p.id %>" <%= q.program === p.id ? 'selected' : '' %>><%= p.name %></option>
               <% }) %>
@@ -249,10 +254,12 @@
                   <tr>
                     <th>Student</th>
                     <th>Admission No</th>
-                    <th>Subject</th>
+                    <th>Program / Class</th>
                     <th>Total Invoiced</th>
-                    <th>Total Paid</th>
-                    <th>Balance</th>
+                    <th>Completed Payments</th>
+                    <th>Invoice Outstanding</th>
+                    <th>Account Credit</th>
+                    <th>Net Balance</th>
                     <th style="text-align:right;width:120px;">Action</th>
                   </tr>
                 </thead>
@@ -357,7 +364,7 @@
     </div>
   </div>
 
-  <textarea id="reportsData" class="json-data" aria-hidden="true"><%- JSON.stringify(reports || {}) %></textarea>
+  <textarea id="reportsData" class="json-data" aria-hidden="true"><%- JSON.stringify(reports || {}).replace(/</g, "\\u003c") %></textarea>
 
   <script src="/js/navbar.js"></script>
   <script src="/js/finance-reports.js"></script>

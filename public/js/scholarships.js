@@ -1,331 +1,141 @@
 (function () {
   const $ = (id) => document.getElementById(id);
+  const dataEl = $("scholarshipsData");
+  if (!dataEl || !$("tbody")) return;
 
-  function readJson(id) {
-    const el = $(id);
-    if (!el) return [];
-    try {
-      return JSON.parse(el.value || "[]");
-    } catch (err) {
-      console.error(`Failed to parse ${id}:`, err);
-      return [];
-    }
-  }
+  let SCH = [];
+  try { SCH = JSON.parse(dataEl.value || "[]"); } catch (_) { SCH = []; }
+  const state = { view: "list", selected: new Set() };
 
-  const SCH = readJson("scholarshipsData");
-
-  if (!$("tbody")) return;
-
-  const state = {
-    view: "list",
-    selected: new Set(),
+  const text = (tag, value, cls) => {
+    const el = document.createElement(tag);
+    if (cls) el.className = cls;
+    el.textContent = value == null || value === "" ? "—" : String(value);
+    return el;
   };
-
-  function money(v) {
-    return Number(v || 0).toLocaleString(undefined, {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    });
-  }
-
-  function openModal(id) {
-    const el = $(id);
-    if (!el) return;
-    el.classList.add("show");
-  }
-
-  function closeModal(id) {
-    const el = $(id);
-    if (!el) return;
-    el.classList.remove("show");
-  }
-
-  function submitRowAction(actionUrl) {
-    const form = $("rowActionForm");
-    if (!form) return;
-    form.action = actionUrl;
-    form.submit();
-  }
-
-  function bulkSubmit(action) {
-    const ids = Array.from(state.selected);
-    if (!ids.length) return;
-    $("bulkIds").value = ids.join(",");
+  const btn = (title, icon, cls) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = `btn-xs ${cls || ""}`.trim();
+    b.title = title;
+    const i = document.createElement("i");
+    i.className = `fa-solid ${icon}`;
+    b.appendChild(i);
+    return b;
+  };
+  const money = (v) => Number(v || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
+  const valueLabel = (a) => a.type === "Percentage" ? `${Number(a.value || 0)}%` : a.type === "Full" ? "100%" : money(a.amount || 0);
+  const statusPill = (status) => {
+    const span = document.createElement("span");
+    const map = { Active: "ok", Inactive: "warn", Expired: "warn", Revoked: "danger" };
+    span.className = `pill ${map[status] || "info"}`;
+    span.textContent = status || "—";
+    return span;
+  };
+  const openModal = (id) => $(id)?.classList.add("show");
+  const closeModal = (id) => $(id)?.classList.remove("show");
+  const submitRowAction = (url) => { const f = $("rowActionForm"); if (f) { f.action = url; f.submit(); } };
+  const bulkSubmit = (action) => {
+    if (!state.selected.size) return;
+    $("bulkIds").value = Array.from(state.selected).join(",");
     $("bulkActionInput").value = action;
     $("bulkForm").submit();
-  }
-
-  function pillStatus(a) {
-    if (a.status === "Active") return '<span class="pill ok"><i class="fa-solid fa-circle-check"></i> Active</span>';
-    if (a.status === "Inactive") return '<span class="pill warn"><i class="fa-solid fa-clock"></i> Inactive</span>';
-    if (a.status === "Expired") return '<span class="pill info"><i class="fa-solid fa-calendar-xmark"></i> Expired</span>';
-    return '<span class="pill bad"><i class="fa-solid fa-ban"></i> Revoked</span>';
-  }
-
-  function valueLabel(s) {
-    if (s.type === "Percentage") return `${Number(s.value || 0)}%`;
-    if (s.type === "Full") return "100%";
-    return money(s.amount || 0);
-  }
+  };
 
   function syncBulkbar() {
-    $("selCount").textContent = state.selected.size;
+    $("selCount").textContent = String(state.selected.size);
     $("bulkbar").classList.toggle("show", state.selected.size > 0 && state.view === "list");
-  }
-
-  function setView(v) {
-    state.view = v;
-
-    document.querySelectorAll("#viewChips .chip").forEach((b) => b.classList.remove("active"));
-    const activeBtn = document.querySelector(`#viewChips .chip[data-view="${v}"]`);
-    if (activeBtn) activeBtn.classList.add("active");
-
-    $("view-list").style.display = v === "list" ? "" : "none";
-    $("view-awards").style.display = v === "awards" ? "" : "none";
-    $("view-summary").style.display = v === "summary" ? "" : "none";
-
-    const titles = {
-      list: ["Scholarships", "Manage scholarship records, scope, value and lifecycle status."],
-      awards: ["Awards", "Review scholarship targets, sponsors and award values."],
-      summary: ["Summary", "Scholarship summary across the current result set."],
-    };
-
-    $("panelTitle").textContent = titles[v][0];
-    $("panelSub").textContent = titles[v][1];
-
-    syncBulkbar();
-    render();
   }
 
   function renderList() {
     $("resultMeta").textContent = `${SCH.length} scholarship(s)`;
-
     $("checkAll").checked = SCH.length > 0 && SCH.every((x) => state.selected.has(x.id));
-
-    $("tbody").innerHTML =
-      SCH.map((a) => {
-        const checked = state.selected.has(a.id) ? "checked" : "";
-        return `
-          <tr data-id="${a.id}">
-            <td><input type="checkbox" class="rowCheck" data-id="${a.id}" ${checked}></td>
-            <td>
-              <div class="strong">${a.name || ""}</div>
-              <div class="muted">${a.code || "No code"}</div>
-            </td>
-            <td>${a.studentName || "—"}</td>
-            <td>${a.programName || "—"}</td>
-            <td><span class="pill info"><i class="fa-solid fa-shapes"></i> ${a.type || "Fixed Amount"}</span></td>
-            <td><div class="strong">${valueLabel(a)}</div></td>
-            <td>
-              <div class="strong">${a.startDate || "—"}</div>
-              <div class="muted">End: ${a.endDate || "—"}</div>
-            </td>
-            <td>${pillStatus(a)}</td>
-            <td>
-              <div class="actions">
-                <button class="btn-xs actView" type="button" title="View"><i class="fa-solid fa-eye"></i></button>
-                <button class="btn-xs actEdit" type="button" title="Edit"><i class="fa-solid fa-pen"></i></button>
-                <button class="btn-xs actActivate" type="button" title="Activate"><i class="fa-solid fa-circle-check"></i></button>
-                <button class="btn-xs actExpire" type="button" title="Expire"><i class="fa-solid fa-calendar-xmark"></i></button>
-                <button class="btn-xs actRevoke" type="button" title="Revoke"><i class="fa-solid fa-ban"></i></button>
-                <button class="btn-xs actDelete" type="button" title="Delete"><i class="fa-solid fa-trash"></i></button>
-              </div>
-            </td>
-          </tr>
-        `;
-      }).join("") ||
-      '<tr><td colspan="9" style="padding:18px;"><div class="muted">No scholarships found.</div></td></tr>';
+    const body = $("tbody"); body.replaceChildren();
+    if (!SCH.length) {
+      const tr = document.createElement("tr"); const td = document.createElement("td"); td.colSpan = 9; td.style.padding = "18px"; td.appendChild(text("div", "No scholarships found.", "muted")); tr.appendChild(td); body.appendChild(tr); return;
+    }
+    SCH.forEach((a) => {
+      const tr = document.createElement("tr"); tr.dataset.id = a.id;
+      const c0 = document.createElement("td"); const ck = document.createElement("input"); ck.type = "checkbox"; ck.className = "rowCheck"; ck.dataset.id = a.id; ck.checked = state.selected.has(a.id); c0.appendChild(ck); tr.appendChild(c0);
+      const c1 = document.createElement("td"); c1.appendChild(text("div", a.name, "strong")); c1.appendChild(text("div", a.code || "No code", "muted")); tr.appendChild(c1);
+      tr.appendChild(text("td", a.studentName));
+      tr.appendChild(text("td", a.programName));
+      const c4 = document.createElement("td"); const type = text("span", a.type || "Fixed Amount", "pill info"); c4.appendChild(type); tr.appendChild(c4);
+      const c5 = document.createElement("td"); c5.appendChild(text("div", valueLabel(a), "strong")); tr.appendChild(c5);
+      const c6 = document.createElement("td"); c6.appendChild(text("div", a.startDate || "—", "strong")); c6.appendChild(text("div", `End: ${a.endDate || "—"}`, "muted")); tr.appendChild(c6);
+      const c7 = document.createElement("td"); c7.appendChild(statusPill(a.status)); tr.appendChild(c7);
+      const c8 = document.createElement("td"); const actions = document.createElement("div"); actions.className = "actions";
+      actions.append(btn("View", "fa-eye", "actView"), btn("Edit", "fa-pen", "actEdit"));
+      if ((a.recordKind || (a.studentId ? "Award" : "Program")) === "Program") actions.appendChild(btn("Applications", "fa-users", "actApplications"));
+      actions.append(btn("Activate", "fa-circle-check", "actActivate"), btn("Expire", "fa-calendar-xmark", "actExpire"), btn("Revoke", "fa-ban", "actRevoke"), btn("Delete", "fa-trash", "actDelete"));
+      c8.appendChild(actions); tr.appendChild(c8); body.appendChild(tr);
+    });
   }
 
   function renderAwards() {
     $("resultMeta").textContent = `${SCH.length} scholarship(s)`;
-    $("tbodyAwards").innerHTML =
-      SCH.map((a) => `
-        <tr>
-          <td><div class="strong">${a.name || ""}</div></td>
-          <td>${a.code || "—"}</td>
-          <td>${a.sponsor || "—"}</td>
-          <td>${a.studentName || "—"}</td>
-          <td>${a.programName || "—"}</td>
-          <td><span class="pill info"><i class="fa-solid fa-shapes"></i> ${a.type || "Fixed Amount"}</span></td>
-          <td><div class="strong">${valueLabel(a)}</div></td>
-          <td>${pillStatus(a)}</td>
-        </tr>
-      `).join("") ||
-      '<tr><td colspan="8" style="padding:18px;"><div class="muted">No award data found.</div></td></tr>';
+    const body = $("tbodyAwards"); body.replaceChildren();
+    if (!SCH.length) {
+      const tr = document.createElement("tr"), td = document.createElement("td"); td.colSpan = 8; td.style.padding = "18px"; td.appendChild(text("div", "No award data found.", "muted")); tr.appendChild(td); body.appendChild(tr); return;
+    }
+    SCH.forEach((a) => {
+      const tr = document.createElement("tr");
+      const name = document.createElement("td"); name.appendChild(text("div", a.name, "strong")); tr.appendChild(name);
+      tr.appendChild(text("td", a.code)); tr.appendChild(text("td", a.sponsor)); tr.appendChild(text("td", a.studentName)); tr.appendChild(text("td", a.programName));
+      const typ = document.createElement("td"); typ.appendChild(text("span", a.type || "Fixed Amount", "pill info")); tr.appendChild(typ);
+      const val = document.createElement("td"); val.appendChild(text("div", valueLabel(a), "strong")); tr.appendChild(val);
+      const st = document.createElement("td"); st.appendChild(statusPill(a.status)); tr.appendChild(st); body.appendChild(tr);
+    });
   }
 
-  function render() {
-    syncBulkbar();
-    if (state.view === "list") renderList();
-    if (state.view === "awards") renderAwards();
-    if (state.view === "summary") $("resultMeta").textContent = `${SCH.length} scholarship(s)`;
+  function render() { syncBulkbar(); if (state.view === "list") renderList(); else if (state.view === "awards") renderAwards(); else $("resultMeta").textContent = `${SCH.length} scholarship(s)`; }
+
+  function setView(v) {
+    state.view = v;
+    document.querySelectorAll("#viewChips .chip").forEach((b) => b.classList.toggle("active", b.dataset.view === v));
+    $("view-list").style.display = v === "list" ? "" : "none";
+    $("view-awards").style.display = v === "awards" ? "" : "none";
+    $("view-summary").style.display = v === "summary" ? "" : "none";
+    const titles = { list: ["Scholarships", "Manage scholarship records, scope, value and lifecycle status."], awards: ["Awards", "Review scholarship targets, sponsors and award values."], summary: ["Summary", "Scholarship summary across the current result set."] };
+    $("panelTitle").textContent = titles[v][0]; $("panelSub").textContent = titles[v][1]; render();
   }
 
   function syncTypeFields() {
-    const type = $("sType").value;
-
-    $("typePreview").textContent = type;
-
-    if (type === "Percentage") {
-      $("valueField").style.display = "";
-      $("amountField").style.display = "none";
-      $("valuePreview").textContent = `${Number($("sValue").value || 0)}%`;
-      return;
-    }
-
-    if (type === "Fixed Amount") {
-      $("valueField").style.display = "none";
-      $("amountField").style.display = "";
-      $("valuePreview").textContent = money($("sAmount").value || 0);
-      return;
-    }
-
-    $("valueField").style.display = "none";
-    $("amountField").style.display = "none";
-    $("valuePreview").textContent = "100%";
+    const type = $("sType").value; $("typePreview").textContent = type;
+    $("valueField").style.display = type === "Percentage" ? "" : "none";
+    $("amountField").style.display = type === "Fixed Amount" ? "" : "none";
+    $("valuePreview").textContent = type === "Percentage" ? `${Number($("sValue").value || 0)}%` : type === "Full" ? "100%" : money($("sAmount").value || 0);
   }
 
-  function openEditor(pref) {
-    pref = pref || null;
-
-    $("mTitle").textContent = pref ? "Edit Scholarship" : "Create Scholarship";
-    const form = $("scholarshipForm");
-    form.action = pref ? `/admin/scholarships/${pref.id}/update` : "/admin/scholarships";
-
-    $("sName").value = pref ? (pref.name || "") : "";
-    $("sCode").value = pref ? (pref.code || "") : "";
-    $("sStudent").value = pref ? (pref.studentId || "") : "";
-    $("sProgram").value = pref ? (pref.programId || "") : "";
-    $("sType").value = pref ? (pref.type || "Fixed Amount") : "Fixed Amount";
-    $("sValue").value = pref ? Number(pref.value || 0) : 0;
-    $("sAmount").value = pref ? Number(pref.amount || 0) : 0;
-    $("sSponsor").value = pref ? (pref.sponsor || "") : "";
-    $("sStartDate").value = pref ? (pref.startDate || "") : "";
-    $("sEndDate").value = pref ? (pref.endDate || "") : "";
-    $("sStatus").value = pref ? (pref.status || "Active") : "Active";
-    $("sNotes").value = pref ? (pref.notes || "") : "";
-
-    syncTypeFields();
-    openModal("mEdit");
+  function openEditor(a) {
+    const form = $("scholarshipForm"); $("mTitle").textContent = a ? "Edit Scholarship" : "Create Scholarship"; form.action = a ? `/admin/scholarships/${a.id}/update` : "/admin/scholarships";
+    const vals = { sName: a?.name || "", sCode: a?.code || "", sStudent: a?.studentId || "", sProgram: a?.programId || "", sType: a?.type || "Fixed Amount", sValue: Number(a?.value || 0), sAmount: Number(a?.amount || 0), sSponsor: a?.sponsor || "", sStartDate: a?.startDate || "", sEndDate: a?.endDate || "", sStatus: a?.status || "Active", sNotes: a?.notes || "" };
+    Object.entries(vals).forEach(([id,v]) => { if ($(id)) $(id).value = v; }); syncTypeFields(); openModal("mEdit");
   }
 
-  function openViewModal(a) {
-    if (!a) return;
-
-    $("vName").textContent = a.name || "—";
-    $("vCode").textContent = a.code || "—";
-    $("vStudent").textContent = a.studentName || "—";
-    $("vProgram").textContent = a.programName || "—";
-    $("vType").textContent = a.type || "—";
-    $("vValue").textContent = valueLabel(a);
-    $("vSponsor").textContent = a.sponsor || "—";
-    $("vStatus").textContent = a.status || "—";
-    $("vStartDate").textContent = a.startDate || "—";
-    $("vEndDate").textContent = a.endDate || "—";
-    $("vNotes").textContent = a.notes || "—";
-
-    openModal("mView");
+  function openView(a) {
+    const vals = { vName:a.name, vCode:a.code, vStudent:a.studentName, vProgram:a.programName, vType:a.type, vValue:valueLabel(a), vSponsor:a.sponsor, vStatus:a.status, vStartDate:a.startDate, vEndDate:a.endDate, vNotes:a.notes };
+    Object.entries(vals).forEach(([id,v]) => { if ($(id)) $(id).textContent = v || "—"; }); openModal("mView");
   }
 
-  $("btnCreate").addEventListener("click", function () {
-    openEditor();
+  $("btnCreate")?.addEventListener("click", () => openEditor()); $("quickNewScholarship")?.addEventListener("click", () => openEditor());
+  $("viewChips")?.addEventListener("click", (e) => { const b=e.target.closest(".chip"); if(b) setView(b.dataset.view); });
+  $("checkAll")?.addEventListener("change", (e) => { if(e.target.checked) SCH.forEach((a)=>state.selected.add(a.id)); else state.selected.clear(); render(); });
+  $("tbody")?.addEventListener("change", (e) => { if(!e.target.classList.contains("rowCheck")) return; e.target.checked ? state.selected.add(e.target.dataset.id) : state.selected.delete(e.target.dataset.id); render(); });
+  $("tbody")?.addEventListener("click", (e) => {
+    const tr=e.target.closest("tr[data-id]"); if(!tr) return; const a=SCH.find((x)=>x.id===tr.dataset.id); if(!a) return;
+    if(e.target.closest(".actView")) return openView(a); if(e.target.closest(".actEdit")) return openEditor(a); if(e.target.closest(".actApplications")) { window.location.href=`/admin/scholarships/${a.id}/applications`; return; }
+    if(e.target.closest(".actActivate")) return submitRowAction(`/admin/scholarships/${a.id}/activate`); if(e.target.closest(".actExpire")) return submitRowAction(`/admin/scholarships/${a.id}/expire`); if(e.target.closest(".actRevoke")) return submitRowAction(`/admin/scholarships/${a.id}/revoke`);
+    if(e.target.closest(".actDelete") && window.confirm(`Delete scholarship "${a.name || ""}"?`)) submitRowAction(`/admin/scholarships/${a.id}/delete`);
   });
-
-  $("quickNewScholarship").addEventListener("click", function () {
-    openEditor();
-  });
-
-  $("viewChips").addEventListener("click", function (e) {
-    const btn = e.target.closest(".chip");
-    if (!btn) return;
-    setView(btn.dataset.view);
-  });
-
-  $("checkAll").addEventListener("change", function (e) {
-    if (e.target.checked) SCH.forEach((a) => state.selected.add(a.id));
-    else SCH.forEach((a) => state.selected.delete(a.id));
-    render();
-  });
-
-  $("tbody").addEventListener("change", function (e) {
-    if (!e.target.classList.contains("rowCheck")) return;
-    const id = e.target.dataset.id;
-    if (e.target.checked) state.selected.add(id);
-    else state.selected.delete(id);
-    render();
-  });
-
-  $("tbody").addEventListener("click", function (e) {
-    const tr = e.target.closest("tr[data-id]");
-    if (!tr) return;
-
-    const a = SCH.find((x) => x.id === tr.dataset.id);
-    if (!a) return;
-
-    if (e.target.closest(".actView")) return openViewModal(a);
-    if (e.target.closest(".actEdit")) return openEditor(a);
-    if (e.target.closest(".actActivate")) return submitRowAction(`/admin/scholarships/${a.id}/activate`);
-    if (e.target.closest(".actExpire")) return submitRowAction(`/admin/scholarships/${a.id}/expire`);
-    if (e.target.closest(".actRevoke")) return submitRowAction(`/admin/scholarships/${a.id}/revoke`);
-
-    if (e.target.closest(".actDelete")) {
-      if (window.confirm(`Delete scholarship "${a.name}"?`)) {
-        return submitRowAction(`/admin/scholarships/${a.id}/delete`);
-      }
-    }
-  });
-
-  $("btnBulk").addEventListener("click", function () {
-    if (!state.selected.size) return alert("Select at least one scholarship.");
-    $("bulkbar").classList.add("show");
-  });
-
-  $("bulkClear").addEventListener("click", function () {
-    state.selected.clear();
-    render();
-  });
-
-  $("bulkActivate").addEventListener("click", function () { bulkSubmit("activate"); });
-  $("bulkInactive").addEventListener("click", function () { bulkSubmit("inactive"); });
-  $("bulkExpire").addEventListener("click", function () { bulkSubmit("expire"); });
-  $("bulkRevoke").addEventListener("click", function () { bulkSubmit("revoke"); });
-  $("bulkDelete").addEventListener("click", function () {
-    if (!state.selected.size) return;
-    if (window.confirm("Delete selected scholarships?")) bulkSubmit("delete");
-  });
-
-  $("sType").addEventListener("change", syncTypeFields);
-  $("sValue").addEventListener("input", syncTypeFields);
-  $("sAmount").addEventListener("input", syncTypeFields);
-
-  document.querySelectorAll("[data-close-modal]").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      closeModal(btn.dataset.closeModal);
-    });
-  });
-
-  ["mEdit", "mView"].forEach(function (mid) {
-    const el = $(mid);
-    if (!el) return;
-    el.addEventListener("click", function (e) {
-      if (e.target.id === mid) closeModal(mid);
-    });
-  });
-
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape") {
-      document.querySelectorAll(".modal-backdrop.show").forEach(function (el) {
-        el.classList.remove("show");
-      });
-    }
-  });
-
-  $("btnExport").addEventListener("click", function () {
-    alert("Hook scholarships export route later.");
-  });
-
-  syncTypeFields();
-  setView("list");
-  render();
+  $("btnBulk")?.addEventListener("click", () => { if(!state.selected.size) return window.alert("Select at least one scholarship."); $("bulkbar").classList.add("show"); });
+  $("bulkClear")?.addEventListener("click", () => { state.selected.clear(); render(); });
+  $("bulkActivate")?.addEventListener("click", () => bulkSubmit("activate")); $("bulkInactive")?.addEventListener("click", () => bulkSubmit("inactive")); $("bulkExpire")?.addEventListener("click", () => bulkSubmit("expire")); $("bulkRevoke")?.addEventListener("click", () => bulkSubmit("revoke"));
+  $("bulkDelete")?.addEventListener("click", () => { if(state.selected.size && window.confirm("Delete selected scholarships?")) bulkSubmit("delete"); });
+  $("sType")?.addEventListener("change", syncTypeFields); $("sValue")?.addEventListener("input", syncTypeFields); $("sAmount")?.addEventListener("input", syncTypeFields);
+  document.querySelectorAll("[data-close-modal]").forEach((b)=>b.addEventListener("click",()=>closeModal(b.dataset.closeModal)));
+  ["mEdit","mView"].forEach((id)=>$(id)?.addEventListener("click",(e)=>{if(e.target.id===id)closeModal(id);}));
+  document.addEventListener("keydown",(e)=>{if(e.key==="Escape")document.querySelectorAll(".modal-backdrop.show").forEach((el)=>el.classList.remove("show"));});
+  $("btnExport")?.addEventListener("click", () => { const qs = window.location.search || ""; window.location.href = `/admin/scholarships/export.csv${qs}`; });
+  syncTypeFields(); setView("list");
 })();

@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
@@ -537,7 +537,7 @@
         <div class="card">
           <div class="section-title">Avg Score</div>
           <div class="kpi-value" style="color:#0a6fbf"><%= kpis?.avgScore || 0 %></div>
-          <div class="muted">Current page average</div>
+          <div class="muted">Matching filter average</div>
         </div>
       </div>
 
@@ -771,7 +771,7 @@
                   <div class="strong">Add Result</div>
                   <div class="muted">Open manual result entry</div>
                 </div>
-                <button class="btn-xs" type="button" onclick="document.getElementById('btnCreate').click()">
+                <button class="btn-xs" type="button" data-click-target="btnCreate">
                   <i class="fa-solid fa-plus"></i>
                 </button>
               </div>
@@ -781,14 +781,14 @@
                   <div class="strong">Import CSV</div>
                   <div class="muted">Bulk upload student scores</div>
                 </div>
-                <button class="btn-xs" type="button" onclick="document.getElementById('btnImport').click()">
+                <button class="btn-xs" type="button" data-click-target="btnImport">
                   <i class="fa-solid fa-file-import"></i>
                 </button>
               </div>
             </div>
 
             <div class="note">
-              CSV import requires columns: <strong>examId, studentId, score</strong>.<br>
+              CSV import requires columns: <strong>examId, studentId, score</strong>. The file is validated as one batch before any row is saved.<br>
               Optional: <strong>grade, remark, status</strong>.
             </div>
           </div>
@@ -834,7 +834,7 @@
               <label>Status</label>
               <select class="select" id="mStatus" name="status">
                 <option value="draft">Draft</option>
-                <option value="published">Published</option>
+                <option value="published">Published (Completed exam only)</option>
               </select>
             </div>
 
@@ -1089,11 +1089,11 @@
     <input type="hidden" name="ids" id="bulkIdsVal">
   </form>
 
-  <textarea id="resultsData" class="json-data" aria-hidden="true"><%- JSON.stringify(resultsData || []) %></textarea>
-  <textarea id="classesData" class="json-data" aria-hidden="true"><%- JSON.stringify(classes || []) %></textarea>
-  <textarea id="sectionsData" class="json-data" aria-hidden="true"><%- JSON.stringify(sections || []) %></textarea>
-  <textarea id="streamsData" class="json-data" aria-hidden="true"><%- JSON.stringify(streams || []) %></textarea>
-  <textarea id="subjectOptionsData" class="json-data" aria-hidden="true"><%- JSON.stringify(subjectOptions || subjects || []) %></textarea>
+  <textarea id="resultsData" class="json-data" aria-hidden="true"><%- JSON.stringify(resultsData || []).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
+  <textarea id="classesData" class="json-data" aria-hidden="true"><%- JSON.stringify(classes || []).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
+  <textarea id="sectionsData" class="json-data" aria-hidden="true"><%- JSON.stringify(sections || []).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
+  <textarea id="streamsData" class="json-data" aria-hidden="true"><%- JSON.stringify(streams || []).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
+  <textarea id="subjectOptionsData" class="json-data" aria-hidden="true"><%- JSON.stringify(subjectOptions || subjects || []).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
 
   <script src="/js/navbar.js"></script>
   <script src="/js/academic-selector.js"></script>

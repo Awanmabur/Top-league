@@ -5,6 +5,7 @@ module.exports = function TenantProfileModel(conn) {
 
   const TenantProfileSchema = new mongoose.Schema(
     {
+      singletonKey: { type: String, default: "school", immutable: true },
       schoolName: { type: String, required: true, trim: true, maxlength: 220 },
       shortName: { type: String, trim: true, default: "" },
       tagline: { type: String, trim: true, default: "" },
@@ -35,6 +36,11 @@ module.exports = function TenantProfileModel(conn) {
 
       status: { type: String, trim: true, default: "Active" },
       studentCount: { type: Number, default: 0 },
+      publicProfile: { type: mongoose.Schema.Types.Mixed, default: () => ({}) },
+      branding: { type: mongoose.Schema.Types.Mixed, default: () => ({}) },
+      publicPreferences: { type: mongoose.Schema.Types.Mixed, default: () => ({}) },
+      revision: { type: Number, default: 1, min: 1 },
+      publishedAt: { type: Date, default: null },
 
       createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
       updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
@@ -44,6 +50,7 @@ module.exports = function TenantProfileModel(conn) {
     { timestamps: true }
   );
 
+  TenantProfileSchema.index({ singletonKey: 1 }, { unique: true, name: "uniq_tenant_profile_singleton" });
   TenantProfileSchema.index({ createdAt: -1 });
   TenantProfileSchema.index({ schoolName: 1 });
   TenantProfileSchema.index({ tenantCode: 1 });

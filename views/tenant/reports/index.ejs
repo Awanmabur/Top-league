@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .input,.select,.textarea,.view-input{padding:10px 12px;border-radius:12px;border:1px solid rgba(13,64,96,.16);background:#fff;outline:none}
@@ -96,7 +96,8 @@
   };
 
   const reportFilters = filters || {};
-  const subjectOptions = Array.isArray(programs) ? programs : [];
+  const programOptions = Array.isArray(programs) ? programs : [];
+  const sectionOptions = Array.isArray(sections) ? sections : [];
   const currentReport = report || { title: "Report", columns: [], rows: [], kpis: null };
   const columns = Array.isArray(currentReport.columns) ? currentReport.columns : [];
   const rows = Array.isArray(currentReport.rows) ? currentReport.rows : [];
@@ -112,6 +113,7 @@
     if (reportFilters.term) params.set("term", reportFilters.term);
     if (reportFilters.status) params.set("status", reportFilters.status);
     if (reportFilters.program) params.set("program", reportFilters.program);
+    if (reportFilters.section) params.set("section", reportFilters.section);
     return "/admin/reports/export?" + params.toString();
   }
 
@@ -212,10 +214,19 @@
               </select>
 
               <select class="select" name="program">
-                <option value="">All Subjects</option>
-                <% subjectOptions.forEach(function(subject){ %>
-                  <option value="<%= subject._id %>" <%= safe(reportFilters.program) === String(subject._id) ? "selected" : "" %>>
-                    <%= (subject.code ? subject.code + " - " : "") + (subject.title || subject.shortTitle || subject.name || "Subject") %>
+                <option value="">All Programs</option>
+                <% programOptions.forEach(function(program){ %>
+                  <option value="<%= program._id %>" <%= safe(reportFilters.program) === String(program._id) ? "selected" : "" %>>
+                    <%= (program.code ? program.code + " - " : "") + (program.title || program.shortTitle || program.name || "Program") %>
+                  </option>
+                <% }) %>
+              </select>
+
+              <select class="select" name="section">
+                <option value="">All Sections</option>
+                <% sectionOptions.forEach(function(section){ %>
+                  <option value="<%= section._id %>" <%= safe(reportFilters.section) === String(section._id) ? "selected" : "" %>>
+                    <%= (section.code ? section.code + " - " : "") + (section.name || section.className || section.classLevel || "Section") %>
                   </option>
                 <% }) %>
               </select>
@@ -373,10 +384,13 @@
                     </td>
                     <td class="muted"><%= item.createdAt ? new Date(item.createdAt).toLocaleString() : "" %></td>
                     <td class="right no-print" style="white-space:nowrap">
-                      <a class="btn-xs" href="/admin/reports/exports/<%= item._id %>/download"><i class="fa-solid fa-download"></i> Download</a>
+                      <% if (item.status === "ready") { %>
+                        <a class="btn-xs" href="/admin/reports/exports/<%= item._id %>/download"><i class="fa-solid fa-download"></i> Download</a>
+                      <% } %>
                       <form method="POST" action="/admin/reports/exports/<%= item._id %>/delete" style="display:inline;">
                         <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
-                        <button class="btn-xs" type="submit" onclick="return confirm('Delete this file?')">
+                        <input type="hidden" name="revision" value="<%= Number(item.revision || 1) %>">
+                        <button class="btn-xs" type="submit" data-confirm-delete="true">
                           <i class="fa-solid fa-trash"></i> Delete
                         </button>
                       </form>
@@ -424,7 +438,7 @@
 
           <div class="file-meta">
             <div class="view-input" id="importFileName">No file selected</div>
-            <div class="muted">Maximum file size: 5 MB. Only CSV files are allowed.</div>
+            <div class="muted">Maximum file size: 2 MB. Only CSV files are allowed.</div>
           </div>
 
           <div class="note" style="margin-top:12px;">

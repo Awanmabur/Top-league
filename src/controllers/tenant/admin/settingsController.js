@@ -1,40 +1,14 @@
-const mongoose = require("mongoose");
+const { sendMail } = require("../../../utils/mailer");
+const {
+  buildConfigurationReport,
+  buildDefaultSettings,
+  normalizeSettingsInput,
+  normalizeStoredSettings,
+  validateSettings,
+} = require("../../../services/tenant/settingsService");
 
 const actorUserId = (req) =>
   req.user?.userId || req.user?._id || req.session?.tenantUser?.id || null;
-
-const str = (v) => String(v ?? "").trim();
-const asBool = (v) => ["1", "true", "yes", "on"].includes(String(v || "").toLowerCase());
-
-function buildDefaultSettings() {
-  return {
-    schoolName: "",
-    schoolEmail: "",
-    schoolPhone: "",
-    schoolAddress: "",
-    primaryColor: "#0a6fbf",
-    secondaryColor: "#0d4060",
-    logoUrl: "",
-    defaultSenderName: "",
-    replyToEmail: "",
-    channels: {
-      portal: true,
-      email: true,
-      sms: false,
-      push: false,
-    },
-    portal: {
-      allowPublicAdmissions: true,
-      requireStudentLogin: true,
-      maintenanceMode: false,
-    },
-    integrations: {
-      smtpHost: "",
-      smsProvider: "",
-      cloudStorage: "",
-    },
-  };
-}
 
 function buildStats(settings) {
   const profileFields = [
@@ -64,13 +38,46 @@ function buildStats(settings) {
   return { profileCompletion, enabledChannels, activePolicies, integrations };
 }
 
+async function readSystemSettings(req) {
+  const { Setting } = req.models;
+  const row = await Setting.findOne({ key: "system", isDeleted: { $ne: true } }).lean();
+  return normalizeStoredSettings(row?.value || {}, req.tenant);
+}
+
+async function saveSystemSettings(req, value) {
+  const { Setting } = req.models;
+  return Setting.findOneAndUpdate(
+    { key: "system", isDeleted: { $ne: true } },
+    {
+      $set: {
+        key: "system",
+        value,
+        updatedBy: actorUserId(req),
+        isDeleted: false,
+        deletedAt: null,
+      },
+      $setOnInsert: {
+        createdBy: actorUserId(req),
+      },
+    },
+    { upsert: true, new: true, runValidators: true }
+  );
+}
+
+async function resolveTestEmail(req, settings) {
+  const direct = String(req.user?.email || "").trim().toLowerCase();
+  if (direct) return direct;
+  const userId = actorUserId(req);
+  if (userId && req.models?.User) {
+    const user = await req.models.User.findById(userId).select("email").lean().catch(() => null);
+    if (user?.email) return String(user.email).trim().toLowerCase();
+  }
+  return String(settings.schoolEmail || settings.replyToEmail || "").trim().toLowerCase();
+}
+
 module.exports = {
   index: async (req, res) => {
-    const { Setting } = req.models;
-
-    let settings = await Setting.findOne({ key: "system", isDeleted: { $ne: true } }).lean();
-    settings = settings?.value || buildDefaultSettings();
-
+    const settings = await readSystemSettings(req);
     return res.render("tenant/settings/index", {
       tenant: req.tenant,
       csrfToken: req.csrfToken?.(),
@@ -80,53 +87,58 @@ module.exports = {
   },
 
   save: async (req, res) => {
-    const { Setting } = req.models;
+    const value = normalizeSettingsInput(req.body || {});
+    const errors = validateSettings(value);
+    if (errors.length) {
+      req.flash?.("error", errors.join(" "));
+      return res.redirect("/admin/settings");
+    }
 
-    const value = {
-      schoolName: str(req.body.schoolName),
-      schoolEmail: str(req.body.schoolEmail),
-      schoolPhone: str(req.body.schoolPhone),
-      schoolAddress: str(req.body.schoolAddress),
-      primaryColor: str(req.body.primaryColor || "#0a6fbf"),
-      secondaryColor: str(req.body.secondaryColor || "#0d4060"),
-      logoUrl: str(req.body.logoUrl),
-      defaultSenderName: str(req.body.defaultSenderName),
-      replyToEmail: str(req.body.replyToEmail),
-      channels: {
-        portal: asBool(req.body.channelPortal),
-        email: asBool(req.body.channelEmail),
-        sms: asBool(req.body.channelSms),
-        push: asBool(req.body.channelPush),
-      },
-      portal: {
-        allowPublicAdmissions: asBool(req.body.portalAllowPublicAdmissions),
-        requireStudentLogin: asBool(req.body.portalRequireStudentLogin),
-        maintenanceMode: asBool(req.body.portalMaintenanceMode),
-      },
-      integrations: {
-        smtpHost: str(req.body.smtpHost),
-        smsProvider: str(req.body.smsProvider),
-        cloudStorage: str(req.body.cloudStorage),
-      },
-    };
-
-    await Setting.findOneAndUpdate(
-      { key: "system", isDeleted: { $ne: true } },
-      {
-        $set: {
-          key: "system",
-          value,
-          updatedBy: actorUserId(req),
-          isDeleted: false,
-        },
-        $setOnInsert: {
-          createdBy: actorUserId(req),
-        },
-      },
-      { upsert: true, new: true }
-    );
-
+    await saveSystemSettings(req, value);
     req.flash?.("success", "Settings saved successfully.");
     return res.redirect("/admin/settings");
+  },
+
+  resetDefaults: async (req, res) => {
+    const defaults = buildDefaultSettings(req.tenant);
+    await saveSystemSettings(req, defaults);
+    req.flash?.("success", "Settings were reset to safe school defaults.");
+    return res.redirect("/admin/settings");
+  },
+
+  testConfiguration: async (req, res) => {
+    const settings = await readSystemSettings(req);
+    const report = buildConfigurationReport(settings);
+    if (report.errors.length) {
+      req.flash?.("error", `Configuration test failed: ${report.errors.join(" ")}`);
+      return res.redirect("/admin/settings?tab=integrations");
+    }
+
+    let emailResult = "Email delivery is disabled, so no test email was sent.";
+    if (settings.channels.email) {
+      const target = await resolveTestEmail(req, settings);
+      if (!target) {
+        req.flash?.("error", "Configuration test failed: no administrator or school email is available for the SMTP test.");
+        return res.redirect("/admin/settings?tab=communication");
+      }
+      try {
+        await sendMail({
+          to: target,
+          subject: "Classic Academy configuration test",
+          text: "Classic Academy successfully verified this tenant's configured email delivery path.",
+          html: "<p><strong>Classic Academy configuration test</strong></p><p>Email delivery is working for this tenant.</p>",
+          replyTo: settings.replyToEmail || undefined,
+          fromName: settings.defaultSenderName || settings.schoolName || undefined,
+        });
+        emailResult = `A test email was sent to ${target}.`;
+      } catch (err) {
+        req.flash?.("error", `Configuration test failed: ${err?.message || "SMTP delivery could not be verified."}`);
+        return res.redirect("/admin/settings?tab=integrations");
+      }
+    }
+
+    const warningText = report.warnings.length ? ` Warnings: ${report.warnings.join(" ")}` : "";
+    req.flash?.("success", `Configuration test passed. ${emailResult}${warningText}`);
+    return res.redirect("/admin/settings?tab=integrations");
   },
 };

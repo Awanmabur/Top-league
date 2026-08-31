@@ -148,7 +148,6 @@ module.exports = (connection) => {
         type: String,
         default: "",
         trim: true,
-        index: true,
       },
 
       issuedAt: {
@@ -191,6 +190,26 @@ module.exports = (connection) => {
         trim: true,
       },
 
+      verificationVersion: {
+        type: Number,
+        default: 2,
+        min: 1,
+        max: 10,
+      },
+
+      migrationQuarantinedAt: {
+        type: Date,
+        default: null,
+        index: true,
+      },
+
+      migrationQuarantineReason: {
+        type: String,
+        default: "",
+        trim: true,
+        maxlength: 500,
+      },
+
       generatedAt: {
         type: Date,
         default: null,
@@ -225,6 +244,16 @@ module.exports = (connection) => {
     },
     { unique: false }
   );
+
+  TranscriptSchema.index(
+    { issueNumber: 1 },
+    {
+      unique: true,
+      name: "uniq_issued_transcript_number",
+      partialFilterExpression: { issuedAt: { $type: "date" }, migrationQuarantinedAt: null },
+    }
+  );
+  TranscriptSchema.index({ student: 1, status: 1, kind: 1, issuedAt: -1 });
 
   return connection.model("Transcript", TranscriptSchema);
 };

@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
-const { uploadBuffer, safeDestroy } = require("../../../utils/cloudinaryUpload");
+const { uploadBuffer, safeDestroy, authenticatedUrl } = require("../../../utils/cloudinaryUpload");
+const reportCtl = require("../../../services/tenant/reportControlService");
+const { storeCsvArtifact } = require("../../../services/tenant/reportArtifactService");
 
 const ALLOWED_REPORT_TYPES = new Set([
   "finance_summary",
@@ -15,6 +17,8 @@ const ALLOWED_STATUSES = new Set([
   "partial",
   "paid",
   "voided",
+  "pending",
+  "refunded",
   "submitted",
   "under_review",
   "accepted",
@@ -49,40 +53,27 @@ function endOfDay(d) {
   return x;
 }
 
-function csvEscape(v) {
-  const s = String(v ?? "");
-  if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-  return s;
-}
+function csvEscape(v) { return reportCtl.csvCell(v); }
 
-function countCsvRows(buffer) {
-  const text = String(buffer || "").replace(/^\uFEFF/, "");
-  const lines = text.split(/\r?\n/).filter((x) => x.trim() !== "");
-  if (!lines.length) return 0;
-  return Math.max(0, lines.length - 1);
-}
+function countCsvRows(buffer) { return reportCtl.validateCsvBuffer(buffer, { maxBytes: 2 * 1024 * 1024, maxRows: 5000 }).rowsCount; }
 
-function buildDateMatch(filters, field = "createdAt") {
-  const m = {};
-  const from = asDate(filters.from);
-  const to = asDate(filters.to);
-
-  if (from || to) {
-    m[field] = {};
-    if (from) m[field].$gte = startOfDay(from);
-    if (to) m[field].$lte = endOfDay(to);
-  }
-
-  return m;
-}
+function buildDateMatch(filters, field = "createdAt") { return reportCtl.buildDateMatch(filters.from, filters.to, filters.timezone || "UTC", field); }
 
 async function getPrograms(req) {
-  const Subject = req.models?.Subject || req.models?.Program;
-  if (!Subject) return [];
-
-  return Subject.find({ isDeleted: { $ne: true } })
-    .select("title shortTitle name code")
+  const Program = req.models?.Program;
+  if (!Program) return [];
+  return Program.find({ isDeleted: { $ne: true }, status: { $ne: "archived" } })
+    .select("title shortTitle name code status")
     .sort({ title: 1, shortTitle: 1, name: 1, code: 1 })
+    .lean();
+}
+
+async function getSections(req) {
+  const Section = req.models?.Section;
+  if (!Section) return [];
+  return Section.find({ status: { $ne: "archived" } })
+    .select("code name className classLevel classStream streamName")
+    .sort({ classLevel: 1, classStream: 1, name: 1, code: 1 })
     .lean();
 }
 
@@ -94,6 +85,7 @@ function buildFiltersFromQuery(req) {
   const term = safeStr(req.query.term || req.query.semester);
   const status = safeStr(req.query.status);
   const program = safeStr(req.query.program);
+  const section = safeStr(req.query.section);
 
   return {
     type: ALLOWED_REPORT_TYPES.has(type) ? type : "finance_summary",
@@ -103,6 +95,8 @@ function buildFiltersFromQuery(req) {
     term: term.slice(0, 20),
     status: ALLOWED_STATUSES.has(status) ? status : "",
     program: mongoose.Types.ObjectId.isValid(program) ? program : "",
+    section: mongoose.Types.ObjectId.isValid(section) ? section : "",
+    timezone: req.tenant?.timezone || "UTC",
   };
 }
 
@@ -113,6 +107,16 @@ function normalizeInvoiceStatusFilter(status) {
   if (value === "partial") return "Partially Paid";
   if (value === "paid") return "Paid";
   if (value === "voided") return "Cancelled";
+  return "";
+}
+
+function normalizePaymentStatusFilter(status) {
+  const value = safeStr(status).toLowerCase();
+  if (!value) return "";
+  if (value === "paid") return "Completed";
+  if (value === "pending") return "Pending";
+  if (value === "voided") return "Voided";
+  if (value === "refunded") return "Refunded";
   return "";
 }
 
@@ -223,7 +227,7 @@ async function reportFinanceSummary(req, filters) {
   }
 
   if (Payment) {
-    const paymentMatch = { ...matchSoft, ...paymentDateMatch };
+    const paymentMatch = { ...matchSoft, ...paymentDateMatch, status: "Completed" };
     if (subjectId) paymentMatch.programId = new mongoose.Types.ObjectId(subjectId);
     if (filters.academicYear) paymentMatch.academicYear = filters.academicYear;
     if (filters.term) paymentMatch.term = filters.term;
@@ -328,7 +332,7 @@ async function reportInvoices(req, filters) {
     columns: [
       { key: "invoiceNumber", label: "Invoice" },
       { key: "student", label: "Student" },
-      { key: "program", label: "Subject" },
+      { key: "program", label: "Program" },
       { key: "academicYear", label: "Year" },
       { key: "term", label: "Term" },
       { key: "amount", label: "Amount", align: "right", money: true },
@@ -358,6 +362,8 @@ async function reportPayments(req, filters) {
   if (filters.academicYear) q.academicYear = filters.academicYear;
   if (filters.term) q.term = filters.term;
   if (filters.program) q.programId = filters.program;
+  const paymentStatus = normalizePaymentStatusFilter(filters.status);
+  if (paymentStatus) q.status = paymentStatus;
 
   const payments = await Payment.find(q)
     .populate("studentId", "fullName firstName middleName lastName regNo admissionNumber studentNo")
@@ -379,6 +385,7 @@ async function reportPayments(req, filters) {
       student: student ? `${getStudentName(student)}${regNo ? ` - ${regNo}` : ""}` : "-",
       program: getSubjectLabel(subject),
       amount: safeNum(payment.amount, 0),
+      status: payment.status || "Pending",
       method: payment.method || "-",
       term: payment.term || "",
       academicYear: payment.academicYear || "",
@@ -392,7 +399,8 @@ async function reportPayments(req, filters) {
     };
   });
 
-  const total = rows.reduce((s, r) => s + safeNum(r.amount), 0);
+  const completedRows = rows.filter((r) => r.status === "Completed");
+  const total = completedRows.reduce((sum, r) => sum + safeNum(r.amount), 0);
 
   return {
     title: "Payments Report",
@@ -400,10 +408,11 @@ async function reportPayments(req, filters) {
       { key: "receiptNumber", label: "Receipt" },
       { key: "invoiceNumber", label: "Invoice" },
       { key: "student", label: "Student" },
-      { key: "program", label: "Subject" },
+      { key: "program", label: "Program" },
       { key: "academicYear", label: "Year" },
       { key: "term", label: "Term" },
       { key: "amount", label: "Amount", align: "right", money: true },
+      { key: "status", label: "Status" },
       { key: "method", label: "Method" },
       { key: "reference", label: "Reference" },
       { key: "createdAt", label: "Created" },
@@ -411,9 +420,9 @@ async function reportPayments(req, filters) {
     rows,
     kpis: {
       a: { label: "Total Collected", value: total, prefix: "UGX " },
-      b: { label: "Payments", value: rows.length, prefix: "" },
-      c: { label: "Avg Payment", value: rows.length ? Math.round(total / rows.length) : 0, prefix: "UGX " },
-      d: { label: "Records", value: rows.length, prefix: "" },
+      b: { label: "Completed", value: completedRows.length, prefix: "" },
+      c: { label: "Avg Completed", value: completedRows.length ? Math.round(total / completedRows.length) : 0, prefix: "UGX " },
+      d: { label: "All Records", value: rows.length, prefix: "" },
     },
   };
 }
@@ -422,42 +431,53 @@ async function reportAdmissions(req, filters) {
   const { Applicant } = req.models || {};
   if (!Applicant) return { title: "Admissions Report", columns: [], rows: [], kpis: null };
 
-  const q = {
-    isDeleted: { $ne: true },
-    ...buildDateMatch(filters, "createdAt"),
-  };
-
+  const q = { isDeleted: { $ne: true }, ...buildDateMatch(filters, "createdAt") };
   if (filters.status) q.status = filters.status;
-  if (filters.program) q.program1 = filters.program;
+  if (filters.academicYear) q.academicYear = filters.academicYear;
+  if (filters.term) {
+    const termNumber = Number(String(filters.term).replace(/\D+/g, ""));
+    if (Number.isInteger(termNumber) && termNumber >= 1 && termNumber <= 3) q.term = termNumber;
+  }
+  if (filters.section) {
+    const sectionId = new mongoose.Types.ObjectId(filters.section);
+    q.$or = [{ section1: sectionId }, { section1: null, program1: sectionId }];
+  }
 
   const apps = await Applicant.find(q)
-    .populate("program1", "code name title")
+    .populate("section1", "code name title classLevel classStream streamName")
+    .populate("program1", "code name title classLevel classStream streamName")
     .sort({ createdAt: -1 })
     .limit(800)
     .lean();
 
-  const rows = apps.map((a) => ({
-    applicationId: a.applicationId || "-",
-    name: (a.fullName || [a.firstName, a.lastName].filter(Boolean).join(" ").trim()) || "-",
-    program: a.program1 ? ((a.program1.code ? a.program1.code + " - " : "") + (a.program1.name || a.program1.title || "Section")) : "-",
-    status: a.status || "-",
-    email: a.email || "",
-    phone: a.phone || "",
-    createdAt: a.createdAt ? new Date(a.createdAt).toLocaleString() : "",
-    _href: `/admin/admissions/applicants/${a._id}`,
-  }));
+  const rows = apps.map((a) => {
+    const section = a.section1 || a.program1 || null;
+    return {
+      applicationId: a.applicationId || "-",
+      name: (a.fullName || [a.firstName, a.lastName].filter(Boolean).join(" ").trim()) || "-",
+      program: section ? ((section.code ? section.code + " - " : "") + (section.name || section.title || "Section")) : "-",
+      academicYear: a.academicYear || "",
+      term: a.term || "",
+      status: a.status || "-",
+      email: a.email || "",
+      phone: a.phone || "",
+      createdAt: a.createdAt ? new Date(a.createdAt).toLocaleString() : "",
+      _href: `/admin/admissions/applicants/${a._id}`,
+    };
+  });
 
   const total = rows.length;
   const accepted = rows.filter((r) => r.status === "accepted").length;
   const rejected = rows.filter((r) => r.status === "rejected").length;
   const underReview = rows.filter((r) => r.status === "under_review").length;
-
   return {
     title: "Admissions Report",
     columns: [
       { key: "applicationId", label: "Application ID" },
       { key: "name", label: "Name" },
       { key: "program", label: "Section" },
+      { key: "academicYear", label: "Year" },
+      { key: "term", label: "Term" },
       { key: "status", label: "Status" },
       { key: "email", label: "Email" },
       { key: "phone", label: "Phone" },
@@ -474,7 +494,8 @@ async function reportAdmissions(req, filters) {
 }
 
 async function reportStudentsOutstanding(req, filters) {
-  const { Invoice } = req.models || {};
+  const { Invoice, Student, Program } = req.models || {};
+  const AcademicProgram = Program || null;
   if (!Invoice) return { title: "Students Outstanding", columns: [], rows: [], kpis: null };
 
   const invoiceQuery = {
@@ -483,43 +504,60 @@ async function reportStudentsOutstanding(req, filters) {
   };
   if (filters.academicYear) invoiceQuery.academicYear = filters.academicYear;
   if (filters.term) invoiceQuery.term = filters.term;
-  if (filters.program) invoiceQuery.programId = filters.program;
+  if (filters.program) invoiceQuery.programId = new mongoose.Types.ObjectId(filters.program);
 
-  const openInvoices = await Invoice.find(invoiceQuery)
-    .populate("studentId", "fullName firstName middleName lastName regNo admissionNumber studentNo status subjects className section stream")
-    .populate("programId", "title shortTitle name code")
-    .lean();
+  // Group and sum in the database instead of pulling every open invoice
+  // (populated) into Node — this was an unbounded, tenant-wide fetch that
+  // got slower every month as invoices accumulated.
+  const grouped = await Invoice.aggregate([
+    { $match: invoiceQuery },
+    {
+      $group: {
+        _id: "$studentId",
+        outstanding: {
+          $sum: { $max: [{ $subtract: [{ $ifNull: ["$totalAmount", 0] }, { $ifNull: ["$paidAmount", 0] }] }, 0] },
+        },
+        programId: { $first: "$programId" },
+      },
+    },
+    { $match: { _id: { $ne: null } } },
+    { $sort: { outstanding: -1 } },
+    { $limit: 300 },
+  ]);
 
-  const grouped = new Map();
+  const studentIds = grouped.map((g) => g._id).filter(Boolean);
+  const programIds = grouped.map((g) => g.programId).filter(Boolean);
 
-  openInvoices.forEach((invoice) => {
-    const student = invoice.studentId || null;
-    if (!student?._id) return;
-    const key = String(student._id);
-    const amount = Math.max(0, safeNum(invoice.totalAmount, 0) - safeNum(invoice.paidAmount, 0));
-    if (!grouped.has(key)) {
-      grouped.set(key, {
-        student,
-        subject: invoice.programId || null,
-        outstanding: 0,
-      });
-    }
+  const [students, programs] = await Promise.all([
+    Student
+      ? Student.find({ _id: { $in: studentIds } })
+          .select("fullName firstName middleName lastName regNo admissionNumber studentNo status subjects className section stream")
+          .lean()
+      : [],
+    AcademicProgram
+      ? AcademicProgram.find({ _id: { $in: programIds } })
+          .select("title shortTitle name code")
+          .lean()
+      : [],
+  ]);
 
-    const row = grouped.get(key);
-    row.outstanding += amount;
-    if (!row.subject && invoice.programId) row.subject = invoice.programId;
-  });
+  const studentMap = new Map(students.map((s) => [String(s._id), s]));
+  const programMap = new Map(programs.map((p) => [String(p._id), p]));
 
-  const rows = Array.from(grouped.values())
-    .map(({ student, subject, outstanding }) => ({
-      student: `${getStudentName(student)}${getStudentRegNo(student) ? ` - ${getStudentRegNo(student)}` : ""}`,
-      program: subject ? getSubjectLabel(subject) : getStudentAcademicLabel(student),
-      status: student?.status || "",
-      outstanding: safeNum(outstanding, 0),
-      _programId: subject?._id ? String(subject._id) : "",
-    }))
-    .sort((a, b) => b.outstanding - a.outstanding)
-    .slice(0, 300);
+  const rows = grouped
+    .map((g) => {
+      const student = studentMap.get(String(g._id));
+      if (!student) return null;
+      const subject = g.programId ? programMap.get(String(g.programId)) : null;
+      return {
+        student: `${getStudentName(student)}${getStudentRegNo(student) ? ` - ${getStudentRegNo(student)}` : ""}`,
+        program: subject ? getSubjectLabel(subject) : getStudentAcademicLabel(student),
+        status: student?.status || "",
+        outstanding: safeNum(g.outstanding, 0),
+        _programId: subject?._id ? String(subject._id) : "",
+      };
+    })
+    .filter(Boolean);
 
   const totalOutstanding = rows.reduce((s, r) => s + safeNum(r.outstanding), 0);
 
@@ -527,7 +565,7 @@ async function reportStudentsOutstanding(req, filters) {
     title: "Students Outstanding",
     columns: [
       { key: "student", label: "Student" },
-      { key: "program", label: "Subject / Class" },
+      { key: "program", label: "Program / Class" },
       { key: "status", label: "Status" },
       { key: "outstanding", label: "Outstanding", align: "right", money: true },
     ],
@@ -563,11 +601,13 @@ module.exports = {
       const { ReportExport } = req.models || {};
       const filters = buildFiltersFromQuery(req);
 
-      const [programs, report, exportsList] = await Promise.all([
+      const [programs, sections, report, exportsList] = await Promise.all([
         getPrograms(req),
+        getSections(req),
         buildReport(req, filters),
         ReportExport
-          ? ReportExport.find({ isDeleted: { $ne: true } })
+          ? ReportExport.find({ isDeleted: { $ne: true }, migrationQuarantinedAt: null })
+              .select("type source filters rowsCount byteSize status createdAt originalFileName fileName revision")
               .sort({ createdAt: -1 })
               .limit(30)
               .lean()
@@ -579,6 +619,7 @@ module.exports = {
         csrfToken: res.locals.csrfToken || (req.csrfToken ? req.csrfToken() : ""),
         filters,
         programs,
+        sections,
         report,
         exportsList,
         messages: {
@@ -598,50 +639,20 @@ module.exports = {
       const { ReportExport } = req.models || {};
       const filters = buildFiltersFromQuery(req);
       const report = await buildReport(req, filters);
-
       const columns = Array.isArray(report.columns) ? report.columns : [];
       const rows = Array.isArray(report.rows) ? report.rows : [];
-
-      const header = columns.map((c) => csvEscape(c.label)).join(",");
-      const lines = [header];
-
-      for (const row of rows) {
-        lines.push(columns.map((c) => csvEscape(row[c.key])).join(","));
-      }
-
+      const lines = [columns.map((c) => csvEscape(c.label)).join(",")];
+      for (const row of rows) lines.push(columns.map((c) => csvEscape(row[c.key])).join(","));
       const csv = lines.join("\n");
       const csvBuf = Buffer.from(csv, "utf8");
-
-      const folderBase = process.env.CLOUDINARY_FOLDER || "classic-academy";
-      const folder = `${folderBase}/${req.tenant?.code || req.tenant?._id || "tenant"}/reports`;
       const fileName = `report-${filters.type}-${Date.now()}.csv`;
 
-      let upload = null;
-
-      if (typeof uploadBuffer === "function") {
-        upload = await uploadBuffer({
-          buffer: csvBuf,
-          mimetype: "text/csv",
-          originalname: fileName,
-          size: csvBuf.length,
-        }, folder, { resource_type: "raw" });
-      }
-
-      if (ReportExport) {
-        await ReportExport.create({
-          type: filters.type,
-          source: "export",
-          format: "csv",
-          filters,
-          rowsCount: rows.length,
-          byteSize: csvBuf.length,
-          fileUrl: upload?.secure_url || "",
-          filePublicId: upload?.public_id || "",
-          fileResourceType: upload?.resource_type || "raw",
-          status: "ready",
-          createdBy: req.user?._id || null,
-        });
-      }
+      await storeCsvArtifact({
+        ReportExport, uploadBuffer, safeDestroy,
+        tenantCode: req.tenant?.code || req.tenant?._id || "tenant",
+        type: filters.type, source: "export", filters, buffer: csvBuf, fileName,
+        rowsCount: rows.length, userId: req.user?._id || null,
+      });
 
       res.setHeader("Content-Type", "text/csv; charset=utf-8");
       res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
@@ -656,60 +667,28 @@ module.exports = {
   importCsv: async (req, res) => {
     try {
       const { ReportExport } = req.models || {};
-
       if (!req.file || !req.file.buffer?.length) {
         req.flash?.("error", "Please choose a valid CSV file.");
         return res.redirect("/admin/reports");
       }
-
       const type = safeStr(req.body.type || "finance_summary");
       if (!ALLOWED_REPORT_TYPES.has(type)) {
         req.flash?.("error", "Invalid import type.");
         return res.redirect("/admin/reports");
       }
-
       const originalname = safeStr(req.file.originalname || "report-import.csv");
       if (!/\.csv$/i.test(originalname)) {
         req.flash?.("error", "Only CSV files are allowed.");
         return res.redirect("/admin/reports");
       }
-
       const rowsCount = countCsvRows(req.file.buffer);
-      if (rowsCount < 1) {
-        req.flash?.("error", "CSV file is empty.");
-        return res.redirect("/admin/reports");
-      }
-
-      const folderBase = process.env.CLOUDINARY_FOLDER || "classic-academy";
-      const folder = `${folderBase}/${req.tenant?.code || req.tenant?._id || "tenant"}/reports/imports`;
-
-      let upload = null;
-      if (typeof uploadBuffer === "function") {
-        upload = await uploadBuffer({
-          buffer: req.file.buffer,
-          mimetype: "text/csv",
-          originalname,
-          size: req.file.size || req.file.buffer.length,
-        }, folder, { resource_type: "raw" });
-      }
-
-      if (ReportExport) {
-        await ReportExport.create({
-          type,
-          source: "import",
-          format: "csv",
-          filters: {},
-          rowsCount,
-          byteSize: req.file.size || req.file.buffer.length,
-          fileUrl: upload?.secure_url || "",
-          filePublicId: upload?.public_id || "",
-          fileResourceType: upload?.resource_type || "raw",
-          originalFileName: originalname,
-          status: "ready",
-          createdBy: req.user?._id || null,
-        });
-      }
-
+      await storeCsvArtifact({
+        ReportExport, uploadBuffer, safeDestroy,
+        tenantCode: req.tenant?.code || req.tenant?._id || "tenant",
+        type, source: "import", filters: {}, buffer: req.file.buffer,
+        fileName: reportCtl.safeFilename(originalname, "report-import.csv"), originalFileName: originalname,
+        rowsCount, userId: req.user?._id || null, subfolder: "imports",
+      });
       req.flash?.("success", "CSV imported into report history.");
       return res.redirect("/admin/reports");
     } catch (err) {
@@ -723,21 +702,28 @@ module.exports = {
     try {
       const { ReportExport } = req.models || {};
       if (!ReportExport) return res.status(404).send("Exports not enabled");
-
       const id = String(req.params.id || "").trim();
-      if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(404).send("Invalid ID");
-      }
-
+      if (!mongoose.Types.ObjectId.isValid(id)) return res.status(404).send("Invalid ID");
       const ex = await ReportExport.findOne({
-        _id: id,
-        isDeleted: { $ne: true },
+        _id: id, isDeleted: { $ne: true }, migrationQuarantinedAt: null, status: "ready",
       }).lean();
-
       if (!ex) return res.status(404).send("Export not found");
-      if (ex.fileUrl) return res.redirect(ex.fileUrl);
-
-      return res.status(404).send("Export file missing");
+      if (ex.accessType !== "authenticated" || !ex.filePublicId || !/^[a-f0-9]{64}$/i.test(String(ex.checksum || ""))) {
+        return res.status(409).send("Export artifact is not trusted for download.");
+      }
+      const url = authenticatedUrl(ex.filePublicId, ex.fileResourceType || "raw");
+      if (!url) return res.status(404).send("Export file missing");
+      const timeoutSignal = typeof AbortSignal?.timeout === "function" ? AbortSignal.timeout(10000) : undefined;
+      const response = await fetch(url, { redirect: "error", signal: timeoutSignal });
+      if (!response.ok) return res.status(502).send("Export storage is unavailable.");
+      const expectedSize = Math.max(0, Number(ex.byteSize) || 0);
+      const maxBytes = expectedSize ? Math.min(Math.max(expectedSize + 65536, 1024 * 1024), 20 * 1024 * 1024) : 20 * 1024 * 1024;
+      const buf = await reportCtl.readBoundedResponse(response, maxBytes);
+      if (expectedSize && buf.length !== expectedSize) return res.status(409).send("Export artifact size verification failed.");
+      if (reportCtl.sha256(buf) !== ex.checksum) return res.status(409).send("Export checksum verification failed.");
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="${reportCtl.safeFilename(ex.fileName || ex.originalFileName, "report.csv")}"`);
+      return res.send(buf);
     } catch (err) {
       console.error("DOWNLOAD EXPORT ERROR:", err);
       return res.status(500).send("Failed to download export.");
@@ -755,24 +741,27 @@ module.exports = {
         return res.redirect("/admin/reports");
       }
 
-      const ex = await ReportExport.findOne({
-        _id: id,
-        isDeleted: { $ne: true },
-      });
-
-      if (!ex) {
-        req.flash?.("error", "Export not found.");
+      const expected = reportCtl.positiveRevision(req.body?.revision);
+      if (!expected) {
+        req.flash?.("error", "A valid report revision is required.");
         return res.redirect("/admin/reports");
       }
-
-      if (ex.filePublicId) {
-        await safeDestroy(ex.filePublicId, ex.fileResourceType || "raw");
+      const ex = await ReportExport.findOne({
+        _id: id, revision: expected, isDeleted: { $ne: true }, migrationQuarantinedAt: null,
+      });
+      if (!ex) {
+        req.flash?.("error", "Export not found or changed in another session.");
+        return res.redirect("/admin/reports");
       }
-
-      ex.isDeleted = true;
-      ex.deletedAt = new Date();
-      ex.updatedBy = req.user?._id || null;
-      await ex.save();
+      const changed = await ReportExport.updateOne({ _id: ex._id, revision: expected, isDeleted: { $ne: true } }, { $set: { isDeleted: true, deletedAt: new Date(), updatedBy: req.user?._id || null }, $inc: { revision: 1 } });
+      if (!(changed.modifiedCount || changed.nModified)) throw new Error("Report export changed in another session.");
+      if (ex.filePublicId) {
+        const destroyed = await safeDestroy(ex.filePublicId, ex.fileResourceType || "raw");
+        if (!destroyed) {
+          await ReportExport.updateOne({ _id: ex._id, revision: expected + 1, isDeleted: true }, { $set: { isDeleted: false, deletedAt: null, updatedBy: req.user?._id || null }, $inc: { revision: 1 } }).catch(() => {});
+          throw new Error("Report storage deletion failed; history entry was retained.");
+        }
+      }
 
       req.flash?.("success", "Report file deleted.");
       return res.redirect("/admin/reports");

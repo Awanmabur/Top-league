@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .input,.select,.textarea{padding:10px 12px;border-radius:12px;border:1px solid rgba(13,64,96,.16);background:#fff;outline:none}
@@ -69,6 +69,7 @@
     .flash{padding:12px 14px;border-radius:12px;font-weight:700}
     .flash-success{background:#ecfdf3;color:#166534;border:1px solid #bbf7d0}
     .flash-error{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+    .flash-warning{background:#fff7ed;color:#9a3412;border:1px solid #fed7aa}
 
     .topbar{
       display:flex;
@@ -280,13 +281,16 @@
     <%- include("../partials/navbar") %>
 
     <main class="main">
-      <% if (typeof messages !== "undefined" && (messages.success?.length || messages.error?.length)) { %>
+      <% if (typeof messages !== "undefined" && (messages.success?.length || messages.error?.length || messages.warning?.length)) { %>
         <div class="flash-wrap">
           <% (messages.success || []).forEach(function(msg){ %>
             <div class="flash flash-success"><%= msg %></div>
           <% }) %>
           <% (messages.error || []).forEach(function(msg){ %>
             <div class="flash flash-error"><%= msg %></div>
+          <% }) %>
+          <% (messages.warning || []).forEach(function(msg){ %>
+            <div class="flash flash-warning"><%= msg %></div>
           <% }) %>
         </div>
       <% } %>
@@ -353,8 +357,10 @@
               <option value="all" <%= query?.audience === 'all' ? 'selected' : '' %>>All Audiences</option>
               <option value="All Students" <%= query?.audience === 'All Students' ? 'selected' : '' %>>All Students</option>
               <option value="All Staff" <%= query?.audience === 'All Staff' ? 'selected' : '' %>>All Staff</option>
+              <option value="All Parents" <%= query?.audience === 'All Parents' ? 'selected' : '' %>>All Parents</option>
               <option value="Specific Department" <%= query?.audience === 'Specific Department' ? 'selected' : '' %>>Specific Department</option>
               <option value="Specific Program" <%= query?.audience === 'Specific Program' ? 'selected' : '' %>>Specific Program</option>
+              <option value="Specific Subject" <%= query?.audience === 'Specific Subject' ? 'selected' : '' %>>Specific Subject</option>
               <option value="Year/Cohort" <%= query?.audience === 'Year/Cohort' ? 'selected' : '' %>>Year/Cohort</option>
               <option value="Hostel Residents" <%= query?.audience === 'Hostel Residents' ? 'selected' : '' %>>Hostel Residents</option>
             </select>
@@ -416,6 +422,15 @@
               </table>
             </div>
           </div>
+          <% if (pagination && pagination.pageCount > 1) { %>
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;">
+              <div class="muted">Page <strong><%= pagination.page %></strong> of <strong><%= pagination.pageCount %></strong> · <%= pagination.total %> records</div>
+              <div style="display:flex;gap:8px;">
+                <% if (pagination.prevUrl) { %><a class="btn-xs" href="<%= pagination.prevUrl %>"><i class="fa-solid fa-chevron-left"></i> Previous</a><% } %>
+                <% if (pagination.nextUrl) { %><a class="btn-xs" href="<%= pagination.nextUrl %>">Next <i class="fa-solid fa-chevron-right"></i></a><% } %>
+              </div>
+            </div>
+          <% } %>
 
           <div id="view-engagement" style="display:none;margin-top:10px;">
             <div class="note">Engagement data is shown from DB stats fields.</div>
@@ -506,6 +521,43 @@
     </main>
   </div>
 
+  <div class="modal-backdrop" id="mTemplates">
+    <div class="modal lg">
+      <div class="modal-header">
+        <div class="modal-title">Announcement Templates</div>
+        <button class="btn-xs" type="button" data-close-modal="mTemplates"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="section-title">Saved Templates</div>
+        <div class="section-sub">Use a saved announcement as a starting point or create a reusable template.</div>
+        <div class="table-wrap" style="margin-top:10px;">
+          <table>
+            <thead><tr><th>Name</th><th>Category</th><th>Audience</th><th style="text-align:right;">Actions</th></tr></thead>
+            <tbody id="templatesBody"></tbody>
+          </table>
+        </div>
+
+        <div class="divider"></div>
+        <div class="section-title">Create Template</div>
+        <form method="POST" action="/admin/announcements/templates" id="templateForm">
+          <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
+          <div class="form-grid" style="margin-top:10px;">
+            <div class="field"><label>Template Name</label><input class="input" name="name" maxlength="120" required placeholder="e.g., Exam Reminder"></div>
+            <div class="field"><label>Announcement Title</label><input class="input" name="title" maxlength="220" required placeholder="e.g., Final Exams Start Monday"></div>
+            <div class="field"><label>Category</label><select class="select" name="category"><option>General</option><option>Academic</option><option>Exams</option><option>Finance</option><option>Hostel</option><option>Library</option><option>Emergency</option></select></div>
+            <div class="field"><label>Priority</label><select class="select" name="priority"><option>Normal</option><option>Pinned</option></select></div>
+            <div class="field"><label>Audience Type</label><select class="select" name="audienceType"><option>All Students</option><option>All Staff</option><option>All Parents</option><option>Specific Department</option><option>Specific Program</option><option>Specific Subject</option><option>Year/Cohort</option><option>Hostel Residents</option></select></div>
+            <div class="field"><label>Audience Value</label><input class="input" name="audienceValue" placeholder="Optional for all-audience templates"></div>
+            <div class="field"><label>Requires Acknowledgement?</label><select class="select" name="requiresAcknowledgement"><option value="no">No</option><option value="yes">Yes</option></select></div>
+          </div>
+          <div class="field" style="margin-top:12px;"><label>Message</label><textarea class="textarea" name="body" maxlength="5000" required placeholder="Reusable announcement content..."></textarea></div>
+          <div style="display:flex;justify-content:flex-end;margin-top:12px;"><button class="btn primary" type="submit"><i class="fa-solid fa-floppy-disk"></i> Save Template</button></div>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <div class="modal-backdrop" id="mEdit">
     <div class="modal lg">
       <div class="modal-header">
@@ -547,8 +599,10 @@
               <select class="select" id="aAudienceType" name="audienceType">
                 <option>All Students</option>
                 <option>All Staff</option>
+                <option>All Parents</option>
                 <option>Specific Department</option>
                 <option>Specific Program</option>
+                <option>Specific Subject</option>
                 <option>Year/Cohort</option>
                 <option>Hostel Residents</option>
               </select>
@@ -711,7 +765,12 @@
     <input type="hidden" name="action" id="bulkActionInput">
   </form>
 
-  <textarea id="announcementsData" class="json-data" aria-hidden="true"><%- JSON.stringify(announcements || []) %></textarea>
+  <form id="reminderForm" method="POST" style="display:none;">
+    <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
+  </form>
+
+  <textarea id="announcementsData" class="json-data" aria-hidden="true"><%= JSON.stringify(announcements || []) %></textarea>
+  <textarea id="templatesData" class="json-data" aria-hidden="true"><%= JSON.stringify(templates || []) %></textarea>
 
   <script src="/js/navbar.js"></script>
   <script src="/js/announcements.js"></script>

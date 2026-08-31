@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
@@ -231,6 +231,7 @@
           <div class="subtitle">Select students, move them to the next class and term, and keep audit logs.</div>
         </div>
         <div class="top-actions">
+          <a class="btn light" href="/admin/promotions/export"><i class="fa-solid fa-file-arrow-down"></i> Export History</a>
           <button class="btn primary" type="button" data-open="mPromote">
             <i class="fa-solid fa-arrow-up"></i> Promote Selected
           </button>
@@ -349,7 +350,7 @@
 
                   <% (students || []).forEach(function(s){ %>
                     <tr>
-                      <td><input type="checkbox" class="rowChk" value="<%= s._id %>"></td>
+                      <td><input type="checkbox" class="rowChk" value="<%= s._id %>" <%= s.status === 'active' ? '' : 'disabled title="Only Active students can be promoted"' %>></td>
                       <td>
                         <div class="strong"><%= s.fullName || 'Student' %></div>
                         <div class="muted"><%= s.regNo || '' %> <%= s.email ? ('• ' + s.email) : '' %></div>
@@ -421,6 +422,7 @@
             <% (logs || []).forEach(function(l){ %>
               <div style="margin-bottom:12px;">
                 <div class="strong"><%= l.student ? (l.student.fullName || l.student.regNo || 'Student') : 'Student' %></div>
+                <div class="muted"><%= l.action ? String(l.action).replace(/_/g, ' ') : 'promoted' %> • <%= l.batchId || 'legacy' %></div>
                 <div class="muted"><%= l.fromClassLevel || l.fromYearLevel || '—' %> / Term <%= l.fromTerm || l.fromSemester || '—' %> → <%= l.toClassLevel || l.toYearLevel || '—' %> / Term <%= l.toTerm || l.toSemester || '—' %></div>
                 <div class="muted"><%= l.createdAt ? new Date(l.createdAt).toLocaleString() : '' %></div>
               </div>
@@ -463,17 +465,15 @@
 
             <div class="field">
               <label>Destination Status</label>
-              <select class="select" name="toStatus">
+              <select class="select" name="toStatus" id="toStatus">
                 <option value="active">Active</option>
-                <option value="on_hold">On Hold</option>
-                <option value="suspended">Suspended</option>
-                <option value="graduated">Graduated</option>
+                <option value="graduated">Graduated (S6 only)</option>
               </select>
             </div>
 
             <div class="field">
               <label>To Class *</label>
-              <select class="select" name="toClassId" required>
+              <select class="select" name="toClassId" id="toClassId" required>
                 <option value="">— select —</option>
                 <% (classes || []).forEach(function(c){ %>
                   <option value="<%= c._id %>"><%= c.name || c.title || 'Class' %></option>

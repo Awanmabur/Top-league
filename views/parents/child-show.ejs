@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="/css/navbar.css"/>
   <link rel="stylesheet" href="/css/parent-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .hero-card{
       margin-top:16px;
       padding:18px;
@@ -290,12 +290,12 @@
         </div>
 
         <div class="top-actions">
-          <button class="btn light" type="button" onclick="window.location.href='/parent/children'">
+          <a class="btn light" href="/parent/children">
             <i class="fa-solid fa-arrow-left"></i> Back to Children
-          </button>
-          <button class="btn primary" type="button" onclick="window.location.href='/parent/results?student=<%= st._id %>'">
+          </a>
+          <a class="btn primary" href="/parent/results?student=<%= st._id %>">
             <i class="fa-solid fa-file-lines"></i> View Results
-          </button>
+          </a>
         </div>
       </div>
 
@@ -308,9 +308,9 @@
               <div class="hero-meta">
                 Reg No: <strong><%= st.regNo || "—" %></strong>
                 <span class="dot">•</span>
-                Program: <strong><%= (st.program && (st.program.title || st.program.name)) || "—" %></strong>
+                Program: <strong><%= (st.programId && (st.programId.title || st.programId.name || st.programId.shortTitle || st.programId.code)) || "—" %></strong>
                 <span class="dot">•</span>
-                Class: <strong><%= (st.classGroup && (st.classGroup.title || st.classGroup.name)) || "—" %></strong>
+                Class: <strong><%= st.className || st.classLevel || "—" %></strong>
               </div>
             </div>
           </div>
@@ -503,11 +503,11 @@
               </div>
               <div class="metric-item">
                 <span>Program</span>
-                <strong><%= (st.program && (st.program.title || st.program.name)) || "—" %></strong>
+                <strong><%= (st.programId && (st.programId.title || st.programId.name || st.programId.shortTitle || st.programId.code)) || "—" %></strong>
               </div>
               <div class="metric-item">
                 <span>Class Group</span>
-                <strong><%= (st.classGroup && (st.classGroup.title || st.classGroup.name)) || "—" %></strong>
+                <strong><%= st.className || st.classLevel || "—" %></strong>
               </div>
               <div class="metric-item">
                 <span>Academic Year</span>

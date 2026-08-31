@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="/css/navbar.css"/>
   <link rel="stylesheet" href="/css/parent-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .student-tabs{
       margin-top:14px;
       display:flex;
@@ -357,13 +357,13 @@
             <b>UGX <%= money(sum.balance || 0) %></b>
           </div>
 
-          <button class="btn light" type="button" onclick="window.location.href='/parent/results<%= student ? ('?student=' + student._id) : '' %>'">
+          <a class="btn light" href="/parent/results<%= student ? ('?student=' + student._id) : '' %>">
             <i class="fa-solid fa-file-lines"></i> Results
-          </button>
+          </a>
 
-          <button class="btn primary" type="button" onclick="window.location.href='/parent/children'">
+          <a class="btn primary" href="/parent/children">
             <i class="fa-solid fa-children"></i> My Children
-          </button>
+          </a>
         </div>
       </div>
 
@@ -383,7 +383,7 @@
               <div class="student-tab-avatar"><%= initials(fullNameOfStudent(c)) %></div>
               <div>
                 <div class="student-tab-name"><%= fullNameOfStudent(c) %></div>
-                <div class="student-tab-sub"><%= c.regNo || "—" %> • <%= (c.classGroup && (c.classGroup.title || c.classGroup.name)) || "—" %></div>
+                <div class="student-tab-sub"><%= c.regNo || "—" %> • <%= c.className || c.classLevel || (c.programId && (c.programId.name || c.programId.title || c.programId.code)) || "—" %></div>
               </div>
             </a>
           <% }); %>
@@ -395,11 +395,11 @@
             <div class="summary-value">UGX <%= money(sum.billed || 0) %></div>
           </div>
           <div class="summary-box">
-            <div class="summary-label">Total Paid</div>
+            <div class="summary-label">Completed Payments</div>
             <div class="summary-value good">UGX <%= money(sum.paid || 0) %></div>
           </div>
           <div class="summary-box">
-            <div class="summary-label">Outstanding Balance</div>
+            <div class="summary-label">Net Amount Due</div>
             <div class="summary-value <%= Number(sum.balance || 0) > 0 ? 'warn' : 'good' %>">
               UGX <%= money(sum.balance || 0) %>
             </div>
@@ -411,6 +411,16 @@
             </div>
           </div>
         </div>
+
+        <% if (Number(sum.unallocatedCredit || 0) > 0 || Number(sum.credit || 0) > 0) { %>
+          <div class="alert alert-inline">
+            <i class="fa-solid fa-circle-info"></i>
+            <div>
+              <div class="alert-title">Account credit</div>
+              <div class="alert-text">Completed payments not yet allocated to invoices: UGX <%= money(sum.unallocatedCredit || 0) %>. Remaining account credit after current invoice balances: UGX <%= money(sum.credit || 0) %>.</div>
+            </div>
+          </div>
+        <% } %>
 
         <% if (Number(sum.balance || 0) > 0) { %>
           <div class="alert warn alert-inline">
@@ -438,7 +448,7 @@
                     <th>Item</th>
                     <th>Category</th>
                     <th>Academic Year</th>
-                    <th>Semester</th>
+                    <th>Term</th>
                     <th>Due Date</th>
                     <th>Amount</th>
                     <th>Paid</th>
@@ -542,7 +552,7 @@
                       </div>
                       <div>
                         <div class="list-title">UGX <%= money(pay.amount || 0) %> • <%= pay.method || "Payment" %></div>
-                        <div class="list-meta"><%= pay.date || "—" %> • Ref: <%= pay.reference || "—" %></div>
+                        <div class="list-meta"><%= pay.date || "—" %> • Ref: <a href="<%= pay.receiptUrl %>"><%= pay.reference || "—" %></a></div>
                         <div class="list-text">
                           Status: <strong><%= pay.status || "completed" %></strong>
                           <span class="dot">•</span>

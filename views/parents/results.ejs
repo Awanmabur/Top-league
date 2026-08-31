@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="/css/navbar.css"/>
   <link rel="stylesheet" href="/css/parent-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{
       margin-top:16px;
       display:flex;
@@ -360,7 +360,7 @@
     const results = Array.isArray(resultRows) ? resultRows : [];
     const recents = Array.isArray(recentPerformance) ? recentPerformance : [];
     const summary = resultSummary || {};
-    const opts = options || { academicYears: [], semesters: [] };
+    const opts = options || { academicYears: [], terms: [] };
 
     function fullNameOfStudent(c) {
       const name = (c && c.fullName) ? String(c.fullName).trim() : "";
@@ -407,13 +407,19 @@
             <b><%= Number(summary.averageScore || 0) %>%</b>
           </div>
 
-          <button class="btn light" type="button" onclick="window.location.href='/parent/attendance<%= student ? ('?student=' + student._id) : '' %>'">
-            <i class="fa-solid fa-user-check"></i> Attendance
-          </button>
+          <% if (student && officialTranscript) { %>
+            <a class="btn light" href="/parent/results/<%= student._id %>/transcript/<%= officialTranscript.id %>/print" target="_blank">
+              <i class="fa-solid fa-file-shield"></i> Official Transcript
+            </a>
+          <% } %>
 
-          <button class="btn primary" type="button" onclick="window.location.href='/parent/children'">
+          <a class="btn light" href="/parent/attendance<%= student ? ('?student=' + student._id) : '' %>">
+            <i class="fa-solid fa-user-check"></i> Attendance
+          </a>
+
+          <a class="btn primary" href="/parent/children">
             <i class="fa-solid fa-children"></i> My Children
-          </button>
+          </a>
         </div>
       </div>
 
@@ -433,11 +439,18 @@
               <div class="student-tab-avatar"><%= initials(fullNameOfStudent(c)) %></div>
               <div>
                 <div class="student-tab-name"><%= fullNameOfStudent(c) %></div>
-                <div class="student-tab-sub"><%= c.regNo || "—" %> • <%= (c.classGroup && (c.classGroup.title || c.classGroup.name)) || "—" %></div>
+                <div class="student-tab-sub"><%= c.regNo || "—" %> • <%= c.className || c.classCode || c.classLevel || "—" %></div>
               </div>
             </a>
           <% }); %>
         </div>
+
+        <% if (officialTranscript) { %>
+          <section class="card" style="margin-bottom:14px;">
+            <div class="section-title">Official transcript available</div>
+            <div class="section-sub">Issue <strong><%= officialTranscript.issueNumber %></strong> • Issued <%= officialTranscript.issuedAt ? new Date(officialTranscript.issuedAt).toDateString() : '—' %>. This is the same immutable transcript visible to the student.</div>
+          </section>
+        <% } %>
 
         <form method="GET" action="/parent/results" class="toolbar">
           <input type="hidden" name="student" value="<%= student ? student._id : '' %>" />
@@ -452,7 +465,7 @@
           <div class="toolbar-right">
             <div class="filter-box">
               <i class="fa-solid fa-calendar-days"></i>
-              <select name="academicYear" onchange="this.form.submit()">
+              <select name="academicYear" data-auto-submit="true">
                 <option value="">All academic years</option>
                 <% (opts.academicYears || []).forEach(function(y){ %>
                   <option value="<%= y %>" <%= String(filters?.academicYear || '') === String(y) ? 'selected' : '' %>><%= y %></option>
@@ -462,10 +475,10 @@
 
             <div class="filter-box">
               <i class="fa-solid fa-layer-group"></i>
-              <select name="semester" onchange="this.form.submit()">
-                <option value="">All semesters</option>
-                <% (opts.semesters || []).forEach(function(s){ %>
-                  <option value="<%= s %>" <%= String(filters?.semester || '') === String(s) ? 'selected' : '' %>><%= s %></option>
+              <select name="term" data-auto-submit="true">
+                <option value="">All terms</option>
+                <% (opts.terms || []).forEach(function(s){ %>
+                  <option value="<%= s %>" <%= String(filters?.term || '') === String(s) ? 'selected' : '' %>>Term <%= s %></option>
                 <% }); %>
               </select>
             </div>
@@ -505,7 +518,7 @@
                     <th>Subject</th>
                     <th>Exam / Assessment</th>
                     <th>Academic Year</th>
-                    <th>Semester</th>
+                    <th>Term</th>
                     <th>Score</th>
                     <th>Grade</th>
                     <th>Remarks</th>
@@ -527,7 +540,7 @@
                         <td><strong><%= subject %></strong></td>
                         <td><%= examTitle %></td>
                         <td><%= r.academicYear || "—" %></td>
-                        <td><%= r.semester || "—" %></td>
+                        <td>Term <%= r.term || "—" %></td>
                         <td>
                           <span class="score-pill <%= scoreClass(score, passMark) %>">
                             <i class="fa-solid fa-chart-column"></i>

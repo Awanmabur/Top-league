@@ -5,8 +5,11 @@ module.exports = function ScholarshipModel(conn) {
 
   const ScholarshipSchema = new mongoose.Schema(
     {
-      name: { type: String, trim: true, required: true },
-      code: { type: String, trim: true, default: "" },
+      name: { type: String, trim: true, required: true, maxlength: 180 },
+      code: { type: String, trim: true, default: "", maxlength: 80 },
+      recordKind: { type: String, enum: ["Program", "Award"], default: "Program", index: true },
+      sourceScholarshipId: { type: mongoose.Schema.Types.ObjectId, ref: "Scholarship", default: null, index: true },
+      sourceApplicationId: { type: mongoose.Schema.Types.ObjectId, ref: "ScholarshipApplication", default: null },
 
       studentId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -16,7 +19,7 @@ module.exports = function ScholarshipModel(conn) {
 
       programId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Subject",
+        ref: "Program",
         default: null,
       },
 
@@ -29,7 +32,8 @@ module.exports = function ScholarshipModel(conn) {
       value: { type: Number, default: 0, min: 0 },
       amount: { type: Number, default: 0, min: 0 },
 
-      sponsor: { type: String, trim: true, default: "" },
+      sponsor: { type: String, trim: true, default: "", maxlength: 180 },
+      currency: { type: String, trim: true, uppercase: true, default: "UGX", maxlength: 8 },
       startDate: { type: Date, default: null },
       endDate: { type: Date, default: null },
 
@@ -39,7 +43,7 @@ module.exports = function ScholarshipModel(conn) {
         default: "Active",
       },
 
-      notes: { type: String, trim: true, default: "" },
+      notes: { type: String, trim: true, default: "", maxlength: 4000 },
 
       createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
       updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
@@ -50,10 +54,21 @@ module.exports = function ScholarshipModel(conn) {
     { timestamps: true }
   );
 
+  ScholarshipSchema.pre("validate", function (next) {
+    this.recordKind = this.studentId ? "Award" : "Program";
+    if (this.type === "Full") this.value = 100;
+    if (this.startDate && this.endDate && this.endDate < this.startDate) this.invalidate("endDate", "End date cannot be before start date.");
+    next();
+  });
+
   ScholarshipSchema.index({ name: 1 });
   ScholarshipSchema.index({ studentId: 1, status: 1 });
   ScholarshipSchema.index({ programId: 1 });
   ScholarshipSchema.index({ isDeleted: 1, createdAt: -1 });
+  ScholarshipSchema.index(
+    { sourceApplicationId: 1 },
+    { name: "uniq_scholarship_source_application", unique: true, partialFilterExpression: { sourceApplicationId: { $type: "objectId" } } }
+  );
 
   return conn.models.Scholarship || conn.model("Scholarship", ScholarshipSchema);
 };

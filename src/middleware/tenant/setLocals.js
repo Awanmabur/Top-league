@@ -6,7 +6,9 @@ module.exports = function setLocals(req, res, next) {
   const schoolLevel = tenantAccess?.schoolLevel || "high";
   const primaryRole = getPrimaryTenantRole(req.user?.role || req.user?.roles || "");
   const roleAccess = getTenantRoleAccess(primaryRole);
-  const availableModels = Object.keys(req.models || {}).filter((key) => req.models?.[key]);
+  // The tenant model registry uses lazy getters. Do not dereference every key here:
+  // doing so compiles the entire tenant schema graph on every request and defeats lazy loading.
+  const availableModels = Object.keys(req.models || {});
 
   res.locals.tenant = req.tenant || null;
   res.locals.tenantAccess = tenantAccess;

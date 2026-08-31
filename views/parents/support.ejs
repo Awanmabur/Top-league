@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="/css/navbar.css"/>
   <link rel="stylesheet" href="/css/parent-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .summary-grid{
       margin-top:16px;
       display:grid;
@@ -312,6 +312,7 @@
           <div class="section-sub">Send a message to the school or administration team.</div>
 
           <form method="POST" action="/parent/support" class="form-grid">
+            <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
             <div class="field">
               <label for="studentId">Related child</label>
               <select id="studentId" name="studentId">
@@ -404,6 +405,27 @@
                   </div>
 
                   <div class="ticket-body"><%= item.message || "" %></div>
+
+                  <% if ((item.thread || []).length > 1) { %>
+                    <div style="margin-top:12px;display:grid;gap:8px;">
+                      <% item.thread.slice(1).forEach(function(msg){ %>
+                        <div class="ticket-body" style="margin-top:0;">
+                          <div style="font-weight:800;margin-bottom:4px;"><%= msg.author %> <span class="ticket-meta">• <%= msg.createdLabel %></span></div>
+                          <%= msg.body %>
+                        </div>
+                      <% }); %>
+                    </div>
+                  <% } %>
+
+                  <% if (item.canReply) { %>
+                    <form method="POST" action="/parent/support/<%= item._id %>/reply" style="display:grid;gap:8px;margin-top:12px;">
+                      <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
+                      <textarea name="message" maxlength="5000" required placeholder="Write a reply..." style="width:100%;min-height:80px;border-radius:12px;border:1px solid #dbe3f6;padding:8px 10px;font-family:inherit;font-size:13px;background:#f9fbff;"></textarea>
+                      <button class="btn primary" type="submit" style="width:max-content;"><i class="fa-solid fa-reply"></i> Reply</button>
+                    </form>
+                  <% } else { %>
+                    <div class="ticket-meta" style="margin-top:12px;">This ticket is closed and no longer accepts replies.</div>
+                  <% } %>
                 </article>
               <% }); %>
             </div>

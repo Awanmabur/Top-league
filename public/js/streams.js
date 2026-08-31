@@ -270,7 +270,7 @@
   $("quickB").addEventListener("click", function () { openEditor(); $("mName").value = "B"; });
   $("quickEast").addEventListener("click", function () { openEditor(); $("mName").value = "East"; });
 
-  $("btnExport").addEventListener("click", exportStreams);
+  $("btnExport").addEventListener("click", function () { window.location.href = "/admin/streams/export.csv" + (window.location.search || ""); });
   $("btnPrint").addEventListener("click", function () { window.print(); });
   $("btnBulk").addEventListener("click", function () {
     if (!state.selected.size) return alert("Select at least one stream.");

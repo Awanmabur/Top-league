@@ -33,6 +33,8 @@ module.exports = (connection) => {
 
       regNo: { type: String, required: true, trim: true, maxlength: 60 },
       studentNo: { type: String, trim: true, maxlength: 60 },
+      legacyRegNo: { type: String, trim: true, maxlength: 120 },
+      legacyStudentNo: { type: String, trim: true, maxlength: 120 },
       indexNumber: { type: String, trim: true, maxlength: 60 },
 
       email: { type: String, trim: true, lowercase: true, maxlength: 120 },
@@ -50,6 +52,7 @@ module.exports = (connection) => {
       className: { type: String, trim: true, maxlength: 180 },
       classCode: { type: String, trim: true, maxlength: 40 },
       intakeId: { type: String, trim: true, maxlength: 80, index: true },
+      programId: { type: Schema.Types.ObjectId, ref: "Program", default: null, index: true },
       streamId: { type: String, trim: true, maxlength: 80, index: true },
       sectionId: { type: String, trim: true, maxlength: 80, index: true },
 
@@ -88,6 +91,16 @@ module.exports = (connection) => {
       holdReason: { type: String, trim: true, maxlength: 200 },
       holdUntil: { type: Date },
 
+      // Short-lived application lease used to serialize academic promotion batches.
+      promotionLeaseToken: { type: String, trim: true, maxlength: 80, default: "" },
+      promotionLeaseExpiresAt: { type: Date, default: null },
+      promotionLeaseBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
+
+      // Short-lived lease used to serialize student self-service quota-sensitive writes.
+      selfServiceLeaseToken: { type: String, trim: true, maxlength: 80, default: "" },
+      selfServiceLeaseExpiresAt: { type: Date, default: null },
+      selfServiceLeaseBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
+
       gender: { type: String, trim: true, maxlength: 30 },
       dob: { type: Date },
       nationality: { type: String, trim: true, maxlength: 60 },
@@ -103,7 +116,7 @@ module.exports = (connection) => {
       grades: { type: String, trim: true, maxlength: 160 },
       notes: { type: String, trim: true, maxlength: 600 },
 
-      userId: { type: Schema.Types.ObjectId, ref: "User", default: null, index: true },
+      userId: { type: Schema.Types.ObjectId, ref: "User", default: null },
       guardianUserId: { type: Schema.Types.ObjectId, ref: "User", default: null, index: true },
 
       photoUrl: { type: String, trim: true, maxlength: 500 },
@@ -165,10 +178,23 @@ module.exports = (connection) => {
     }
   );
 
+  StudentSchema.index(
+    { userId: 1 },
+    {
+      name: "uniq_active_student_user",
+      unique: true,
+      partialFilterExpression: {
+        isDeleted: false,
+        userId: { $type: "objectId" },
+      },
+    }
+  );
+
   StudentSchema.index({ fullName: 1 });
   StudentSchema.index({ email: 1 });
   StudentSchema.index({ schoolUnitId: 1, campusId: 1, schoolLevel: 1, classLevel: 1, term: 1, status: 1 });
   StudentSchema.index({ classId: 1, section: 1 });
+  StudentSchema.index({ programId: 1, status: 1, isDeleted: 1 });
   StudentSchema.index({ createdAt: -1 });
   StudentSchema.index({ isDeleted: 1, createdAt: -1 });
   StudentSchema.index({ isDeleted: 1, classLevel: 1 });

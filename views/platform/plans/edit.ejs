@@ -6,7 +6,7 @@
   <title>Edit Plan — Classic Academy</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <link rel="stylesheet" href="/css/navbar.css" />
-  <style>
+  <style nonce="<%= cspNonce %>">
     body{margin:0;background:#f5f8ff;font-family:Poppins,Segoe UI,Arial,sans-serif;color:#0f172a;overflow-x:hidden}
     *{box-sizing:border-box;min-width:0}
     .main{flex:1;padding:20px 26px;display:flex;flex-direction:column;gap:16px}
@@ -43,6 +43,8 @@
       <% } %>
 
       <form action="/super-admin/plans/<%= plan?._id %>/edit" method="POST" class="form-grid">
+        <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>" />
+        <input type="hidden" name="revision" value="<%= plan?.revision || 1 %>" />
         <div class="form-group">
           <label>Plan Name</label>
           <input type="text" name="name" value="<%= plan?.name || '' %>" required />
@@ -118,6 +120,11 @@
           <input type="number" name="maxStaff" value="<%= plan?.maxStaff || 0 %>" />
         </div>
 
+        <div class="form-group">
+          <label>Max Campuses</label>
+          <input type="number" min="1" name="maxCampuses" value="<%= plan?.maxCampuses || 1 %>" required />
+        </div>
+
         <div class="form-group full">
           <label>Enabled Modules (comma separated)</label>
           <input type="text" name="enabledModules" value="<%= Array.isArray(plan?.enabledModules) ? plan.enabledModules.join(', ') : '' %>" />
@@ -131,6 +138,7 @@
             <label><input type="checkbox" name="prioritySupport" <%= plan?.featureFlags?.prioritySupport ? 'checked' : '' %> /> Priority Support</label>
             <label><input type="checkbox" name="whiteLabel" <%= plan?.featureFlags?.whiteLabel ? 'checked' : '' %> /> White Label</label>
             <label><input type="checkbox" name="advancedReports" <%= plan?.featureFlags?.advancedReports ? 'checked' : '' %> /> Advanced Reports</label>
+            <label><input type="checkbox" name="helpdesk" <%= plan?.featureFlags?.helpdesk ? 'checked' : '' %> /> Helpdesk</label>
             <label><input type="checkbox" name="isPublic" <%= plan?.isPublic ? 'checked' : '' %> /> Public Plan</label>
             <label><input type="checkbox" name="isActive" <%= plan?.isActive ? 'checked' : '' %> /> Active Plan</label>
           </div>
@@ -144,7 +152,9 @@
         </div>
       </form>
 
-      <form action="/super-admin/plans/<%= plan?._id %>/delete" method="POST" onsubmit="return confirm('Delete this plan?');" style="margin-top:12px;">
+      <form action="/super-admin/plans/<%= plan?._id %>/delete" method="POST" style="margin-top:12px;">
+        <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>" />
+        <input type="hidden" name="revision" value="<%= plan?.revision || 1 %>" />
         <button type="submit" class="btn danger">Delete Plan</button>
       </form>
     </div>

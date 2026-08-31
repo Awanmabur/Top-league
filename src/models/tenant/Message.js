@@ -36,7 +36,7 @@ module.exports = function MessageModel(conn) {
       },
       audienceType: {
         type: String,
-        enum: ["All Students", "All Staff", "Specific Department", "Specific Subject", "Year/Cohort"],
+        enum: ["All Students", "All Staff", "Specific Department", "Specific Program", "Specific Subject", "Year/Cohort"],
         default: "All Students",
       },
       audienceValue: { type: String, trim: true, default: "—" },
@@ -54,6 +54,7 @@ module.exports = function MessageModel(conn) {
         default: "Draft",
       },
       scheduleAt: { type: Date, default: null },
+      scheduleClaimedAt: { type: Date, default: null, index: true },
       sentAt: { type: Date, default: null },
       stats: {
         recipients: { type: Number, default: 0 },
@@ -70,6 +71,7 @@ module.exports = function MessageModel(conn) {
     { timestamps: true }
   );
 
+  MessageSchema.index({ status: 1, scheduleAt: 1, scheduleClaimedAt: 1 });
   MessageSchema.index({ status: 1, type: 1, audienceType: 1, createdAt: -1 });
   MessageSchema.index({ isDeleted: 1, createdAt: -1 });
 

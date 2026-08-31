@@ -89,6 +89,7 @@ const PLANS = [
       prioritySupport: false,
       whiteLabel: false,
       advancedReports: false,
+      helpdesk: false,
     },
   },
   {
@@ -115,6 +116,7 @@ const PLANS = [
       prioritySupport: false,
       whiteLabel: false,
       advancedReports: false,
+      helpdesk: true,
     },
   },
   {
@@ -141,6 +143,7 @@ const PLANS = [
       prioritySupport: false,
       whiteLabel: false,
       advancedReports: false,
+      helpdesk: true,
     },
   },
   {
@@ -167,6 +170,7 @@ const PLANS = [
       prioritySupport: true,
       whiteLabel: false,
       advancedReports: true,
+      helpdesk: true,
     },
   },
   {
@@ -193,6 +197,7 @@ const PLANS = [
       prioritySupport: true,
       whiteLabel: true,
       advancedReports: true,
+      helpdesk: true,
     },
   },
 ];

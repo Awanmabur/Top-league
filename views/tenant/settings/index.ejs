@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .input,.select,.textarea{
@@ -480,7 +480,14 @@
     </div>
   </div>
 
-  <textarea id="settingsData" class="json-data" aria-hidden="true"><%- JSON.stringify(settings || {}) %></textarea>
+  <form id="resetDefaultsForm" method="POST" action="/admin/settings/reset" hidden>
+    <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
+  </form>
+  <form id="testConfigForm" method="POST" action="/admin/settings/test" hidden>
+    <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
+  </form>
+
+  <textarea id="settingsData" class="json-data" aria-hidden="true"><%= JSON.stringify(settings || {}) %></textarea>
 
   <script src="/js/navbar.js"></script>
   <script src="/js/settings.js"></script>

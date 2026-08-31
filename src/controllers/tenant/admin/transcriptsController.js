@@ -1,8 +1,27 @@
 const mongoose = require("mongoose");
-const crypto = require("crypto");
 const QRCode = require("qrcode");
 const { body, validationResult } = require("express-validator");
 const { loadAcademicScopeLists, buildAcademicScopeFilter, resolveAcademicScope } = require("../../../utils/tenantAcademicScope");
+const { defaultGrading, escapeRegExp } = require("../../../services/tenant/resultService");
+const {
+  normalizeKind,
+  normalizeRangeMode,
+  normalizeRange,
+  compareAcademicPoint,
+  resultWithinRange,
+  transcriptResultStatusFilter,
+  assertTranscriptEditable,
+  assertTranscriptDeleteAllowed,
+  assertTranscriptIssueAllowed,
+  assertTranscriptRevokeAllowed,
+  hashSnapshot,
+  snapshotIntegrityOk,
+  assertSigningConfigured,
+  verificationSignature,
+  verifyTranscriptCredential,
+  newIssueNumber,
+  transcriptDisplaySnapshot,
+} = require("../../../services/tenant/transcriptService");
 
 const isObjId = (v) => mongoose.Types.ObjectId.isValid(String(v || "").trim());
 
@@ -33,48 +52,9 @@ function studentReg(s) {
   return s?.regNo || s?.registrationNumber || s?.studentNo || s?.indexNumber || "";
 }
 
-function defaultGrading(percentage) {
-  const p = Number(percentage || 0);
-  if (p >= 80) return { grade: "A", remark: "Excellent" };
-  if (p >= 75) return { grade: "A-", remark: "Very Good" };
-  if (p >= 70) return { grade: "B+", remark: "Very Good" };
-  if (p >= 65) return { grade: "B", remark: "Good" };
-  if (p >= 60) return { grade: "B-", remark: "Good" };
-  if (p >= 55) return { grade: "C+", remark: "Satisfactory" };
-  if (p >= 50) return { grade: "C", remark: "Satisfactory" };
-  if (p >= 45) return { grade: "C-", remark: "Pass" };
-  if (p >= 40) return { grade: "D", remark: "Pass" };
-  return { grade: "F", remark: "Fail" };
-}
-
-function hashSnapshot(snapshot) {
-  return crypto.createHash("sha256").update(JSON.stringify(snapshot || {})).digest("hex");
-}
-
-function signToken(payload) {
-  const secret = String(process.env.TRANSCRIPT_SIGNING_SECRET || "");
-  if (!secret) return "";
-  return crypto.createHmac("sha256", secret).update(payload).digest("hex");
-}
-
 function buildVerifyUrl(issueNumber, sig) {
   const base = String(process.env.APP_PUBLIC_URL || "").replace(/\/$/, "") || "";
   return `${base}/verify/transcript/${encodeURIComponent(issueNumber)}?sig=${encodeURIComponent(sig || "")}`;
-}
-
-async function nextIssueNumber(req) {
-  const { Transcript } = req.models;
-
-  const last = await Transcript.findOne({ issueNumber: { $ne: "" } })
-    .sort({ createdAt: -1 })
-    .select("issueNumber")
-    .lean();
-
-  const prev = String(last?.issueNumber || "");
-  const m = prev.match(/(\d+)\s*$/);
-  const lastNum = m ? parseInt(m[1], 10) : 0;
-
-  return `CA-TR-${String(lastNum + 1).padStart(6, "0")}`;
 }
 
 function transcriptRules() {
@@ -107,68 +87,40 @@ function transcriptScopeFilter(transcriptDoc) {
 async function getRangeFromResults(req, studentId, includeDraft, scopeFilter = {}) {
   const { Result } = req.models;
   const statusFilter = includeDraft ? { $in: ["draft", "published"] } : "published";
-
-  const rows = await Result.find({ student: studentId, status: statusFilter, ...scopeFilter })
+  const rows = await Result.find({ student: studentId, status: statusFilter, migrationQuarantinedAt: null, ...scopeFilter })
     .select("academicYear term")
-    .sort({ academicYear: 1, term: 1 })
     .lean();
-
-  if (!rows.length) {
-    return {
-      academicYearFrom: "",
-      academicYearTo: "",
-      termFrom: 1,
-      termTo: 3,
-      found: false,
-    };
-  }
-
-  const years = rows.map((r) => String(r.academicYear || "").trim()).filter(Boolean).sort();
-  const terms = rows.map((r) => Number(r.term || 1)).filter((n) => Number.isFinite(n)).sort((a, b) => a - b);
-
+  const normalized = rows
+    .map((r) => ({ academicYear: normalizeAY(r.academicYear), term: clampInt(r.term, 1, 3, 1) }))
+    .filter((r) => r.academicYear)
+    .sort((a, b) => compareAcademicPoint(a.academicYear, a.term, b.academicYear, b.term));
+  if (!normalized.length) return { academicYearFrom: "", academicYearTo: "", termFrom: 1, termTo: 3, found: false };
+  const first = normalized[0];
+  const last = normalized[normalized.length - 1];
   return {
-    academicYearFrom: years[0] || "",
-    academicYearTo: years[years.length - 1] || "",
-    termFrom: terms[0] || 1,
-    termTo: terms[terms.length - 1] || 3,
+    academicYearFrom: first.academicYear,
+    academicYearTo: last.academicYear,
+    termFrom: first.term,
+    termTo: last.term,
     found: true,
   };
 }
 
 async function getCurrentRange(req, studentId, includeDraft, scopeFilter = {}) {
-  const { Result } = req.models;
-  const statusFilter = includeDraft ? { $in: ["draft", "published"] } : "published";
-
-  const row = await Result.findOne({ student: studentId, status: statusFilter, ...scopeFilter })
-    .select("academicYear term")
-    .sort({ academicYear: -1, term: -1, createdAt: -1 })
-    .lean();
-
-  if (!row) {
-    return {
-      academicYearFrom: "",
-      academicYearTo: "",
-      termFrom: 1,
-      termTo: 1,
-      found: false,
-    };
-  }
-
-  const ay = String(row.academicYear || "").trim();
-  const term = clampInt(row.term || 1, 1, 3, 1);
-
+  const all = await getRangeFromResults(req, studentId, includeDraft, scopeFilter);
+  if (!all.found) return { academicYearFrom: "", academicYearTo: "", termFrom: 1, termTo: 1, found: false };
   return {
-    academicYearFrom: ay,
-    academicYearTo: ay,
-    termFrom: term,
-    termTo: term,
+    academicYearFrom: all.academicYearTo,
+    academicYearTo: all.academicYearTo,
+    termFrom: all.termTo,
+    termTo: all.termTo,
     found: true,
   };
 }
 
-async function resolveRange(req, transcriptDoc) {
+async function resolveRange(req, transcriptDoc, options = {}) {
   const rangeMode = String(transcriptDoc.rangeMode || "auto").trim();
-  const includeDraft = !!transcriptDoc.includeDraftResults;
+  const includeDraft = transcriptResultStatusFilter(transcriptDoc, { issuing: options.issuing === true }) !== "published";
   const studentId = transcriptDoc.student;
   const scopeFilter = transcriptScopeFilter(transcriptDoc);
 
@@ -182,16 +134,15 @@ async function resolveRange(req, transcriptDoc) {
     if (cur.found) return cur;
   }
 
-  return {
+  return { ...normalizeRange({
     academicYearFrom: normalizeAY(transcriptDoc.academicYearFrom),
     academicYearTo: normalizeAY(transcriptDoc.academicYearTo),
     termFrom: clampInt(transcriptDoc.termFrom, 1, 3, 1),
     termTo: clampInt(transcriptDoc.termTo, 1, 3, 3),
-    found: true,
-  };
+  }), found: true };
 }
 
-async function buildTranscriptLive(req, transcriptDoc) {
+async function buildTranscriptLive(req, transcriptDoc, options = {}) {
   const { Student, Result, Attendance, Class, Section, Stream } = req.models;
   const t = transcriptDoc;
 
@@ -224,45 +175,39 @@ async function buildTranscriptLive(req, transcriptDoc) {
     student.stream ||
     "—";
 
-  const includeDraft = !!t.includeDraftResults;
-  const statusFilter = includeDraft ? { $in: ["draft", "published"] } : "published";
-  const range = await resolveRange(req, t);
+  const statusFilter = transcriptResultStatusFilter(t, { issuing: options.issuing === true });
+  const includeDraft = statusFilter !== "published";
+  const range = await resolveRange(req, t, options);
   const scopeFilter = transcriptScopeFilter(t);
 
   const results = await Result.find({
     student: student._id,
     status: statusFilter,
+    migrationQuarantinedAt: null,
     ...scopeFilter,
   })
     .populate("subject", "title code shortTitle")
-    .populate("exam", "title")
+    .populate("exam", "title code status maxMarks passMark")
     .sort({ academicYear: 1, term: 1, createdAt: 1 })
     .lean();
 
-  const filtered = results.filter((r) => {
-    const ay = normalizeAY(r.academicYear || "");
-    const term = clampInt(r.term, 1, 3, 1);
+  const filtered = results.filter((r) => resultWithinRange(r, range));
 
-    if (range.academicYearFrom && ay < range.academicYearFrom) return false;
-    if (range.academicYearTo && ay > range.academicYearTo) return false;
-    if (term < range.termFrom || term > range.termTo) return false;
-    return true;
-  });
-
-  const attendanceRows = await Attendance.find({
-    student: student._id,
-    academicYear: { $gte: range.academicYearFrom || "", $lte: range.academicYearTo || "zzzz" },
-    term: { $gte: range.termFrom, $lte: range.termTo },
-    ...scopeFilter,
-  })
-    .select("status")
-    .lean();
+  const attendanceRows = Attendance
+    ? await Attendance.find({
+        student: student._id,
+        isDeleted: { $ne: true },
+        ...scopeFilter,
+        migrationQuarantinedAt: null,
+      }).select("status academicYear term").lean()
+    : [];
+  const attendanceInRange = attendanceRows.filter((row) => resultWithinRange(row, range));
 
   const attendanceSummary = {
-    present: attendanceRows.filter((x) => x.status === "present").length,
-    absent: attendanceRows.filter((x) => x.status === "absent").length,
-    late: attendanceRows.filter((x) => x.status === "late").length,
-    excused: attendanceRows.filter((x) => x.status === "excused").length,
+    present: attendanceInRange.filter((x) => x.status === "present").length,
+    absent: attendanceInRange.filter((x) => x.status === "absent").length,
+    late: attendanceInRange.filter((x) => x.status === "late").length,
+    excused: attendanceInRange.filter((x) => x.status === "excused").length,
   };
 
   const buckets = new Map();
@@ -296,7 +241,7 @@ async function buildTranscriptLive(req, transcriptDoc) {
   }
 
   const terms = Array.from(buckets.values())
-    .sort((a, b) => (a.academicYear > b.academicYear ? 1 : -1) || a.term - b.term)
+    .sort((a, b) => compareAcademicPoint(a.academicYear, a.term, b.academicYear, b.term))
     .map((bucket) => {
       const avg = bucket.rows.length
         ? Math.round((bucket.rows.reduce((a, x) => a + (Number(x.percentage) || 0), 0) / bucket.rows.length) * 100) / 100
@@ -352,12 +297,20 @@ async function buildTranscriptLive(req, transcriptDoc) {
       overallRemark: overall.remark,
       attendanceSummary,
     },
+    sourceResults: filtered.map((r) => ({
+      id: String(r._id || ""),
+      status: r.status || "",
+      revision: Number(r.revision || 0),
+      publishedAt: r.publishedAt || null,
+      exam: String(r.exam?._id || r.exam || ""),
+      subject: String(r.subject?._id || r.subject || ""),
+    })),
     terms,
   };
 }
 
 async function generateOne(req, payload, existingId = null) {
-  const { Transcript } = req.models;
+  const { Transcript, Student } = req.models;
 
   const scope = await resolveAcademicScope(req, {
     classId: payload.classGroup || payload.classId || "",
@@ -365,9 +318,31 @@ async function generateOne(req, payload, existingId = null) {
     streamId: payload.streamId || "",
   });
 
-  if (scope.errors.length) {
-    return { ok: false, id: existingId || null, reason: scope.errors[0] };
+  if (scope.errors.length) return { ok: false, id: existingId || null, reason: scope.errors[0] };
+
+  const student = await Student.findById(payload.student)
+    .select("_id isDeleted status")
+    .lean();
+  if (!student || student.isDeleted === true || String(student.status || "").toLowerCase() === "archived") {
+    return { ok: false, id: existingId || null, reason: "Learner is not available for transcript generation." };
   }
+
+  if (existingId) {
+    const existing = await Transcript.findById(existingId).lean();
+    if (!existing) return { ok: false, id: existingId, reason: "Transcript not found." };
+    try { assertTranscriptEditable(existing); }
+    catch (err) { return { ok: false, id: existingId, reason: err.message }; }
+  }
+
+  const kind = normalizeKind(payload.kind || "official");
+  const rangeMode = normalizeRangeMode(payload.rangeMode || "auto");
+  const requestedIncludeDraft = String(payload.includeDraftResults || "0") === "1" || payload.includeDraftResults === true;
+  const manualRange = normalizeRange({
+    academicYearFrom: normalizeAY(payload.academicYearFrom),
+    academicYearTo: normalizeAY(payload.academicYearTo),
+    termFrom: clampInt(payload.termFrom, 1, 3, 1),
+    termTo: clampInt(payload.termTo, 1, 3, 3),
+  });
 
   const base = {
     student: payload.student,
@@ -379,51 +354,102 @@ async function generateOne(req, payload, existingId = null) {
     streamId: scope.payload.streamId || null,
     streamName: scope.payload.streamName || "",
     streamCode: scope.payload.streamCode || "",
-    kind: ["official", "unofficial"].includes(payload.kind) ? payload.kind : "official",
-    rangeMode: ["auto", "current_term", "all_available", "custom"].includes(payload.rangeMode) ? payload.rangeMode : "auto",
-    academicYearFrom: normalizeAY(payload.academicYearFrom),
-    academicYearTo: normalizeAY(payload.academicYearTo),
-    termFrom: clampInt(payload.termFrom, 1, 3, 1),
-    termTo: clampInt(payload.termTo, 1, 3, 3),
-    includeDraftResults: String(payload.includeDraftResults || "0") === "1" || payload.includeDraftResults === true,
+    kind,
+    rangeMode,
+    ...manualRange,
+    includeDraftResults: kind === "unofficial" && requestedIncludeDraft,
     notes: safeStr(payload.notes, 1000),
     teacherComment: safeStr(payload.teacherComment, 1000),
     headTeacherComment: safeStr(payload.headTeacherComment, 1000),
     autoGenerated: true,
     status: "draft",
+    issueNumber: "",
+    issuedAt: null,
+    issuedBy: null,
+    revokedAt: null,
+    revokedBy: null,
+    revokeReason: "",
+    verificationVersion: 2,
+    migrationQuarantinedAt: null,
+    migrationQuarantineReason: "",
     generatedAt: new Date(),
     updatedBy: req.user?._id || null,
   };
 
+  // Preflight before persistence so invalid ranges/no-result requests do not leave empty drafts behind.
+  const live = await buildTranscriptLive(req, { ...base, _id: existingId || null });
+  if (!live || !live.terms?.length) return { ok: false, id: existingId || null, reason: "No results found for selected range." };
+
   let tdoc;
   if (existingId) {
-    await Transcript.updateOne({ _id: existingId }, { $set: base });
+    const write = await Transcript.updateOne({ _id: existingId, status: "draft", migrationQuarantinedAt: null }, { $set: base });
+    if (!write.matchedCount) return { ok: false, id: existingId, reason: "Transcript changed while you were editing it. Reload and try again." };
     tdoc = await Transcript.findById(existingId).lean();
   } else {
-    tdoc = await Transcript.create({
-      ...base,
-      createdBy: req.user?._id || null,
-    });
-    tdoc = tdoc.toObject();
+    const created = await Transcript.create({ ...base, createdBy: req.user?._id || null });
+    tdoc = created.toObject();
   }
 
-  const live = await buildTranscriptLive(req, tdoc);
-  if (!live || !live.terms?.length) {
-    return { ok: false, id: tdoc._id, reason: "No results found for selected range." };
-  }
-
+  live.transcriptMeta._id = tdoc._id;
+  const snapshotHash = hashSnapshot(live);
   await Transcript.updateOne(
-    { _id: tdoc._id },
-    {
-      $set: {
-        snapshot: live,
-        snapshotHash: hashSnapshot(live),
-        generatedAt: new Date(),
-      },
-    }
+    { _id: tdoc._id, status: "draft" },
+    { $set: { snapshot: live, snapshotHash, generatedAt: new Date(), verificationVersion: 2 } }
   );
 
   return { ok: true, id: tdoc._id, live };
+}
+
+async function issueOne(req, transcriptDoc) {
+  const { Transcript } = req.models;
+  assertSigningConfigured();
+  assertTranscriptEditable(transcriptDoc);
+
+  const live = await buildTranscriptLive(req, { ...transcriptDoc, includeDraftResults: false }, { issuing: true });
+  assertTranscriptIssueAllowed({ ...transcriptDoc, includeDraftResults: false }, live);
+
+  const issuedAt = new Date();
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const issueNumber = newIssueNumber(issuedAt);
+    const snapshot = {
+      ...live,
+      transcriptMeta: {
+        ...live.transcriptMeta,
+        status: "issued",
+        issueNumber,
+        issuedAt,
+        issuedBy: req.user?._id || null,
+        includeDraftResults: false,
+      },
+    };
+    const snapshotHash = hashSnapshot(snapshot);
+    try {
+      const write = await Transcript.updateOne(
+        { _id: transcriptDoc._id, status: "draft", migrationQuarantinedAt: null },
+        { $set: {
+          status: "issued",
+          includeDraftResults: false,
+          issueNumber,
+          issuedAt,
+          issuedBy: req.user?._id || null,
+          revokedAt: null,
+          revokedBy: null,
+          revokeReason: "",
+          snapshot,
+          snapshotHash,
+          verificationVersion: 2,
+          generatedAt: new Date(),
+          updatedBy: req.user?._id || null,
+        } }
+      );
+      if (!write.matchedCount) throw new Error("Transcript changed before it could be issued. Reload and try again.");
+      return { ok: true, issueNumber, issuedAt, snapshot, snapshotHash };
+    } catch (err) {
+      if (err?.code === 11000 && attempt < 4) continue;
+      throw err;
+    }
+  }
+  throw new Error("Could not allocate a unique transcript issue number.");
 }
 
 module.exports = {
@@ -444,19 +470,21 @@ module.exports = {
       const page = Math.max(parseInt(req.query.page || "1", 10), 1);
       const perPage = 10;
 
-      const filter = {};
+      const filter = { migrationQuarantinedAt: null };
       if (status && ["draft", "issued", "revoked"].includes(status)) filter.status = status;
       if (kind && ["official", "unofficial"].includes(kind)) filter.kind = kind;
       Object.assign(filter, buildAcademicScopeFilter({ classGroup, sectionId, streamId }));
 
       if (q) {
+        const rx = escapeRegExp(q);
         const students = await Student.find({
+          isDeleted: { $ne: true },
           $or: [
-            { fullName: { $regex: q, $options: "i" } },
-            { name: { $regex: q, $options: "i" } },
-            { regNo: { $regex: q, $options: "i" } },
-            { studentNo: { $regex: q, $options: "i" } },
-            { indexNumber: { $regex: q, $options: "i" } },
+            { fullName: { $regex: rx, $options: "i" } },
+            { name: { $regex: rx, $options: "i" } },
+            { regNo: { $regex: rx, $options: "i" } },
+            { studentNo: { $regex: rx, $options: "i" } },
+            { indexNumber: { $regex: rx, $options: "i" } },
           ],
         })
           .select("_id")
@@ -466,7 +494,29 @@ module.exports = {
         filter.student = students.length ? { $in: students.map((s) => s._id) } : "__none__";
       }
 
-      const total = await Transcript.countDocuments(filter);
+      const kpiFilter = { ...filter };
+      delete kpiFilter.status;
+
+      // Launch independent transcript/catalog reads together. These used to form a
+      // long serial waterfall on every Admin Transcripts page request.
+      const [total, statusRows, scopeLists, studentsList, classes] = await Promise.all([
+        Transcript.countDocuments(filter),
+        Transcript.aggregate([
+          { $match: kpiFilter },
+          { $group: { _id: "$status", count: { $sum: 1 } } },
+        ]),
+        loadAcademicScopeLists(req, { includeStudents: true }),
+        Student.find({ isDeleted: { $ne: true }, status: { $ne: "archived" } })
+          .select("fullName firstName middleName lastName regNo studentNo indexNumber name classId className sectionId section streamId stream")
+          .sort({ fullName: 1, firstName: 1, lastName: 1 })
+          .limit(4000)
+          .lean(),
+        Class.find({})
+          .select("name code")
+          .sort({ name: 1 })
+          .lean(),
+      ]);
+
       const totalPages = Math.max(Math.ceil(total / perPage), 1);
       const safePage = Math.min(page, totalPages);
 
@@ -480,18 +530,9 @@ module.exports = {
         .limit(perPage)
         .lean();
 
-      const scopeLists = await loadAcademicScopeLists(req, { includeStudents: true });
-
-      const studentsList = await Student.find({})
-        .select("fullName firstName middleName lastName regNo studentNo indexNumber name classId className sectionId section streamId stream")
-        .sort({ fullName: 1, firstName: 1, lastName: 1 })
-        .limit(4000)
-        .lean();
-
-      const classes = await Class.find({})
-        .select("name code")
-        .sort({ name: 1 })
-        .lean();
+      const statusCounts = Object.fromEntries(
+        statusRows.map((row) => [String(row._id || ""), Number(row.count || 0)])
+      );
 
       let preview = null;
       let previewId = null;
@@ -502,17 +543,17 @@ module.exports = {
       if (previewId) {
         const tdoc = await Transcript.findById(previewId).lean();
         if (tdoc) {
-          preview = tdoc.status === "issued" && tdoc.snapshot
-            ? tdoc.snapshot
+          preview = ["issued", "revoked"].includes(tdoc.status) && tdoc.snapshot
+            ? transcriptDisplaySnapshot(tdoc)
             : await buildTranscriptLive(req, tdoc);
         }
       }
 
       const kpis = {
         total,
-        draft: await Transcript.countDocuments({ ...filter, status: "draft" }),
-        issued: await Transcript.countDocuments({ ...filter, status: "issued" }),
-        revoked: await Transcript.countDocuments({ ...filter, status: "revoked" }),
+        draft: statusCounts.draft || 0,
+        issued: statusCounts.issued || 0,
+        revoked: statusCounts.revoked || 0,
       };
 
       return res.render("tenant/transcripts/index", {
@@ -677,50 +718,37 @@ module.exports = {
     try {
       const { Transcript } = req.models;
       const id = String(req.params.id || "").trim();
-
       if (!isObjId(id)) {
         req.flash?.("error", "Invalid transcript id.");
         return res.redirect("/admin/transcripts");
       }
-
       const t = await Transcript.findById(id).lean();
       if (!t) {
         req.flash?.("error", "Transcript not found.");
         return res.redirect("/admin/transcripts");
       }
-
-      const copy = await Transcript.create({
+      const out = await generateOne(req, {
         student: t.student,
         classGroup: t.classGroup || null,
-        classGroupName: t.classGroupName || "",
         sectionId: t.sectionId || null,
-        sectionName: t.sectionName || "",
-        sectionCode: t.sectionCode || "",
         streamId: t.streamId || null,
-        streamName: t.streamName || "",
-        streamCode: t.streamCode || "",
         kind: t.kind || "official",
         rangeMode: t.rangeMode || "auto",
         academicYearFrom: t.academicYearFrom || "",
         academicYearTo: t.academicYearTo || "",
         termFrom: t.termFrom ?? 1,
         termTo: t.termTo ?? 3,
-        includeDraftResults: !!t.includeDraftResults,
-        autoGenerated: !!t.autoGenerated,
+        includeDraftResults: t.kind === "unofficial" ? !!t.includeDraftResults : false,
         notes: `Cloned from ${t.issueNumber || t._id}. ${t.notes || ""}`.trim(),
         teacherComment: t.teacherComment || "",
         headTeacherComment: t.headTeacherComment || "",
-        status: "draft",
-        createdBy: req.user?._id || null,
       });
-
-      await generateOne(req, copy.toObject(), copy._id);
-
+      if (!out.ok) throw new Error(out.reason || "Failed to clone transcript.");
       req.flash?.("success", "Transcript cloned as draft.");
-      return res.redirect(`/admin/transcripts?tid=${encodeURIComponent(copy._id)}`);
+      return res.redirect(`/admin/transcripts?tid=${encodeURIComponent(out.id)}`);
     } catch (err) {
       console.error("CLONE TRANSCRIPT ERROR:", err);
-      req.flash?.("error", "Failed to clone transcript.");
+      req.flash?.("error", err?.message || "Failed to clone transcript.");
       return res.redirect("/admin/transcripts");
     }
   },
@@ -729,68 +757,21 @@ module.exports = {
     try {
       const { Transcript } = req.models;
       const id = String(req.params.id || "").trim();
-
       if (!isObjId(id)) {
         req.flash?.("error", "Invalid transcript id.");
         return res.redirect("/admin/transcripts");
       }
-
       const tdoc = await Transcript.findById(id).lean();
       if (!tdoc) {
         req.flash?.("error", "Transcript not found.");
         return res.redirect("/admin/transcripts");
       }
-
-      if (tdoc.status === "issued") {
-        req.flash?.("error", "Already issued.");
-        return res.redirect(`/admin/transcripts?tid=${encodeURIComponent(id)}`);
-      }
-
-      const live = await buildTranscriptLive(req, tdoc);
-      if (!live || !live.terms?.length) {
-        req.flash?.("error", "Cannot issue: no results found for selected range.");
-        return res.redirect(`/admin/transcripts?tid=${encodeURIComponent(id)}`);
-      }
-
-      const issueNumber = await nextIssueNumber(req);
-      const issuedAt = new Date();
-
-      const snapshot = {
-        ...live,
-        transcriptMeta: {
-          ...live.transcriptMeta,
-          status: "issued",
-          issueNumber,
-          issuedAt,
-          issuedBy: req.user?._id || null,
-        },
-      };
-
-      const snapshotHash = hashSnapshot(snapshot);
-
-      await Transcript.updateOne(
-        { _id: id },
-        {
-          $set: {
-            status: "issued",
-            issueNumber,
-            issuedAt,
-            issuedBy: req.user?._id || null,
-            revokedAt: null,
-            revokedBy: null,
-            revokeReason: "",
-            snapshot,
-            snapshotHash,
-            generatedAt: new Date(),
-          },
-        }
-      );
-
-      req.flash?.("success", `Transcript issued (${issueNumber}).`);
+      const out = await issueOne(req, tdoc);
+      req.flash?.("success", `Transcript issued (${out.issueNumber}).`);
       return res.redirect(`/admin/transcripts?tid=${encodeURIComponent(id)}`);
     } catch (err) {
       console.error("ISSUE TRANSCRIPT ERROR:", err);
-      req.flash?.("error", "Failed to issue transcript.");
+      req.flash?.("error", err?.message || "Failed to issue transcript.");
       return res.redirect("/admin/transcripts");
     }
   },
@@ -799,30 +780,26 @@ module.exports = {
     try {
       const { Transcript } = req.models;
       const id = String(req.params.id || "").trim();
-      const reason = safeStr(req.body.reason, 300);
-
       if (!isObjId(id)) {
         req.flash?.("error", "Invalid transcript id.");
         return res.redirect("/admin/transcripts");
       }
-
-      await Transcript.updateOne(
-        { _id: id },
-        {
-          $set: {
-            status: "revoked",
-            revokedAt: new Date(),
-            revokedBy: req.user?._id || null,
-            revokeReason: reason,
-          },
-        }
+      const tdoc = await Transcript.findById(id).lean();
+      if (!tdoc) {
+        req.flash?.("error", "Transcript not found.");
+        return res.redirect("/admin/transcripts");
+      }
+      const reason = assertTranscriptRevokeAllowed(tdoc, req.body.reason);
+      const write = await Transcript.updateOne(
+        { _id: id, status: "issued", migrationQuarantinedAt: null },
+        { $set: { status: "revoked", revokedAt: new Date(), revokedBy: req.user?._id || null, revokeReason: reason, updatedBy: req.user?._id || null } }
       );
-
+      if (!write.matchedCount) throw new Error("Transcript changed before it could be revoked. Reload and try again.");
       req.flash?.("success", "Transcript revoked.");
       return res.redirect(`/admin/transcripts?tid=${encodeURIComponent(id)}`);
     } catch (err) {
       console.error("REVOKE TRANSCRIPT ERROR:", err);
-      req.flash?.("error", "Failed to revoke transcript.");
+      req.flash?.("error", err?.message || "Failed to revoke transcript.");
       return res.redirect("/admin/transcripts");
     }
   },
@@ -831,18 +808,23 @@ module.exports = {
     try {
       const { Transcript } = req.models;
       const id = String(req.params.id || "").trim();
-
       if (!isObjId(id)) {
         req.flash?.("error", "Invalid transcript id.");
         return res.redirect("/admin/transcripts");
       }
-
-      await Transcript.deleteOne({ _id: id });
+      const tdoc = await Transcript.findById(id).lean();
+      if (!tdoc) {
+        req.flash?.("error", "Transcript not found.");
+        return res.redirect("/admin/transcripts");
+      }
+      assertTranscriptDeleteAllowed(tdoc);
+      const write = await Transcript.deleteOne({ _id: id, status: "draft", migrationQuarantinedAt: null });
+      if (!write.deletedCount) throw new Error("Transcript changed before it could be deleted. Reload and try again.");
       req.flash?.("success", "Transcript deleted.");
       return res.redirect("/admin/transcripts");
     } catch (err) {
       console.error("DELETE TRANSCRIPT ERROR:", err);
-      req.flash?.("error", "Failed to delete transcript.");
+      req.flash?.("error", err?.message || "Failed to delete transcript.");
       return res.redirect("/admin/transcripts");
     }
   },
@@ -851,85 +833,57 @@ module.exports = {
     try {
       const { Transcript } = req.models;
       const action = safeStr(req.body.action, 20);
-
-      const ids = String(req.body.ids || "")
-        .split(",")
-        .map((x) => x.trim())
-        .filter((x) => isObjId(x));
-
+      const ids = [...new Set(String(req.body.ids || "").split(",").map((x) => x.trim()).filter((x) => isObjId(x)))];
       if (!ids.length) {
         req.flash?.("error", "No transcripts selected.");
         return res.redirect("/admin/transcripts");
       }
 
+      const docs = await Transcript.find({ _id: { $in: ids } }).lean();
+      if (docs.length !== ids.length) throw new Error("One or more selected transcripts no longer exist.");
+
+      let completed = 0;
       if (action === "delete") {
-        await Transcript.deleteMany({ _id: { $in: ids } });
-        req.flash?.("success", "Selected transcripts deleted.");
+        for (const doc of docs) assertTranscriptDeleteAllowed(doc);
+        for (const doc of docs) {
+          const write = await Transcript.deleteOne({ _id: doc._id, status: "draft", migrationQuarantinedAt: null });
+          if (!write.deletedCount) throw new Error("A selected transcript changed during bulk delete. Reload and try again.");
+          completed += 1;
+        }
       } else if (action === "revoke") {
-        await Transcript.updateMany(
-          { _id: { $in: ids } },
-          { $set: { status: "revoked", revokedAt: new Date(), revokedBy: req.user?._id || null } }
-        );
-        req.flash?.("success", "Selected transcripts revoked.");
-      } else if (action === "issue") {
-        let issued = 0;
-        for (const id of ids) {
-          const tdoc = await Transcript.findById(id).lean();
-          if (!tdoc || tdoc.status === "issued") continue;
-
-          const live = await buildTranscriptLive(req, tdoc);
-          if (!live || !live.terms?.length) continue;
-
-          const issueNumber = await nextIssueNumber(req);
-          const issuedAt = new Date();
-
-          const snapshot = {
-            ...live,
-            transcriptMeta: {
-              ...live.transcriptMeta,
-              status: "issued",
-              issueNumber,
-              issuedAt,
-              issuedBy: req.user?._id || null,
-            },
-          };
-
-          await Transcript.updateOne(
-            { _id: id },
-            {
-              $set: {
-                status: "issued",
-                issueNumber,
-                issuedAt,
-                issuedBy: req.user?._id || null,
-                revokedAt: null,
-                revokedBy: null,
-                revokeReason: "",
-                snapshot,
-                snapshotHash: hashSnapshot(snapshot),
-              },
-            }
+        const reason = assertTranscriptRevokeAllowed(docs[0], req.body.reason || "Bulk administrative revocation");
+        for (const doc of docs) assertTranscriptRevokeAllowed(doc, reason);
+        for (const doc of docs) {
+          const write = await Transcript.updateOne(
+            { _id: doc._id, status: "issued", migrationQuarantinedAt: null },
+            { $set: { status: "revoked", revokedAt: new Date(), revokedBy: req.user?._id || null, revokeReason: reason, updatedBy: req.user?._id || null } }
           );
-          issued += 1;
+          if (!write.matchedCount) throw new Error("A selected transcript changed during bulk revoke. Reload and try again.");
+          completed += 1;
         }
-        req.flash?.("success", `Issued ${issued} transcript(s).`);
+      } else if (action === "issue") {
+        assertSigningConfigured();
+        for (const doc of docs) assertTranscriptEditable(doc);
+        for (const doc of docs) {
+          await issueOne(req, doc);
+          completed += 1;
+        }
       } else if (action === "regenerate") {
-        let regenerated = 0;
-        for (const id of ids) {
-          const tdoc = await Transcript.findById(id).lean();
-          if (!tdoc || tdoc.status === "issued") continue;
-          const out = await generateOne(req, tdoc, id);
-          if (out.ok) regenerated += 1;
+        for (const doc of docs) assertTranscriptEditable(doc);
+        for (const doc of docs) {
+          const out = await generateOne(req, doc, doc._id);
+          if (!out.ok) throw new Error(out.reason || "A selected transcript could not be regenerated.");
+          completed += 1;
         }
-        req.flash?.("success", `Regenerated ${regenerated} transcript(s).`);
       } else {
-        req.flash?.("error", "Invalid bulk action.");
+        throw new Error("Invalid bulk action.");
       }
 
+      req.flash?.("success", `${action[0].toUpperCase() + action.slice(1)} completed for ${completed} transcript(s).`);
       return res.redirect("/admin/transcripts");
     } catch (err) {
       console.error("TRANSCRIPT BULK ERROR:", err);
-      req.flash?.("error", "Bulk action failed.");
+      req.flash?.("error", err?.message || "Bulk action failed.");
       return res.redirect("/admin/transcripts");
     }
   },
@@ -938,36 +892,27 @@ module.exports = {
     try {
       const { Transcript } = req.models;
       const id = String(req.params.id || "").trim();
-
       if (!isObjId(id)) return res.status(404).send("Not found.");
-
       const tdoc = await Transcript.findById(id).lean();
-      if (!tdoc) return res.status(404).send("Not found.");
+      if (!tdoc || tdoc.migrationQuarantinedAt) return res.status(404).send("Not found.");
 
-      const data = tdoc.status === "issued" && tdoc.snapshot
-        ? tdoc.snapshot
-        : await buildTranscriptLive(req, tdoc);
-
+      const immutable = ["issued", "revoked"].includes(tdoc.status);
+      if (immutable && !snapshotIntegrityOk(tdoc)) return res.status(409).send("Transcript snapshot integrity check failed.");
+      const data = immutable ? transcriptDisplaySnapshot(tdoc) : await buildTranscriptLive(req, tdoc);
       if (!data) return res.status(404).send("Not found.");
-
       data.snapshotHash = tdoc.snapshotHash || "";
 
       let qrDataUrl = "";
       let verifyUrl = "";
-
-      if (tdoc.status === "issued" && tdoc.issueNumber && tdoc.issuedAt) {
-        const payload = `${tdoc.issueNumber}|${new Date(tdoc.issuedAt).toISOString()}`;
-        const sig = signToken(payload);
-        verifyUrl = buildVerifyUrl(tdoc.issueNumber, sig);
-        qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 1, width: 240 });
+      if (immutable && tdoc.issueNumber && tdoc.issuedAt) {
+        const sig = verificationSignature(tdoc);
+        if (sig) {
+          verifyUrl = buildVerifyUrl(tdoc.issueNumber, sig);
+          qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 1, width: 240 });
+        }
       }
 
-      return res.render("tenant/transcripts/print", {
-        tenant: req.tenant || null,
-        data,
-        qrDataUrl,
-        verifyUrl,
-      });
+      return res.render("tenant/transcripts/print", { tenant: req.tenant || null, data, qrDataUrl, verifyUrl });
     } catch (err) {
       console.error("PRINT TRANSCRIPT ERROR:", err);
       return res.status(500).send("Failed to render transcript.");
@@ -977,28 +922,16 @@ module.exports = {
   verifyPage: async (req, res) => {
     try {
       const { Transcript } = req.models;
-      const issueNumber = safeStr(req.params.issueNumber, 60);
-      const sig = safeStr(req.query.sig, 200);
-
-      const tdoc = await Transcript.findOne({ issueNumber }).lean();
-
+      const issueNumber = safeStr(req.params.issueNumber, 80);
+      const sig = safeStr(req.query.sig, 256);
+      const tdoc = await Transcript.findOne({ issueNumber, migrationQuarantinedAt: null }).lean();
       let ok = false;
-      let reason = "";
+      let reason = "Transcript not found.";
       let minimal = null;
-
-      if (!tdoc) {
-        reason = "Transcript not found.";
-      } else {
-        const issuedAtISO = tdoc.issuedAt ? new Date(tdoc.issuedAt).toISOString() : "";
-        const payload = `${issueNumber}|${issuedAtISO}`;
-        const expected = signToken(payload);
-
-        if (!expected) reason = "Verification secret not configured on server.";
-        else if (!sig || sig !== expected) reason = "Invalid verification signature.";
-        else if (tdoc.status === "revoked") reason = "This transcript has been revoked.";
-        else if (tdoc.status !== "issued") reason = "This transcript is not issued.";
-        else ok = true;
-
+      if (tdoc) {
+        const verdict = verifyTranscriptCredential(tdoc, sig);
+        ok = verdict.ok;
+        reason = verdict.ok ? "" : verdict.reason;
         minimal = {
           issueNumber,
           status: tdoc.status,
@@ -1013,8 +946,7 @@ module.exports = {
           overallGrade: tdoc.snapshot?.totals?.overallGrade || "—",
         };
       }
-
-      return res.render("public/verify-transcript", { ok, reason, minimal });
+      return res.render("tenant/transcripts/verify-transcript", { ok, reason, minimal });
     } catch (err) {
       console.error("VERIFY TRANSCRIPT ERROR:", err);
       return res.status(500).send("Verification failed.");
@@ -1024,28 +956,21 @@ module.exports = {
   verifyApi: async (req, res) => {
     try {
       const { Transcript } = req.models;
-      const issueNumber = safeStr(req.params.issueNumber, 60);
-      const sig = safeStr(req.query.sig, 200);
-
-      const tdoc = await Transcript.findOne({ issueNumber }).lean();
+      const issueNumber = safeStr(req.params.issueNumber, 80);
+      const sig = safeStr(req.query.sig, 256);
+      const tdoc = await Transcript.findOne({ issueNumber, migrationQuarantinedAt: null }).lean();
       if (!tdoc) return res.status(404).json({ ok: false, reason: "Not found" });
-
-      const issuedAtISO = tdoc.issuedAt ? new Date(tdoc.issuedAt).toISOString() : "";
-      const payload = `${issueNumber}|${issuedAtISO}`;
-      const expected = signToken(payload);
-
-      if (!expected) return res.status(500).json({ ok: false, reason: "Signing secret missing" });
-      if (!sig || sig !== expected) return res.status(401).json({ ok: false, reason: "Bad signature" });
-
-      if (tdoc.status !== "issued") {
-        return res.json({
+      const verdict = verifyTranscriptCredential(tdoc, sig);
+      if (!verdict.ok) {
+        const statusCode = verdict.serverError ? 500 : (verdict.revoked ? 200 : 401);
+        return res.status(statusCode).json({
           ok: false,
+          reason: verdict.reason,
           status: tdoc.status,
-          revokedAt: tdoc.revokedAt,
+          revokedAt: tdoc.revokedAt || null,
           revokeReason: tdoc.revokeReason || "",
         });
       }
-
       return res.json({
         ok: true,
         status: tdoc.status,
@@ -1060,4 +985,5 @@ module.exports = {
       return res.status(500).json({ ok: false, reason: "Server error" });
     }
   },
+
 };

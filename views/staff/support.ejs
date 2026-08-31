@@ -28,6 +28,7 @@
     <% if (mode === "new") { %>
       <section class="card">
         <form method="post" action="/staff/support" style="display:grid;gap:12px;">
+          <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
           <input style="padding:12px;border:1px solid #dbe3f6;border-radius:12px;" type="text" name="subject" placeholder="Subject" value="<%= values?.subject || '' %>" required />
           <textarea style="padding:12px;border:1px solid #dbe3f6;border-radius:12px;min-height:180px;" name="message" placeholder="Describe the issue" required><%= values?.message || '' %></textarea>
           <button class="btn primary" style="width:max-content;" type="submit">Submit Ticket</button>
@@ -48,10 +49,15 @@
           <% }) %>
         </div>
 
-        <form method="post" action="/staff/support/<%= ticket?._id %>/reply" style="display:grid;gap:12px;margin-top:16px;">
-          <textarea style="padding:12px;border:1px solid #dbe3f6;border-radius:12px;min-height:140px;" name="message" placeholder="Write your reply" required></textarea>
-          <button class="btn primary" style="width:max-content;" type="submit">Reply</button>
-        </form>
+        <% if (ticket?.status !== "Closed") { %>
+          <form method="post" action="/staff/support/<%= ticket?._id %>/reply" style="display:grid;gap:12px;margin-top:16px;">
+            <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
+            <textarea style="padding:12px;border:1px solid #dbe3f6;border-radius:12px;min-height:140px;" name="message" maxlength="5000" placeholder="Write your reply" required></textarea>
+            <button class="btn primary" style="width:max-content;" type="submit">Reply</button>
+          </form>
+        <% } else { %>
+          <div class="small-muted" style="margin-top:16px;">This ticket is closed and no longer accepts replies.</div>
+        <% } %>
       </section>
     <% } else { %>
       <section class="card">

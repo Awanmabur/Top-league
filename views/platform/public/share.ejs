@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Share Classic Academy</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <meta name="description" content="Share Classic Academy with another school." />
+  <meta name="robots" content="index,follow" />
+  <meta name="theme-color" content="#4a90e2" />
+  <link rel="canonical" href="/share" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+  <style nonce="<%= cspNonce %>">
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root { --primary: #4a90e2; --ink: #0f172a; --muted: #475569; --page-pad: clamp(1rem, 4vw, 6rem); --shadow2: 0 18px 50px rgba(15, 23, 42, .12); }
+    a { text-decoration: none; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; background: #e0f7fa; color: #333; overflow-x: clip; padding-top: 112px; }
+    @media (max-width: 600px) { body { padding-top: 102px; } }
+    #loader { position: fixed; inset: 0; background: #e0f7fa; display: flex; flex-direction: column; gap: 14px; align-items: center; justify-content: center; z-index: 9999; }
+    .academylogo { width: min(220px, 70vw); } .academylogo img { width: 100%; height: auto; display: block; }
+    .loader { position: relative; width: 18px; height: 28px; perspective: 500px; animation: flip 2s infinite; }
+    .loader:nth-child(3) { animation-delay: 0.2s; } .loader:nth-child(4) { animation-delay: 0.4s; } .loader:nth-child(5) { animation-delay: 0.6s; } .loader:nth-child(6) { animation-delay: 0.8s; }
+    .face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 4px; }
+    .front { background: var(--primary); } .back { background: #d35400; transform: rotateY(180deg); }
+    @keyframes flip { 0%, 100% { transform: rotateY(0deg); } 50% { transform: rotateY(180deg); } }
+    .header { position: fixed; top: 14px; left: var(--page-pad); right: var(--page-pad); padding: .65rem .85rem; border-radius: 999px; background: rgba(255, 255, 255, .70); border: 1px solid rgba(255, 255, 255, .78); backdrop-filter: blur(12px); box-shadow: 0 16px 46px rgba(15, 23, 42, .10); display: flex; align-items: center; justify-content: space-between; gap: .8rem; z-index: 2000; }
+    .brand { display: flex; align-items: center; gap: .75rem; min-width: 0; color: var(--ink); }
+    .brand-mark { width: 40px; height: 40px; border-radius: 14px; object-fit: cover; border: 1px solid rgba(15, 23, 42, .10); background: rgba(255, 255, 255, .85); flex: 0 0 auto; }
+    .brand-txt { display: grid; line-height: 1.05; min-width: 0; }
+    .brand-name { font-weight: 900; letter-spacing: -.02em; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .brand-sub { font-size: .86rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .navbar { display: flex; align-items: center; gap: .35rem; }
+    .navbar a { padding: .55rem .75rem; border-radius: 999px; color: #1d4ed8; font-weight: 600; font-size: 1.02rem; white-space: nowrap; }
+    .navbar a:hover { background: rgba(74, 144, 226, .10); color: var(--ink); }
+    .nav-pill { border: 1px solid rgba(74, 144, 226, .35); background: rgba(74, 144, 226, .10); color: #0f172a !important; font-weight: 800; }
+    .nav-actions { display: flex; align-items: center; gap: .55rem; flex: 0 0 auto; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: .45rem; padding: 0.72rem 1rem; background-color: var(--primary); color: white; border: 1px solid var(--primary); border-radius: 999px; font-weight: 800; box-shadow: 0 10px 28px rgba(74, 144, 226, .18); white-space: nowrap; cursor: pointer; }
+    .btn-sm { padding: .55rem .8rem !important; font-size: .95rem !important; box-shadow: none !important; }
+    .menu-btn { width: 44px; height: 44px; border-radius: 999px; border: 1px solid rgba(15, 23, 42, .12); background: rgba(255, 255, 255, .78); display: none; align-items: center; justify-content: center; cursor: pointer; }
+    @media (max-width: 1024px) {
+      .brand-sub { display: none; } .menu-btn { display: inline-flex; }
+      .navbar { position: absolute; top: calc(100% + .65rem); left: 0; right: 0; margin: 0 .25rem; padding: .75rem; background: rgba(74, 144, 226, .96); border-radius: 20px; display: grid; gap: .4rem; transform: translateY(-8px); opacity: 0; pointer-events: none; transition: transform .2s ease, opacity .2s ease; }
+      .navbar.active { transform: translateY(0); opacity: 1; pointer-events: auto; }
+      .navbar a { color: #fff; border-radius: 16px; padding: .85rem .85rem; background: rgba(255, 255, 255, .08); }
+      .nav-pill { background: rgba(255, 255, 255, .18); color: #fff !important; }
+    }
+    .page-wrap { margin: 0 var(--page-pad); padding: 2.2rem 0 2.8rem 0; }
+    .share-card { max-width: 640px; margin: 0 auto; background: rgba(255, 255, 255, .70); border: 1px solid rgba(255, 255, 255, .85); border-radius: 22px; box-shadow: var(--shadow2); padding: 2rem; text-align: center; }
+    .share-card h1 { font-size: 1.7rem; color: var(--ink); }
+    .share-card p { margin-top: .6rem; color: var(--muted); }
+    .share-row { display: flex; gap: .7rem; justify-content: center; flex-wrap: wrap; margin-top: 1.4rem; }
+    .share-row a, .share-row button { width: 52px; height: 52px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #fff; border: none; cursor: pointer; }
+    .sw { background: #25D366; } .sf { background: #1877F2; } .sx { background: #000; } .se { background: #475569; } .sc { background: var(--primary); }
+    .copy-row { margin-top: 1.3rem; display: flex; gap: .5rem; }
+    .copy-row input { flex: 1; padding: .7rem .9rem; border-radius: 12px; border: 1px solid rgba(15,23,42,.15); background: #fff; }
+    #toTopBtn { display: none; }
+  </style>
+  <script src="/js/public-image-fallback.js"></script>
+</head>
+
+<body>
+  <div id="loader">
+    <div class="academylogo"><img src="/img/academylogo.webp" alt="Classic Academy logo" decoding="async" width="396" height="415"></div>
+    <div style="display:flex; gap:10px;">
+      <div class="loader"><div class="face front"></div><div class="face back"></div></div>
+      <div class="loader"><div class="face front"></div><div class="face back"></div></div>
+      <div class="loader"><div class="face front"></div><div class="face back"></div></div>
+      <div class="loader"><div class="face front"></div><div class="face back"></div></div>
+      <div class="loader"><div class="face front"></div><div class="face back"></div></div>
+    </div>
+  </div>
+
+  <header class="header" id="siteHeader">
+    <a href="/" class="brand" aria-label="Classic Academy Home">
+      <img class="brand-mark" src="/img/academylogo.webp" alt="Classic Academy logo" decoding="async" width="396" height="415">
+      <div class="brand-txt"><span class="brand-name">Classic Academy</span><span class="brand-sub">School management + admissions</span></div>
+    </a>
+    <nav class="navbar" aria-label="Primary">
+      <a href="/">Home</a>
+      <a href="/about">About</a>
+      <a href="/services">Features</a>
+      <a href="/#contact">Contact</a>
+      <a class="nav-pill" href="/#pricing">Join Today</a>
+      <a class="nav-pill" href="/schedule">Sign In</a>
+    </nav>
+    <div class="nav-actions">
+      <a href="/schedule" class="btn btn-sm"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
+      <button id="menu-btn" class="menu-btn" aria-label="Open menu" aria-expanded="false"><i class="fa-solid fa-bars"></i></button>
+    </div>
+  </header>
+
+  <section class="page-wrap">
+    <div class="share-card reveal">
+      <span class="material-icons" style="font-size:2.2rem;color:var(--primary)">share</span>
+      <h1>Know a school that needs this?</h1>
+      <p>Share Classic Academy with a colleague or another school.</p>
+
+      <div class="share-row">
+        <a class="sw" id="shareWhatsapp" href="#" aria-label="Share on WhatsApp" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-whatsapp"></i></a>
+        <a class="sf" id="shareFacebook" href="#" aria-label="Share on Facebook" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-facebook-f"></i></a>
+        <a class="sx" id="shareX" href="#" aria-label="Share on X" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-x-twitter"></i></a>
+        <a class="se" id="shareEmail" href="#" aria-label="Share by email"><i class="fa-solid fa-envelope"></i></a>
+        <button class="sc" id="copyLinkBtn" type="button" aria-label="Copy link"><i class="fa-solid fa-link"></i></button>
+      </div>
+
+      <div class="copy-row">
+        <input type="text" id="shareUrlInput" readonly value="" />
+      </div>
+    </div>
+  </section>
+
+  <script nonce="<%= cspNonce %>">
+    (function () {
+      const url = window.location.origin + "/";
+      const text = "Classic Academy — school management + admissions";
+
+      const input = document.getElementById("shareUrlInput");
+      if (input) input.value = url;
+
+      const links = {
+        shareWhatsapp: "https://api.whatsapp.com/send?text=" + encodeURIComponent(text + " " + url),
+        shareFacebook: "https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(url),
+        shareX: "https://twitter.com/intent/tweet?text=" + encodeURIComponent(text) + "&url=" + encodeURIComponent(url),
+        shareEmail: "mailto:?subject=" + encodeURIComponent(text) + "&body=" + encodeURIComponent(url),
+      };
+
+      Object.keys(links).forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.href = links[id];
+      });
+
+      const copyBtn = document.getElementById("copyLinkBtn");
+      copyBtn?.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(url);
+          copyBtn.innerHTML = '<i class="fa-solid fa-check"></i>';
+          setTimeout(() => { copyBtn.innerHTML = '<i class="fa-solid fa-link"></i>'; }, 1500);
+        } catch (_) {
+          input?.select();
+        }
+      });
+    })();
+  </script>
+  <script src="/pages/terms.js"></script>
+</body>
+
+</html>

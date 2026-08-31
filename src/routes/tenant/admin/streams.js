@@ -5,6 +5,7 @@ const router = express.Router();
 
 router.get("/", controller.list);
 router.post("/", controller.streamRules, controller.create);
+router.get("/export.csv", controller.exportCsv);
 router.post("/bulk", controller.bulk);
 router.post("/:id", controller.streamRules, controller.update);
 router.post("/:id/status", controller.setStatus);

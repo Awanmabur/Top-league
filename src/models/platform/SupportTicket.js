@@ -130,6 +130,26 @@ module.exports = (connection) => {
         type: Boolean,
         default: true,
       },
+
+      revision: {
+        type: Number,
+        default: 1,
+        min: 1,
+      },
+
+      statusHistory: [
+        new Schema(
+          {
+            at: { type: Date, default: Date.now },
+            fromStatus: { type: String, trim: true, maxlength: 32 },
+            toStatus: { type: String, trim: true, maxlength: 32 },
+            actorId: { type: Schema.Types.ObjectId, ref: "PlatformUser", default: null },
+            note: { type: String, trim: true, maxlength: 500 },
+            revision: { type: Number, min: 1 },
+          },
+          { _id: false },
+        ),
+      ],
     },
     { timestamps: true }
   );

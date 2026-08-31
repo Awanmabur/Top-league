@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title><%= pageTitle %> — <%= tenant?.name || "Classic Academy" %></title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/navbar.css"/>
+  <link rel="stylesheet" href="/css/student-portal.css" />
+  <style nonce="<%= cspNonce %>">
+    .detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.field-box{padding:12px;border:1px solid #e2e8f0;border-radius:12px;background:#fff}.field-box.full{grid-column:1/-1}.field-label{font-size:12px;color:#64748b;font-weight:800;margin-bottom:5px}.field-value{white-space:pre-wrap;overflow-wrap:anywhere}.textarea{width:100%;min-height:170px;padding:12px;border:1px solid #cbd5e1;border-radius:12px;resize:vertical}.input{width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:12px}.status{display:inline-flex;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:800;background:#eef2ff;color:#3730a3}.status.graded{background:#ecfdf3;color:#166534}.status.late{background:#fff7ed;color:#9a3412}.link-list{display:grid;gap:6px}.link-list a{overflow-wrap:anywhere}@media(max-width:700px){.detail-grid{grid-template-columns:1fr}.field-box.full{grid-column:auto}}
+  </style>
+</head>
+<body data-portal="student">
+<%- include("./navbar") %>
+<main class="main">
+  <div class="topbar"><div><a href="/student/assignments" style="text-decoration:none;font-weight:800;"><i class="fa-solid fa-arrow-left"></i> Assignments</a><div class="title" style="margin-top:8px;"><%= assignment.title %></div><div class="subtitle"><%= assignment.courseCode ? assignment.courseCode + ' — ' : '' %><%= assignment.courseTitle %></div></div></div>
+  <%-include("../tenant/partials/flash") %>
+  <section class="card">
+    <div class="detail-grid">
+      <div class="field-box"><div class="field-label">Academic period</div><div class="field-value"><%= assignment.academicYear || '—' %> • Term <%= assignment.term %></div></div>
+      <div class="field-box"><div class="field-label">Deadline</div><div class="field-value"><%= assignment.dueDisplay || 'No deadline' %> <% if (assignment.overdue) { %><span class="status late">Past deadline</span><% } %></div></div>
+      <div class="field-box"><div class="field-label">Total points</div><div class="field-value"><%= assignment.totalPoints %></div></div>
+      <div class="field-box"><div class="field-label">Submission rule</div><div class="field-value"><%= assignment.allowLateSubmissions ? 'Late submissions allowed' : 'Late submissions blocked' %></div></div>
+      <div class="field-box full"><div class="field-label">Instructions</div><div class="field-value"><%= assignment.instructions || 'No additional instructions.' %></div></div>
+      <div class="field-box full"><div class="field-label">Rubric</div><div class="field-value"><%= assignment.rubric || 'No rubric provided.' %></div></div>
+      <div class="field-box full"><div class="field-label">Assignment attachments</div><div class="link-list"><% if (assignment.attachments?.length) { assignment.attachments.forEach(function(url, i){ %><a href="<%= url %>" target="_blank" rel="noopener noreferrer">Attachment <%= i + 1 %></a><% }) } else { %><span>None</span><% } %></div></div>
+    </div>
+  </section>
+
+  <% if (assignment.submission?.status === 'graded') { %>
+    <section class="card" style="margin-top:14px;"><div class="section-title">Grade</div><div style="font-size:24px;font-weight:900;margin-top:8px;"><%= assignment.submission.score %>/<%= assignment.totalPoints %> (<%= assignment.submission.percentage %>%)</div><div class="field-box" style="margin-top:10px;"><div class="field-label">Feedback</div><div class="field-value"><%= assignment.submission.feedback || 'No written feedback.' %></div></div></section>
+  <% } %>
+
+  <section class="card" style="margin-top:14px;">
+    <div class="section-title">Your submission</div>
+    <div class="section-sub"><% if (assignment.submission) { %>Status: <span class="status <%= assignment.submission.status %>"><%= assignment.submission.status %></span> • Revision <%= assignment.submission.revision %><% } else { %>No submission yet.<% } %></div>
+    <% if (assignment.canSubmit) { %>
+      <form method="POST" action="/student/assignments/<%= assignment.id %>/submit" style="margin-top:12px;display:grid;gap:12px;">
+        <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
+        <div><label style="font-weight:800;font-size:13px;">Submission text</label><textarea class="textarea" name="text" maxlength="12000" placeholder="Type your answer or submission notes..."><%= assignment.submission?.text || '' %></textarea></div>
+        <div><label style="font-weight:800;font-size:13px;">Evidence/attachment links</label><textarea class="textarea" name="attachmentUrls" style="min-height:110px;" placeholder="One https:// link per line"><%= (assignment.submission?.attachmentUrls || []).join('\n') %></textarea><div class="section-sub">Only HTTP(S) links are accepted; unsafe URL schemes are rejected.</div></div>
+        <div><button class="btn primary" type="submit"><i class="fa-solid fa-paper-plane"></i> <%= assignment.submission?.submittedAt ? 'Resubmit revision' : 'Submit assignment' %></button></div>
+      </form>
+    <% } else { %><div style="margin-top:12px;" class="section-sub">This assignment is not currently accepting changes.<% if (assignment.submission?.status === 'graded') { %> The graded submission is locked unless an administrator reopens it.<% } %></div><% } %>
+
+    <% if (assignment.submission?.status === 'submitted' && assignment.canSubmit) { %>
+      <form method="POST" action="/student/assignments/<%= assignment.id %>/withdraw" style="margin-top:12px;" data-confirm="Withdraw this submission? You must resubmit before the deadline for it to count.">
+        <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %><button class="btn light" type="submit"><i class="fa-solid fa-rotate-left"></i> Withdraw submission</button>
+      </form>
+    <% } %>
+  </section>
+</main>
+<script src="/js/navbar.js"></script>
+</body>
+</html>

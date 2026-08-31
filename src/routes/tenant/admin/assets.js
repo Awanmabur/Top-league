@@ -1,11 +1,1 @@
-const express = require("express");
-const router = express.Router();
-const assetsController = require("../../../controllers/tenant/admin/assetsController");
-
-router.get("/", assetsController.index);
-router.post("/", assetsController.createAsset);
-router.post("/:id/update", assetsController.updateAsset);
-router.post("/:id/assign", assetsController.assignAsset);
-router.post("/:id/maintenance", assetsController.createMaintenance);
-
-module.exports = router;
+const express=require('express');const router=express.Router();const c=require('../../../controllers/tenant/admin/assetsController');router.get('/',c.index);router.get('/export.csv',c.exportCsv);router.post('/',c.createAsset);router.post('/maintenance/:ticketId',c.updateMaintenance);router.post('/:id/update',c.updateAsset);router.post('/:id/assign',c.assignAsset);router.post('/:id/assignments/:assignmentId/return',c.returnAsset);router.post('/:id/maintenance',c.createMaintenance);router.post('/:id/dispose',c.disposeAsset);router.post('/:id/archive',c.archiveAsset);module.exports=router;

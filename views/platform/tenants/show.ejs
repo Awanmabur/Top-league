@@ -6,7 +6,7 @@
   <title>Academy Details - Classic Academy</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <link rel="stylesheet" href="/css/navbar.css" />
-  <style>
+  <style nonce="<%= cspNonce %>">
     body { margin:0; background:#f5f8ff; font-family:Poppins,Segoe UI,Arial,sans-serif; color:#0f172a; overflow-x:hidden; }
     * { box-sizing:border-box; min-width:0; }
     .main { flex:1; padding:20px 26px; display:flex; flex-direction:column; gap:16px; }
@@ -39,7 +39,7 @@
 </head>
 <body>
   <%- include("./navbar") %>
-  <% const canManageSchools = platformAccess?.can("schools.manage"); %>
+  <% const canManageSchools = platformAccess?.can("schools.manage"); const canManageBilling = platformAccess?.can("billing.manage"); const isSuperAdmin = user?.role === "SuperAdmin"; %>
 
   <main class="main">
     <div class="topbar">
@@ -78,8 +78,12 @@
           <div>
             <div class="meta-label">Status</div>
             <div class="meta-value">
-              <span class="badge <%= tenant.status === 'active' ? 'green' : tenant.status === 'trial' ? 'amber' : tenant.status === 'suspended' ? 'red' : 'gray' %>"><%= tenant.status %></span>
+              <span class="badge <%= tenant.status === 'active' ? 'green' : tenant.status === 'trial' ? 'amber' : tenant.status === 'suspended' ? 'red' : 'gray' %>"><%= tenant.effectiveSubscriptionStatus || tenant.status %></span>
             </div>
+          </div>
+          <div>
+            <div class="meta-label">Public Directory</div>
+            <div class="meta-value"><%= tenant.settings?.profile?.enabled === false ? 'Hidden by school profile setting' : ((tenant.effectiveSubscriptionStatus || tenant.status) === 'active' || (tenant.effectiveSubscriptionStatus || tenant.status) === 'trial' ? 'Eligible when access period is current' : 'Hidden until subscription is operational') %></div>
           </div>
           <div>
             <div class="meta-label">Code</div>
@@ -106,6 +110,58 @@
             <div class="meta-value"><%= (academics.campuses || []).length %></div>
           </div>
         </div>
+      </div>
+
+      <% const effectiveSubscriptionStatus = tenant.effectiveSubscriptionStatus || subscription?.status || tenant.status; %>
+      <div class="card">
+        <div class="title" style="font-size:16px;">Subscription Lifecycle</div>
+        <div class="grid" style="margin-top:12px;">
+          <div><div class="meta-label">Effective Status</div><div class="meta-value"><span class="badge <%= effectiveSubscriptionStatus === 'active' ? 'green' : effectiveSubscriptionStatus === 'trial' ? 'amber' : effectiveSubscriptionStatus === 'cancelled' ? 'gray' : 'red' %>"><%= effectiveSubscriptionStatus %></span></div></div>
+          <div><div class="meta-label">Frozen Plan</div><div class="meta-value"><%= subscription?.planSnapshot?.name || tenant.planId?.name || tenant.planName || '-' %> <span class="muted">rev <%= subscription?.planSnapshot?.planRevision || 1 %></span></div></div>
+          <div><div class="meta-label">Trial End</div><div class="meta-value"><%= subscription?.trialEndsAt ? new Date(subscription.trialEndsAt).toLocaleString() : '-' %></div></div>
+          <div><div class="meta-label">Paid Period End</div><div class="meta-value"><%= subscription?.currentPeriodEnd ? new Date(subscription.currentPeriodEnd).toLocaleString() : '-' %></div></div>
+          <div><div class="meta-label">Subscription Revision</div><div class="meta-value"><%= subscription?.revision || tenant.subscriptionRevision || 1 %></div></div>
+          <div><div class="meta-label">Status Reason</div><div class="meta-value"><%= subscription?.statusReason || tenant.statusReason || '-' %></div></div>
+        </div>
+        <% if (subscription?.migrationQuarantined) { %><div class="alert" style="margin-top:12px;background:#fff1f2;color:#991b1b;border-color:#fecdd3;">Subscription requires migration review: <%= subscription.quarantineReason || 'Unresolved legacy subscription.' %></div><% } %>
+        <% if (canManageSchools && subscription) { %>
+          <div class="actions" style="margin-top:14px;align-items:flex-end;">
+            <% if (['trial','active','past_due'].includes(effectiveSubscriptionStatus)) { %>
+              <form action="/super-admin/schools/<%= tenant._id %>/status" method="POST">
+                <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>"><input type="hidden" name="revision" value="<%= tenant.revision || 1 %>"><input type="hidden" name="subscriptionRevision" value="<%= subscription.revision || 1 %>"><input type="hidden" name="status" value="suspended">
+                <input name="reason" minlength="5" maxlength="500" required placeholder="Suspension reason" style="padding:10px;border:1px solid #dbe3f6;border-radius:10px;"> <button class="btn" type="submit">Suspend</button>
+              </form>
+            <% } %>
+            <% if (effectiveSubscriptionStatus === 'suspended' && canManageBilling && subscription?.currentPeriodEnd && new Date(subscription.currentPeriodEnd) > new Date()) { %>
+              <form action="/super-admin/schools/<%= tenant._id %>/status" method="POST">
+                <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>"><input type="hidden" name="revision" value="<%= tenant.revision || 1 %>"><input type="hidden" name="subscriptionRevision" value="<%= subscription.revision || 1 %>"><input type="hidden" name="status" value="active">
+                <button class="btn" type="submit">Reactivate Existing Paid Period</button>
+              </form>
+            <% } %>
+            <% if (effectiveSubscriptionStatus !== 'active' && effectiveSubscriptionStatus !== 'cancelled' && canManageBilling) { %>
+              <form action="/super-admin/schools/<%= tenant._id %>/manual-activate" method="POST" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>">
+                <input type="hidden" name="revision" value="<%= tenant.revision || 1 %>">
+                <input type="hidden" name="subscriptionRevision" value="<%= subscription.revision || 1 %>">
+                <input type="datetime-local" name="periodEnd" required aria-label="Manual activation end date" style="padding:9px;border:1px solid #dbe3f6;border-radius:10px;">
+                <input type="text" name="reason" minlength="8" maxlength="500" required placeholder="Activation reason" aria-label="Manual activation reason" style="padding:9px;border:1px solid #dbe3f6;border-radius:10px;min-width:220px;">
+                <button class="btn" type="submit">Manual Activate</button>
+              </form>
+            <% } %>
+            <% if (effectiveSubscriptionStatus !== 'cancelled' && canManageBilling) { %>
+              <form action="/super-admin/schools/<%= tenant._id %>/status" method="POST">
+                <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>"><input type="hidden" name="revision" value="<%= tenant.revision || 1 %>"><input type="hidden" name="subscriptionRevision" value="<%= subscription.revision || 1 %>"><input type="hidden" name="status" value="cancelled">
+                <input name="reason" minlength="5" maxlength="500" required placeholder="Cancellation reason" style="padding:10px;border:1px solid #dbe3f6;border-radius:10px;"> <button class="btn" type="submit">Cancel</button>
+              </form>
+            <% } else if (effectiveSubscriptionStatus === 'cancelled' && isSuperAdmin) { %>
+              <form action="/super-admin/schools/<%= tenant._id %>/delete" method="POST">
+                <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>"><input type="hidden" name="revision" value="<%= tenant.revision || 1 %>"><input type="hidden" name="subscriptionRevision" value="<%= subscription.revision || 1 %>">
+                <input type="hidden" name="reason" value="Deleted after subscription cancellation"><button class="btn" type="submit">Delete Cancelled School</button>
+              </form>
+            <% } %>
+            <% if (canManageBilling) { %><a class="btn" href="/super-admin/billing/payments/create">Record Payment</a><% } %>
+          </div>
+        <% } %>
       </div>
 
       <div class="card">

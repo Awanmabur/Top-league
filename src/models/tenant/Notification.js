@@ -8,7 +8,7 @@ module.exports = (connection) => {
       // who should see it
       audience: {
         type: String,
-        enum: ["admin", "staff", "student", "all"],
+        enum: ["admin", "staff", "student", "parent", "all"],
         default: "admin",
         index: true,
       },
@@ -18,12 +18,19 @@ module.exports = (connection) => {
 
       // content
       title: { type: String, required: true, trim: true, maxlength: 140 },
-      message: { type: String, required: true, trim: true, maxlength: 2000 },
+      message: { type: String, required: true, trim: true, maxlength: 5000 },
 
       type: {
         type: String,
         enum: ["info", "success", "warning", "danger"],
         default: "info",
+        index: true,
+      },
+
+      category: {
+        type: String,
+        enum: ["general", "academics", "finance", "admissions", "events", "library", "hostel", "transport", "discipline", "messages", "system"],
+        default: undefined,
         index: true,
       },
 
@@ -33,10 +40,15 @@ module.exports = (connection) => {
       // entity linking (optional, for reporting / context)
       entityType: { type: String, trim: true, maxlength: 60, default: "" }, // "invoice","applicant"
       entityId: { type: Schema.Types.ObjectId, default: null },
+      entityAction: { type: String, trim: true, maxlength: 60, default: "", index: true },
 
       // state
       isRead: { type: Boolean, default: false, index: true },
       readAt: { type: Date, default: null },
+
+      // Admin review state is separate from recipient read state.
+      adminReviewedAt: { type: Date, default: null, index: true },
+      adminReviewedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
 
       // optional scheduling
       deliverAt: { type: Date, default: null, index: true }, // when to show
@@ -55,6 +67,7 @@ module.exports = (connection) => {
   NotificationSchema.index({ createdAt: -1 });
   NotificationSchema.index({ audience: 1, isRead: 1, createdAt: -1 });
   NotificationSchema.index({ isDeleted: 1, audience: 1, isRead: 1, createdAt: -1 });
+  NotificationSchema.index({ entityType: 1, entityId: 1, entityAction: 1, userId: 1 });
   NotificationSchema.index(
     { userId: 1, isRead: 1, createdAt: -1 },
     { partialFilterExpression: { userId: { $type: "objectId" } } }

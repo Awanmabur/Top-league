@@ -3,13 +3,22 @@
     return document.getElementById(id);
   }
 
-  function esc(value) {
-    return String(value ?? "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
+  const SVG_NS = "http://www.w3.org/2000/svg";
+
+  function clearNode(node) {
+    if (node) node.replaceChildren();
+  }
+
+  function safeColor(value, fallback = "#0a6fbf") {
+    const color = String(value || "").trim();
+    return /^#[0-9a-fA-F]{3,8}$/.test(color) ? color : fallback;
+  }
+
+  function makeCell(text, className = "") {
+    const td = document.createElement("td");
+    if (className) td.className = className;
+    td.textContent = String(text ?? "");
+    return td;
   }
 
   function getDashboardData() {
@@ -65,36 +74,38 @@
     const svg = el(svgId);
     if (!svg || !Array.isArray(data) || !data.length) return;
 
-    const total = data.reduce((s, i) => s + (Number(i.val) || 0), 0) || 1;
+    const total = data.reduce((sum, item) => sum + (Number(item.val) || 0), 0) || 1;
     let angle = 0;
     const cx = 21;
     const cy = 21;
     const r = 15;
 
-    svg.innerHTML = "";
+    clearNode(svg);
 
-    data.forEach((d) => {
-      const portion = (Number(d.val) || 0) / total;
-      const start = angle * Math.PI * 2;
+    data.forEach((item) => {
+      const portion = Math.max(0, Number(item.val) || 0) / total;
+      const startAngle = angle * Math.PI * 2;
       angle += portion;
-      const end = angle * Math.PI * 2;
+      const endAngle = angle * Math.PI * 2;
 
-      const x1 = cx + r * Math.cos(start);
-      const y1 = cy + r * Math.sin(start);
-      const x2 = cx + r * Math.cos(end);
-      const y2 = cy + r * Math.sin(end);
+      const x1 = cx + r * Math.cos(startAngle);
+      const y1 = cy + r * Math.sin(startAngle);
+      const x2 = cx + r * Math.cos(endAngle);
+      const y2 = cy + r * Math.sin(endAngle);
       const large = portion > 0.5 ? 1 : 0;
 
-      svg.insertAdjacentHTML(
-        "beforeend",
-        `<path d="M${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z" fill="${d.color || "#0a6fbf"}"></path>`
-      );
+      const path = document.createElementNS(SVG_NS, "path");
+      path.setAttribute("d", `M${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z`);
+      path.setAttribute("fill", safeColor(item.color));
+      svg.appendChild(path);
     });
 
-    svg.insertAdjacentHTML(
-      "beforeend",
-      `<circle cx="${cx}" cy="${cy}" r="${r * 0.6}" fill="white"></circle>`
-    );
+    const center = document.createElementNS(SVG_NS, "circle");
+    center.setAttribute("cx", String(cx));
+    center.setAttribute("cy", String(cy));
+    center.setAttribute("r", String(r * 0.6));
+    center.setAttribute("fill", "white");
+    svg.appendChild(center);
   }
 
   function drawDept(svgId, data) {
@@ -106,24 +117,34 @@
     const pad = 40;
 
     svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
-    svg.innerHTML = "";
+    clearNode(svg);
 
-    const max = Math.max(...data.map((d) => Number(d.val) || 0), 1);
+    const max = Math.max(...data.map((item) => Number(item.val) || 0), 1);
     const barW = (w - pad * 2) / Math.max(1, data.length);
 
-    data.forEach((d, i) => {
+    data.forEach((item, index) => {
       const bw = barW * 0.6;
-      const x = pad + i * barW + (barW - bw) / 2;
-      const barH = ((Number(d.val) || 0) / max) * (h - pad - 25);
+      const x = pad + index * barW + (barW - bw) / 2;
+      const barH = ((Number(item.val) || 0) / max) * (h - pad - 25);
       const y = h - pad - barH;
 
-      svg.insertAdjacentHTML(
-        "beforeend",
-        `<rect x="${x}" y="${y}" width="${bw}" height="${barH}" rx="6" fill="#0a6fbf"></rect>
-         <text x="${x + bw / 2}" y="${h - 12}" font-size="11" text-anchor="middle" fill="#6b7280">
-           ${esc((d.name || "").split(" ")[0] || "Dept")}
-         </text>`
-      );
+      const rect = document.createElementNS(SVG_NS, "rect");
+      rect.setAttribute("x", String(x));
+      rect.setAttribute("y", String(y));
+      rect.setAttribute("width", String(bw));
+      rect.setAttribute("height", String(barH));
+      rect.setAttribute("rx", "6");
+      rect.setAttribute("fill", "#0a6fbf");
+      svg.appendChild(rect);
+
+      const label = document.createElementNS(SVG_NS, "text");
+      label.setAttribute("x", String(x + bw / 2));
+      label.setAttribute("y", String(h - 12));
+      label.setAttribute("font-size", "11");
+      label.setAttribute("text-anchor", "middle");
+      label.setAttribute("fill", "#6b7280");
+      label.textContent = String(item.name || "").split(" ")[0] || "Dept";
+      svg.appendChild(label);
     });
   }
 
@@ -174,63 +195,98 @@
     const legend = el("countriesLegend");
     if (!legend) return;
 
-    legend.innerHTML = "";
-    (DASHBOARD.countries || []).forEach((c) => {
+    clearNode(legend);
+    (DASHBOARD.countries || []).forEach((country) => {
       const row = document.createElement("div");
-      row.innerHTML = `
-        <div style="display:flex;gap:8px;align-items:center">
-          <span style="width:12px;height:12px;background:${c.color || "#0a6fbf"};display:inline-block;border-radius:3px"></span>
-          <strong style="width:120px">${esc(c.country || "Unknown")}</strong>
-          <span style="color:var(--muted);font-size:12px">${Number(c.val || 0)}%</span>
-        </div>
-      `;
+      const content = document.createElement("div");
+      content.style.display = "flex";
+      content.style.gap = "8px";
+      content.style.alignItems = "center";
+
+      const swatch = document.createElement("span");
+      swatch.style.width = "12px";
+      swatch.style.height = "12px";
+      swatch.style.background = safeColor(country.color);
+      swatch.style.display = "inline-block";
+      swatch.style.borderRadius = "3px";
+
+      const name = document.createElement("strong");
+      name.style.width = "120px";
+      name.textContent = String(country.country || "Unknown");
+
+      const value = document.createElement("span");
+      value.style.color = "var(--muted)";
+      value.style.fontSize = "12px";
+      value.textContent = `${Number(country.val || 0)}%`;
+
+      content.append(swatch, name, value);
+      row.appendChild(content);
       legend.appendChild(row);
     });
   }
 
   function populateRecentStudents() {
-    const rs = el("recentStudents");
-    if (!rs) return;
+    const table = el("recentStudents");
+    if (!table) return;
 
-    rs.innerHTML = "";
-
-    (DASHBOARD.recentStudents || []).forEach((s) => {
+    clearNode(table);
+    const students = DASHBOARD.recentStudents || [];
+    students.forEach((student) => {
       const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td><strong>${esc(s.name || "-")}</strong></td>
-        <td>${esc(s.group || s.program || "-")}</td>
-        <td>${esc(s.status || "-")}</td>
-        <td class="right">${esc(s.balance || "0")}</td>
-      `;
-      rs.appendChild(tr);
+      const nameCell = makeCell("");
+      const strong = document.createElement("strong");
+      strong.textContent = String(student.name || "-");
+      nameCell.appendChild(strong);
+      tr.append(
+        nameCell,
+        makeCell(student.group || student.program || "-"),
+        makeCell(student.status || "-"),
+        makeCell(student.balance || "0", "right"),
+      );
+      table.appendChild(tr);
     });
 
-    if (!(DASHBOARD.recentStudents || []).length) {
-      rs.innerHTML = `<tr><td colspan="4" class="muted">No students found</td></tr>`;
+    if (!students.length) {
+      const tr = document.createElement("tr");
+      const td = makeCell("No students found", "muted");
+      td.colSpan = 4;
+      tr.appendChild(td);
+      table.appendChild(tr);
     }
   }
 
   function populatePendingApps() {
-    const pa = el("pendingAppsTable");
-    if (!pa) return;
+    const table = el("pendingAppsTable");
+    if (!table) return;
 
-    pa.innerHTML = "";
-
-    (DASHBOARD.pendingApps || []).forEach((p) => {
+    clearNode(table);
+    const applications = DASHBOARD.pendingApps || [];
+    applications.forEach((application) => {
       const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${esc(p.name || "-")}</td>
-        <td>${esc(p.group || p.program || "-")}</td>
-        <td>${esc(p.country || "-")}</td>
-        <td class="right">
-          <a href="/admin/admissions/applicants/${encodeURIComponent(p.id || "")}" class="btn secondary" style="padding:6px 8px;font-size:13px">Review</a>
-        </td>
-      `;
-      pa.appendChild(tr);
+      const actionCell = makeCell("", "right");
+      const link = document.createElement("a");
+      link.href = `/admin/admissions/applicants/${encodeURIComponent(String(application.id || ""))}`;
+      link.className = "btn secondary";
+      link.style.padding = "6px 8px";
+      link.style.fontSize = "13px";
+      link.textContent = "Review";
+      actionCell.appendChild(link);
+
+      tr.append(
+        makeCell(application.name || "-"),
+        makeCell(application.group || application.program || "-"),
+        makeCell(application.country || "-"),
+        actionCell,
+      );
+      table.appendChild(tr);
     });
 
-    if (!(DASHBOARD.pendingApps || []).length) {
-      pa.innerHTML = `<tr><td colspan="4" class="muted">No pending applications</td></tr>`;
+    if (!applications.length) {
+      const tr = document.createElement("tr");
+      const td = makeCell("No pending applications", "muted");
+      td.colSpan = 4;
+      tr.appendChild(td);
+      table.appendChild(tr);
     }
   }
 

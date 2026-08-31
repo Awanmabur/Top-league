@@ -2,6 +2,10 @@ const express = require("express");
 const router = express.Router();
 
 const ctrl = require("../../../controllers/tenant/admin/transcriptsController");
+const letterCtrl = require("../../../controllers/tenant/admin/letterRequestsController");
+
+router.get("/letters", letterCtrl.list);
+router.post("/letters/:id/status", letterCtrl.status);
 
 router.get("/", ctrl.list);
 

@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .input,.select,.textarea{padding:10px 12px;border-radius:12px;border:1px solid rgba(13,64,96,.16);background:#fff;outline:none}
@@ -105,7 +105,7 @@
     <div class="topbar">
       <div>
         <div class="title">Users</div>
-        <div class="subtitle">Create portal users, assign roles, resend password setup links, and manage access status.</div>
+        <div class="subtitle">Create portal users from canonical profiles, assign roles, resend password setup links, and manage access status.</div>
       </div>
       <div class="top-actions">
         <a class="btn light" href="/admin/staff"><i class="fa-solid fa-id-badge"></i> Staff</a>
@@ -157,6 +157,7 @@
             <option value="hostel">Hostel</option>
             <option value="registrar">Registrar</option>
             <option value="student">Student</option>
+            <option value="parent">Parent</option>
           </select>
         </div>
         <div class="right">
@@ -217,8 +218,8 @@
         <div class="mini-list">
           <div class="mini-item">
             <div>
-              <div class="strong">Create Staff User</div>
-              <div class="muted">Invite staff to portal</div>
+              <div class="strong">Link Staff User</div>
+              <div class="muted">Link an existing Staff profile</div>
             </div>
             <button class="btn-xs" type="button" id="quickStaff"><i class="fa-solid fa-user-tie"></i></button>
           </div>
@@ -226,7 +227,7 @@
           <div class="mini-item">
             <div>
               <div class="strong">Create Student User</div>
-              <div class="muted">Link student data if available</div>
+              <div class="muted">Link an existing Student profile</div>
             </div>
             <button class="btn-xs" type="button" id="quickStudent"><i class="fa-solid fa-user-graduate"></i></button>
           </div>
@@ -241,8 +242,8 @@
 
           <div class="mini-item">
             <div>
-              <div class="strong">Manage Programs</div>
-              <div class="muted">Academic program setup</div>
+              <div class="strong">Manage Subjects</div>
+              <div class="muted">Academic subject setup</div>
             </div>
             <a class="btn-xs" href="/admin/subjects"><i class="fa-solid fa-graduation-cap"></i></a>
           </div>
@@ -302,15 +303,16 @@
               <option value="hostel" <%= values?.role === 'hostel' ? 'selected' : '' %>>Hostel</option>
               <option value="registrar" <%= values?.role === 'registrar' ? 'selected' : '' %>>Registrar</option>
               <option value="student" <%= values?.role === 'student' ? 'selected' : '' %>>Student</option>
+              <option value="parent" <%= values?.role === 'parent' ? 'selected' : '' %>>Parent</option>
             </select>
           </div>
 
-          <div class="field staff-only" id="deptWrap">
-            <label>Department</label>
-            <select class="select" id="uDepartmentId" name="departmentId">
-              <option value="">Select Department</option>
-              <% (departments || []).forEach(function(dep){ %>
-                <option value="<%= dep._id %>" <%= String(values?.departmentId || '') === String(dep._id) ? 'selected' : '' %>><%= dep.name %></option>
+          <div class="field" id="staffProfileWrap" style="display:none;">
+            <label>Existing Staff Profile</label>
+            <select class="select" id="uStaffProfileId" name="staffProfileId">
+              <option value="">Select unlinked staff profile</option>
+              <% (staffProfiles || []).forEach(function(sf){ %>
+                <option value="<%= sf._id %>" <%= String(values?.staffProfileId || '') === String(sf._id) ? 'selected' : '' %>><%= [sf.firstName, sf.lastName].filter(Boolean).join(' ') || sf.employeeId || sf.email %><%= sf.employeeId ? ` • ${sf.employeeId}` : '' %></option>
               <% }) %>
             </select>
           </div>
@@ -319,35 +321,33 @@
         <div class="divider"></div>
 
         <div id="studentFields" style="display:none;">
-          <div class="strong" style="margin-bottom:10px;">Student Linking</div>
-          <div class="form-grid">
-            <div class="field">
-              <label>Registration Number</label>
-              <input class="input" id="uRegNo" name="regNo" value="<%= values?.regNo || '' %>" />
-            </div>
-            <div class="field">
-              <label>Program</label>
-              <select class="select" id="uProgramId" name="programId">
-                <option value="">Select Program</option>
-                <% (programs || []).forEach(function(p){ %>
-                  <option value="<%= p._id %>" <%= String(values?.programId || '') === String(p._id) ? 'selected' : '' %>><%= p.name || p.title || p.programName || p.code %></option>
-                <% }) %>
-              </select>
-            </div>
-            <div class="field">
-              <label>Class Group</label>
-              <select class="select" id="uClassGroupId" name="classGroupId">
-                <option value="">Select Class Group</option>
-                <% (classGroups || []).forEach(function(c){ %>
-                  <option value="<%= c._id %>" <%= String(values?.classGroupId || '') === String(c._id) ? 'selected' : '' %>><%= c.name || c.title || c.code %></option>
-                <% }) %>
-              </select>
-            </div>
+          <div class="strong" style="margin-bottom:10px;">Student Profile Link</div>
+          <div class="field">
+            <label>Existing Student Profile</label>
+            <select class="select" id="uStudentProfileId" name="studentProfileId">
+              <option value="">Select unlinked student profile</option>
+              <% (students || []).forEach(function(st){ %>
+                <option value="<%= st._id %>" <%= String(values?.studentProfileId || '') === String(st._id) ? 'selected' : '' %>><%= st.fullName || [st.firstName, st.lastName].filter(Boolean).join(' ') || st.regNo %> • <%= st.regNo || 'No reg no' %><%= st.classLevel ? ` • ${st.classLevel}` : '' %></option>
+              <% }) %>
+            </select>
+          </div>
+        </div>
+
+        <div id="parentFields" style="display:none;">
+          <div class="strong" style="margin-bottom:10px;">Parent Profile Link</div>
+          <div class="field">
+            <label>Existing Parent Profile</label>
+            <select class="select" id="uParentProfileId" name="parentProfileId">
+              <option value="">Select unlinked parent profile</option>
+              <% (parentProfiles || []).forEach(function(pa){ %>
+                <option value="<%= pa._id %>" <%= String(values?.parentProfileId || '') === String(pa._id) ? 'selected' : '' %>><%= [pa.firstName, pa.lastName].filter(Boolean).join(' ') || pa.email %> • <%= pa.email %></option>
+              <% }) %>
+            </select>
           </div>
         </div>
 
         <div class="hint" style="margin-top:12px;">
-          On create, the user is saved as <strong>invited</strong>. A secure password setup token is generated using your invite-token flow.
+          Student, Parent, Staff and Lecturer accounts must link an existing canonical profile. New users are saved as <strong>invited</strong> and receive a one-time password setup token.
         </div>
       </div>
 
@@ -479,11 +479,8 @@
   <input type="hidden" name="action" id="bulkActionInput" />
 </form>
 
-<textarea id="usersData" class="json-data" aria-hidden="true"><%- JSON.stringify(users || []) %></textarea>
-<script>
-  window.__OPEN_MODAL__ = <%- JSON.stringify(typeof openModal !== "undefined" ? openModal : null) %>;
-</script>
-
+<textarea id="usersData" class="json-data" aria-hidden="true"><%- JSON.stringify(users || []).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
+<textarea id="openModalData" class="json-data" aria-hidden="true"><%- JSON.stringify(typeof openModal !== "undefined" ? openModal : null).replace(/</g, "\\u003c") %></textarea>
 <script src="/js/navbar.js"></script>
 <script src="/js/users-index.js"></script>
 </body>

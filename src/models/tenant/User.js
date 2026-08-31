@@ -38,6 +38,22 @@ module.exports = (conn) => {
 
       tokenVersion: { type: Number, default: 0 },
 
+      // Tracks suspensions caused specifically by the Staff employment lifecycle.
+      // Manual admin suspensions clear this flag so Staff reactivation cannot
+      // override an independent security decision.
+      staffAccessSuspended: { type: Boolean, default: false },
+
+      // Tracks suspensions caused specifically by Student lifecycle state.
+      // Manual/security suspension clears this flag, so student reactivation
+      // cannot override an independent admin decision.
+      studentAccessSuspended: { type: Boolean, default: false },
+      // Restores invited users back to invited (not active) when a Student lifecycle suspension ends.
+      studentAccessPreviousStatus: { type: String, enum: ["invited", "active"], default: null },
+
+      // Tracks access disabled specifically by Parent profile lifecycle.
+      parentAccessSuspended: { type: Boolean, default: false },
+      parentAccessPreviousStatus: { type: String, enum: ["invited", "active"], default: null },
+
       staffId: { type: Schema.Types.ObjectId, ref: "Staff", default: null },
       studentId: { type: Schema.Types.ObjectId, ref: "Student", default: null },
 

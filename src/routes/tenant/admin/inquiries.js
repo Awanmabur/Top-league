@@ -3,6 +3,7 @@ const router = express.Router();
 const controller = require("../../../controllers/tenant/admin/inquiriesController");
 
 router.get("/", controller.index);
+router.get("/export.csv", controller.exportCsv);
 router.post("/bulk", controller.bulk);
 router.post("/:id/read", controller.markRead);
 router.post("/:id/resolve", controller.markResolved);

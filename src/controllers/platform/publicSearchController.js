@@ -1,5 +1,7 @@
 const { platformConnection } = require("../../config/db");
 const Tenant = require("../../models/platform/Tenant")(platformConnection);
+const { addOperationalTenantCondition } = require("../../services/platformPublicDirectoryService");
+const { sanitizePublicBranding, sanitizePublicProfileForRender } = require("../../services/tenant/publicPresenceService");
 
 function clean(value, max = 120) {
   return String(value || "").trim().slice(0, max);
@@ -22,10 +24,10 @@ function normalizeArrayField(value) {
 }
 
 function buildBaseFilter() {
-  return {
+  return addOperationalTenantCondition({
     isDeleted: { $ne: true },
     "settings.profile.enabled": { $ne: false },
-  };
+  });
 }
 
 function buildQuickFacilityFilter(facility) {
@@ -213,7 +215,7 @@ module.exports = {
       }
 
       if (andConditions.length) {
-        filter.$and = andConditions;
+        filter.$and = [...(filter.$and || []), ...andConditions];
       }
 
       const projection = {
@@ -255,8 +257,8 @@ module.exports = {
       ]);
 
       const results = items.map((item) => {
-        const branding = item.settings?.branding || {};
-        const profile = item.settings?.profile || {};
+        const branding = sanitizePublicBranding(item.settings?.branding || {});
+        const profile = sanitizePublicProfileForRender(item.settings?.profile || {});
         const locationObj = profile.location || {};
         const rating = profile.ratingSummary || {};
         const facilitiesArr = normalizeArrayField(profile.facilities);
@@ -307,15 +309,13 @@ module.exports = {
           feeMax,
           facilities: facilitiesArr,
           awardsCount: awardsArr.length,
-          img: branding.coverUrl || "https://picsum.photos/seed/search-school/1200/700",
+          img: branding.coverUrl || "/img/feature.webp",
           blurb: clean(
             profile.tagline || "Explore this school profile on Classic Academy.",
             220,
           ),
           profileUrl: `/schools/${encodeURIComponent(item.code)}`,
-          applyUrl:
-            profile.admissions?.applyUrl ||
-            `/admissions?school=${encodeURIComponent(item.code)}`,
+          applyUrl: `/schools/${encodeURIComponent(item.code)}/apply`,
           badge,
         };
       });

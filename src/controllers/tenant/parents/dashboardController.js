@@ -1,4 +1,8 @@
-const { getParent } = require("./_helpers");
+const { buildParentContext, findVisibleAnnouncements } = require("../../../services/tenant/announcementService");
+const { getParent, loadLinkedChildren } = require("./_helpers");
+const { countUnreadPortalNotifications, portalNotificationFilter } = require("../../../services/tenant/notificationService");
+// countUnreadPortalNotifications applies this private-target visibility contract internally.
+void portalNotificationFilter;
 
 module.exports = {
   async dashboard(req, res) {
@@ -8,43 +12,22 @@ module.exports = {
       const { user, parent } = await getParent(req);
       if (!user) return res.redirect("/login");
 
-      const unread = Notification
-        ? await Notification.countDocuments({
-            userId: user._id,
-            readAt: null,
-          }).catch(() => 0)
-        : 0;
-
-      const announcements = Announcement
-        ? await Announcement.find({})
-            .sort({ createdAt: -1 })
-            .limit(6)
-            .lean()
+      const unreadPromise = Notification
+        ? countUnreadPortalNotifications(req.models, user, ["parent"], { limit: 250 }).catch(() => 0)
+        : Promise.resolve(0);
+      const announcementsPromise = Announcement
+        ? buildParentContext(req, user, parent)
+            .then((context) => findVisibleAnnouncements(req, context, { limit: 6, markRead: true }))
             .catch(() => [])
-        : [];
+        : Promise.resolve([]);
+      const childrenPromise = loadLinkedChildren(req, parent);
 
-      const childIds = Array.isArray(parent?.childrenStudentIds)
-        ? parent.childrenStudentIds
-        : [];
+      const [unread, announcements, children] = await Promise.all([
+        unreadPromise,
+        announcementsPromise,
+        childrenPromise,
+      ]);
 
-      const children =
-        parent && Student && childIds.length
-          ? await Student.find({ _id: { $in: childIds } })
-              .select(
-                "firstName lastName middleName fullName regNo program classGroup yearLevel academicYear semester status photoUrl guardianName guardianPhone guardianEmail attendanceRate feeBalance balance averageScore avgScore cgpa latestResult latestAnnouncement lastAttendanceDate nextEvent campus homeroomTeacher parentRelationship"
-              )
-              .populate({
-                path: "program",
-                select: "code name title level faculty",
-              })
-              .populate({
-                path: "classGroup",
-                select: "code name title",
-              })
-              .sort({ firstName: 1, lastName: 1 })
-              .lean()
-              .catch(() => [])
-          : [];
 
       return res.render("parents/dashboard", {
         tenant: req.tenant,

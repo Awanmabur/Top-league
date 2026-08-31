@@ -1,263 +1,134 @@
 (function () {
   const $ = (id) => document.getElementById(id);
+  const dataEl = $('leaveData');
+  if (!dataEl || !$('tbody')) return;
+  let DATA = [];
+  try { DATA = JSON.parse(dataEl.value || '[]'); } catch (err) { console.error('Failed to parse leave data:', err); }
+  const selected = new Set();
 
-  function readData() {
-    const el = $("leaveData");
-    if (!el) return [];
-    try {
-      return JSON.parse(el.value || "[]");
-    } catch (err) {
-      console.error("Failed to parse leave data:", err);
-      return [];
-    }
-  }
-
-  const DATA = readData();
-  if (!$("tbody")) return;
-
-  const state = {
-    selected: new Set(),
+  const el = (tag, className, text) => {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined && text !== null) node.textContent = String(text);
+    return node;
   };
+  const icon = (name) => { const i = el('i', `fa-solid ${name}`); i.setAttribute('aria-hidden', 'true'); return i; };
+  const button = (className, title, iconName) => {
+    const b = el('button', `btn-xs ${className}`); b.type = 'button'; b.title = title; b.appendChild(icon(iconName)); return b;
+  };
+  const openModal = (id) => $(id)?.classList.add('show');
+  const closeModal = (id) => $(id)?.classList.remove('show');
 
-  function openModal(id) {
-    const el = $(id);
-    if (!el) return;
-    el.classList.add("show");
-  }
-
-  function closeModal(id) {
-    const el = $(id);
-    if (!el) return;
-    el.classList.remove("show");
-  }
-
-  function submitRowAction(actionUrl, fields) {
-    const form = $("rowActionForm");
+  function submitRowAction(url, fields = {}) {
+    const form = $('rowActionForm');
     if (!form) return;
-    form.action = actionUrl;
-
-    form.querySelectorAll(".dyn").forEach((n) => n.remove());
-
-    Object.entries(fields || {}).forEach(([key, value]) => {
-      const input = document.createElement("input");
-      input.type = "hidden";
-      input.name = key;
-      input.value = value;
-      input.className = "dyn";
-      form.appendChild(input);
+    form.action = url;
+    form.querySelectorAll('.dyn').forEach((node) => node.remove());
+    Object.entries(fields).forEach(([key, value]) => {
+      const input = document.createElement('input');
+      input.type = 'hidden'; input.name = key; input.value = value; input.className = 'dyn'; form.appendChild(input);
     });
-
     form.submit();
   }
 
-  function bulkSubmit(action) {
-    const ids = Array.from(state.selected);
-    if (!ids.length) return;
-    $("bulkIds").value = ids.join(",");
-    $("bulkActionInput").value = action;
-    $("bulkForm").submit();
-  }
-
-  function statusPill(x) {
-    if (x.status === "Approved") return '<span class="pill ok"><i class="fa-solid fa-check"></i> Approved</span>';
-    if (x.status === "Pending") return '<span class="pill warn"><i class="fa-solid fa-clock"></i> Pending</span>';
-    if (x.status === "Rejected") return '<span class="pill bad"><i class="fa-solid fa-ban"></i> Rejected</span>';
-    return '<span class="pill info"><i class="fa-solid fa-xmark"></i> Cancelled</span>';
+  function statusPill(status) {
+    const config = {
+      Approved: ['pill ok', 'fa-check'], Pending: ['pill warn', 'fa-clock'],
+      Rejected: ['pill bad', 'fa-ban'], Cancelled: ['pill info', 'fa-xmark'],
+    }[status] || ['pill info', 'fa-circle-info'];
+    const span = el('span', config[0]); span.append(icon(config[1]), document.createTextNode(` ${status || '—'}`)); return span;
   }
 
   function syncBulkbar() {
-    $("selCount").textContent = state.selected.size;
-    $("bulkbar").classList.toggle("show", state.selected.size > 0);
+    $('selCount').textContent = String(selected.size);
+    $('bulkbar').classList.toggle('show', selected.size > 0);
   }
 
   function render() {
-    $("resultMeta").textContent = `${DATA.length} leave request(s)`;
-    $("checkAll").checked = DATA.length > 0 && DATA.every((x) => state.selected.has(x.id));
-
-    $("tbody").innerHTML = DATA.map((x) => {
-      const checked = state.selected.has(x.id) ? "checked" : "";
-      return `
-        <tr data-id="${x.id}">
-          <td><input type="checkbox" class="rowCheck" data-id="${x.id}" ${checked}></td>
-          <td>
-            <div class="strong">${x.staffName || "—"}</div>
-            <div class="muted">${x.employeeId || "—"} • ${x.departmentName || "—"}</div>
-          </td>
-          <td><span class="pill info"><i class="fa-solid fa-tag"></i> ${x.leaveType || "—"}</span></td>
-          <td>
-            <div class="strong">${x.startDate || "—"} → ${x.endDate || "—"}</div>
-          </td>
-          <td><span class="pill info"><i class="fa-solid fa-calendar-days"></i> ${x.days || 0}</span></td>
-          <td>${statusPill(x)}</td>
-          <td><div class="muted">${x.reason || "—"}</div></td>
-          <td class="muted">${x.updatedAt || "—"}</td>
-          <td>
-            <div class="actions">
-              <button class="btn-xs actView" type="button" title="View"><i class="fa-solid fa-eye"></i></button>
-              <button class="btn-xs actEdit" type="button" title="Edit"><i class="fa-solid fa-pen"></i></button>
-              <button class="btn-xs actApprove" type="button" title="Approve"><i class="fa-solid fa-check"></i></button>
-              <button class="btn-xs actReject" type="button" title="Reject"><i class="fa-solid fa-ban"></i></button>
-              <button class="btn-xs actCancel" type="button" title="Cancel"><i class="fa-solid fa-xmark"></i></button>
-              <button class="btn-xs actDelete" type="button" title="Delete"><i class="fa-solid fa-trash"></i></button>
-            </div>
-          </td>
-        </tr>
-      `;
-    }).join("") || '<tr><td colspan="9" style="padding:18px;"><div class="muted">No leave requests found.</div></td></tr>';
-
+    $('resultMeta').textContent = `${DATA.length} leave request(s)`;
+    $('checkAll').checked = DATA.length > 0 && DATA.every((x) => selected.has(x.id));
+    const body = $('tbody'); body.replaceChildren();
+    if (!DATA.length) {
+      const tr = el('tr'); const td = el('td'); td.colSpan = 9; td.style.padding = '18px'; td.appendChild(el('div', 'muted', 'No leave requests found.')); tr.appendChild(td); body.appendChild(tr); syncBulkbar(); return;
+    }
+    DATA.forEach((x) => {
+      const tr = el('tr'); tr.dataset.id = x.id;
+      const selectTd = el('td'); const check = document.createElement('input'); check.type = 'checkbox'; check.className = 'rowCheck'; check.dataset.id = x.id; check.checked = selected.has(x.id); selectTd.appendChild(check);
+      const staffTd = el('td'); staffTd.append(el('div', 'strong', x.staffName || '—'), el('div', 'muted', `${x.employeeId || '—'} • ${x.departmentName || '—'}`));
+      const typeTd = el('td'); const type = el('span', 'pill info'); type.append(icon('fa-tag'), document.createTextNode(` ${x.leaveType || '—'}`)); typeTd.appendChild(type);
+      const datesTd = el('td'); datesTd.appendChild(el('div', 'strong', `${x.startDate || '—'} → ${x.endDate || '—'}`));
+      const daysTd = el('td'); const days = el('span', 'pill info'); days.append(icon('fa-calendar-days'), document.createTextNode(` ${Number(x.days || 0)}`)); daysTd.appendChild(days);
+      const statusTd = el('td'); statusTd.appendChild(statusPill(x.status));
+      const reasonTd = el('td'); reasonTd.appendChild(el('div', 'muted', x.reason || '—'));
+      const updatedTd = el('td', 'muted', x.updatedAt || '—');
+      const actionsTd = el('td'); const actions = el('div', 'actions');
+      actions.appendChild(button('actView', 'View', 'fa-eye'));
+      if (x.canEdit) actions.appendChild(button('actEdit', 'Edit', 'fa-pen'));
+      if (x.canApprove) actions.appendChild(button('actApprove', 'Approve', 'fa-check'));
+      if (x.canReject) actions.appendChild(button('actReject', 'Reject', 'fa-ban'));
+      if (x.canCancel) actions.appendChild(button('actCancel', 'Cancel', 'fa-xmark'));
+      if (x.canDelete) actions.appendChild(button('actDelete', 'Delete', 'fa-trash'));
+      actionsTd.appendChild(actions);
+      tr.append(selectTd, staffTd, typeTd, datesTd, daysTd, statusTd, reasonTd, updatedTd, actionsTd);
+      body.appendChild(tr);
+    });
     syncBulkbar();
   }
 
   function resetForm() {
-    $("mTitle").textContent = "New Leave Request";
-    $("leaveForm").action = "/admin/staff-leave";
-    $("lStaffId").value = "";
-    $("lLeaveType").value = "Annual";
-    $("lStartDate").value = "";
-    $("lEndDate").value = "";
-    $("lDays").value = 0;
-    $("lReason").value = "";
+    $('mTitle').textContent = 'New Leave Request'; $('leaveForm').action = '/admin/staff-leave';
+    $('lStaffId').disabled = false; $('lStaffId').value = ''; $('lLeaveType').value = 'Annual'; $('lStartDate').value = ''; $('lEndDate').value = ''; $('lDays').value = 0; $('lReason').value = '';
   }
-
   function calcDays() {
-    const start = $("lStartDate").value;
-    const end = $("lEndDate").value;
-    if (!start || !end) {
-      $("lDays").value = 0;
-      return;
-    }
-
-    const a = new Date(start);
-    const b = new Date(end);
-    const diff = Math.floor((b - a) / 86400000);
-    $("lDays").value = diff >= 0 ? diff + 1 : 0;
+    const start = $('lStartDate').value, end = $('lEndDate').value;
+    if (!start || !end) return void ($('lDays').value = 0);
+    const diff = Math.floor((new Date(`${end}T00:00:00Z`) - new Date(`${start}T00:00:00Z`)) / 86400000);
+    $('lDays').value = diff >= 0 ? diff + 1 : 0;
   }
-
   function openEditor(x) {
-    if (!x) {
-      resetForm();
-      openModal("mEdit");
-      return;
+    if (!x) resetForm();
+    else {
+      $('mTitle').textContent = 'Edit Leave Request'; $('leaveForm').action = `/admin/staff-leave/${x.id}/update`;
+      $('lStaffId').value = x.staffId || ''; $('lStaffId').disabled = true;
+      $('lLeaveType').value = x.leaveType || 'Annual'; $('lStartDate').value = x.startDate || ''; $('lEndDate').value = x.endDate || ''; $('lDays').value = x.days || 0; $('lReason').value = x.reason || '';
     }
-
-    $("mTitle").textContent = "Edit Leave Request";
-    $("leaveForm").action = `/admin/staff-leave/${x.id}/update`;
-    $("lStaffId").value = x.staffId || "";
-    $("lLeaveType").value = x.leaveType || "Annual";
-    $("lStartDate").value = x.startDate || "";
-    $("lEndDate").value = x.endDate || "";
-    $("lDays").value = x.days || 0;
-    $("lReason").value = x.reason || "";
-    openModal("mEdit");
+    openModal('mEdit');
   }
-
   function openView(x) {
-    $("vStaff").textContent = x.staffName || "—";
-    $("vEmployeeId").textContent = x.employeeId || "—";
-    $("vDepartment").textContent = x.departmentName || "—";
-    $("vLeaveType").textContent = x.leaveType || "—";
-    $("vStartDate").textContent = x.startDate || "—";
-    $("vEndDate").textContent = x.endDate || "—";
-    $("vDays").textContent = x.days || "—";
-    $("vStatus").textContent = x.status || "—";
-    $("vReason").textContent = x.reason || "—";
-    $("vRejectionReason").textContent = x.rejectionReason || "—";
-    openModal("mView");
+    [['vStaff',x.staffName],['vEmployeeId',x.employeeId],['vDepartment',x.departmentName],['vLeaveType',x.leaveType],['vStartDate',x.startDate],['vEndDate',x.endDate],['vDays',x.days],['vStatus',x.status],['vReason',x.reason],['vRejectionReason',x.rejectionReason]].forEach(([id,value]) => { $(id).textContent = value || '—'; });
+    openModal('mView');
+  }
+  function bulkSubmit(action) {
+    if (!selected.size) return;
+    $('bulkIds').value = Array.from(selected).join(','); $('bulkActionInput').value = action;
+    if (action === 'reject') {
+      const reason = window.prompt('Reason for rejecting the selected pending requests:');
+      if (reason === null) return;
+      if (!reason.trim()) return window.alert('A rejection reason is required.');
+      $('bulkRejectionReason').value = reason.trim();
+    } else $('bulkRejectionReason').value = '';
+    $('bulkForm').submit();
   }
 
-  $("btnCreate").addEventListener("click", function () {
-    openEditor(null);
+  $('btnCreate')?.addEventListener('click', () => openEditor(null));
+  $('quickAnnual')?.addEventListener('click', () => { resetForm(); $('lLeaveType').value = 'Annual'; openModal('mEdit'); });
+  $('quickSick')?.addEventListener('click', () => { resetForm(); $('lLeaveType').value = 'Sick'; openModal('mEdit'); });
+  $('lStartDate')?.addEventListener('change', calcDays); $('lEndDate')?.addEventListener('change', calcDays);
+  $('checkAll')?.addEventListener('change', (event) => { if (event.target.checked) DATA.forEach((x) => selected.add(x.id)); else selected.clear(); render(); });
+  $('tbody').addEventListener('change', (event) => { if (!event.target.classList.contains('rowCheck')) return; event.target.checked ? selected.add(event.target.dataset.id) : selected.delete(event.target.dataset.id); syncBulkbar(); });
+  $('tbody').addEventListener('click', (event) => {
+    const tr = event.target.closest('tr[data-id]'); if (!tr) return; const x = DATA.find((row) => row.id === tr.dataset.id); if (!x) return;
+    if (event.target.closest('.actView')) return openView(x);
+    if (event.target.closest('.actEdit')) return openEditor(x);
+    if (event.target.closest('.actApprove')) return submitRowAction(`/admin/staff-leave/${x.id}/approve`);
+    if (event.target.closest('.actReject')) { const reason = window.prompt('Reason for rejection:', x.rejectionReason || ''); if (reason !== null && reason.trim()) submitRowAction(`/admin/staff-leave/${x.id}/reject`, { rejectionReason: reason.trim() }); return; }
+    if (event.target.closest('.actCancel') && window.confirm(`Cancel leave request for "${x.staffName || 'staff'}"?`)) return submitRowAction(`/admin/staff-leave/${x.id}/cancel`);
+    if (event.target.closest('.actDelete') && window.confirm(`Delete this cancelled/rejected leave request for "${x.staffName || 'staff'}"?`)) return submitRowAction(`/admin/staff-leave/${x.id}/delete`);
   });
-
-  $("quickAnnual").addEventListener("click", function () {
-    resetForm();
-    $("lLeaveType").value = "Annual";
-    openModal("mEdit");
-  });
-
-  $("quickSick").addEventListener("click", function () {
-    resetForm();
-    $("lLeaveType").value = "Sick";
-    openModal("mEdit");
-  });
-
-  $("lStartDate").addEventListener("change", calcDays);
-  $("lEndDate").addEventListener("change", calcDays);
-
-  $("checkAll").addEventListener("change", function (e) {
-    if (e.target.checked) DATA.forEach((x) => state.selected.add(x.id));
-    else DATA.forEach((x) => state.selected.delete(x.id));
-    render();
-  });
-
-  $("tbody").addEventListener("change", function (e) {
-    if (!e.target.classList.contains("rowCheck")) return;
-    const id = e.target.dataset.id;
-    if (e.target.checked) state.selected.add(id);
-    else state.selected.delete(id);
-    render();
-  });
-
-  $("tbody").addEventListener("click", function (e) {
-    const tr = e.target.closest("tr[data-id]");
-    if (!tr) return;
-
-    const x = DATA.find((row) => row.id === tr.dataset.id);
-    if (!x) return;
-
-    if (e.target.closest(".actView")) return openView(x);
-    if (e.target.closest(".actEdit")) return openEditor(x);
-    if (e.target.closest(".actApprove")) return submitRowAction(`/admin/staff-leave/${x.id}/approve`);
-    if (e.target.closest(".actReject")) {
-      const reason = window.prompt("Reason for rejection:", x.rejectionReason || "");
-      if (reason === null) return;
-      return submitRowAction(`/admin/staff-leave/${x.id}/reject`, { rejectionReason: reason });
-    }
-    if (e.target.closest(".actCancel")) return submitRowAction(`/admin/staff-leave/${x.id}/cancel`);
-    if (e.target.closest(".actDelete")) {
-      if (window.confirm(`Delete leave request for "${x.staffName}"?`)) {
-        return submitRowAction(`/admin/staff-leave/${x.id}/delete`);
-      }
-    }
-  });
-
-  $("btnBulk").addEventListener("click", function () {
-    if (!state.selected.size) return alert("Select at least one leave request.");
-    $("bulkbar").classList.add("show");
-  });
-
-  $("bulkApprove").addEventListener("click", function () { bulkSubmit("approve"); });
-  $("bulkReject").addEventListener("click", function () { bulkSubmit("reject"); });
-  $("bulkCancel").addEventListener("click", function () { bulkSubmit("cancel"); });
-  $("bulkDelete").addEventListener("click", function () {
-    if (window.confirm("Delete selected leave requests?")) bulkSubmit("delete");
-  });
-  $("bulkClear").addEventListener("click", function () {
-    state.selected.clear();
-    render();
-  });
-
-  document.querySelectorAll("[data-close-modal]").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      closeModal(btn.dataset.closeModal);
-    });
-  });
-
-  ["mEdit", "mView"].forEach(function (mid) {
-    const el = $(mid);
-    if (!el) return;
-    el.addEventListener("click", function (e) {
-      if (e.target.id === mid) closeModal(mid);
-    });
-  });
-
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape") {
-      document.querySelectorAll(".modal-backdrop.show").forEach(function (el) {
-        el.classList.remove("show");
-      });
-    }
-  });
-
+  $('btnBulk')?.addEventListener('click', () => { if (!selected.size) window.alert('Select at least one leave request.'); else $('bulkbar').classList.add('show'); });
+  $('bulkApprove')?.addEventListener('click', () => bulkSubmit('approve')); $('bulkReject')?.addEventListener('click', () => bulkSubmit('reject')); $('bulkCancel')?.addEventListener('click', () => bulkSubmit('cancel')); $('bulkDelete')?.addEventListener('click', () => bulkSubmit('delete')); $('bulkClear')?.addEventListener('click', () => { selected.clear(); render(); });
+  document.querySelectorAll('[data-close-modal]').forEach((node) => node.addEventListener('click', () => closeModal(node.dataset.closeModal)));
+  document.querySelectorAll('.modal-backdrop').forEach((node) => node.addEventListener('click', (event) => { if (event.target === node) closeModal(node.id); }));
+  document.addEventListener('keydown', (event) => { if (event.key === 'Escape') document.querySelectorAll('.modal-backdrop.show').forEach((node) => closeModal(node.id)); });
   render();
 })();

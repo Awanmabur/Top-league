@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="/css/navbar.css"/>
   <link rel="stylesheet" href="/css/parent-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .summary-grid{
       margin-top:16px;
       display:grid;
@@ -249,7 +249,7 @@
     const modelSet = new Set(Array.isArray(locals.availableModels) ? locals.availableModels : []);
     const showSupport =
       tenantAccess?.featureFlags?.helpdesk !== false &&
-      (modelSet.has("SupportTicket") || modelSet.has("Ticket"));
+      modelSet.has("HelpdeskTicket");
 
     function initials(name) {
       const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
@@ -291,9 +291,9 @@
           </div>
 
           <% if (showSupport) { %>
-            <button class="btn light" type="button" onclick="window.location.href='/parent/support'">
+            <a class="btn light" href="/parent/support">
               <i class="fa-solid fa-headset"></i> Support
-            </button>
+            </a>
           <% } %>
         </div>
       </div>
@@ -334,6 +334,7 @@
           <div class="section-sub">Update the information the school uses to contact and identify you.</div>
 
           <form method="POST" action="/parent/profile" class="form-grid">
+            <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>" />
             <div class="form-row">
               <div class="field">
                 <label for="firstName">First Name</label>
@@ -471,9 +472,9 @@
                     <div class="child-meta">
                       Reg No: <strong><%= c.regNo || "-" %></strong>
                       <span class="dot">-</span>
-                      Class: <strong><%= (c.classGroup && (c.classGroup.title || c.classGroup.name)) || "-" %></strong>
+                      Class: <strong><%= c.className || c.classLevel || "-" %></strong>
                       <span class="dot">-</span>
-                      Program: <strong><%= (c.program && (c.program.title || c.program.name)) || "-" %></strong>
+                      Program: <strong><%= (c.programId && (c.programId.title || c.programId.name || c.programId.shortTitle || c.programId.code)) || "-" %></strong>
                     </div>
                   </div>
                 <% }); %>

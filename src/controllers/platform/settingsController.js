@@ -1,7 +1,23 @@
 const { platformConnection } = require("../../config/db");
 
-const PlatformSetting = require("../../models/platform/PlatformSetting")(platformConnection);
+const PlatformConfig = require("../../models/platform/PlatformConfig")(platformConnection);
+const PlatformUser = require("../../models/platform/PlatformUser")(platformConnection);
 const AuditLog = require("../../models/platform/AuditLog")(platformConnection);
+const {
+  DEFAULT_CONFIG,
+  normalizeGeneral,
+  normalizeBranding,
+  normalizeSecurity,
+  flattenConfig,
+} = require("../../services/platformConfigService");
+const { invalidatePlatformUser, invalidatePlatformSecurityConfig } = require("../../services/platformGuardCache");
+const { connectionStatus: googleCalendarConnectionStatus } = require("../../services/googleCalendarAuthService");
+
+function positiveRevision(value) {
+  const revision = Number(value);
+  if (!Number.isInteger(revision) || revision < 1) throw new Error("A current positive revision is required.");
+  return revision;
+}
 
 async function writeAudit(req, payload) {
   try {
@@ -10,53 +26,88 @@ async function writeAudit(req, payload) {
       actorName: req.user?.name || "",
       actorRole: req.user?.role || "",
       action: payload.action,
-      entityType: payload.entityType || "PlatformSetting",
-      entityId: payload.entityId ? String(payload.entityId) : "",
+      entityType: "PlatformConfig",
+      entityId: payload.entityId ? String(payload.entityId) : "platform",
       description: payload.description || "",
       ipAddress: req.ip || "",
       userAgent: req.headers["user-agent"] || "",
       meta: payload.meta || {},
     });
   } catch (err) {
-    console.error("❌ settings audit log failed:", err);
+    console.error("Platform settings audit log failed:", err);
   }
 }
 
-async function upsertSetting(key, group, value, updatedBy) {
-  return PlatformSetting.findOneAndUpdate(
-    { key },
-    {
-      $set: {
-        key,
-        group,
-        value,
-        updatedBy: updatedBy || null,
-      },
-    },
-    { new: true, upsert: true }
+async function getOrCreateConfig() {
+  let config = await PlatformConfig.findOne({ singletonKey: "platform" });
+  if (config) return config;
+  try {
+    config = await PlatformConfig.create({
+      singletonKey: "platform",
+      revision: 1,
+      general: { ...DEFAULT_CONFIG.general },
+      branding: { ...DEFAULT_CONFIG.branding },
+      security: { ...DEFAULT_CONFIG.security },
+    });
+  } catch (err) {
+    if (err?.code !== 11000) throw err;
+    config = await PlatformConfig.findOne({ singletonKey: "platform" });
+  }
+  return config;
+}
+
+function snapshotList(config) {
+  return [
+    { key: "platform_name", group: "general" },
+    { key: "base_domain", group: "general" },
+    { key: "default_timezone", group: "general" },
+    { key: "default_currency", group: "general" },
+    { key: "brand_primary_color", group: "branding" },
+    { key: "brand_accent_color", group: "branding" },
+    { key: "brand_support_email", group: "branding" },
+    { key: "password_min_length", group: "security" },
+    { key: "session_timeout_minutes", group: "security" },
+    { key: "require_superadmin_email_2fa", group: "security" },
+  ].map((item) => ({ ...item, revision: Number(config.revision || 1) }));
+}
+
+async function casUpdate(req, res, field, value, auditAction, auditDescription) {
+  const revision = positiveRevision(req.body.revision);
+  const updated = await PlatformConfig.findOneAndUpdate(
+    { singletonKey: "platform", revision },
+    { $set: { [field]: value, updatedBy: req.user?._id || null }, $inc: { revision: 1 } },
+    { new: true, runValidators: true },
   );
+  if (!updated) return res.status(409).send("Platform settings changed in another session. Reload and try again.");
+  await invalidatePlatformSecurityConfig().catch(() => {});
+  await writeAudit(req, { action: auditAction, entityId: updated._id, description: auditDescription, meta: { revision: updated.revision } });
+  return res.redirect("/super-admin/settings");
 }
 
 module.exports = {
   settingsPage: async (req, res) => {
     try {
-      const settings = await PlatformSetting.find({})
-        .sort({ group: 1, key: 1 })
-        .lean();
-
-      const map = {};
-      for (const item of settings) map[item.key] = item.value;
-
+      res.set("Cache-Control", "no-store");
+      const [config, googleCalendar] = await Promise.all([
+        getOrCreateConfig(),
+        googleCalendarConnectionStatus().catch(() => ({ configured: false, connected: false, status: "disconnected" })),
+      ]);
       return res.render("platform/settings/index", {
-        settings,
-        values: map,
+        config: config.toObject ? config.toObject() : config,
+        settings: snapshotList(config),
+        values: flattenConfig(config),
+        revision: Number(config.revision || 1),
+        googleCalendar,
         error: null,
       });
     } catch (err) {
-      console.error("❌ settingsPage error:", err);
+      console.error("settingsPage error:", err);
       return res.status(500).render("platform/settings/index", {
+        config: null,
         settings: [],
-        values: {},
+        values: flattenConfig(DEFAULT_CONFIG),
+        revision: 1,
+        googleCalendar: { configured: false, connected: false, status: "disconnected" },
         error: "Failed to load platform settings.",
       });
     }
@@ -64,59 +115,75 @@ module.exports = {
 
   updateGeneralSettings: async (req, res) => {
     try {
-      await upsertSetting("platform_name", "general", req.body.platform_name || "Classic Academy", req.user?._id);
-      await upsertSetting("base_domain", "general", req.body.base_domain || "", req.user?._id);
-      await upsertSetting("default_timezone", "general", req.body.default_timezone || "Africa/Kampala", req.user?._id);
-      await upsertSetting("default_currency", "general", req.body.default_currency || "USD", req.user?._id);
-
-      await writeAudit(req, {
-        action: "Update General Settings",
-        description: "Updated platform general settings",
-      });
-
-      return res.redirect("/super-admin/settings");
+      await getOrCreateConfig();
+      const general = normalizeGeneral(req.body);
+      return casUpdate(req, res, "general", general, "Update General Settings", "Updated platform general settings");
     } catch (err) {
-      console.error("❌ updateGeneralSettings error:", err);
-      return res.status(500).send("Failed to update general settings.");
+      console.error("updateGeneralSettings error:", err);
+      return res.status(400).send(err?.message || "Failed to update general settings.");
     }
   },
 
   updateBrandingSettings: async (req, res) => {
     try {
-      await upsertSetting("brand_primary_color", "branding", req.body.brand_primary_color || "#0a3d62", req.user?._id);
-      await upsertSetting("brand_accent_color", "branding", req.body.brand_accent_color || "#0a6fbf", req.user?._id);
-      await upsertSetting("brand_support_email", "branding", req.body.brand_support_email || "", req.user?._id);
-
-      await writeAudit(req, {
-        action: "Update Branding Settings",
-        description: "Updated platform branding settings",
-      });
-
-      return res.redirect("/super-admin/settings");
+      await getOrCreateConfig();
+      const branding = normalizeBranding(req.body);
+      return casUpdate(req, res, "branding", branding, "Update Branding Settings", "Updated platform branding settings");
     } catch (err) {
-      console.error("❌ updateBrandingSettings error:", err);
-      return res.status(500).send("Failed to update branding settings.");
+      console.error("updateBrandingSettings error:", err);
+      return res.status(400).send(err?.message || "Failed to update branding settings.");
     }
   },
 
   updateSecuritySettings: async (req, res) => {
+    const session = await platformConnection.startSession();
     try {
-      const passwordMinLength = Math.max(10, Number(req.body.password_min_length || 10) || 10);
-      const sessionTimeoutMinutes = Math.max(15, Number(req.body.session_timeout_minutes || 120) || 120);
+      const current = await getOrCreateConfig();
+      const revision = positiveRevision(req.body.revision);
+      const security = normalizeSecurity(req.body);
+      const previousRequire2fa = !!current.security?.requireSuperadminEmail2fa;
+      const nextRequire2fa = !!security.requireSuperadminEmail2fa;
+      let updated = null;
 
-      await upsertSetting("password_min_length", "security", passwordMinLength, req.user?._id);
-      await upsertSetting("session_timeout_minutes", "security", sessionTimeoutMinutes, req.user?._id);
-      await upsertSetting("allow_superadmin_2fa", "security", req.body.allow_superadmin_2fa === "on", req.user?._id);
+      await session.withTransaction(async () => {
+        updated = await PlatformConfig.findOneAndUpdate(
+          { singletonKey: "platform", revision },
+          { $set: { security, updatedBy: req.user?._id || null }, $inc: { revision: 1 } },
+          { new: true, runValidators: true, session },
+        );
+        if (!updated) throw Object.assign(new Error("Platform settings changed in another session. Reload and try again."), { code: "STALE_CONFIG" });
 
-      await writeAudit(req, {
-        action: "Update Security Settings",
-        description: "Updated platform security settings",
+        if (previousRequire2fa !== nextRequire2fa) {
+          await PlatformUser.updateMany(
+            { role: "SuperAdmin", isDeleted: { $ne: true }, isActive: true },
+            { $inc: { tokenVersion: 1, revision: 1 } },
+            { session },
+          );
+        }
       });
 
+      await invalidatePlatformSecurityConfig().catch(() => {});
+      if (previousRequire2fa !== nextRequire2fa) {
+        const adminIds = await PlatformUser.find({ role: "SuperAdmin", isDeleted: { $ne: true } }).select("_id").lean().catch(() => []);
+        await Promise.all(adminIds.map((row) => invalidatePlatformUser(row._id).catch(() => {})));
+      }
+      await writeAudit(req, {
+        action: "Update Security Settings",
+        entityId: updated._id,
+        description: "Updated platform security settings",
+        meta: {
+          revision: updated.revision,
+          passwordMinLength: security.passwordMinLength,
+          sessionTimeoutMinutes: security.sessionTimeoutMinutes,
+          requireSuperadminEmail2fa: security.requireSuperadminEmail2fa,
+        },
+      });
       return res.redirect("/super-admin/settings");
     } catch (err) {
-      console.error("❌ updateSecuritySettings error:", err);
-      return res.status(500).send("Failed to update security settings.");
+      console.error("updateSecuritySettings error:", err);
+      return res.status(err?.code === "STALE_CONFIG" ? 409 : 400).send(err?.message || "Failed to update security settings.");
+    } finally {
+      await session.endSession();
     }
   },
 };

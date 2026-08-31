@@ -55,7 +55,7 @@
       .replace(/[^A-Z0-9_-]/g, "-")
       .replace(/-+/g, "-")
       .replace(/^[-_]+|[-_]+$/g, "")
-      .slice(0, 80);
+      .slice(0, 40);
   }
 
   function openModal(id) {
@@ -77,10 +77,11 @@
     $("bulkbar").classList.toggle("show", state.selected.size > 0);
   }
 
-  function submitRowAction(actionUrl) {
+  function submitRowAction(actionUrl, revision) {
     const form = $("rowActionForm");
     if (!form) return;
     form.action = actionUrl;
+    $("rowActionRevision").value = String(revision || "");
     form.submit();
   }
 
@@ -194,7 +195,7 @@
     const el = $("mDescription");
     const out = $("descCount");
     if (!el || !out) return;
-    out.textContent = `${el.value.length} / 1200`;
+    out.textContent = `${el.value.length} / 700`;
   }
 
   function syncScopeUI() {
@@ -214,6 +215,7 @@
     const r = prefill || null;
 
     $("mTitle").textContent = r ? "Edit Requirement" : "Add Requirement";
+    $("mRevision").value = r ? String(r.revision || 1) : "";
     $("requirementForm").action = r ? `/admin/admissions/requirements/${encodeURIComponent(r.id)}/update` : "/admin/admissions/requirements";
 
     $("mReqTitleInput").value = r ? r.title || "" : "";
@@ -310,7 +312,7 @@
     fillHiddenList("mProgramsWrap", "programs", programs);
     fillHiddenList("mIntakesWrap", "intakes", intakes);
 
-    if (!allPrograms && !programs.length) return alert("Select at least one program or enable all programs.");
+    if (!allPrograms && !programs.length) return alert("Select at least one section or enable all sections.");
     if (!allIntakes && !intakes.length) return alert("Select at least one intake or enable all intakes.");
 
     $("requirementForm").submit();
@@ -367,7 +369,11 @@
     };
 
     if (!window.confirm(messages[action] || "Proceed?")) return;
-    $("bulkIds").value = ids.join(",");
+    const items = ids.map((id) => {
+      const row = REQUIREMENTS.find((x) => x.id === id);
+      return { id, revision: Number(row?.revision || 1) };
+    });
+    $("bulkItems").value = JSON.stringify(items);
     $("bulkAction").value = action;
     $("bulkForm").submit();
   }
@@ -419,14 +425,14 @@
       if (e.target.closest(".actToggle")) {
         const action = r.isActive ? "deactivate" : "activate";
         if (!window.confirm(`${r.isActive ? "Deactivate" : "Activate"} "${r.title}"?`)) return;
-        $("bulkIds").value = r.id;
+        $("bulkItems").value = JSON.stringify([{ id: r.id, revision: Number(r.revision || 1) }]);
         $("bulkAction").value = action;
         return $("bulkForm").submit();
       }
 
       if (e.target.closest(".actDelete")) {
         if (!window.confirm(`Delete "${r.title}" permanently?`)) return;
-        return submitRowAction(`/admin/admissions/requirements/${encodeURIComponent(r.id)}/delete`);
+        return submitRowAction(`/admin/admissions/requirements/${encodeURIComponent(r.id)}/delete`, r.revision);
       }
 
       return;

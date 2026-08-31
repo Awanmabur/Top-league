@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .input,.select,.textarea,.view-input{padding:10px 12px;border-radius:12px;border:1px solid rgba(13,64,96,.16);background:#fff;outline:none}
@@ -259,6 +259,7 @@
                     <th class="col-session">Session</th>
                     <th class="col-status">Status</th>
                     <th class="col-notes">Notes</th>
+                    <th>Revision</th>
                     <th class="col-actions" style="text-align:right;">Actions</th>
                   </tr>
                 </thead>
@@ -338,7 +339,7 @@
                 <div class="strong">Import CSV</div>
                 <div class="muted">Bulk upload attendance</div>
               </div>
-              <button class="btn-xs" id="btnImportSide" type="button" onclick="document.getElementById('btnImport').click()"><i class="fa-solid fa-file-import"></i></button>
+              <button class="btn-xs" id="btnImportSide" type="button" data-click-target="btnImport"><i class="fa-solid fa-file-import"></i></button>
             </div>
           </div>
 
@@ -454,6 +455,8 @@
             <label>Notes</label>
             <textarea class="textarea" id="mNotes" name="notes" maxlength="500"></textarea>
             <div class="muted" id="notesCount">0 / 500</div>
+            <label class="small-muted" for="mCorrectionReason" style="display:block;margin-top:10px;">Correction reason (for edits)</label>
+            <input class="input" id="mCorrectionReason" name="correctionReason" maxlength="500" placeholder="e.g. Register checked with teacher" />
           </div>
         </div>
 
@@ -603,8 +606,8 @@
   </form>
 
   <textarea id="attendanceData" class="json-data" aria-hidden="true"><%- JSON.stringify((records || []).map(function(r){
-    const sessionAt = r.sessionAt ? new Date(r.sessionAt).toISOString().slice(0,16) : '';
-    const sessionAtLabel = r.sessionAt ? new Date(r.sessionAt).toLocaleString() : '';
+    const sessionAt = r.sessionAtInput || (r.sessionAt ? new Date(r.sessionAt).toISOString().slice(0,16) : '');
+    const sessionAtLabel = r.sessionAtLabel || (r.sessionAt ? new Date(r.sessionAt).toLocaleString() : '');
     return {
       id: String(r._id || ''),
       studentId: r.student?._id ? String(r.student._id) : '',
@@ -626,16 +629,18 @@
       sessionAt,
       sessionAtLabel,
       status: r.status || 'present',
-      notes: r.notes || ''
+      notes: r.notes || '',
+      revision: Number(r.revision || 0),
+      correctionReason: r.lastCorrectionReason || ''
     };
-  })) %></textarea>
+  })).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
 
   <script src="/js/navbar.js"></script>
-  <textarea id="classesData" class="json-data" aria-hidden="true"><%- JSON.stringify(classes || []) %></textarea>
-  <textarea id="sectionsData" class="json-data" aria-hidden="true"><%- JSON.stringify(sections || []) %></textarea>
-  <textarea id="streamsData" class="json-data" aria-hidden="true"><%- JSON.stringify(streams || []) %></textarea>
-  <textarea id="subjectOptionsData" class="json-data" aria-hidden="true"><%- JSON.stringify(subjectOptions || subjects || []) %></textarea>
-  <textarea id="studentsData" class="json-data" aria-hidden="true"><%- JSON.stringify(studentOptions || students || []) %></textarea>
+  <textarea id="classesData" class="json-data" aria-hidden="true"><%- JSON.stringify(classes || []).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
+  <textarea id="sectionsData" class="json-data" aria-hidden="true"><%- JSON.stringify(sections || []).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
+  <textarea id="streamsData" class="json-data" aria-hidden="true"><%- JSON.stringify(streams || []).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
+  <textarea id="subjectOptionsData" class="json-data" aria-hidden="true"><%- JSON.stringify(subjectOptions || subjects || []).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
+  <textarea id="studentsData" class="json-data" aria-hidden="true"><%- JSON.stringify(studentOptions || students || []).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
   <script src="/js/academic-selector.js"></script>
   <script src="/js/attendance.js"></script>
 </body>

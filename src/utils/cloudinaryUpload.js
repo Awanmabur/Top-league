@@ -53,13 +53,19 @@ function uploadBuffer(file, folder, options = {}) {
 
 async function safeDestroy(publicId, resourceType = "image") {
   try {
-    if (!publicId) return;
-    await cloudinary.uploader.destroy(publicId, {
+    if (!publicId) return true;
+    const result = await cloudinary.uploader.destroy(publicId, {
       resource_type: resourceType,
     });
+    return !result || !result.result || ["ok", "not found"].includes(String(result.result).toLowerCase());
   } catch (e) {
-    // keep silent
+    return false;
   }
 }
 
-module.exports = { uploadBuffer, safeDestroy };
+function authenticatedUrl(publicId, resourceType = "raw") {
+  if (!publicId) return "";
+  return cloudinary.url(publicId, { resource_type: resourceType, type: "authenticated", secure: true, sign_url: true });
+}
+
+module.exports = { uploadBuffer, safeDestroy, authenticatedUrl };

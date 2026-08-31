@@ -2,6 +2,9 @@ const express = require("express");
 const router = express.Router();
 const plansController = require("../../controllers/platform/plansController");
 const { platformRequire } = require("../../middleware/platform/guards");
+const { csrfProtection, attachCsrfToken } = require("../../middleware/tenant/csrf");
+
+router.use(csrfProtection, attachCsrfToken);
 
 router.get("/super-admin/plans", platformRequire("plans.view"), plansController.listPlans);
 router.get("/super-admin/plans/create", platformRequire("plans.manage"), plansController.createPlanForm);

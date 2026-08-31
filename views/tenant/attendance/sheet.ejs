@@ -8,7 +8,7 @@
         crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .input,.select,.textarea{padding:10px 12px;border-radius:12px;border:1px solid rgba(13,64,96,.16);background:#fff;outline:none}
@@ -102,9 +102,13 @@
             </div>
           </div>
 
-          <form method="POST" action="/admin/attendance/sheet" id="sheetForm" style="margin-top:12px;">
+          <form method="POST" action="/admin/attendance/sheet" id="sheetForm" style="margin-top:12px;"
+            data-offline="true" data-offline-saved-message="Attendance saved offline — it will sync automatically when you're back online.">
             <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
             <input type="hidden" name="course" value="<%= selectedCourse._id %>">
+            <input type="hidden" name="classGroup" value="<%= selectedClass?._id || selectedCourse.classId || '' %>">
+            <input type="hidden" name="sectionId" value="<%= selectedSection?._id || selectedCourse.sectionId || '' %>">
+            <input type="hidden" name="streamId" value="<%= selectedStream?._id || selectedCourse.streamId || '' %>">
             <input type="hidden" name="sessionAt" value="<%= sessionAtValue %>">
 
             <div class="table-wrap">
@@ -175,44 +179,6 @@
   </div>
 
   <script src="/js/navbar.js"></script>
-  <script>
-    (function () {
-      function applyStatusToGroup(group, status) {
-        const hidden = group.querySelector(".row-status-value");
-        if (hidden) hidden.value = status;
-
-        group.querySelectorAll(".status-btn").forEach(function (btn) {
-          btn.classList.remove("active-present", "active-absent", "active-late", "active-excused");
-          if (btn.dataset.status === status) {
-            btn.classList.add("active-" + status);
-          }
-        });
-      }
-
-      document.querySelectorAll("[data-row-status]").forEach(function (group) {
-        group.addEventListener("click", function (e) {
-          const btn = e.target.closest(".status-btn");
-          if (!btn) return;
-          applyStatusToGroup(group, btn.dataset.status);
-        });
-      });
-
-      function markAll(status) {
-        document.querySelectorAll("[data-row-status]").forEach(function (group) {
-          applyStatusToGroup(group, status);
-        });
-      }
-
-      const allPresent = document.getElementById("markAllPresent");
-      const allAbsent = document.getElementById("markAllAbsent");
-      const allLate = document.getElementById("markAllLate");
-      const allExcused = document.getElementById("markAllExcused");
-
-      if (allPresent) allPresent.addEventListener("click", function () { markAll("present"); });
-      if (allAbsent) allAbsent.addEventListener("click", function () { markAll("absent"); });
-      if (allLate) allLate.addEventListener("click", function () { markAll("late"); });
-      if (allExcused) allExcused.addEventListener("click", function () { markAll("excused"); });
-    })();
-  </script>
+  <script src="/js/attendance-sheet.js"></script>
 </body>
 </html>

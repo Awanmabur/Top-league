@@ -21,7 +21,7 @@ module.exports = {
 
   async update(req, res) {
     try {
-      const { User, Staff, Department } = req.models || {};
+      const { User, Staff } = req.models || {};
       const { user, staff } = await getStaffProfile(req);
       if (!user) return res.redirect("/login");
 
@@ -39,20 +39,10 @@ module.exports = {
         phone: phone || null
       }).catch(() => {});
 
-      // Optional updates to Staff record (if present)
+      // Staff may update personal contact/name fields only. Department/role/job
+      // assignments are organization-controlled and must go through Admin HR.
       if (Staff && staff) {
-        let departmentId = req.body.departmentId ? String(req.body.departmentId).trim() : "";
-        if (departmentId && !require("mongoose").Types.ObjectId.isValid(departmentId)) {
-          departmentId = "";
-        }
-
-        const staffUpdates = {
-          firstName,
-          lastName,
-          phone: phone || null
-        };
-        if (departmentId) staffUpdates.departmentId = departmentId;
-
+        const staffUpdates = { firstName, lastName, phone: phone || null };
         await Staff.updateOne({ _id: staff._id }, staffUpdates).catch(() => {});
       }
 

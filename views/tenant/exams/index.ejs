@@ -8,7 +8,7 @@
         crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .input,.select,.textarea,.view-input{padding:10px 12px;border-radius:12px;border:1px solid rgba(13,64,96,.16);background:#fff;outline:none}
@@ -153,8 +153,8 @@
               <option value="3" <%= String(query?.term || '') === '3' ? 'selected' : '' %>>Term 3</option>
             </select>
 
-            <input class="input" type="datetime-local" name="from" value="<%= query?.from || '' %>" />
-            <input class="input" type="datetime-local" name="to" value="<%= query?.to || '' %>" />
+            <input class="input" type="date" name="from" value="<%= query?.from || '' %>" />
+            <input class="input" type="date" name="to" value="<%= query?.to || '' %>" />
 
             <select class="select" name="status">
               <option value="">All Status</option>
@@ -345,7 +345,7 @@
               </select>
             </div>
 
-            <div class="field"><label>Exam Date</label><input class="input" id="mExamDate" name="examDate" type="datetime-local" required /></div>
+            <div class="field"><label>Exam Date</label><input class="input" id="mExamDate" name="examDate" type="date" required /></div>
             <div class="field"><label>Start Time</label><input class="input" id="mStartTime" name="startTime" placeholder="08:00" /></div>
             <div class="field"><label>End Time</label><input class="input" id="mEndTime" name="endTime" placeholder="10:00" /></div>
             <div class="field"><label>Duration (Minutes)</label><input class="input" id="mDurationMinutes" name="durationMinutes" type="number" min="0" max="1440" /></div>
@@ -420,8 +420,8 @@
 
   <textarea id="examsData" class="json-data" aria-hidden="true"><%- JSON.stringify((exams || []).map(function(e){
     const examDateObj = e.examDate ? new Date(e.examDate) : null;
-    const examDateLabel = examDateObj && !isNaN(examDateObj.getTime()) ? examDateObj.toLocaleString() : '';
-    const examDateInput = examDateObj && !isNaN(examDateObj.getTime()) ? new Date(examDateObj.getTime() - examDateObj.getTimezoneOffset() * 60000).toISOString().slice(0,16) : '';
+    const examDateLabel = examDateObj && !isNaN(examDateObj.getTime()) ? examDateObj.toISOString().slice(0,10) : '';
+    const examDateInput = examDateObj && !isNaN(examDateObj.getTime()) ? examDateObj.toISOString().slice(0,10) : '';
     return {
       id: String(e._id || ''),
       title: e.title || '',
@@ -451,11 +451,11 @@
       instructions: e.instructions || '',
       status: e.status || 'draft'
     };
-  })) %></textarea>
-  <textarea id="classesData" class="json-data" aria-hidden="true"><%- JSON.stringify(classes || []) %></textarea>
-  <textarea id="sectionsData" class="json-data" aria-hidden="true"><%- JSON.stringify(sections || []) %></textarea>
-  <textarea id="streamsData" class="json-data" aria-hidden="true"><%- JSON.stringify(streams || []) %></textarea>
-  <textarea id="subjectOptionsData" class="json-data" aria-hidden="true"><%- JSON.stringify(subjectOptions || subjects || []) %></textarea>
+  })).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
+  <textarea id="classesData" class="json-data" aria-hidden="true"><%- JSON.stringify(classes || []).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
+  <textarea id="sectionsData" class="json-data" aria-hidden="true"><%- JSON.stringify(sections || []).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
+  <textarea id="streamsData" class="json-data" aria-hidden="true"><%- JSON.stringify(streams || []).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
+  <textarea id="subjectOptionsData" class="json-data" aria-hidden="true"><%- JSON.stringify(subjectOptions || subjects || []).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
   <script src="/js/navbar.js"></script>
   <script src="/js/academic-selector.js"></script>
   <script src="/js/exams.js"></script>

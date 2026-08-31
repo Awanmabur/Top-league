@@ -1,27 +1,5 @@
 const { getStaffProfile } = require("./_helpers");
-
-module.exports = {
-  async timetable(req, res) {
-    try {
-      const { TimetableEntry } = req.models || {};
-      const { user, staff } = await getStaffProfile(req);
-      if (!user) return res.redirect("/login");
-
-      const items = (staff && TimetableEntry)
-        ? await TimetableEntry.find({ staffId: staff._id }).sort({ day: 1, startTime: 1 }).lean().catch(() => [])
-        : [];
-
-      return res.render("staff/timetable", {
-        tenant: req.tenant,
-        user,
-        staff,
-        items,
-        pageTitle: "Timetable",
-        error: null
-      });
-    } catch (err) {
-      console.error("STAFF TIMETABLE ERROR:", err);
-      return res.status(500).send("Failed to load timetable");
-    }
-  }
-};
+const { todayDayCode, currentWeekPattern, weekPatternApplies } = require("../../../services/tenant/timetableService");
+const DAY_ORDER={Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6,Sun:7};
+const DAY_LABEL={Mon:"Monday",Tue:"Tuesday",Wed:"Wednesday",Thu:"Thursday",Fri:"Friday",Sat:"Saturday",Sun:"Sunday"};
+module.exports={async timetable(req,res){try{const {TimetableEntry,Subject,Class,Section,Stream}=req.models||{};const {user,staff}=await getStaffProfile(req);if(!user)return res.redirect("/login");if(!staff)return res.status(403).send("Staff profile not found.");if(!TimetableEntry||!Subject||!Class)return res.status(503).send("Timetable is not available.");let q=TimetableEntry.find({teacher:staff._id,status:"active",migrationQuarantinedAt:null}).populate({path:"subject",model:Subject,select:"code title shortTitle"}).populate({path:"classGroup",model:Class,select:"name code"});if(Section)q=q.populate({path:"sectionId",model:Section,select:"name code"});if(Stream)q=q.populate({path:"streamId",model:Stream,select:"name code"});const rows=await q.sort({dayOfWeek:1,startMinutes:1}).lean();const timezone=req.tenant?.timezone||"UTC",todayDay=todayDayCode(new Date(),timezone),weekParity=currentWeekPattern(new Date(),timezone);const items=rows.sort((a,b)=>(DAY_ORDER[a.dayOfWeek]||99)-(DAY_ORDER[b.dayOfWeek]||99)||a.startMinutes-b.startMinutes).map((e)=>({id:String(e._id),day:e.dayOfWeek,dayLabel:DAY_LABEL[e.dayOfWeek]||e.dayOfWeek,startTime:e.startTime,endTime:e.endTime,subjectName:e.subject?.title||e.subject?.shortTitle||e.subject?.code||"Subject",subjectCode:e.subject?.code||"",className:e.classGroup?.name||e.classGroup?.code||"",sectionName:e.sectionId?.name||e.sectionName||"",streamName:e.streamId?.name||e.streamName||"",room:e.room||e.campus||"TBA",weekPattern:e.weekPattern||"all",appliesThisWeek:weekPatternApplies(e.weekPattern,weekParity),isToday:e.dayOfWeek===todayDay}));return res.render("staff/timetable",{tenant:req.tenant,user,staff,items,pageTitle:"Timetable",todayDay,todayName:DAY_LABEL[todayDay]||todayDay,weekParity,error:null});}catch(err){console.error("STAFF TIMETABLE ERROR:",err);return res.status(500).send("Failed to load timetable");}}};

@@ -15,60 +15,59 @@
   <div class="topbar">
     <div>
       <div class="title">Results</div>
-      <div class="subtitle">Published academic results and performance summary.</div>
+      <div class="subtitle">Only officially published results are shown here.</div>
     </div>
   </div>
 
   <%-include("../tenant/partials/flash") %>
 
   <div class="kpi-row">
-    <div class="card"><div class="section-title">Total Courses</div><div style="font-size:22px;font-weight:800;"><%= summary.totalCourses %></div></div>
+    <div class="card"><div class="section-title">Published Results</div><div style="font-size:22px;font-weight:800;"><%= summary.totalResults %></div></div>
     <div class="card"><div class="section-title">Passed</div><div style="font-size:22px;font-weight:800;"><%= summary.passed %></div></div>
     <div class="card"><div class="section-title">Failed</div><div style="font-size:22px;font-weight:800;"><%= summary.failed %></div></div>
     <div class="card"><div class="section-title">Average</div><div style="font-size:22px;font-weight:800;"><%= summary.average %>%</div></div>
   </div>
 
   <section class="card" style="margin-top:16px;">
-    <div class="section-title">All Results</div>
-    <div class="section-sub">Official results available to your account.</div>
+    <div class="section-title">Published Academic Results</div>
+    <div class="section-sub">Scores are shown against the marks configured for each exam.</div>
 
     <div style="overflow-x:auto;margin-top:12px;">
-      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:920px;">
         <thead>
           <tr style="border-bottom:1px solid #e5edff;">
-            <th style="text-align:left;padding:6px 4px;">Course</th>
-            <th style="text-align:left;padding:6px 4px;">Academic Year</th>
-            <th style="text-align:left;padding:6px 4px;">Semester</th>
-            <th style="text-align:left;padding:6px 4px;">CA</th>
-            <th style="text-align:left;padding:6px 4px;">Exam</th>
-            <th style="text-align:left;padding:6px 4px;">Total</th>
-            <th style="text-align:left;padding:6px 4px;">Grade</th>
-            <th style="text-align:left;padding:6px 4px;">Remark</th>
+            <th style="text-align:left;padding:8px 6px;">Subject</th>
+            <th style="text-align:left;padding:8px 6px;">Exam</th>
+            <th style="text-align:left;padding:8px 6px;">Academic Year</th>
+            <th style="text-align:left;padding:8px 6px;">Term</th>
+            <th style="text-align:left;padding:8px 6px;">Score</th>
+            <th style="text-align:left;padding:8px 6px;">Percentage</th>
+            <th style="text-align:left;padding:8px 6px;">Grade</th>
+            <th style="text-align:left;padding:8px 6px;">Remark</th>
           </tr>
         </thead>
         <tbody>
           <% if (results?.length) { %>
             <% results.forEach(function(r) { %>
-              <tr>
-                <td><%= r.courseCode %> - <%= r.courseTitle %></td>
-                <td><%= r.academicYear %></td>
-                <td><%= r.semester %></td>
-                <td><%= r.cat %></td>
-                <td><%= r.exam %></td>
-                <td><%= r.total %></td>
-                <td><%= r.grade %></td>
-                <td><%= r.remark %></td>
+              <tr style="border-bottom:1px solid #eef4fb;">
+                <td style="padding:9px 6px;"><strong><%= r.subjectCode ? r.subjectCode + ' — ' : '' %><%= r.subjectTitle %></strong></td>
+                <td style="padding:9px 6px;"><%= r.examTitle %></td>
+                <td style="padding:9px 6px;"><%= r.academicYear || '—' %></td>
+                <td style="padding:9px 6px;">Term <%= r.term %></td>
+                <td style="padding:9px 6px;"><%= r.score %> / <%= r.totalMarks %></td>
+                <td style="padding:9px 6px;"><%= r.percentage %>%</td>
+                <td style="padding:9px 6px;"><%= r.grade %></td>
+                <td style="padding:9px 6px;"><%= r.remark %></td>
               </tr>
             <% }) %>
           <% } else { %>
-            <tr><td colspan="8">No results found.</td></tr>
+            <tr><td colspan="8" style="padding:16px 6px;">No published results are available yet.</td></tr>
           <% } %>
         </tbody>
       </table>
     </div>
   </section>
 </main>
-</div>
 <script src="/js/navbar.js"></script>
 </body>
 </html>

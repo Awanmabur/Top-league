@@ -35,7 +35,7 @@
     const showNotifications = hasAnyModel("Notification");
     const showSupport =
       tenantAccess?.featureFlags?.helpdesk !== false &&
-      hasAnyModel("SupportTicket", "Ticket");
+      hasAnyModel("HelpdeskTicket");
 
     function fullNameOfStudent(c) {
       const name = (c && c.fullName) ? String(c.fullName).trim() : "";
@@ -87,19 +87,19 @@
         <% } %>
 
         <% if (showFees) { %>
-          <button class="btn light" type="button" onclick="window.location.href='/parent/fees'">
+          <a class="btn light" href="/parent/fees">
             <i class="fa-solid fa-sack-dollar"></i> Fees
-          </button>
+          </a>
         <% } %>
 
         <% if (showChildren) { %>
-          <button class="btn primary" type="button" onclick="window.location.href='/parent/children'">
+          <a class="btn primary" href="/parent/children">
             <i class="fa-solid fa-children"></i> View Children
-          </button>
+          </a>
         <% } else { %>
-          <button class="btn primary" type="button" onclick="window.location.href='/parent/profile'">
+          <a class="btn primary" href="/parent/profile">
             <i class="fa-solid fa-user"></i> Profile
-          </button>
+          </a>
         <% } %>
       </div>
     </div>
@@ -155,9 +155,9 @@
               Ask the school admin to link your parent profile to your child's student record.
             </div>
             <% if (showSupport) { %>
-              <button class="btn light" type="button" onclick="window.location.href='/parent/support'">
+              <a class="btn light" href="/parent/support">
                 <i class="fa-solid fa-headset"></i> Contact Support
-              </button>
+              </a>
             <% } %>
           </div>
         <% } else { %>
@@ -165,8 +165,8 @@
             <% kids.forEach(function(c) {
               const name = fullNameOfStudent(c);
               const reg = (c && c.regNo) ? c.regNo : "-";
-              const track = (c && c.program && (c.program.title || c.program.name)) ? (c.program.title || c.program.name) : "-";
-              const cls = (c && c.classGroup && (c.classGroup.title || c.classGroup.name)) ? (c.classGroup.title || c.classGroup.name) : (c && c.yearLevel ? c.yearLevel : "-");
+              const track = (c && c.programId && (c.programId.title || c.programId.name || c.programId.shortTitle || c.programId.code)) ? (c.programId.title || c.programId.name || c.programId.shortTitle || c.programId.code) : "-";
+              const cls = (c && (c.className || c.classLevel)) ? (c.className || c.classLevel) : "-";
               const ay = (c && c.academicYear) ? c.academicYear : "-";
               const sem = (c && (c.semester || c.semester === 0)) ? c.semester : "-";
               const status = (c && c.status) ? c.status : "active";

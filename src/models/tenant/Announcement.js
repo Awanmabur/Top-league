@@ -21,7 +21,9 @@ module.exports = function AnnouncementModel(conn) {
         enum: [
           "All Students",
           "All Staff",
+          "All Parents",
           "Specific Department",
+          "Specific Program",
           "Specific Subject",
           "Year/Cohort",
           "Hostel Residents",
@@ -43,11 +45,13 @@ module.exports = function AnnouncementModel(conn) {
         default: "Draft",
       },
       scheduleAt: { type: Date, default: null },
+      scheduleClaimedAt: { type: Date, default: null, index: true },
       publishedAt: { type: Date, default: null },
       expiryDate: { type: Date, default: null },
       stats: {
         views: { type: Number, default: 0 },
         emailOpens: { type: Number, default: 0 },
+        emailDelivered: { type: Number, default: 0 },
         smsDelivered: { type: Number, default: 0 },
         clicks: { type: Number, default: 0 },
         acknowledgements: { type: Number, default: 0 },
@@ -75,6 +79,7 @@ module.exports = function AnnouncementModel(conn) {
     { timestamps: true }
   );
 
+  AnnouncementSchema.index({ status: 1, scheduleAt: 1, scheduleClaimedAt: 1 });
   AnnouncementSchema.index({ status: 1, category: 1, audienceType: 1, createdAt: -1 });
   AnnouncementSchema.index({ isDeleted: 1, createdAt: -1 });
 

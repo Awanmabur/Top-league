@@ -18,6 +18,8 @@ module.exports = function SystemHealthModel(conn) {
         default: "Open",
       },
       note: { type: String, trim: true, default: "" },
+      fromStatus: { type: String, trim: true, default: "" },
+      toStatus: { type: String, trim: true, default: "" },
       createdAt: { type: Date, default: Date.now },
     },
     { _id: true }
@@ -26,6 +28,7 @@ module.exports = function SystemHealthModel(conn) {
   const SystemHealthSchema = new mongoose.Schema(
     {
       serviceName: { type: String, required: true, trim: true, maxlength: 220 },
+      serviceKey: { type: String, required: true, trim: true, maxlength: 260 },
       type: {
         type: String,
         enum: ["Application", "Database", "Storage", "Queue", "Integration"],
@@ -34,16 +37,17 @@ module.exports = function SystemHealthModel(conn) {
       region: { type: String, trim: true, default: "" },
       host: { type: String, trim: true, default: "" },
       endpoint: { type: String, trim: true, default: "" },
+      probeMode: { type: String, enum: ["automatic", "manual"], default: "manual" },
       status: {
         type: String,
         enum: ["Healthy", "Warning", "Critical", "Maintenance"],
         default: "Healthy",
       },
       metrics: {
-        uptime: { type: String, default: "0%" },
+        uptime: { type: String, default: "—" },
         latency: { type: String, default: "—" },
         load: { type: String, default: "—" },
-        errorRate: { type: String, default: "0%" },
+        errorRate: { type: String, default: "—" },
         cpu: { type: String, default: "—" },
         memory: { type: String, default: "—" },
       },
@@ -53,6 +57,9 @@ module.exports = function SystemHealthModel(conn) {
       incidents: { type: [IncidentSchema], default: [] },
       createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
       updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+      revision: { type: Number, default: 1, min: 1 },
+      migrationQuarantinedAt: { type: Date, default: null },
+      migrationQuarantineReason: { type: String, trim: true, default: "" },
       isDeleted: { type: Boolean, default: false },
       deletedAt: { type: Date, default: null },
     },
@@ -62,6 +69,14 @@ module.exports = function SystemHealthModel(conn) {
   SystemHealthSchema.index({ createdAt: -1 });
   SystemHealthSchema.index({ status: 1, type: 1, region: 1, createdAt: -1 });
   SystemHealthSchema.index({ isDeleted: 1, type: 1 });
+  SystemHealthSchema.index(
+    { serviceKey: 1 },
+    {
+      name: "uniq_active_system_health_service",
+      unique: true,
+      partialFilterExpression: { isDeleted: false, migrationQuarantinedAt: null },
+    },
+  );
 
   return conn.models.SystemHealth || conn.model("SystemHealth", SystemHealthSchema);
 };

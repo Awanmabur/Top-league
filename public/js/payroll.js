@@ -1,276 +1,38 @@
 (function () {
   const $ = (id) => document.getElementById(id);
-
-  function readJson(id) {
-    const el = $(id);
-    if (!el) return [];
-    try {
-      return JSON.parse(el.value || "[]");
-    } catch (err) {
-      console.error(`Failed to parse ${id}:`, err);
-      return [];
-    }
-  }
-
-  const RUNS = readJson("payrollRunsData");
-  const ITEMS = readJson("payrollItemsData");
-
-  if (!$("tbody")) return;
-
-  const state = {
-    view: "list",
-    selected: new Set(),
-  };
-
-  function money(v) {
-    return Number(v || 0).toLocaleString(undefined, {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    });
-  }
-
-  function openModal(id) {
-    const el = $(id);
-    if (!el) return;
-    el.classList.add("show");
-  }
-
-  function closeModal(id) {
-    const el = $(id);
-    if (!el) return;
-    el.classList.remove("show");
-  }
-
-  function submitRowAction(actionUrl) {
-    const form = $("rowActionForm");
-    if (!form) return;
-    form.action = actionUrl;
-    form.submit();
-  }
-
-  function bulkSubmit(action) {
-    const ids = Array.from(state.selected);
-    if (!ids.length) return;
-    $("bulkIds").value = ids.join(",");
-    $("bulkActionInput").value = action;
-    $("bulkForm").submit();
-  }
-
-  function pillStatus(v) {
-    if (v === "Approved") return '<span class="pill ok"><i class="fa-solid fa-circle-check"></i> Approved</span>';
-    if (v === "Processed") return '<span class="pill info"><i class="fa-solid fa-gears"></i> Processed</span>';
-    if (v === "Closed") return '<span class="pill warn"><i class="fa-solid fa-lock"></i> Closed</span>';
-    return '<span class="pill soft"><i class="fa-solid fa-file"></i> Draft</span>';
-  }
-
-  function syncBulkbar() {
-    $("selCount").textContent = state.selected.size;
-    $("bulkbar").classList.toggle("show", state.selected.size > 0 && state.view === "list");
-  }
-
-  function setView(v) {
-    state.view = v;
-
-    document.querySelectorAll("#viewChips .chip").forEach((b) => b.classList.remove("active"));
-    const activeBtn = document.querySelector(`#viewChips .chip[data-view="${v}"]`);
-    if (activeBtn) activeBtn.classList.add("active");
-
-    $("view-list").style.display = v === "list" ? "" : "none";
-    $("view-items").style.display = v === "items" ? "" : "none";
-    $("view-summary").style.display = v === "summary" ? "" : "none";
-
-    const titles = {
-      list: ["Payroll Runs", "Manage payroll periods and their status."],
-      items: ["Payroll Items", "Review staff pay rows."],
-      summary: ["Summary", "Payroll summary for current runs."],
-    };
-
-    $("panelTitle").textContent = titles[v][0];
-    $("panelSub").textContent = titles[v][1];
-
-    render();
-  }
-
-  function renderList() {
-    $("resultMeta").textContent = `${RUNS.length} payroll run(s)`;
-    $("checkAll").checked = RUNS.length > 0 && RUNS.every((x) => state.selected.has(x.id));
-
-    $("tbody").innerHTML =
-      RUNS.map((a) => {
-        const checked = state.selected.has(a.id) ? "checked" : "";
-        return `
-          <tr data-id="${a.id}">
-            <td><input type="checkbox" class="rowCheck" data-id="${a.id}" ${checked}></td>
-            <td>
-              <div class="strong">${a.title || ""}</div>
-              <div class="muted">${a.periodLabel || "—"}</div>
-            </td>
-            <td>${a.departmentName || "All Departments"}</td>
-            <td>${a.month || "—"} ${a.year || ""}</td>
-            <td>${a.payDate || "—"}</td>
-            <td>${a.staffCount || 0}</td>
-            <td>${money(a.grossAmount || 0)}</td>
-            <td>${money(a.deductionsAmount || 0)}</td>
-            <td>${money(a.netAmount || 0)}</td>
-            <td>${pillStatus(a.status)}</td>
-            <td>
-              <div class="actions">
-                <button class="btn-xs actView" type="button"><i class="fa-solid fa-eye"></i></button>
-                <button class="btn-xs actEdit" type="button"><i class="fa-solid fa-pen"></i></button>
-                <button class="btn-xs actProcess" type="button"><i class="fa-solid fa-gears"></i></button>
-                <button class="btn-xs actApprove" type="button"><i class="fa-solid fa-circle-check"></i></button>
-                <button class="btn-xs actClose" type="button"><i class="fa-solid fa-lock"></i></button>
-                <button class="btn-xs actDelete" type="button"><i class="fa-solid fa-trash"></i></button>
-              </div>
-            </td>
-          </tr>
-        `;
-      }).join("") ||
-      '<tr><td colspan="11" style="padding:18px;"><div class="muted">No payroll runs found.</div></td></tr>';
-  }
-
-  function renderItems() {
-    $("resultMeta").textContent = `${ITEMS.length} payroll item(s)`;
-
-    $("tbodyItems").innerHTML =
-      ITEMS.map((a) => `
-        <tr>
-          <td><div class="strong">${a.staffName || "—"}</div></td>
-          <td>${a.departmentName || "—"}</td>
-          <td>${money(a.basicSalary || 0)}</td>
-          <td>${money(a.allowances || 0)}</td>
-          <td>${money(a.bonuses || 0)}</td>
-          <td>${money(a.deductions || 0)}</td>
-          <td>${money(a.netPay || 0)}</td>
-          <td>${pillStatus(a.status || "Draft")}</td>
-        </tr>
-      `).join("") ||
-      '<tr><td colspan="8" style="padding:18px;"><div class="muted">No payroll items found.</div></td></tr>';
-  }
-
-  function render() {
-    syncBulkbar();
-    if (state.view === "list") renderList();
-    if (state.view === "items") renderItems();
-    if (state.view === "summary") $("resultMeta").textContent = `${RUNS.length} payroll run(s)`;
-  }
-
-  function openEditor(pref) {
-    pref = pref || null;
-    $("mTitle").textContent = pref ? "Edit Payroll Run" : "Create Payroll Run";
-    const form = $("payrollForm");
-    form.action = pref ? `/admin/payroll/${pref.id}/update` : "/admin/payroll";
-
-    $("pTitle").value = pref ? (pref.title || "") : "";
-    $("pMonth").value = pref ? (pref.month || "January") : "January";
-    $("pYear").value = pref ? (pref.year || new Date().getFullYear()) : new Date().getFullYear();
-    $("pPeriodLabel").value = pref ? (pref.periodLabel || "") : "";
-    $("pDepartment").value = pref ? (pref.departmentId || "") : "";
-    $("pPayDate").value = pref ? (pref.payDate || "") : "";
-    $("pNotes").value = pref ? (pref.notes || "") : "";
-
-    openModal("mEdit");
-  }
-
-  function openViewModal(a) {
-    $("vTitle").textContent = a.title || "—";
-    $("vDepartment").textContent = a.departmentName || "All Departments";
-    $("vPeriod").textContent = `${a.month || "—"} ${a.year || ""}`;
-    $("vPayDate").textContent = a.payDate || "—";
-    $("vStaffCount").textContent = a.staffCount || 0;
-    $("vStatus").textContent = a.status || "—";
-    $("vGross").textContent = money(a.grossAmount || 0);
-    $("vDeductions").textContent = money(a.deductionsAmount || 0);
-    $("vNet").textContent = money(a.netAmount || 0);
-    $("vNotes").textContent = a.notes || "—";
-    openModal("mView");
-  }
-
-  $("btnCreate").addEventListener("click", function () { openEditor(); });
-  $("quickNewPayroll").addEventListener("click", function () { openEditor(); });
-
-  $("viewChips").addEventListener("click", function (e) {
-    const btn = e.target.closest(".chip");
-    if (!btn) return;
-    setView(btn.dataset.view);
-  });
-
-  $("checkAll").addEventListener("change", function (e) {
-    if (e.target.checked) RUNS.forEach((a) => state.selected.add(a.id));
-    else RUNS.forEach((a) => state.selected.delete(a.id));
-    render();
-  });
-
-  $("tbody").addEventListener("change", function (e) {
-    if (!e.target.classList.contains("rowCheck")) return;
-    const id = e.target.dataset.id;
-    if (e.target.checked) state.selected.add(id);
-    else state.selected.delete(id);
-    render();
-  });
-
-  $("tbody").addEventListener("click", function (e) {
-    const tr = e.target.closest("tr[data-id]");
-    if (!tr) return;
-    const a = RUNS.find((x) => x.id === tr.dataset.id);
-    if (!a) return;
-
-    if (e.target.closest(".actView")) return openViewModal(a);
-    if (e.target.closest(".actEdit")) return openEditor(a);
-    if (e.target.closest(".actProcess")) return submitRowAction(`/admin/payroll/${a.id}/process`);
-    if (e.target.closest(".actApprove")) return submitRowAction(`/admin/payroll/${a.id}/approve`);
-    if (e.target.closest(".actClose")) return submitRowAction(`/admin/payroll/${a.id}/close`);
-    if (e.target.closest(".actDelete")) {
-      if (window.confirm(`Delete payroll run "${a.title}"?`)) {
-        return submitRowAction(`/admin/payroll/${a.id}/delete`);
-      }
-    }
-  });
-
-  $("btnBulk").addEventListener("click", function () {
-    if (!state.selected.size) return alert("Select at least one payroll run.");
-    $("bulkbar").classList.add("show");
-  });
-
-  $("bulkClear").addEventListener("click", function () {
-    state.selected.clear();
-    render();
-  });
-
-  $("bulkProcess").addEventListener("click", function () { bulkSubmit("process"); });
-  $("bulkApprove").addEventListener("click", function () { bulkSubmit("approve"); });
-  $("bulkClose").addEventListener("click", function () { bulkSubmit("close"); });
-  $("bulkDraft").addEventListener("click", function () { bulkSubmit("draft"); });
-  $("bulkDelete").addEventListener("click", function () {
-    if (!state.selected.size) return;
-    if (window.confirm("Delete selected payroll runs?")) bulkSubmit("delete");
-  });
-
-  document.querySelectorAll("[data-close-modal]").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      closeModal(btn.dataset.closeModal);
-    });
-  });
-
-  ["mEdit", "mView"].forEach(function (mid) {
-    const el = $(mid);
-    if (!el) return;
-    el.addEventListener("click", function (e) {
-      if (e.target.id === mid) closeModal(mid);
-    });
-  });
-
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape") {
-      document.querySelectorAll(".modal-backdrop.show").forEach(function (el) {
-        el.classList.remove("show");
-      });
-    }
-  });
-
-  $("btnExport").addEventListener("click", function () {
-    alert("Hook payroll export route later.");
-  });
-
-  setView("list");
+  function readJson(id) { const el=$(id); if(!el) return []; try{return JSON.parse(el.value||'[]');}catch(err){console.error(`Failed to parse ${id}:`,err);return [];} }
+  const RUNS=readJson('payrollRunsData'), ITEMS=readJson('payrollItemsData');
+  if (!$('tbody')) return;
+  const state={view:'list',selected:new Set()};
+  const make=(tag,cls,text)=>{const el=document.createElement(tag);if(cls)el.className=cls;if(text!==undefined)el.textContent=String(text);return el;};
+  const money=(v)=>Number(v||0).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:2});
+  const openModal=(id)=>$(id)?.classList.add('show');
+  const closeModal=(id)=>$(id)?.classList.remove('show');
+  function statusPill(value){const map={Approved:['pill ok','fa-circle-check'],Processed:['pill info','fa-gears'],Closed:['pill warn','fa-lock'],Draft:['pill soft','fa-file'],Paid:['pill ok','fa-money-bill-wave'],Held:['pill warn','fa-pause'],Pending:['pill soft','fa-clock']};const [cls,icon]=map[value]||['pill soft','fa-circle'];const span=make('span',cls);const i=make('i',`fa-solid ${icon}`);span.append(i,document.createTextNode(` ${value||'—'}`));return span;}
+  function actionButton(cls,icon,label){const b=make('button',`btn-xs ${cls}`);b.type='button';b.title=label;b.setAttribute('aria-label',label);b.appendChild(make('i',`fa-solid ${icon}`));return b;}
+  function submitRowAction(url,{reason='',paymentReference=''}={}){const form=$('rowActionForm');if(!form)return;form.action=url;$('rowReason').value=reason;$('rowPaymentReference').value=paymentReference;form.submit();}
+  function bulkSubmit(action){const ids=[...state.selected];if(!ids.length)return;$('bulkIds').value=ids.join(',');$('bulkActionInput').value=action;$('bulkForm').submit();}
+  function syncBulkbar(){$('selCount').textContent=state.selected.size;$('bulkbar').classList.toggle('show',state.selected.size>0&&state.view==='list');}
+  function setView(view){state.view=view;document.querySelectorAll('#viewChips .chip').forEach((b)=>b.classList.remove('active'));document.querySelector(`#viewChips .chip[data-view="${view}"]`)?.classList.add('active');$('view-list').style.display=view==='list'?'':'none';$('view-items').style.display=view==='items'?'':'none';$('view-summary').style.display=view==='summary'?'':'none';const titles={list:['Payroll Runs','Manage payroll periods and their status.'],items:['Payroll Items','Review and settle staff pay rows.'],summary:['Summary','Payroll summary for current runs.']};$('panelTitle').textContent=titles[view][0];$('panelSub').textContent=titles[view][1];render();}
+  function td(text){const el=make('td');el.textContent=text===undefined||text===null?'':String(text);return el;}
+  function renderList(){const tbody=$('tbody');tbody.replaceChildren();$('resultMeta').textContent=`${RUNS.length} payroll run(s)`;$('checkAll').checked=RUNS.length>0&&RUNS.every((x)=>state.selected.has(x.id));if(!RUNS.length){const tr=make('tr'),cell=td('No payroll runs found.');cell.colSpan=11;cell.style.padding='18px';tr.appendChild(cell);tbody.appendChild(tr);return;}RUNS.forEach((a)=>{const tr=make('tr');tr.dataset.id=a.id;const c0=td(),cb=make('input','rowCheck');cb.type='checkbox';cb.dataset.id=a.id;cb.checked=state.selected.has(a.id);c0.appendChild(cb);tr.appendChild(c0);const runCell=td();runCell.append(make('div','strong',a.title||''),make('div','muted',a.runNumber||a.periodLabel||'—'));tr.appendChild(runCell,td(a.departmentName||'All Departments'),td(`${a.month||'—'} ${a.year||''}`),td(a.payDate||'—'),td(a.staffCount||0),td(money(a.grossAmount)),td(money(a.deductionsAmount)),td(money(a.netAmount)));const statusCell=td();statusCell.appendChild(statusPill(a.status));tr.appendChild(statusCell);const actions=make('div','actions');actions.append(actionButton('actView','fa-eye','View'));if(a.status==='Draft'){actions.append(actionButton('actEdit','fa-pen','Edit'),actionButton('actProcess','fa-gears','Process'),actionButton('actDelete','fa-trash','Delete'));}else if(a.status==='Processed'){actions.append(actionButton('actApprove','fa-circle-check','Approve'));}else if(a.status==='Approved'){actions.append(actionButton('actPay','fa-money-bill-wave','Mark paid'),actionButton('actClose','fa-lock','Close'));}const ac=td();ac.appendChild(actions);tr.appendChild(ac);tbody.appendChild(tr);});}
+  function renderItems(){const tbody=$('tbodyItems');tbody.replaceChildren();$('resultMeta').textContent=`${ITEMS.length} payroll item(s)`;if(!ITEMS.length){const tr=make('tr'),cell=td('No payroll items found.');cell.colSpan=9;cell.style.padding='18px';tr.appendChild(cell);tbody.appendChild(tr);return;}ITEMS.forEach((a)=>{const tr=make('tr');tr.dataset.itemId=a.id;tr.dataset.runId=a.payrollRunId;const staff=td();staff.append(make('div','strong',a.staffName||'—'),make('div','muted',a.employeeId||a.payrollNumber||a.runTitle||''));tr.append(staff,td(a.departmentName||'—'),td(money(a.basicSalary)),td(money(a.allowances)),td(money(a.bonuses)),td(money(a.deductions)),td(money(a.netPay)));const sc=td();sc.appendChild(statusPill(a.status));tr.appendChild(sc);const actions=make('div','actions');if(a.runStatus==='Draft') actions.append(actionButton('itemEdit','fa-pen','Adjust'));if(['Processed','Approved'].includes(a.runStatus)&&a.status==='Processed') actions.append(actionButton('itemHold','fa-pause','Hold'));if(['Processed','Approved'].includes(a.runStatus)&&a.status==='Held') actions.append(actionButton('itemRelease','fa-play','Release'));if(a.runStatus==='Approved'&&a.status==='Processed') actions.append(actionButton('itemPay','fa-money-bill-wave','Mark paid'));const ac=td();ac.appendChild(actions);tr.appendChild(ac);tbody.appendChild(tr);});}
+  function render(){syncBulkbar();if(state.view==='list')renderList();if(state.view==='items')renderItems();if(state.view==='summary')$('resultMeta').textContent=`${RUNS.length} payroll run(s)`;}
+  function openEditor(pref){const edit=!!pref;$('mTitle').textContent=edit?'Edit Payroll Run':'Create Payroll Run';$('payrollForm').action=edit?`/admin/payroll/${pref.id}/update`:'/admin/payroll';$('pTitle').value=edit?(pref.title||''):'';$('pMonth').value=edit?(pref.month||'January'):'January';$('pYear').value=edit?(pref.year||new Date().getFullYear()):new Date().getFullYear();$('pPeriodLabel').value=edit?(pref.periodLabel||''):'';$('pDepartment').value=edit?(pref.departmentId||''):'';$('pPayDate').value=edit?(pref.payDate||''):'';$('pNotes').value=edit?(pref.notes||''):'';['pMonth','pYear','pDepartment'].forEach((id)=>{$(id).disabled=edit;});openModal('mEdit');}
+  function openRunView(a){$('vTitle').textContent=a.title||'—';$('vDepartment').textContent=a.departmentName||'All Departments';$('vPeriod').textContent=`${a.month||'—'} ${a.year||''}`;$('vPayDate').textContent=a.payDate||'—';$('vStaffCount').textContent=a.staffCount||0;$('vStatus').textContent=a.status||'—';$('vGross').textContent=money(a.grossAmount);$('vDeductions').textContent=money(a.deductionsAmount);$('vNet').textContent=money(a.netAmount);$('vNotes').textContent=a.notes||'—';openModal('mView');}
+  function openItemEditor(item){$('itemForm').action=`/admin/payroll/${item.payrollRunId}/items/${item.id}/update`;$('itemStaffName').textContent=item.staffName||'—';$('itemBasic').value=item.basicSalary||0;$('itemAllowances').value=item.allowances||0;$('itemBonuses').value=item.bonuses||0;$('itemDeductions').value=item.deductions||0;$('itemNotes').value=item.notes||'';openModal('mItemEdit');}
+  $('btnCreate')?.addEventListener('click',()=>openEditor());$('quickNewPayroll')?.addEventListener('click',()=>openEditor());
+  $('viewChips')?.addEventListener('click',(e)=>{const b=e.target.closest('.chip');if(b)setView(b.dataset.view);});
+  $('checkAll')?.addEventListener('change',(e)=>{if(e.target.checked)RUNS.forEach((a)=>state.selected.add(a.id));else state.selected.clear();render();});
+  $('tbody')?.addEventListener('change',(e)=>{if(!e.target.classList.contains('rowCheck'))return;const id=e.target.dataset.id;e.target.checked?state.selected.add(id):state.selected.delete(id);render();});
+  $('tbody')?.addEventListener('click',(e)=>{const tr=e.target.closest('tr[data-id]');if(!tr)return;const a=RUNS.find((x)=>x.id===tr.dataset.id);if(!a)return;if(e.target.closest('.actView'))return openRunView(a);if(e.target.closest('.actEdit'))return openEditor(a);if(e.target.closest('.actProcess'))return submitRowAction(`/admin/payroll/${a.id}/process`);if(e.target.closest('.actApprove'))return submitRowAction(`/admin/payroll/${a.id}/approve`);if(e.target.closest('.actPay')){const ref=window.prompt('Payment reference (optional):','')||'';return submitRowAction(`/admin/payroll/${a.id}/pay`,{paymentReference:ref});}if(e.target.closest('.actClose'))return window.confirm('Close this fully paid payroll run and record the salary expense?')&&submitRowAction(`/admin/payroll/${a.id}/close`);if(e.target.closest('.actDelete'))return window.confirm(`Delete draft payroll run "${a.title}"?`)&&submitRowAction(`/admin/payroll/${a.id}/delete`);});
+  $('tbodyItems')?.addEventListener('click',(e)=>{const tr=e.target.closest('tr[data-item-id]');if(!tr)return;const item=ITEMS.find((x)=>x.id===tr.dataset.itemId);if(!item)return;if(e.target.closest('.itemEdit'))return openItemEditor(item);if(e.target.closest('.itemHold')){const reason=window.prompt('Reason for holding this payroll item:','')||'';if(reason.trim())return submitRowAction(`/admin/payroll/${item.payrollRunId}/items/${item.id}/hold`,{reason});return;}if(e.target.closest('.itemRelease'))return submitRowAction(`/admin/payroll/${item.payrollRunId}/items/${item.id}/release`);if(e.target.closest('.itemPay')){const ref=window.prompt('Payment reference (optional):','')||'';return submitRowAction(`/admin/payroll/${item.payrollRunId}/items/${item.id}/pay`,{paymentReference:ref});}});
+  $('btnBulk')?.addEventListener('click',()=>{if(!state.selected.size)return window.alert('Select at least one payroll run.');$('bulkbar').classList.add('show');});
+  $('bulkClear')?.addEventListener('click',()=>{state.selected.clear();render();});
+  $('bulkProcess')?.addEventListener('click',()=>bulkSubmit('process'));$('bulkApprove')?.addEventListener('click',()=>bulkSubmit('approve'));$('bulkPay')?.addEventListener('click',()=>window.confirm('Mark all eligible items paid for selected approved runs?')&&bulkSubmit('pay'));$('bulkClose')?.addEventListener('click',()=>window.confirm('Close selected fully paid runs and record salary expenses?')&&bulkSubmit('close'));$('bulkDelete')?.addEventListener('click',()=>window.confirm('Delete selected Draft payroll runs?')&&bulkSubmit('delete'));
+  document.querySelectorAll('[data-close-modal]').forEach((b)=>b.addEventListener('click',()=>closeModal(b.dataset.closeModal)));
+  ['mEdit','mView','mItemEdit'].forEach((id)=>$(id)?.addEventListener('click',(e)=>{if(e.target.id===id)closeModal(id);}));
+  document.addEventListener('keydown',(e)=>{if(e.key==='Escape')document.querySelectorAll('.modal-backdrop.show').forEach((el)=>el.classList.remove('show'));});
+  $('btnExport')?.addEventListener('click',()=>{const qs=window.location.search||'';window.location.assign(`/admin/payroll/export.csv${qs}`);});
+  setView('list');
 })();

@@ -219,6 +219,7 @@ module.exports = (connection) => {
     {
       enabled: { type: Boolean, default: true },
       verified: { type: Boolean, default: false },
+      revision: { type: Number, default: 1, min: 1 },
 
       type: { type: String, default: "", trim: true, maxlength: 120 },
       shortName: { type: String, default: "", trim: true, maxlength: 120 },
@@ -414,6 +415,13 @@ module.exports = (connection) => {
       onboardingCompleted: { type: Boolean, default: false },
       onboardingStep: { type: Number, default: 0, min: 0 },
       provisioningVersion: { type: Number, default: 1 },
+      provisioningStatus: {
+        type: String,
+        enum: ["pending", "ready", "failed"],
+        default: "pending",
+      },
+      invitePending: { type: Boolean, default: false },
+      inviteSentAt: { type: Date },
       notes: { type: String, default: "", trim: true, maxlength: 2000 },
 
       domainStatus: {
@@ -430,6 +438,9 @@ module.exports = (connection) => {
       profileCompletion: { type: Number, default: 0, min: 0, max: 100 },
       lastProfileUpdateAt: { type: Date },
       lastPublicContentUpdateAt: { type: Date },
+      lastPublicProjectionAt: { type: Date },
+      publicContentProjectionVersion: { type: Number, default: 0, min: 0 },
+      publicPresenceSyncPending: { type: Boolean, default: false },
     },
     { _id: false }
   );
@@ -486,6 +497,23 @@ module.exports = (connection) => {
         trim: true,
         default: "",
         maxlength: 120,
+      },
+
+      subscriptionId: {
+        type: Schema.Types.ObjectId,
+        ref: "PlatformSubscription",
+      },
+
+      subscriptionRevision: {
+        type: Number,
+        default: 1,
+        min: 1,
+      },
+
+      revision: {
+        type: Number,
+        default: 1,
+        min: 1,
       },
 
       status: {
@@ -545,6 +573,9 @@ module.exports = (connection) => {
         default: false,
       },
 
+      statusReason: { type: String, default: "", trim: true, maxlength: 500 },
+      suspendedAt: { type: Date },
+      cancelledAt: { type: Date },
       archivedAt: { type: Date },
 
       settings: {
@@ -573,6 +604,7 @@ module.exports = (connection) => {
   TenantSchema.index({ customDomain: 1 }, { sparse: true, unique: true });
   TenantSchema.index({ status: 1, isDeleted: 1, createdAt: -1 });
   TenantSchema.index({ planId: 1, status: 1 });
+  TenantSchema.index({ subscriptionId: 1 }, { sparse: true });
   TenantSchema.index({ planName: 1 });
   TenantSchema.index({
     name: "text",

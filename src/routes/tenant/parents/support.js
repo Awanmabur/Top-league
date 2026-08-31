@@ -5,5 +5,6 @@ const supportController = require("../../../controllers/tenant/parents/supportCo
 
 router.get("/support", supportController.index);
 router.post("/support", supportController.store);
+router.post("/support/:id/reply", supportController.reply);
 
 module.exports = router;

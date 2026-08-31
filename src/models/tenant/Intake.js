@@ -37,6 +37,12 @@ module.exports = (conn) => {
       createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
       updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
 
+      revision: { type: Number, default: 1, min: 1 },
+      openedAt: { type: Date, default: null },
+      closedAt: { type: Date, default: null },
+      archivedAt: { type: Date, default: null },
+      activatedAt: { type: Date, default: null },
+
       isDeleted: { type: Boolean, default: false, index: true },
       deletedAt: { type: Date, default: null },
     },
@@ -45,6 +51,10 @@ module.exports = (conn) => {
 
   // Unique code per tenant DB
   IntakeSchema.index({ code: 1 }, { unique: true });
+  IntakeSchema.index(
+    { isActive: 1 },
+    { unique: true, partialFilterExpression: { isDeleted: false, isActive: true }, name: "one_active_intake" }
+  );
 
   return conn.model("Intake", IntakeSchema);
 };

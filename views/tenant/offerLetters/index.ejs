@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
@@ -531,7 +531,7 @@
         <div class="divider"></div>
 
         <div class="preview-shell">
-          <iframe class="preview-frame" id="previewFrame"></iframe>
+          <iframe class="preview-frame" id="previewFrame" sandbox=""></iframe>
         </div>
       </div>
 
@@ -553,6 +553,7 @@
 
       <form id="sendForm" method="POST">
         <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
+        <input type="hidden" name="revision" id="sendRevision" value="">
         <div class="modal-body">
           <div class="field">
             <label>Recipient Email</label>
@@ -577,11 +578,15 @@
 
       <form id="voidForm" method="POST">
         <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
+        <input type="hidden" name="revision" id="voidRevision" value="">
         <div class="modal-body">
           <div class="note">
             This will mark the letter as <strong>void</strong> and block future sending from this record.
           </div>
-          <div class="muted" style="margin-top:10px;">Use this only when the draft is no longer valid.</div>
+          <div class="field" style="margin-top:12px;">
+            <label>Reason</label>
+            <input class="input" id="voidReason" name="reason" required minlength="5" maxlength="500" placeholder="Why is this offer no longer valid?" />
+          </div>
         </div>
         <div class="modal-footer">
           <button class="btn light" type="button" data-close-modal="mVoid">Cancel</button>
@@ -602,6 +607,7 @@
 
       <form method="POST" action="/admin/admissions/offer-letters/template">
         <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
+        <input type="hidden" name="revision" value="<%= Number(template?.revision || 1) %>">
 
         <div class="modal-body">
           <div class="field">
@@ -683,13 +689,15 @@
       latestLetterStatus: latest ? (latest.status || 'draft') : '',
       latestLetterIssuedAt: latest ? (latest.sentAt || latest.issuedAt || null) : null
     };
-  })) %></textarea>
+  })).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
 
   <textarea id="lettersData" class="json-data" aria-hidden="true"><%- JSON.stringify((letters || []).map(function(l){
     const applicant = l.applicant || {};
     const applicantName = applicant.fullName || [applicant.firstName, applicant.middleName, applicant.lastName].filter(Boolean).join(' ');
     return {
       id: String(l._id || ''),
+      revision: Number(l.revision || 1),
+      deliveryStatus: l.deliveryStatus || (l.status === 'sent' ? 'sent' : 'not_sent'),
       letterNo: l.letterNo || '',
       status: l.status || 'draft',
       subject: l.subject || '',
@@ -702,7 +710,7 @@
       programLabel: l.program ? (l.program.name || l.program.className || l.program.code || '—') : '—',
       intakeLabel: l.intakeId ? (l.intakeId.name || l.intakeId.term || l.intakeId.code || '—') : '—'
     };
-  })) %></textarea>
+  })).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
 
   <script src="/js/navbar.js" defer></script>
   <script src="/js/offer-letters-admin.js" defer></script>

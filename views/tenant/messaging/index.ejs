@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .input,.select,.textarea{padding:10px 12px;border-radius:12px;border:1px solid rgba(13,64,96,.16);background:#fff;outline:none}
@@ -201,6 +201,7 @@
               <option value="All Staff" <%= query?.audience === 'All Staff' ? 'selected' : '' %>>All Staff</option>
               <option value="Specific Department" <%= query?.audience === 'Specific Department' ? 'selected' : '' %>>Specific Department</option>
               <option value="Specific Program" <%= query?.audience === 'Specific Program' ? 'selected' : '' %>>Specific Program</option>
+              <option value="Specific Subject" <%= query?.audience === 'Specific Subject' ? 'selected' : '' %>>Specific Subject</option>
               <option value="Year/Cohort" <%= query?.audience === 'Year/Cohort' ? 'selected' : '' %>>Year/Cohort</option>
             </select>
           </div>
@@ -260,6 +261,15 @@
               </table>
             </div>
           </div>
+          <% if (pagination && pagination.pageCount > 1) { %>
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;">
+              <div class="muted">Page <strong><%= pagination.page %></strong> of <strong><%= pagination.pageCount %></strong> · <%= pagination.total %> records</div>
+              <div style="display:flex;gap:8px;">
+                <% if (pagination.prevUrl) { %><a class="btn-xs" href="<%= pagination.prevUrl %>"><i class="fa-solid fa-chevron-left"></i> Previous</a><% } %>
+                <% if (pagination.nextUrl) { %><a class="btn-xs" href="<%= pagination.nextUrl %>">Next <i class="fa-solid fa-chevron-right"></i></a><% } %>
+              </div>
+            </div>
+          <% } %>
 
           <div id="view-delivery" style="display:none;margin-top:10px;">
             <div class="note">Delivery data is shown from DB stats fields.</div>
@@ -350,6 +360,43 @@
     </main>
   </div>
 
+
+  <div class="modal-backdrop" id="mTemplates">
+    <div class="modal lg">
+      <div class="modal-header">
+        <div class="modal-title">Message Templates</div>
+        <button class="btn-xs" type="button" data-close-modal="mTemplates"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="section-title">Saved Templates</div>
+        <div class="section-sub">Use a saved message as a starting point or create a reusable template.</div>
+        <div class="table-wrap" style="margin-top:10px;">
+          <table>
+            <thead><tr><th>Name</th><th>Type</th><th>Audience</th><th style="text-align:right;">Actions</th></tr></thead>
+            <tbody id="templatesBody"></tbody>
+          </table>
+        </div>
+        <div class="divider"></div>
+        <div class="section-title">Create Template</div>
+        <form method="POST" action="/admin/messaging/templates" id="templateForm">
+          <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
+          <div class="form-grid" style="margin-top:10px;">
+            <div class="field"><label>Template Name</label><input class="input" name="name" maxlength="120" required placeholder="e.g., Fee Reminder"></div>
+            <div class="field"><label>Subject</label><input class="input" name="subject" maxlength="220" required placeholder="e.g., Fee Payment Reminder"></div>
+            <div class="field"><label>Type</label><select class="select" name="type"><option>General</option><option>Notice</option><option>Reminder</option><option>Alert</option><option>Invitation</option></select></div>
+            <div class="field"><label>Priority</label><select class="select" name="priority"><option>Normal</option><option>Important</option></select></div>
+            <div class="field"><label>Audience Type</label><select class="select" name="audienceType"><option>All Students</option><option>All Staff</option><option>Specific Department</option><option>Specific Program</option><option>Specific Subject</option><option>Year/Cohort</option></select></div>
+            <div class="field"><label>Audience Value</label><input class="input" name="audienceValue" placeholder="Optional for all-audience templates"></div>
+            <div class="field"><label>Sender Name</label><input class="input" name="senderName" placeholder="e.g., Administration"></div>
+            <div class="field"><label>Reply-To Email</label><input class="input" name="replyTo" type="email" placeholder="e.g., info@school.com"></div>
+          </div>
+          <div class="field" style="margin-top:12px;"><label>Message</label><textarea class="textarea" name="body" maxlength="5000" required placeholder="Reusable message content..."></textarea></div>
+          <div style="display:flex;justify-content:flex-end;margin-top:12px;"><button class="btn primary" type="submit"><i class="fa-solid fa-floppy-disk"></i> Save Template</button></div>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <div class="modal-backdrop" id="mEdit">
     <div class="modal lg">
       <div class="modal-header">
@@ -391,6 +438,7 @@
                 <option>All Staff</option>
                 <option>Specific Department</option>
                 <option>Specific Program</option>
+                <option>Specific Subject</option>
                 <option>Year/Cohort</option>
               </select>
             </div>
@@ -516,13 +564,18 @@
     <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
   </form>
 
+  <form id="reminderForm" method="POST" style="display:none;">
+    <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
+  </form>
+
   <form id="bulkForm" method="POST" action="/admin/messaging/bulk" style="display:none;">
     <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
     <input type="hidden" name="ids" id="bulkIds">
     <input type="hidden" name="action" id="bulkActionInput">
   </form>
 
-  <textarea id="messagesData" class="json-data" aria-hidden="true"><%- JSON.stringify(messages || []) %></textarea>
+  <textarea id="messagesData" class="json-data" aria-hidden="true"><%= JSON.stringify(messages || []) %></textarea>
+  <textarea id="templatesData" class="json-data" aria-hidden="true"><%= JSON.stringify(templates || []) %></textarea>
 
   <script src="/js/navbar.js"></script>
   <script src="/js/messaging.js"></script>

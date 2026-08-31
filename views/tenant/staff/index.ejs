@@ -8,7 +8,7 @@
     crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar { display:flex; gap:10px; flex-wrap:wrap; justify-content:space-between; align-items:center }
     .toolbar .left, .toolbar .right { display:flex; gap:8px; flex-wrap:wrap; align-items:center }
     .input, .select, .textarea { padding:10px 12px; border-radius:12px; border:1px solid rgba(13,64,96,.16); background:#fff; outline:none }
@@ -108,10 +108,10 @@
           <div class="subtitle">Manage staff records, employment details, banking details, department assignment, and HR status.</div>
         </div>
         <div class="top-actions">
-          <a class="btn light" href="/admin/staff-users"><i class="fa-solid fa-users"></i> Users</a>
-          <a class="btn light" href="/admin/staff-roles"><i class="fa-solid fa-user-shield"></i> Roles</a>
+          <a class="btn light" href="/admin/users"><i class="fa-solid fa-users"></i> Users</a>
+          <a class="btn light" href="/admin/roles"><i class="fa-solid fa-user-shield"></i> Roles</a>
           <a class="btn light" href="/admin/staff-leave"><i class="fa-solid fa-calendar-check"></i> Leave</a>
-          <a class="btn light" href="/admin/staff-payroll"><i class="fa-solid fa-money-check-dollar"></i> Payroll</a>
+          <a class="btn light" href="/admin/payroll"><i class="fa-solid fa-money-check-dollar"></i> Payroll</a>
           <button class="btn primary" id="btnCreate" type="button"><i class="fa-solid fa-plus"></i> Add Staff</button>
         </div>
       </div>
@@ -232,14 +232,14 @@
                 <div class="strong">Create Staff User</div>
                 <div class="muted">Invite staff into portal access</div>
               </div>
-              <a class="btn-xs" href="/admin/staff-users"><i class="fa-solid fa-user-plus"></i></a>
+              <a class="btn-xs" href="/admin/users"><i class="fa-solid fa-user-plus"></i></a>
             </div>
             <div class="mini-item">
               <div>
                 <div class="strong">Manage Roles</div>
                 <div class="muted">Department roles and access</div>
               </div>
-              <a class="btn-xs" href="/admin/staff-roles"><i class="fa-solid fa-user-shield"></i></a>
+              <a class="btn-xs" href="/admin/roles"><i class="fa-solid fa-user-shield"></i></a>
             </div>
             <div class="mini-item">
               <div>
@@ -253,7 +253,7 @@
                 <div class="strong">Payroll Runs</div>
                 <div class="muted">Process monthly payroll</div>
               </div>
-              <a class="btn-xs" href="/admin/staff-payroll"><i class="fa-solid fa-money-check-dollar"></i></a>
+              <a class="btn-xs" href="/admin/payroll"><i class="fa-solid fa-money-check-dollar"></i></a>
             </div>
           </div>
         </aside>
@@ -512,7 +512,7 @@
     <input type="hidden" name="action" id="bulkActionInput">
   </form>
 
-  <textarea id="staffData" class="json-data" aria-hidden="true"><%- JSON.stringify(staff || []) %></textarea>
+  <textarea id="staffData" class="json-data" aria-hidden="true"><%- JSON.stringify(staff || []).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
 
   <script src="/js/navbar.js"></script>
   <script src="/js/staff.js"></script>

@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .input,.select,.textarea{padding:10px 12px;border-radius:12px;border:1px solid rgba(13,64,96,.16);background:#fff;outline:none}
@@ -194,6 +194,8 @@
               <option value="Admissions" <%= query?.category === 'Admissions' ? 'selected' : '' %>>Admissions</option>
               <option value="Library" <%= query?.category === 'Library' ? 'selected' : '' %>>Library</option>
               <option value="Hostel" <%= query?.category === 'Hostel' ? 'selected' : '' %>>Hostel</option>
+              <option value="Academic" <%= query?.category === 'Academic' ? 'selected' : '' %>>Academic</option>
+              <option value="Attendance" <%= query?.category === 'Attendance' ? 'selected' : '' %>>Attendance</option>
             </select>
             <select class="select" name="priority">
               <option value="all" <%= query?.priority === 'all' ? 'selected' : '' %>>All Priority</option>
@@ -360,6 +362,8 @@
                 <option>Admissions</option>
                 <option>Library</option>
                 <option>Hostel</option>
+                <option>Academic</option>
+                <option>Attendance</option>
               </select>
             </div>
             <div class="field">
@@ -464,7 +468,7 @@
     <input type="hidden" name="action" id="bulkActionInput">
   </form>
 
-  <textarea id="ticketsData" class="json-data" aria-hidden="true"><%- JSON.stringify(tickets || []) %></textarea>
+  <textarea id="ticketsData" class="json-data" aria-hidden="true"><%- JSON.stringify(tickets || []).replace(/</g, "\\u003c") %></textarea>
 
   <script src="/js/navbar.js"></script>
   <script src="/js/helpdesk.js"></script>

@@ -96,12 +96,20 @@
         return;
       }
 
-      if (file.size > 5 * 1024 * 1024) {
+      if (file.size > 2 * 1024 * 1024) {
         e.preventDefault();
-        alert("CSV file is too large. Maximum allowed size is 5 MB.");
+        alert("CSV file is too large. Maximum allowed size is 2 MB.");
       }
     });
   }
+
+  document.querySelectorAll("[data-confirm-delete]").forEach(function (btn) {
+    btn.addEventListener("click", function (event) {
+      event.preventDefault();
+      const form = btn.closest("form");
+      if (form && window.confirm("Delete this report export? This cannot be undone.")) form.submit();
+    });
+  });
 
   document.querySelectorAll("[data-close-modal]").forEach(function (btn) {
     btn.addEventListener("click", function () {

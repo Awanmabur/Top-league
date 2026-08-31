@@ -1,16 +1,19 @@
 const { platformConnection } = require("../../config/db");
 const Tenant = require("../../models/platform/Tenant")(platformConnection);
 const Plan = require("../../models/platform/Plan")(platformConnection);
+const PlatformSubscription = require("../../models/platform/PlatformSubscription")(platformConnection);
 
 const {
   buildTenantAccess,
   getTenantModulesFromPlan,
 } = require("../../utils/tenantPlanAccess");
+const {
+  subscriptionEffectiveStatus,
+  subscriptionPlanAsAccessPlan,
+} = require("../../services/platformSubscriptionService");
 
 function getHostParts(req) {
-  const forwarded = req.headers["x-forwarded-host"];
-  const rawHost = forwarded || req.headers.host || "";
-  const host = String(rawHost).split(",")[0].trim().split(":")[0].toLowerCase();
+  const host = String(req.hostname || "").trim().toLowerCase();
   const parts = host.split(".").filter(Boolean);
   return { host, parts };
 }
@@ -32,42 +35,6 @@ function extractTenantCodeFromHost(host) {
   return "";
 }
 
-const ACCESS_CACHE = new Map();
-const ACCESS_TTL_MS = 5 * 60 * 1000;
-
-function accessCacheKey(tenant) {
-  const tenantId = tenant?._id ? String(tenant._id) : "";
-  const planId = tenant?.planId?._id
-    ? String(tenant.planId._id)
-    : String(tenant?.planId || "");
-  const updatedAt = tenant?.updatedAt ? new Date(tenant.updatedAt).getTime() : "";
-  return tenantId && planId ? `${tenantId}:${planId}:${updatedAt}` : "";
-}
-
-function getCachedAccess(tenant) {
-  const key = accessCacheKey(tenant);
-  if (!key) return null;
-
-  const hit = ACCESS_CACHE.get(key);
-  if (!hit) return null;
-
-  if (Date.now() > hit.exp) {
-    ACCESS_CACHE.delete(key);
-    return null;
-  }
-
-  return hit.value;
-}
-
-function setCachedAccess(tenant, value) {
-  const key = accessCacheKey(tenant);
-  if (!key) return;
-  ACCESS_CACHE.set(key, {
-    value,
-    exp: Date.now() + ACCESS_TTL_MS,
-  });
-}
-
 async function loadTenantPlan(tenant) {
   if (tenant?.planId && typeof tenant.planId === "object" && tenant.planId.enabledModules) {
     return tenant.planId;
@@ -78,23 +45,19 @@ async function loadTenantPlan(tenant) {
   return Plan.findById(tenant.planId).lean();
 }
 
+async function loadCurrentSubscription(tenant) {
+  if (!tenant?._id) return null;
+  return PlatformSubscription.findOne({
+    tenantId: tenant._id,
+    isDeleted: { $ne: true },
+  }).lean();
+}
+
 module.exports = async function resolveTenantAccess(req, res, next) {
   try {
     if (req.tenantAccess) return next();
 
     let tenant = req.tenant || null;
-
-    if (tenant) {
-      const cached = getCachedAccess(tenant);
-      if (cached) {
-        req.tenantPlan = cached.plan;
-        req.tenantAccess = cached.access;
-        res.locals.tenant = cached.tenant;
-        res.locals.tenantPlan = cached.plan;
-        res.locals.tenantAccess = cached.access;
-        return next();
-      }
-    }
 
     const explicitTenantCode = String(
       req.tenantCode || req.params?.tenantCode || "",
@@ -105,7 +68,6 @@ module.exports = async function resolveTenantAccess(req, res, next) {
     if (!tenant) {
       const { host } = getHostParts(req);
       const hostTenantCode = extractTenantCodeFromHost(host);
-
       const tenantCode = explicitTenantCode || hostTenantCode;
 
       tenant = await Tenant.findOne({
@@ -114,9 +76,7 @@ module.exports = async function resolveTenantAccess(req, res, next) {
           ...(tenantCode ? [{ code: tenantCode }, { subdomain: tenantCode }] : []),
           ...(host ? [{ customDomain: host }, { subdomain: host }] : []),
         ],
-      })
-        .populate("planId")
-        .lean();
+      }).lean();
     }
 
     if (!tenant) {
@@ -125,7 +85,26 @@ module.exports = async function resolveTenantAccess(req, res, next) {
       });
     }
 
-    const plan = await loadTenantPlan(tenant);
+    const subscription = req.platformSubscription || await loadCurrentSubscription(tenant);
+    let plan = subscriptionPlanAsAccessPlan(subscription);
+
+    // Production fails closed once the platform-SaaS migration is deployed.
+    // Development/test retains the legacy plan fallback so migration and
+    // isolated compatibility tests can be run before a platform DB exists.
+    if (!subscription) {
+      if (process.env.NODE_ENV === "production") {
+        return res.status(503).render("platform/public/500", {
+          error: "Tenant subscription is not provisioned.",
+        });
+      }
+      plan = await loadTenantPlan(tenant);
+    }
+
+    if (subscription?.migrationQuarantined) {
+      return res.status(403).render("platform/public/404", {
+        error: "Tenant subscription requires platform review.",
+      });
+    }
 
     if (!plan) {
       return res.status(500).render("platform/public/500", {
@@ -133,24 +112,36 @@ module.exports = async function resolveTenantAccess(req, res, next) {
       });
     }
 
+    const effectiveStatus = subscription ? subscriptionEffectiveStatus(subscription) : tenant.status;
+    const tenantProjection = {
+      ...tenant,
+      status: effectiveStatus === "expired" || effectiveStatus === "past_due" ? "suspended" : effectiveStatus,
+      trialEndsAt: subscription?.trialEndsAt || tenant.trialEndsAt || null,
+      subscriptionStartsAt: subscription?.currentPeriodStart || tenant.subscriptionStartsAt || null,
+      subscriptionEndsAt: subscription?.currentPeriodEnd || tenant.subscriptionEndsAt || null,
+      subscriptionRevision: subscription?.revision || tenant.subscriptionRevision || 1,
+    };
+
     const access = buildTenantAccess({
       tenant: {
-        ...tenant,
+        ...tenantProjection,
         settings: {
           ...(tenant.settings || {}),
           modules: getTenantModulesFromPlan(plan),
         },
       },
       plan,
+      subscription,
     });
 
-    req.tenant = tenant;
+    req.tenant = tenantProjection;
     req.tenantPlan = plan;
+    req.platformSubscription = subscription;
     req.tenantAccess = access;
-    res.locals.tenant = tenant;
+    res.locals.tenant = tenantProjection;
     res.locals.tenantPlan = plan;
+    res.locals.platformSubscription = subscription;
     res.locals.tenantAccess = access;
-    setCachedAccess(tenant, { tenant, plan, access });
 
     return next();
   } catch (err) {

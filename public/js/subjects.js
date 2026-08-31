@@ -385,7 +385,7 @@
     fillClassOptions($("mSchoolUnitId").value, $("mCampusId").value, "secondary", "");
   });
 
-  $("btnExport").addEventListener("click", exportSubjects);
+  $("btnExport").addEventListener("click", function () { window.location.href = "/admin/subjects/export.csv" + (window.location.search || ""); });
   $("btnPrint").addEventListener("click", function () { window.print(); });
   $("btnBulk").addEventListener("click", function () {
     if (!state.selected.size) return alert("Select at least one subject.");

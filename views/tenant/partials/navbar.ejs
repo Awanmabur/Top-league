@@ -88,6 +88,7 @@
     { label: "Sections", icon: "fa-code-branch", href: "/admin/sections", hidden: (!hasModule("Section") && !hasModule("Stream")) || !can("sections.view") },
     { label: "Streams", icon: "fa-diagram-project", href: "/admin/streams", hidden: (!hasModule("Stream") && !hasModule("Section")) || !can("streams.view") },
     { label: ui.subjects, icon: "fa-book-open", href: "/admin/subjects", hidden: !hasModule("Subject") || !can("subjects.view") },
+    { label: "Programs", icon: "fa-graduation-cap", href: "/admin/programs", hidden: !hasModule("Program") || !can("subjects.view") },
     { label: "Timetable", icon: "fa-clock", href: "/admin/timetable", hidden: !hasModule("TimetableEntry") || !can("timetable.view") },
     { label: "Attendance", icon: "fa-user-clock", href: "/admin/attendance", hidden: !hasModule("Attendance") || !can("attendance.view") },
     { label: ui.assignments, icon: "fa-file-pen", href: "/admin/assignments", hidden: (!hasModule("Assignment") && !isNursery) || !can("assignments.view") },
@@ -99,10 +100,11 @@
 
   const hrItems = visibleItems([
     { label: "Staff", icon: "fa-users", href: "/admin/staff", hidden: !hasModule("Staff") || !isTenantAdmin },
+    { label: "Departments", icon: "fa-building-user", href: "/admin/departments", hidden: !hasModule("Department") || !isTenantAdmin },
     { label: "Users", icon: "fa-user-shield", href: "/admin/users", hidden: !hasModule("User") || !isTenantAdmin },
     { label: "Staff Roles", icon: "fa-key", href: "/admin/roles", hidden: !hasModule("StaffRole") || !isTenantAdmin },
     { label: "Leave", icon: "fa-person-walking-arrow-right", href: "/admin/staff-leave", hidden: !hasModule("LeaveRequest") || !isTenantAdmin },
-    { label: "Payroll", icon: "fa-money-check-dollar", href: "/admin/payroll", hidden: (!hasModule("PayrollRun") && !hasModule("PayrollItem")) || !isTenantAdmin },
+    { label: "Payroll", icon: "fa-money-check-dollar", href: "/admin/payroll", hidden: !hasModule("PayrollRun") || !hasModule("PayrollItem") || !hasModule("Staff") || !hasModule("Expense") || !can("payroll.view") },
   ]);
 
   const facilityItems = visibleItems([
@@ -110,6 +112,7 @@
     { label: "Hostels", icon: "fa-building", href: "/admin/hostels", hidden: !hasModule("Hostel") || !isHigh || !can("hostels.view") },
     { label: "Transport", icon: "fa-bus", href: "/admin/transport", hidden: !hasModule("Transport") || !isTenantAdmin },
     { label: "Assets", icon: "fa-boxes-stacked", href: "/admin/assets", hidden: !hasModule("Asset") || !isTenantAdmin },
+    { label: "Classrooms", icon: "fa-school", href: "/admin/facilities", hidden: !hasModule("Classroom") || !isTenantAdmin },
     { label: "Events", icon: "fa-calendar", href: "/admin/events", hidden: !hasModule("Event") || !isTenantAdmin },
   ]);
 
@@ -118,7 +121,7 @@
     { label: "Invoices", icon: "fa-file-invoice-dollar", href: "/admin/invoices", hidden: !hasModule("Invoice") || !can("finance.view") },
     { label: "Payments", icon: "fa-money-bill-wave", href: "/admin/payments", hidden: !hasModule("Payment") || !can("finance.view") },
     { label: ui.statements, icon: "fa-receipt", href: "/admin/student-statements", hidden: !hasModule("Payment") || !can("finance.view") },
-    { label: "Fee Structure", icon: "fa-list-check", href: "/admin/fees", hidden: !hasModule("FeeStructure") || !can("finance.view") },
+    { label: "Fee Structure", icon: "fa-list-check", href: "/admin/fee-structures", hidden: !hasModule("FeeStructure") || !can("finance.view") },
     { label: ui.bursaries, icon: "fa-hand-holding-heart", href: "/admin/scholarships", hidden: !hasModule("Scholarship") || !can("finance.view") },
     { label: "Finance Reports", icon: "fa-chart-column", href: "/admin/finance-reports", hidden: !hasModule("Payment") || !can("finance.view") },
     { label: "Expenses", icon: "fa-money-check-dollar", href: "/admin/expenses", hidden: (!hasModule("Expense") && !hasModule("Payment")) || !can("finance.view") },
@@ -126,9 +129,10 @@
 
   const commItems = visibleItems([
     { label: "Announcements", icon: "fa-bullhorn", href: "/admin/announcements", hidden: !hasModule("Announcement") || !can("announcements.view") },
-    { label: "Messaging", icon: "fa-comments", href: "/admin/messaging", hidden: !hasModule("Notification") || !can("messaging.view") },
+    { label: "Messaging", icon: "fa-comments", href: "/admin/messaging", hidden: !hasModule("Message") || !hasModule("Notification") || !can("messaging.view") },
     { label: "Helpdesk", icon: "fa-headset", href: "/admin/tickets", hidden: !hasFeature("helpdesk") || !isTenantAdmin },
     { label: "Inquiries", icon: "fa-circle-question", href: "/admin/inquiries", hidden: !can("inquiries.view") },
+    { label: "Jobs & Opportunities", icon: "fa-briefcase", href: "/admin/jobs", hidden: !hasModule("JobOpportunity") || !hasModule("JobApplication") || !isTenantAdmin },
   ]);
 
   const systemItems = visibleItems([
@@ -283,3 +287,8 @@
       <div class="navfoot">Plan: <strong><%= planName %></strong> - Status: <strong><%= tenantStatus %></strong></div>
     </nav>
   </aside>
+
+<script src="/js/offline/db.js" defer></script>
+<script src="/js/offline/queue.js" defer></script>
+<script src="/js/offline/forms.js" defer></script>
+<script src="/js/csp-actions.js" defer></script>

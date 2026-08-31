@@ -1,0 +1,41 @@
+const { str, idText, sameId, toMinutes, normalizeStatus, normalizeWeekPattern, roomKey, conflictKindsBetween } = require("../../src/services/tenant/timetableService");
+const validId=(v)=>/^[a-f\d]{24}$/i.test(idText(v));
+const DAY_ALIASES={monday:"Mon",mon:"Mon",tuesday:"Tue",tue:"Tue",tues:"Tue",wednesday:"Wed",wed:"Wed",thursday:"Thu",thu:"Thu",thur:"Thu",thurs:"Thu",friday:"Fri",fri:"Fri",saturday:"Sat",sat:"Sat",sunday:"Sun",sun:"Sun"};
+function normalizeDay(v){return DAY_ALIASES[str(v,20).toLowerCase()]||"";}
+function preferredScore(row={}){return [String(row.status)==="active"?2:String(row.status)==="inactive"?1:0,Math.max(0,Number(row.revision||0)),new Date(row.updatedAt||row.createdAt||0).getTime()||0];}
+function comparePreferred(a,b){const aa=preferredScore(a),bb=preferredScore(b);for(let i=0;i<aa.length;i+=1)if(aa[i]!==bb[i])return bb[i]-aa[i];return idText(a._id).localeCompare(idText(b._id));}
+async function migrateTimetable(models={}){
+  const {TimetableEntry,Class,Section,Stream,Subject,Staff}=models;if(!TimetableEntry||!Class||!Section||!Stream||!Subject||!Staff)return{skipped:true,reason:"TimetableEntry, Class, Section, Stream, Subject and Staff models are required"};
+  const [rows,classes,sections,streams,subjects,staff]=await Promise.all([TimetableEntry.collection.find({}).toArray(),Class.collection.find({}).toArray(),Section.collection.find({}).toArray(),Stream.collection.find({}).toArray(),Subject.collection.find({}).toArray(),Staff.collection.find({}).toArray()]);
+  const byClassId=new Map(classes.map((x)=>[idText(x._id),x])),byClassCode=new Map(classes.map((x)=>[str(x.code,40).toUpperCase(),x]).filter(([k])=>k));
+  const bySectionId=new Map(sections.map((x)=>[idText(x._id),x])),bySectionCode=new Map(sections.map((x)=>[str(x.code,40).toUpperCase(),x]).filter(([k])=>k));
+  const byStreamId=new Map(streams.map((x)=>[idText(x._id),x])),byStreamCode=new Map(streams.map((x)=>[str(x.code,40).toUpperCase(),x]).filter(([k])=>k));
+  const bySubjectId=new Map(subjects.map((x)=>[idText(x._id),x])),bySubjectCode=new Map(subjects.map((x)=>[str(x.code,40).toUpperCase(),x]).filter(([k])=>k));
+  const byStaffId=new Map(staff.map((x)=>[idText(x._id),x])),byStaffEmail=new Map(staff.map((x)=>[str(x.email,160).toLowerCase(),x]).filter(([k])=>k));
+  const normalized=[];let scanned=0,quarantined=0,normalizedCount=0;
+  for(const row of rows){scanned+=1;const reasons=[];
+    const classRef=idText(row.classGroup||row.classId||row.classGroupId)||str(row.classCode,40);
+    const sectionRef=idText(row.sectionId)||str(row.sectionCode,40);
+    const streamRef=idText(row.streamId)||str(row.streamCode,40);
+    const subjectRef=idText(row.subject||row.subjectId||row.course||row.courseId)||str(row.subjectCode||row.courseCode,40);
+    const teacherRef=idText(row.teacher||row.teacherId||row.staffId)||str(row.teacherEmail,160);
+    const classDoc=byClassId.get(idText(row.classGroup||row.classId||row.classGroupId))||byClassCode.get(str(row.classCode,40).toUpperCase())||null;
+    const section=bySectionId.get(idText(row.sectionId))||bySectionCode.get(str(row.sectionCode,40).toUpperCase())||null;
+    const stream=byStreamId.get(idText(row.streamId))||byStreamCode.get(str(row.streamCode,40).toUpperCase())||null;
+    const subject=bySubjectId.get(idText(row.subject||row.subjectId||row.course||row.courseId))||bySubjectCode.get(str(row.subjectCode||row.courseCode,40).toUpperCase())||null;
+    const teacher=byStaffId.get(idText(row.teacher||row.teacherId||row.staffId))||byStaffEmail.get(str(row.teacherEmail,160).toLowerCase())||null;
+    const dayOfWeek=normalizeDay(row.dayOfWeek||row.day||row.weekday),startTime=str(row.startTime||row.start||row.fromTime,8),endTime=str(row.endTime||row.end||row.toTime,8),startMinutes=toMinutes(startTime),endMinutes=toMinutes(endTime);
+    let status="inactive";try{status=normalizeStatus(row.status||row.state||"inactive","inactive");}catch{reasons.push("Timetable status is invalid.");}
+    let weekPattern="all";try{weekPattern=normalizeWeekPattern(row.weekPattern||row.week||"all");}catch{reasons.push("Week pattern is invalid.");}
+    if(!classDoc||String(classDoc.status||"")!=="active")reasons.push("Active class could not be resolved safely.");if(sectionRef&&(!section||String(section.status||"")!=="active"))reasons.push("Active section could not be resolved safely.");if(streamRef&&(!stream||String(stream.status||"")!=="active"))reasons.push("Active stream could not be resolved safely.");if(!subject||String(subject.status||"")!=="active")reasons.push("Active subject could not be resolved safely.");if(teacherRef&&!teacher)reasons.push("Teacher reference could not be resolved safely.");if(!dayOfWeek)reasons.push("Day of week is invalid.");if(startMinutes==null||endMinutes==null||endMinutes<=startMinutes)reasons.push("Timetable time range is invalid.");
+    if(section&&classDoc&&idText(section.classId)!==idText(classDoc._id))reasons.push("Section/class scope conflicts.");if(stream&&classDoc&&idText(stream.classId)!==idText(classDoc._id))reasons.push("Stream/class scope conflicts.");if(subject&&classDoc&&idText(subject.classId)!==idText(classDoc._id))reasons.push("Subject/class scope conflicts.");if(subject?.sectionId&&!sameId(subject.sectionId,section?._id))reasons.push("Subject/section scope conflicts.");if(subject?.streamId&&!sameId(subject.streamId,stream?._id))reasons.push("Subject/stream scope conflicts.");if(teacher&&(teacher.isDeleted===true||String(teacher.status||"")!=="Active"))reasons.push("Teacher is not active.");
+    const academicYear=str(row.academicYear||subject?.academicYear||classDoc?.academicYear,20),term=[1,2,3].includes(Number(row.term||subject?.term||classDoc?.term))?Number(row.term||subject?.term||classDoc?.term):1;const room=str(row.room||row.venue||row.location,80).replace(/\s+/g," ");const existingConflictQuarantine=!!row.migrationQuarantinedAt&&String(row.migrationQuarantineReason||"").startsWith("Published timetable conflict;");const quarantineAt=reasons.length?(row.migrationQuarantinedAt||new Date()):(existingConflictQuarantine?row.migrationQuarantinedAt:null);if(reasons.length){quarantined+=1;if(status==="active")status="inactive";}if(existingConflictQuarantine&&status==="active")status="inactive";
+    const quarantineReason=reasons.length?reasons.join(" ").slice(0,500):(existingConflictQuarantine?String(row.migrationQuarantineReason||"").slice(0,500):"");
+    const set={classGroup:classDoc?._id||null,sectionId:section?._id||null,sectionName:str(row.sectionName||section?.name,100),sectionCode:str(row.sectionCode||section?.code,40),streamId:stream?._id||null,streamName:str(row.streamName||stream?.name,100),streamCode:str(row.streamCode||stream?.code,40),subject:subject?._id||null,teacher:teacher?._id||null,academicYear,term,dayOfWeek:dayOfWeek||"Mon",startTime:startTime||"00:00",endTime:endTime||"00:01",startMinutes:startMinutes==null?0:startMinutes,endMinutes:endMinutes==null?1:Math.max(1,endMinutes),weekPattern,status,room,roomKey:roomKey(room),campus:str(row.campus||row.campusName,80),note:str(row.note||row.notes||row.remarks,500),revision:Math.max(1,Number(row.revision||1)),publishedAt:row.publishedAt||(status==="active"?(row.updatedAt||row.createdAt||new Date()):null),archivedAt:row.archivedAt||(status==="archived"?(row.updatedAt||row.createdAt||new Date()):null),migrationQuarantinedAt:quarantineAt,migrationQuarantineReason:quarantineReason};
+    await TimetableEntry.collection.updateOne({_id:row._id},{$set:set});normalized.push({...row,...set,_id:row._id});normalizedCount+=1;
+  }
+  const active=normalized.filter((r)=>r.status==="active"&&!r.migrationQuarantinedAt);active.sort(comparePreferred);let conflictsQuarantined=0;
+  const retained=[];for(const row of active){const conflict=retained.find((keep)=>conflictKindsBetween(row,keep).length);if(!conflict){retained.push(row);continue;}await TimetableEntry.collection.updateOne({_id:row._id},{$set:{status:"inactive",migrationQuarantinedAt:new Date(),migrationQuarantineReason:`Published timetable conflict; retained ${conflict._id}.`.slice(0,500)}});conflictsQuarantined+=1;}
+  return{scanned,normalized:normalizedCount,quarantined,conflictsQuarantined};
+}
+module.exports={DAY_ALIASES,normalizeDay,preferredScore,comparePreferred,migrateTimetable};

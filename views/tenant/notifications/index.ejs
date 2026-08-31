@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
@@ -398,7 +398,7 @@
           <button class="btn light" id="btnPrint" type="button"><i class="fa-solid fa-print"></i> Print</button>
           <form method="POST" action="/admin/notifications/mark-all-read" style="display:inline">
             <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
-            <button class="btn light" type="submit"><i class="fa-solid fa-check-double"></i> Mark All Read</button>
+            <button class="btn light" type="submit"><i class="fa-solid fa-check-double"></i> Mark All Reviewed</button>
           </form>
           <button class="btn primary" id="btnCreate" type="button"><i class="fa-solid fa-plus"></i> New Notification</button>
         </div>
@@ -411,12 +411,12 @@
           <div class="muted">Matching filter</div>
         </div>
         <div class="card">
-          <div class="section-title">Unread</div>
+          <div class="section-title">Unreviewed</div>
           <div class="kpi-value" style="color:#b91c1c"><%= (kpis && kpis.unread) || 0 %></div>
           <div class="muted">Needs review</div>
         </div>
         <div class="card">
-          <div class="section-title">Read</div>
+          <div class="section-title">Reviewed</div>
           <div class="kpi-value" style="color:#15803d"><%= (kpis && kpis.read) || 0 %></div>
           <div class="muted">Already opened</div>
         </div>
@@ -434,8 +434,8 @@
 
             <select class="select" name="status">
               <option value="">All Status</option>
-              <option value="unread" <%= filters && filters.status === 'unread' ? 'selected' : '' %>>Unread</option>
-              <option value="read" <%= filters && filters.status === 'read' ? 'selected' : '' %>>Read</option>
+              <option value="unread" <%= filters && filters.status === 'unread' ? 'selected' : '' %>>Unreviewed</option>
+              <option value="read" <%= filters && filters.status === 'read' ? 'selected' : '' %>>Reviewed</option>
             </select>
 
             <select class="select" name="type">
@@ -451,6 +451,7 @@
               <option value="admin" <%= filters && filters.audience === 'admin' ? 'selected' : '' %>>Admin</option>
               <option value="staff" <%= filters && filters.audience === 'staff' ? 'selected' : '' %>>Staff</option>
               <option value="student" <%= filters && filters.audience === 'student' ? 'selected' : '' %>>Student</option>
+              <option value="parent" <%= filters && filters.audience === 'parent' ? 'selected' : '' %>>Parent</option>
               <option value="all" <%= filters && filters.audience === 'all' ? 'selected' : '' %>>All</option>
             </select>
           </div>
@@ -468,8 +469,8 @@
             <span class="muted">notification(s)</span>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-            <button class="btn-xs" id="bulkRead" type="button"><i class="fa-solid fa-check"></i> Mark Read</button>
-            <button class="btn-xs" id="bulkUnread" type="button"><i class="fa-regular fa-circle"></i> Mark Unread</button>
+            <button class="btn-xs" id="bulkRead" type="button"><i class="fa-solid fa-check"></i> Mark Reviewed</button>
+            <button class="btn-xs" id="bulkUnread" type="button"><i class="fa-regular fa-circle"></i> Mark Unreviewed</button>
             <button class="btn-xs" id="bulkDelete" type="button"><i class="fa-solid fa-trash"></i> Delete</button>
             <button class="btn-xs" id="bulkClear" type="button"><i class="fa-solid fa-xmark"></i> Clear</button>
           </div>
@@ -520,7 +521,7 @@
                       var createdAtLabel = n.createdAt ? new Date(n.createdAt).toLocaleString() : '—';
                       var deliverAtLabel = n.deliverAt ? new Date(n.deliverAt).toLocaleString() : '—';
                       var expiresAtLabel = n.expiresAt ? new Date(n.expiresAt).toLocaleString() : '—';
-                      var statusLabel = isRead ? 'Read' : 'Unread';
+                      var statusLabel = isRead ? 'Reviewed' : 'Unreviewed';
                       var nextRead = isRead ? 'unread' : 'read';
                       var preview = message.length > 140 ? message.slice(0, 140) + '…' : message;
                       var typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
@@ -581,7 +582,7 @@
 
                         <td class="col-status">
                           <% if (isRead) { %>
-                            <span class="pill ok"><i class="fa-solid fa-envelope-open"></i> Read</span>
+                            <span class="pill ok"><i class="fa-solid fa-envelope-open"></i> Reviewed</span>
                           <% } else { %>
                             <span class="pill bad"><i class="fa-solid fa-envelope"></i> Unread</span>
                           <% } %>
@@ -677,7 +678,7 @@
 
         <div class="note" style="margin-top:12px;">
           <div class="muted" style="font-weight:700;margin-bottom:6px;">CSV import headers:</div>
-          <code>title, message, type, audience, url, deliverAt, expiresAt</code>
+          <code>title, message, type, audience, url, deliverAt, expiresAt, category</code>
         </div>
         </aside>
       </div>
@@ -702,6 +703,7 @@
                 <option value="admin">Admin</option>
                 <option value="staff">Staff</option>
                 <option value="student">Student</option>
+                <option value="parent">Parent</option>
                 <option value="all">All</option>
               </select>
             </div>
@@ -717,8 +719,16 @@
             </div>
 
             <div class="field">
+              <label>Category</label>
+              <select class="select" id="mCategory" name="category" required>
+                <option value="general">General</option><option value="academics">Academics</option><option value="finance">Finance</option><option value="admissions">Admissions</option><option value="events">Events</option><option value="library">Library</option><option value="hostel">Hostel</option><option value="transport">Transport</option><option value="discipline">Discipline</option><option value="messages">Messages</option><option value="system">System</option>
+              </select>
+            </div>
+
+            <div class="field">
               <label>Link (optional)</label>
-              <input class="input" id="mUrl" name="url" placeholder="/admin/invoices/123 or https://..." />
+              <input class="input" id="mUrl" name="url" placeholder="/admin/invoices/123" />
+              <div class="muted">Internal portal paths only.</div>
             </div>
 
             <div class="field">
@@ -736,8 +746,8 @@
 
           <div class="field">
             <label>Title</label>
-            <input class="input" id="mTitleInput" name="title" maxlength="160" required />
-            <div class="muted" id="titleCount">0 / 160</div>
+            <input class="input" id="mTitleInput" name="title" maxlength="140" required />
+            <div class="muted" id="titleCount">0 / 140</div>
           </div>
 
           <div class="field" style="margin-top:12px;">
@@ -831,7 +841,7 @@
         <div class="modal-body">
           <div class="note">
             Upload a UTF-8 CSV file with headers:<br>
-            <code>title,message,type,audience,url,deliverAt,expiresAt</code>
+            <code>title,message,type,audience,url,deliverAt,expiresAt,category</code>
           </div>
 
           <div class="field" style="margin-top:12px;">

@@ -105,7 +105,7 @@ module.exports = (connection) => {
         prioritySupport: { type: Boolean, default: false },
         whiteLabel: { type: Boolean, default: false },
         advancedReports: { type: Boolean, default: false },
-        helpdesk: { type: Boolean, default: true },
+        helpdesk: { type: Boolean, default: false },
         backups: { type: Boolean, default: true },
         systemHealth: { type: Boolean, default: true },
       },
@@ -138,6 +138,12 @@ module.exports = (connection) => {
       updatedBy: {
         type: Schema.Types.ObjectId,
         ref: "PlatformUser",
+      },
+
+      revision: {
+        type: Number,
+        default: 1,
+        min: 1,
       },
     },
     { timestamps: true }

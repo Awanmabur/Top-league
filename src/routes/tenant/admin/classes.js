@@ -9,6 +9,8 @@ router.get("/", classesCtrl.list);
 // create
 router.post("/", classesCtrl.classRules, classesCtrl.create);
 
+router.get("/export.csv", classesCtrl.exportCsv);
+
 // bulk
 router.post("/bulk", classesCtrl.bulk);
 

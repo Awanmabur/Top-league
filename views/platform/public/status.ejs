@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>System Status — Classic Academy</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <meta name="description" content="Current Classic Academy platform availability." />
+  <meta name="robots" content="index,follow" />
+  <meta name="theme-color" content="#4a90e2" />
+  <link rel="canonical" href="/status" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+  <style nonce="<%= cspNonce %>">
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root { --primary: #4a90e2; --ink: #0f172a; --muted: #475569; --page-pad: clamp(1rem, 4vw, 6rem); --shadow2: 0 18px 50px rgba(15, 23, 42, .12); }
+    a { text-decoration: none; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; background: #e0f7fa; color: #333; overflow-x: clip; padding-top: 112px; }
+    @media (max-width: 600px) { body { padding-top: 102px; } }
+    #loader { position: fixed; inset: 0; background: #e0f7fa; display: flex; flex-direction: column; gap: 14px; align-items: center; justify-content: center; z-index: 9999; }
+    .academylogo { width: min(220px, 70vw); } .academylogo img { width: 100%; height: auto; display: block; }
+    .loader { position: relative; width: 18px; height: 28px; perspective: 500px; animation: flip 2s infinite; }
+    .loader:nth-child(3) { animation-delay: 0.2s; } .loader:nth-child(4) { animation-delay: 0.4s; } .loader:nth-child(5) { animation-delay: 0.6s; } .loader:nth-child(6) { animation-delay: 0.8s; }
+    .face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 4px; }
+    .front { background: var(--primary); } .back { background: #d35400; transform: rotateY(180deg); }
+    @keyframes flip { 0%, 100% { transform: rotateY(0deg); } 50% { transform: rotateY(180deg); } }
+    .header { position: fixed; top: 14px; left: var(--page-pad); right: var(--page-pad); padding: .65rem .85rem; border-radius: 999px; background: rgba(255, 255, 255, .70); border: 1px solid rgba(255, 255, 255, .78); backdrop-filter: blur(12px); box-shadow: 0 16px 46px rgba(15, 23, 42, .10); display: flex; align-items: center; justify-content: space-between; gap: .8rem; z-index: 2000; }
+    .brand { display: flex; align-items: center; gap: .75rem; min-width: 0; color: var(--ink); }
+    .brand-mark { width: 40px; height: 40px; border-radius: 14px; object-fit: cover; border: 1px solid rgba(15, 23, 42, .10); background: rgba(255, 255, 255, .85); flex: 0 0 auto; }
+    .brand-txt { display: grid; line-height: 1.05; min-width: 0; }
+    .brand-name { font-weight: 900; letter-spacing: -.02em; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .brand-sub { font-size: .86rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .navbar { display: flex; align-items: center; gap: .35rem; }
+    .navbar a { padding: .55rem .75rem; border-radius: 999px; color: #1d4ed8; font-weight: 600; font-size: 1.02rem; white-space: nowrap; }
+    .navbar a:hover { background: rgba(74, 144, 226, .10); color: var(--ink); }
+    .nav-pill { border: 1px solid rgba(74, 144, 226, .35); background: rgba(74, 144, 226, .10); color: #0f172a !important; font-weight: 800; }
+    .nav-actions { display: flex; align-items: center; gap: .55rem; flex: 0 0 auto; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: .45rem; padding: 0.72rem 1rem; background-color: var(--primary); color: white; border: 1px solid var(--primary); border-radius: 999px; font-weight: 800; box-shadow: 0 10px 28px rgba(74, 144, 226, .18); white-space: nowrap; }
+    .btn-sm { padding: .55rem .8rem !important; font-size: .95rem !important; box-shadow: none !important; }
+    .menu-btn { width: 44px; height: 44px; border-radius: 999px; border: 1px solid rgba(15, 23, 42, .12); background: rgba(255, 255, 255, .78); display: none; align-items: center; justify-content: center; cursor: pointer; }
+    @media (max-width: 1024px) {
+      .brand-sub { display: none; } .menu-btn { display: inline-flex; }
+      .navbar { position: absolute; top: calc(100% + .65rem); left: 0; right: 0; margin: 0 .25rem; padding: .75rem; background: rgba(74, 144, 226, .96); border-radius: 20px; display: grid; gap: .4rem; transform: translateY(-8px); opacity: 0; pointer-events: none; transition: transform .2s ease, opacity .2s ease; }
+      .navbar.active { transform: translateY(0); opacity: 1; pointer-events: auto; }
+      .navbar a { color: #fff; border-radius: 16px; padding: .85rem .85rem; background: rgba(255, 255, 255, .08); }
+      .nav-pill { background: rgba(255, 255, 255, .18); color: #fff !important; }
+    }
+    .page-wrap { margin: 0 var(--page-pad); padding: 2.2rem 0 2.8rem 0; }
+    .status-hero { text-align: center; max-width: 720px; margin: 0 auto 1.6rem auto; }
+    .status-pill { display: inline-flex; align-items: center; gap: .55rem; padding: .55rem 1rem; border-radius: 999px; background: rgba(22,163,74,.12); color: #15803d; font-weight: 900; font-size: 1rem; }
+    .status-pill i { font-size: .8rem; }
+    .status-hero h1 { margin-top: 1rem; font-size: 1.9rem; color: var(--ink); }
+    .status-hero p { margin-top: .5rem; color: var(--muted); }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.1rem; max-width: 980px; margin: 0 auto; }
+    .cardx { background: rgba(255, 255, 255, .70); border: 1px solid rgba(255, 255, 255, .85); border-radius: 22px; box-shadow: 0 12px 30px rgba(15, 23, 42, .10); padding: 1.1rem 1.15rem; display: flex; align-items: center; justify-content: space-between; gap: .8rem; }
+    .cardx .label { font-weight: 800; color: #0f172a; }
+    .ok-dot { width: 10px; height: 10px; border-radius: 50%; background: #16a34a; box-shadow: 0 0 0 4px rgba(22,163,74,.18); }
+    @media (max-width: 1024px) { .grid-3 { grid-template-columns: 1fr; } }
+    .footer { display: flex; flex-wrap: wrap; justify-content: space-between; font-size: 0.95rem; background: rgba(255, 255, 255, 0.3); backdrop-filter: blur(10px); border-radius: 25px; margin: 2rem var(--page-pad); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1); }
+    .footer div { margin: 1rem; flex: 1 1 220px; min-width: 220px; }
+    .footer h4 { font-size: 1rem; margin-bottom: 1rem; }
+    .footer ul { list-style: none; padding: 0; }
+    .footer ul li { margin-bottom: 0.5rem; }
+    .footer ul li a { color: #333; }
+    .footer ul li a:hover { text-decoration: underline; }
+    #toTopBtn { position: fixed; bottom: 30px; right: 30px; background-color: var(--primary); color: white; border: none; width: 42px; height: 42px; border-radius: 50%; cursor: pointer; font-size: 1.5rem; display: none; z-index: 1000; }
+  </style>
+  <script src="/js/public-image-fallback.js"></script>
+</head>
+
+<body>
+  <div id="loader">
+    <div class="academylogo"><img src="/img/academylogo.webp" alt="Classic Academy logo" decoding="async" width="396" height="415"></div>
+    <div style="display:flex; gap:10px;">
+      <div class="loader"><div class="face front"></div><div class="face back"></div></div>
+      <div class="loader"><div class="face front"></div><div class="face back"></div></div>
+      <div class="loader"><div class="face front"></div><div class="face back"></div></div>
+      <div class="loader"><div class="face front"></div><div class="face back"></div></div>
+      <div class="loader"><div class="face front"></div><div class="face back"></div></div>
+    </div>
+  </div>
+
+  <header class="header" id="siteHeader">
+    <a href="/" class="brand" aria-label="Classic Academy Home">
+      <img class="brand-mark" src="/img/academylogo.webp" alt="Classic Academy logo" decoding="async" width="396" height="415">
+      <div class="brand-txt"><span class="brand-name">Classic Academy</span><span class="brand-sub">School management + admissions</span></div>
+    </a>
+    <nav class="navbar" aria-label="Primary">
+      <a href="/">Home</a>
+      <a href="/about">About</a>
+      <a href="/services">Features</a>
+      <a href="/#contact">Contact</a>
+      <a class="nav-pill" href="/#pricing">Join Today</a>
+      <a class="nav-pill" href="/schedule">Sign In</a>
+    </nav>
+    <div class="nav-actions">
+      <a href="/schedule" class="btn btn-sm"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
+      <button id="menu-btn" class="menu-btn" aria-label="Open menu" aria-expanded="false"><i class="fa-solid fa-bars"></i></button>
+    </div>
+  </header>
+
+  <section class="page-wrap">
+    <div class="status-hero reveal">
+      <span class="status-pill"><i class="fa-solid fa-circle"></i> All systems operational</span>
+      <h1>System Status</h1>
+      <p>This page reflects the current state of Classic Academy's core services.</p>
+    </div>
+
+    <div class="grid-3 reveal">
+      <div class="cardx"><span class="label">Web application</span><span class="ok-dot"></span></div>
+      <div class="cardx"><span class="label">School portals (admin/staff/parent/student)</span><span class="ok-dot"></span></div>
+      <div class="cardx"><span class="label">Database</span><span class="ok-dot"></span></div>
+      <div class="cardx"><span class="label">Email delivery</span><span class="ok-dot"></span></div>
+      <div class="cardx"><span class="label">Media storage</span><span class="ok-dot"></span></div>
+      <div class="cardx"><span class="label">Public school pages</span><span class="ok-dot"></span></div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div>
+      <h4>Get help with your account</h4>
+      <ul>
+        <li><a href="/contact">Customer Support</a></li>
+        <li><a href="/faq">FAQ</a></li>
+        <li><a href="/security">Security</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Company</h4>
+      <ul>
+        <li><a href="/about">About</a></li>
+        <li><a href="/privacy">Privacy Policy</a></li>
+        <li><a href="/terms">Terms</a></li>
+      </ul>
+    </div>
+  </footer>
+
+  <button id="toTopBtn" aria-label="Scroll to top">↑</button>
+
+  <script src="/pages/terms.js"></script>
+</body>
+
+</html>

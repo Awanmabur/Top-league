@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="/css/student-portal.css"/>
   <link rel="stylesheet" href="/css/navbar.css"/>
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     *{box-sizing:border-box}
     html,body{max-width:100%;overflow-x:hidden}
     body{overflow-x:hidden}
@@ -350,8 +350,8 @@
                     </td>
                     <td>
                       <div class="actions">
-                        <button class="btn-xs js-view-room" type="button" title="View" data-room='<%- JSON.stringify(room) %>'><i class="fa-solid fa-eye"></i></button>
-                        <button class="btn-xs js-edit-room" type="button" title="Edit" data-room='<%- JSON.stringify(room) %>'><i class="fa-solid fa-pen"></i></button>
+                        <button class="btn-xs js-view-room" type="button" title="View" data-room='<%= JSON.stringify(room) %>'><i class="fa-solid fa-eye"></i></button>
+                        <button class="btn-xs js-edit-room" type="button" title="Edit" data-room='<%= JSON.stringify(room) %>'><i class="fa-solid fa-pen"></i></button>
                         <button class="btn-xs js-assign-room" type="button" title="Assign Student" data-id="<%= room._id %>" data-code="<%= room.code %>"><i class="fa-solid fa-user-plus"></i></button>
                         <button class="btn-xs js-maint-room" type="button" title="Create Ticket" data-id="<%= room._id %>" data-code="<%= room.code %>"><i class="fa-solid fa-screwdriver-wrench"></i></button>
                       </div>
@@ -396,26 +396,43 @@
                         <span class="pill info"><i class="fa-solid fa-clock"></i> Waitlist</span>
                       <% } else if (a.status === "Approved") { %>
                         <span class="pill ok"><i class="fa-solid fa-check"></i> Approved</span>
+                      <% } else if (a.status === "Allocated") { %>
+                        <span class="pill ok"><i class="fa-solid fa-bed"></i> Allocated</span>
+                      <% } else if (a.status === "Cancelled") { %>
+                        <span class="pill"><i class="fa-solid fa-ban"></i> Cancelled</span>
                       <% } else { %>
                         <span class="pill bad"><i class="fa-solid fa-xmark"></i> Denied</span>
                       <% } %>
                     </td>
                     <td style="text-align:right;">
-                      <form action="/admin/hostels/rooms/<%= a.roomMongoId %>/applications/<%= a._id %>/status" method="POST" style="display:inline;">
-                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                        <input type="hidden" name="status" value="Approved">
-                        <button class="btn-xs" type="submit"><i class="fa-solid fa-check"></i> Approve</button>
-                      </form>
-                      <form action="/admin/hostels/rooms/<%= a.roomMongoId %>/applications/<%= a._id %>/status" method="POST" style="display:inline;">
-                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                        <input type="hidden" name="status" value="Denied">
-                        <button class="btn-xs" type="submit"><i class="fa-solid fa-xmark"></i> Deny</button>
-                      </form>
-                      <form action="/admin/hostels/rooms/<%= a.roomMongoId %>/applications/<%= a._id %>/status" method="POST" style="display:inline;">
-                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                        <input type="hidden" name="status" value="Waitlist">
-                        <button class="btn-xs" type="submit"><i class="fa-solid fa-clock"></i> Waitlist</button>
-                      </form>
+                      <% if (["Pending", "Waitlist"].includes(a.status)) { %>
+                        <form action="/admin/hostels/rooms/<%= a.roomMongoId %>/applications/<%= a._id %>/status" method="POST" style="display:inline;">
+                          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                          <input type="hidden" name="status" value="Approved">
+                          <button class="btn-xs" type="submit"><i class="fa-solid fa-check"></i> Approve</button>
+                        </form>
+                      <% } %>
+                      <% if (["Pending", "Waitlist", "Approved"].includes(a.status)) { %>
+                        <form action="/admin/hostels/rooms/<%= a.roomMongoId %>/applications/<%= a._id %>/status" method="POST" style="display:inline;">
+                          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                          <input type="hidden" name="status" value="Denied">
+                          <button class="btn-xs" type="submit"><i class="fa-solid fa-xmark"></i> Deny</button>
+                        </form>
+                      <% } %>
+                      <% if (["Pending", "Approved"].includes(a.status)) { %>
+                        <form action="/admin/hostels/rooms/<%= a.roomMongoId %>/applications/<%= a._id %>/status" method="POST" style="display:inline;">
+                          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                          <input type="hidden" name="status" value="Waitlist">
+                          <button class="btn-xs" type="submit"><i class="fa-solid fa-clock"></i> Waitlist</button>
+                        </form>
+                      <% } %>
+                      <% if (a.status === "Approved" && a.isCurrent === true) { %>
+                        <button class="btn-xs js-assign-room" type="button"
+                          data-id="<%= a.roomMongoId %>" data-code="<%= a.roomCode %>"
+                          data-student-id="<%= a.student || a.studentId || '' %>"
+                          data-student-name="<%= a.studentName %>" data-reg-no="<%= a.regNo || '' %>"
+                          data-application-id="<%= a._id %>"><i class="fa-solid fa-bed"></i> Allocate</button>
+                      <% } %>
                     </td>
                   </tr>
                 <% }) %>
@@ -451,7 +468,7 @@
                   <div class="muted"><i class="fa-solid fa-coins"></i> UGX <%= Number(room.pricePerSemester || 0).toLocaleString() %></div>
                 </div>
                 <div class="alloc-actions">
-                  <button class="btn-xs js-view-room" type="button" data-room='<%- JSON.stringify(room) %>'><i class="fa-solid fa-eye"></i> View</button>
+                  <button class="btn-xs js-view-room" type="button" data-room='<%= JSON.stringify(room) %>'><i class="fa-solid fa-eye"></i> View</button>
                   <button class="btn-xs js-assign-room" type="button" data-id="<%= room._id %>" data-code="<%= room.code %>"><i class="fa-solid fa-user-plus"></i> Assign</button>
                 </div>
               </div>
@@ -469,11 +486,12 @@
                   <th>Check-in</th>
                   <th>Check-out</th>
                   <th>Status</th>
+                  <th style="text-align:right;">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 <% if (!checkins.length) { %>
-                  <tr><td colspan="5"><div class="muted">No check-in records found.</div></td></tr>
+                  <tr><td colspan="6"><div class="muted">No check-in records found.</div></td></tr>
                 <% } %>
                 <% checkins.forEach(function(c){ %>
                   <tr>
@@ -482,11 +500,19 @@
                     <td class="muted"><%= helpers.formatDate(c.checkInDate) %></td>
                     <td class="muted"><%= helpers.formatDate(c.checkOutDate) %></td>
                     <td>
-                      <% if (c.status === "Checked-in") { %>
+                      <% if (c.statusLabel === "Checked-in" || c.status === "active") { %>
                         <span class="pill ok"><i class="fa-solid fa-clipboard-check"></i> Checked-in</span>
                       <% } else { %>
                         <span class="pill info"><i class="fa-solid fa-clipboard"></i> Checked-out</span>
                       <% } %>
+                    </td>
+                    <td style="text-align:right;">
+                      <% if (c.statusLabel === "Checked-in" || c.status === "active") { %>
+                        <form method="POST" action="/admin/hostels/allocations/<%= c.allocationId || c._id %>/vacate" style="display:inline;">
+                          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                          <button class="btn-xs" type="submit"><i class="fa-solid fa-right-from-bracket"></i> Check Out</button>
+                        </form>
+                      <% } else { %>—<% } %>
                     </td>
                   </tr>
                 <% }) %>
@@ -506,11 +532,12 @@
                   <th>Priority</th>
                   <th>Status</th>
                   <th>Created</th>
+                  <th style="text-align:right;">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 <% if (!maintenance.length) { %>
-                  <tr><td colspan="6"><div class="muted">No maintenance tickets found.</div></td></tr>
+                  <tr><td colspan="7"><div class="muted">No maintenance tickets found.</div></td></tr>
                 <% } %>
                 <% maintenance.forEach(function(m){ %>
                   <tr>
@@ -520,6 +547,15 @@
                     <td><span class="pill <%= m.priority === 'High' || m.priority === 'Urgent' ? 'bad' : 'info' %>"><i class="fa-solid fa-flag"></i> <%= m.priority %></span></td>
                     <td><span class="pill <%= m.status === 'Resolved' ? 'ok' : (m.status === 'In Progress' ? 'warn' : 'info') %>"><i class="fa-solid fa-circle"></i> <%= m.status %></span></td>
                     <td class="muted"><%= helpers.formatDate(m.createdAt) %></td>
+                    <td style="text-align:right;">
+                      <form method="POST" action="/admin/hostels/rooms/<%= m.roomMongoId %>/maintenance/<%= m._id %>/status" style="display:inline-flex;gap:6px;align-items:center;">
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                        <select class="select" name="status" style="min-width:120px;padding:5px 8px;">
+                          <% ["Open","In Progress","Resolved"].forEach(function(st){ %><option value="<%= st %>" <%= m.status === st ? 'selected' : '' %>><%= st %></option><% }) %>
+                        </select>
+                        <button class="btn-xs" type="submit"><i class="fa-solid fa-floppy-disk"></i></button>
+                      </form>
+                    </td>
                   </tr>
                 <% }) %>
               </tbody>
@@ -715,9 +751,18 @@
       <form method="POST" id="assignForm" action="">
         <div class="modal-body">
           <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <input type="hidden" id="assignStudentId" name="studentId" value="">
+          <input type="hidden" id="assignApplicationId" name="applicationId" value="">
           <div class="form-grid" style="grid-template-columns:repeat(2,minmax(0,1fr));">
-            <div class="field"><label>Student Name</label><input class="input" name="studentName" placeholder="Student full name"></div>
-            <div class="field"><label>Registration No</label><input class="input" name="regNo" placeholder="REG/2024/..."></div>
+            <div class="field"><label>Student Name</label><input class="input" id="assignStudentName" name="studentName" placeholder="Student full name" required></div>
+            <div class="field"><label>Registration No</label><input class="input" id="assignRegNo" name="regNo" list="hostelStudents" placeholder="REG/2024/..." required></div>
+          </div>
+          <datalist id="hostelStudents">
+            <% (students || []).forEach(function(st){ %><option value="<%= st.regNo %>"><%= st.name %></option><% }) %>
+          </datalist>
+          <div class="field" style="margin-top:12px;">
+            <label>Bed Label</label>
+            <input class="input" name="bedLabel" placeholder="Optional, e.g. Bed A">
           </div>
           <div class="field" style="margin-top:12px;">
             <label>Note</label>
@@ -754,11 +799,7 @@
             </div>
             <div class="field">
               <label>Status</label>
-              <select class="select" name="status">
-                <option>Open</option>
-                <option>In Progress</option>
-                <option>Resolved</option>
-              </select>
+              <select class="select" disabled><option>Open</option></select>
             </div>
           </div>
           <div class="field" style="margin-top:12px;">
@@ -774,6 +815,29 @@
         <div class="modal-footer">
           <button class="btn light js-close-modal" type="button" data-modal="mMaint">Cancel</button>
           <button class="btn primary" type="submit"><i class="fa-solid fa-check"></i> Save Ticket</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Hostel Policies Modal -->
+  <div class="modal-backdrop" id="mPolicies">
+    <div class="modal" style="width:min(760px,100%);">
+      <div class="modal-header">
+        <div class="modal-title">Hostel Policies</div>
+        <button class="btn-xs js-close-modal" type="button" data-modal="mPolicies"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form method="POST" action="/admin/hostels/policies">
+        <div class="modal-body">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <label style="display:flex;gap:8px;align-items:center;margin-bottom:12px;"><input type="checkbox" name="applicationsOpen" <%= policy?.applicationsOpen !== false ? 'checked' : '' %>> Accept hostel applications</label>
+          <div class="field"><label>Resident Policy</label><textarea class="textarea" name="policyText" maxlength="5000"><%= policy?.policyText || '' %></textarea></div>
+          <div class="field" style="margin-top:12px;"><label>Check-in Instructions</label><textarea class="textarea" name="checkInInstructions" maxlength="3000"><%= policy?.checkInInstructions || '' %></textarea></div>
+          <div class="field" style="margin-top:12px;"><label>Hostel Contact</label><input class="input" name="contact" maxlength="300" value="<%= policy?.contact || '' %>"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn light js-close-modal" type="button" data-modal="mPolicies">Cancel</button>
+          <button class="btn primary" type="submit"><i class="fa-solid fa-floppy-disk"></i> Save Policies</button>
         </div>
       </form>
     </div>

@@ -48,11 +48,12 @@
         }
       }
 
-      function submitRowAction(actionUrl, statusValue) {
+      function submitRowAction(actionUrl, statusValue, revision) {
         const form = $("rowActionForm");
         if (!form) return;
         form.action = actionUrl;
         $("rowActionStatus").value = statusValue || "";
+        $("rowActionRevision").value = String(revision || "");
         form.submit();
       }
 
@@ -208,6 +209,14 @@
           </div>
 
           <div class="field">
+            <label>Applications</label>
+            <select class="select" data-open>
+              <option value="1" ${init?.isOpen === false ? "" : "selected"}>Open</option>
+              <option value="0" ${init?.isOpen === false ? "selected" : ""}>Closed</option>
+            </select>
+          </div>
+
+          <div class="field">
             <label>&nbsp;</label>
             <button class="btn-xs" type="button" data-remove-row><i class="fa-solid fa-trash"></i></button>
           </div>
@@ -221,7 +230,8 @@
         return rows.map((row) => {
           const program = row.querySelector("[data-program]")?.value || "";
           const capacity = Number(row.querySelector("[data-capacity]")?.value || 0);
-          return { program, capacity };
+          const isOpen = row.querySelector("[data-open]")?.value !== "0";
+          return { program, capacity, isOpen };
         }).filter((x) => x.program);
       }
 
@@ -251,6 +261,8 @@
         $("mStartDate").value = "";
         $("mEndDate").value = "";
         $("mIsActive").value = "0";
+        $("mIsActive").disabled = false;
+        $("mRevision").value = "";
         $("mAllowAllPrograms").value = "1";
         $("programRows").innerHTML = "";
         $("mProgramsJson").value = "[]";
@@ -285,6 +297,8 @@
           $("mStartDate").value = prefill.startDate || "";
           $("mEndDate").value = prefill.endDate || "";
           $("mIsActive").value = prefill.isActive ? "1" : "0";
+          $("mIsActive").disabled = true;
+          $("mRevision").value = String(prefill.revision || 1);
           $("mAllowAllPrograms").value = prefill.allowAllPrograms ? "1" : "0";
 
           if (!prefill.allowAllPrograms && Array.isArray(prefill.programs) && prefill.programs.length) {
@@ -336,6 +350,7 @@
         const name = $("mName").value.trim();
         const year = $("mYear") ? Number($("mYear").value || 0) : 0;
         const status = $("mStatus").value;
+        const wantsActive = !state.isEditing && $("mIsActive").value === "1";
         const allowedStatuses = new Set(["draft", "open", "closed", "archived"]);
 
         if (!name || name.length < 2) {
@@ -350,6 +365,10 @@
 
         if (!allowedStatuses.has(status)) {
           alert("Invalid status.");
+          return false;
+        }
+        if (wantsActive && status !== "open") {
+          alert("Only an open intake can be set active.");
           return false;
         }
 
@@ -471,7 +490,11 @@
       function bulkSubmit(status) {
         const ids = Array.from(state.selected);
         if (!ids.length) return alert("Select at least one intake.");
-        $("bulkIds").value = ids.join(",");
+        const items = ids.map((id) => {
+          const row = INTAKES.find((x) => x.id === id);
+          return { id, revision: Number(row?.revision || 1) };
+        });
+        $("bulkItems").value = JSON.stringify(items);
         $("bulkStatus").value = status;
         $("bulkForm").submit();
       }
@@ -516,18 +539,19 @@
 
           if (e.target.closest(".actSetActive")) {
             if (!window.confirm(`Set "${it.name}" as active intake?`)) return;
-            return submitRowAction(`/admin/admissions/intakes/${encodeURIComponent(it.id)}/active`, "");
+            return submitRowAction(`/admin/admissions/intakes/${encodeURIComponent(it.id)}/active`, "", it.revision);
           }
 
           if (e.target.closest(".actToggle")) {
+            if (it.status === "archived") return alert("Archived intakes are terminal and cannot be reopened.");
             const next = it.status === "open" ? "closed" : "open";
             if (!window.confirm(`Change "${it.name}" status to ${next}?`)) return;
-            return submitRowAction(`/admin/admissions/intakes/${encodeURIComponent(it.id)}/status`, next);
+            return submitRowAction(`/admin/admissions/intakes/${encodeURIComponent(it.id)}/status`, next, it.revision);
           }
 
           if (e.target.closest(".actDelete")) {
             if (!window.confirm(`Delete "${it.name}" permanently?`)) return;
-            return submitRowAction(`/admin/admissions/intakes/${encodeURIComponent(it.id)}/delete`, "");
+            return submitRowAction(`/admin/admissions/intakes/${encodeURIComponent(it.id)}/delete`, "", it.revision);
           }
 
           return;

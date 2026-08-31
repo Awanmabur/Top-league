@@ -1,11 +1,11 @@
- 
 // src/routes/platform/index.js
 const express = require("express");
 const router = express.Router();
 const { platformOnly } = require("../../middleware/platform/guards");
+const { csrfProtection, attachCsrfToken } = require("../../middleware/tenant/csrf");
 
 router.use("/", require("./auth"));
-router.use(["/platform", "/super-admin"], platformOnly);
+router.use(["/platform", "/super-admin"], platformOnly, csrfProtection, attachCsrfToken);
 router.use("/", require("./dashboard"));
 router.use("/", require("./tenants"));
 router.use("/", require("./plans"));

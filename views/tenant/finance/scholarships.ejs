@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .input,.select,.textarea{padding:10px 12px;border-radius:12px;border:1px solid rgba(13,64,96,.16);background:#fff;outline:none}
@@ -514,7 +514,7 @@
     <input type="hidden" name="action" id="bulkActionInput">
   </form>
 
-  <textarea id="scholarshipsData" class="json-data" aria-hidden="true"><%- JSON.stringify(scholarships || []) %></textarea>
+  <textarea id="scholarshipsData" class="json-data" aria-hidden="true"><%- JSON.stringify(scholarships || []).replace(/&/g,"\\u0026").replace(/</g,"\\u003c").replace(/>/g,"\\u003e") %></textarea>
 
   <script src="/js/navbar.js"></script>
   <script src="/js/scholarships.js"></script>

@@ -1,477 +1,304 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
+const {
+  MONTHS,
+  buildPayrollFilters,
+  calculatePayrollItem,
+  closeRun,
+  createPayrollRun,
+  csvCell,
+  deleteDraftRun,
+  escapeRegex,
+  markItemPaid,
+  markRunPaid,
+  processRun,
+  approveRun,
+  setItemHold,
+  updateDraftItem,
+  updateDraftRun,
+} = require('../../../services/tenant/payrollService');
 
-const actorUserId = (req) =>
-  req.user?.userId || req.user?._id || req.session?.tenantUser?.id || null;
-
-const str = (v) => String(v ?? "").trim();
-const isValidId = (id) => mongoose.Types.ObjectId.isValid(String(id || ""));
-
-const asNum = (v, fallback = 0) => {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : fallback;
+const actorUserId = (req) => req.user?.userId || req.user?._id || req.session?.tenantUser?.id || null;
+const str = (v) => String(v ?? '').trim();
+const isValidId = (id) => mongoose.Types.ObjectId.isValid(String(id || ''));
+const safeDate = (value) => {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
 };
+const getDepartmentName = (dep) => dep?.name || dep?.title || dep?.code || '—';
+const getStaffName = (staff) => staff?.fullName || [staff?.firstName, staff?.middleName, staff?.lastName].filter(Boolean).join(' ') || staff?.name || staff?.staffId || '—';
 
-const asDate = (v) => {
-  if (!v) return null;
-  const d = new Date(v);
-  return Number.isNaN(d.getTime()) ? null : d;
-};
-
-function getStaffName(st) {
-  if (!st) return "—";
-  return (
-    st.fullName ||
-    [st.firstName, st.middleName, st.lastName].filter(Boolean).join(" ") ||
-    st.name ||
-    st.staffId ||
-    "—"
-  );
-}
-
-function getDepartmentName(dep) {
-  if (!dep) return "—";
-  return dep.name || dep.title || dep.code || "—";
-}
-
-function serializePayrollRun(doc, itemStats = null) {
-  const grossAmount =
-    itemStats?.grossAmount ??
-    Number(doc.grossAmount || 0);
-
-  const deductionsAmount =
-    itemStats?.deductionsAmount ??
-    Number(doc.deductionsAmount || 0);
-
-  const netAmount =
-    itemStats?.netAmount ??
-    Number(doc.netAmount || 0);
-
-  const staffCount =
-    itemStats?.staffCount ??
-    Number(doc.staffCount || 0);
-
+function serializeRun(doc, stats = null) {
   return {
     id: String(doc._id),
-    title: doc.title || "",
-    periodLabel: doc.periodLabel || "",
-    month: doc.month || "",
+    runNumber: doc.runNumber || '',
+    title: doc.title || '',
+    periodLabel: doc.periodLabel || '',
+    month: doc.month || '',
     year: Number(doc.year || 0),
-    departmentId: doc.departmentId?._id
-      ? String(doc.departmentId._id)
-      : String(doc.departmentId || ""),
+    departmentId: doc.departmentId?._id ? String(doc.departmentId._id) : String(doc.departmentId || ''),
     departmentName: getDepartmentName(doc.departmentId),
-    payDate: doc.payDate ? new Date(doc.payDate).toISOString().slice(0, 10) : "",
-    status: doc.status || "Draft",
-    staffCount,
-    grossAmount,
-    deductionsAmount,
-    netAmount,
-    notes: doc.notes || "",
-    createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString().slice(0, 10) : "",
+    payDate: doc.payDate ? new Date(doc.payDate).toISOString().slice(0, 10) : '',
+    status: doc.status || 'Draft',
+    staffCount: Number(stats?.staffCount ?? doc.staffCount ?? 0),
+    grossAmount: Number(stats?.grossAmount ?? doc.grossAmount ?? 0),
+    deductionsAmount: Number(stats?.deductionsAmount ?? doc.deductionsAmount ?? 0),
+    netAmount: Number(stats?.netAmount ?? doc.netAmount ?? 0),
+    notes: doc.notes || '',
+    processedAt: doc.processedAt ? new Date(doc.processedAt).toISOString() : '',
+    approvedAt: doc.approvedAt ? new Date(doc.approvedAt).toISOString() : '',
+    paidAt: doc.paidAt ? new Date(doc.paidAt).toISOString() : '',
+    closedAt: doc.closedAt ? new Date(doc.closedAt).toISOString() : '',
   };
 }
 
-function serializePayrollItem(doc) {
+function serializeItem(doc) {
   return {
     id: String(doc._id),
-    payrollRunId: doc.payrollRunId?._id
-      ? String(doc.payrollRunId._id)
-      : String(doc.payrollRunId || ""),
-    staffId: doc.staffId?._id
-      ? String(doc.staffId._id)
-      : String(doc.staffId || ""),
-    staffName: getStaffName(doc.staffId),
-    departmentName: getDepartmentName(doc.departmentId),
+    payrollRunId: doc.payrollRunId?._id ? String(doc.payrollRunId._id) : String(doc.payrollRunId || ''),
+    runTitle: doc.payrollRunId?.title || '',
+    runStatus: doc.payrollRunId?.status || '',
+    staffId: doc.staffId?._id ? String(doc.staffId._id) : String(doc.staffId || ''),
+    staffName: doc.staffName || getStaffName(doc.staffId),
+    employeeId: doc.employeeId || doc.staffId?.employeeId || '',
+    payrollNumber: doc.payrollNumber || doc.staffId?.payrollNumber || '',
+    departmentName: doc.departmentName || getDepartmentName(doc.departmentId),
     basicSalary: Number(doc.basicSalary || 0),
     allowances: Number(doc.allowances || 0),
     bonuses: Number(doc.bonuses || 0),
     deductions: Number(doc.deductions || 0),
     grossPay: Number(doc.grossPay || 0),
     netPay: Number(doc.netPay || 0),
-    status: doc.status || "Pending",
-    notes: doc.notes || "",
+    status: doc.status || 'Pending',
+    heldReason: doc.heldReason || '',
+    paymentReference: doc.paymentReference || '',
+    paidAt: doc.paidAt ? new Date(doc.paidAt).toISOString() : '',
+    notes: doc.notes || '',
   };
 }
 
-function computeRunStats(items = []) {
-  return {
-    staffCount: items.length,
-    grossAmount: items.reduce((sum, x) => sum + Number(x.grossPay || 0), 0),
-    deductionsAmount: items.reduce((sum, x) => sum + Number(x.deductions || 0), 0),
-    netAmount: items.reduce((sum, x) => sum + Number(x.netPay || 0), 0),
-  };
+function computeStats(items = []) {
+  return items.reduce((acc, item) => {
+    acc.staffCount += 1;
+    acc.grossAmount += Number(item.grossPay || 0);
+    acc.deductionsAmount += Number(item.deductions || 0);
+    acc.netAmount += Number(item.netPay || 0);
+    return acc;
+  }, { staffCount: 0, grossAmount: 0, deductionsAmount: 0, netAmount: 0 });
 }
 
 function computeKpis(runs = []) {
   return {
     total: runs.length,
-    draft: runs.filter((x) => x.status === "Draft").length,
-    processed: runs.filter((x) => x.status === "Processed").length,
-    approved: runs.filter((x) => x.status === "Approved").length,
-    closed: runs.filter((x) => x.status === "Closed").length,
+    draft: runs.filter((x) => x.status === 'Draft').length,
+    processed: runs.filter((x) => x.status === 'Processed').length,
+    approved: runs.filter((x) => x.status === 'Approved').length,
+    closed: runs.filter((x) => x.status === 'Closed').length,
     netTotal: runs.reduce((sum, x) => sum + Number(x.netAmount || 0), 0),
   };
 }
 
-function buildFilters(query = {}) {
-  const q = str(query.q);
-  const status = str(query.status || "all");
-  const department = str(query.department || "all");
-  const year = str(query.year || "all");
-  const view = str(query.view || "list") || "list";
+async function loadFiltered(req, { paginate = true, includeItems = true } = {}) {
+  const { PayrollRun, PayrollItem, Department } = req.models;
+  const clean = buildPayrollFilters(req.query);
+  const runFilter = { isDeleted: { $ne: true } };
+  if (clean.department !== 'all' && isValidId(clean.department)) runFilter.departmentId = clean.department;
+  if (clean.status !== 'all') runFilter.status = clean.status;
+  if (clean.year !== 'all' && /^\d{4}$/.test(String(clean.year))) runFilter.year = Number(clean.year);
 
-  const clean = { q, status, department, year, view };
-  return { clean };
+  if (clean.q) {
+    const rx = new RegExp(escapeRegex(clean.q), 'i');
+    let departmentIds = [];
+    if (Department) {
+      departmentIds = await Department.find({
+        $or: [{ name: rx }, { title: rx }, { code: rx }],
+      }).select('_id').limit(100).lean().then((rows) => rows.map((row) => row._id)).catch(() => []);
+    }
+    runFilter.$or = [
+      { runNumber: rx }, { title: rx }, { periodLabel: rx }, { month: rx }, { status: rx },
+      ...(departmentIds.length ? [{ departmentId: { $in: departmentIds } }] : []),
+    ];
+  }
+
+  const pageSize = 20;
+  const page = Math.max(1, Math.min(100000, Number.parseInt(req.query.page, 10) || 1));
+  let runQuery = PayrollRun.find(runFilter).populate('departmentId', 'name title code').sort({ year: -1, createdAt: -1 });
+  if (paginate) runQuery = runQuery.skip((page - 1) * pageSize).limit(pageSize);
+
+  const [runDocs, total, kpiRows, departments, years] = await Promise.all([
+    runQuery.lean(),
+    PayrollRun.countDocuments(runFilter),
+    PayrollRun.aggregate([
+      { $match: runFilter },
+      { $group: {
+        _id: null,
+        total: { $sum: 1 },
+        draft: { $sum: { $cond: [{ $eq: ['$status', 'Draft'] }, 1, 0] } },
+        processed: { $sum: { $cond: [{ $eq: ['$status', 'Processed'] }, 1, 0] } },
+        approved: { $sum: { $cond: [{ $eq: ['$status', 'Approved'] }, 1, 0] } },
+        closed: { $sum: { $cond: [{ $eq: ['$status', 'Closed'] }, 1, 0] } },
+        netTotal: { $sum: { $ifNull: ['$netAmount', 0] } },
+      } },
+    ]).catch(() => []),
+    Department ? Department.find({}).select('name title code').sort({ name: 1 }).limit(500).lean() : [],
+    PayrollRun.distinct('year', { isDeleted: { $ne: true } }),
+  ]);
+
+  const runIds = runDocs.map((run) => run._id);
+  const itemDocs = includeItems && runIds.length
+    ? await PayrollItem.find({ payrollRunId: { $in: runIds }, isDeleted: { $ne: true } })
+      .populate('staffId', 'firstName middleName lastName fullName employeeId payrollNumber')
+      .populate('departmentId', 'name title code')
+      .populate('payrollRunId', 'title status month year')
+      .sort({ createdAt: -1 }).lean()
+    : [];
+
+  const itemsByRun = new Map();
+  for (const item of itemDocs) {
+    const id = String(item.payrollRunId?._id || item.payrollRunId || '');
+    if (!itemsByRun.has(id)) itemsByRun.set(id, []);
+    itemsByRun.get(id).push(item);
+  }
+  const runs = runDocs.map((run) => serializeRun(run, includeItems
+    ? computeStats(itemsByRun.get(String(run._id)) || [])
+    : { staffCount: run.staffCount, grossAmount: run.grossAmount, deductionsAmount: run.deductionsAmount, netAmount: run.netAmount }));
+  let payrollItems = itemDocs.map(serializeItem);
+  if (clean.q && includeItems) {
+    const re = new RegExp(escapeRegex(clean.q), 'i');
+    payrollItems = payrollItems.filter((item) => re.test([item.staffName, item.employeeId, item.payrollNumber, item.departmentName, item.status, item.notes].join(' ')));
+  }
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
+  const makePageUrl = (target) => { const qs = new URLSearchParams(req.query || {}); qs.set('page', String(target)); return `/admin/payroll?${qs.toString()}`; };
+  return {
+    clean, runs, payrollItems, departments,
+    years: years.map(String).filter(Boolean).sort().reverse(),
+    kpis: kpiRows[0] || { total: 0, draft: 0, processed: 0, approved: 0, closed: 0, netTotal: 0 },
+    pagination: paginate ? { page, pageSize, total, pageCount, prevUrl: page > 1 ? makePageUrl(page - 1) : '', nextUrl: page < pageCount ? makePageUrl(page + 1) : '' } : null,
+  };
+}
+
+function redirectWith(req, res, type, message) {
+  req.flash?.(type, message);
+  return res.redirect('/admin/payroll');
+}
+
+async function action(req, res, fn, success) {
+  if (!isValidId(req.params.id)) return redirectWith(req, res, 'error', 'Invalid payroll run ID.');
+  try {
+    await fn();
+    return redirectWith(req, res, 'success', success);
+  } catch (err) {
+    return redirectWith(req, res, 'error', err?.message || 'Payroll action failed.');
+  }
 }
 
 module.exports = {
   index: async (req, res) => {
-    const { PayrollRun, PayrollItem, Department, Staff } = req.models;
-
-    const { clean } = buildFilters(req.query);
-
-    let [runDocs, itemDocs, departmentDocs, staffDocs] = await Promise.all([
-      PayrollRun
-        ? PayrollRun.find({ isDeleted: { $ne: true } })
-            .populate("departmentId", "name title code")
-            .sort({ year: -1, month: -1, createdAt: -1 })
-            .lean()
-        : [],
-      PayrollItem
-        ? PayrollItem.find({ isDeleted: { $ne: true } })
-            .populate("staffId", "firstName middleName lastName fullName staffId")
-            .populate("departmentId", "name title code")
-            .populate("payrollRunId", "title")
-            .sort({ createdAt: -1 })
-            .lean()
-        : [],
-      Department
-        ? Department.find({}).select("name title code").sort({ name: 1 }).lean()
-        : [],
-      Staff
-        ? Staff.find({}).select("firstName middleName lastName fullName staffId departmentId basicSalary").sort({ createdAt: -1 }).lean()
-        : [],
-    ]);
-
-    if (clean.department !== "all" && isValidId(clean.department)) {
-      runDocs = runDocs.filter((x) => {
-        const did = x.departmentId?._id ? String(x.departmentId._id) : String(x.departmentId || "");
-        return did === clean.department;
-      });
-      itemDocs = itemDocs.filter((x) => {
-        const did = x.departmentId?._id ? String(x.departmentId._id) : String(x.departmentId || "");
-        return did === clean.department;
-      });
-    }
-
-    if (clean.status !== "all") {
-      runDocs = runDocs.filter((x) => String(x.status || "") === clean.status);
-    }
-
-    if (clean.year !== "all") {
-      runDocs = runDocs.filter((x) => String(x.year || "") === clean.year);
-    }
-
-    if (clean.q) {
-      const regex = new RegExp(clean.q, "i");
-      runDocs = runDocs.filter((x) => {
-        const text = [
-          x.title || "",
-          x.periodLabel || "",
-          x.month || "",
-          String(x.year || ""),
-          getDepartmentName(x.departmentId),
-          x.status || "",
-        ].join(" ");
-        return regex.test(text);
-      });
-
-      itemDocs = itemDocs.filter((x) => {
-        const text = [
-          getStaffName(x.staffId),
-          getDepartmentName(x.departmentId),
-          x.status || "",
-          x.notes || "",
-        ].join(" ");
-        return regex.test(text);
-      });
-    }
-
-    const itemsByRun = new Map();
-    itemDocs.forEach((item) => {
-      const runId = item.payrollRunId?._id
-        ? String(item.payrollRunId._id)
-        : String(item.payrollRunId || "");
-      if (!runId) return;
-      if (!itemsByRun.has(runId)) itemsByRun.set(runId, []);
-      itemsByRun.get(runId).push(item);
-    });
-
-    const runs = runDocs.map((run) => {
-      const runId = String(run._id);
-      const stats = computeRunStats(itemsByRun.get(runId) || []);
-      return serializePayrollRun(run, stats);
-    });
-
-    const payrollItems = itemDocs.map(serializePayrollItem);
-    const kpis = computeKpis(runs);
-
-    const yearSet = Array.from(new Set(runs.map((r) => String(r.year || "")).filter(Boolean))).sort().reverse();
-
-    return res.render("tenant/staff/payroll", {
+    const data = await loadFiltered(req);
+    return res.render('tenant/staff/payroll', {
       tenant: req.tenant,
       csrfToken: req.csrfToken?.(),
-      payrollRuns: runs,
-      payrollItems,
-      kpis,
-      departments: (departmentDocs || []).map((d) => ({
-        id: String(d._id),
-        name: getDepartmentName(d),
-      })),
-      staff: (staffDocs || []).map((s) => ({
-        id: String(s._id),
-        name: getStaffName(s),
-        basicSalary: Number(s.basicSalary || 0),
-      })),
-      years: yearSet,
-      query: clean,
+      payrollRuns: data.runs,
+      payrollItems: data.payrollItems,
+      kpis: data.kpis,
+      departments: data.departments.map((d) => ({ id: String(d._id), name: getDepartmentName(d) })),
+      years: data.years,
+      query: data.clean,
+      months: MONTHS,
+      pagination: data.pagination,
     });
   },
 
   createRun: async (req, res) => {
-    const { PayrollRun, PayrollItem, Staff } = req.models;
-
-    const title = str(req.body.title);
-    const month = str(req.body.month);
-    const year = asNum(req.body.year, 0);
-    const periodLabel = str(req.body.periodLabel || `${month} ${year}`);
-    const departmentId = str(req.body.departmentId);
-    const payDate = asDate(req.body.payDate);
-    const notes = str(req.body.notes);
-
-    if (!title || !month || !year) {
-      req.flash?.("error", "Title, month and year are required.");
-      return res.redirect("/admin/payroll");
-    }
-
-    const run = await PayrollRun.create({
-      title,
-      month,
-      year,
-      periodLabel,
-      departmentId: isValidId(departmentId) ? departmentId : null,
-      payDate,
-      status: "Draft",
-      notes,
-      staffCount: 0,
-      grossAmount: 0,
-      deductionsAmount: 0,
-      netAmount: 0,
-      createdBy: actorUserId(req),
-      updatedBy: actorUserId(req),
-    });
-
-    const staffFilter = {};
-    if (isValidId(departmentId)) staffFilter.departmentId = departmentId;
-
-    const staffList = Staff ? await Staff.find(staffFilter).lean() : [];
-
-    if (staffList.length && PayrollItem) {
-      const docs = staffList.map((s) => {
-        const basicSalary = Number(s.basicSalary || 0);
-        const allowances = 0;
-        const bonuses = 0;
-        const deductions = 0;
-        const grossPay = basicSalary + allowances + bonuses;
-        const netPay = grossPay - deductions;
-
-        return {
-          payrollRunId: run._id,
-          staffId: s._id,
-          departmentId: s.departmentId || null,
-          basicSalary,
-          allowances,
-          bonuses,
-          deductions,
-          grossPay,
-          netPay,
-          status: "Pending",
-          createdBy: actorUserId(req),
-          updatedBy: actorUserId(req),
-        };
-      });
-
-      await PayrollItem.insertMany(docs);
-
-      const stats = computeRunStats(docs);
-      await PayrollRun.updateOne(
-        { _id: run._id },
-        {
-          $set: {
-            staffCount: stats.staffCount,
-            grossAmount: stats.grossAmount,
-            deductionsAmount: stats.deductionsAmount,
-            netAmount: stats.netAmount,
-          },
-        }
-      );
-    }
-
-    req.flash?.("success", "Payroll run created successfully.");
-    return res.redirect("/admin/payroll");
+    try {
+      await createPayrollRun(req.models, {
+        title: req.body.title, month: req.body.month, year: req.body.year,
+        periodLabel: req.body.periodLabel, departmentId: isValidId(req.body.departmentId) ? req.body.departmentId : null,
+        payDate: safeDate(req.body.payDate), notes: req.body.notes,
+      }, { actorUserId: actorUserId(req) });
+      return redirectWith(req, res, 'success', 'Payroll run created from current eligible staff salary records.');
+    } catch (err) { return redirectWith(req, res, 'error', err?.message || 'Could not create payroll run.'); }
   },
 
-  updateRun: async (req, res) => {
-    const { PayrollRun } = req.models;
+  updateRun: (req, res) => action(req, res, () => updateDraftRun(req.models, req.params.id, {
+    title: req.body.title, periodLabel: req.body.periodLabel, payDate: safeDate(req.body.payDate), notes: req.body.notes,
+  }, { actorUserId: actorUserId(req) }), 'Payroll run updated.'),
 
-    if (!isValidId(req.params.id)) {
-      req.flash?.("error", "Invalid payroll run ID.");
-      return res.redirect("/admin/payroll");
-    }
+  processRun: (req, res) => action(req, res, () => processRun(req.models, req.params.id, { actorUserId: actorUserId(req) }), 'Payroll run processed.'),
+  approveRun: (req, res) => action(req, res, () => approveRun(req.models, req.params.id, { actorUserId: actorUserId(req) }), 'Payroll run approved.'),
+  payRun: (req, res) => action(req, res, () => markRunPaid(req.models, req.params.id, { paymentReference: req.body.paymentReference }, { actorUserId: actorUserId(req) }), 'Eligible payroll items marked paid.'),
+  closeRun: (req, res) => action(req, res, () => closeRun(req.models, req.params.id, { actorUserId: actorUserId(req) }), 'Payroll run closed and salary expense recorded.'),
+  deleteRun: (req, res) => action(req, res, () => deleteDraftRun(req.models, req.params.id, { actorUserId: actorUserId(req) }), 'Draft payroll run deleted.'),
 
-    const run = await PayrollRun.findOne({
-      _id: req.params.id,
-      isDeleted: { $ne: true },
-    });
-
-    if (!run) {
-      req.flash?.("error", "Payroll run not found.");
-      return res.redirect("/admin/payroll");
-    }
-
-    run.title = str(req.body.title);
-    run.month = str(req.body.month);
-    run.year = asNum(req.body.year, run.year || 0);
-    run.periodLabel = str(req.body.periodLabel || `${run.month} ${run.year}`);
-    run.departmentId = isValidId(req.body.departmentId) ? req.body.departmentId : null;
-    run.payDate = asDate(req.body.payDate);
-    run.notes = str(req.body.notes);
-    run.updatedBy = actorUserId(req);
-
-    await run.save();
-
-    req.flash?.("success", "Payroll run updated successfully.");
-    return res.redirect("/admin/payroll");
+  updateItem: async (req, res) => {
+    if (!isValidId(req.params.id) || !isValidId(req.params.itemId)) return redirectWith(req, res, 'error', 'Invalid payroll item.');
+    try {
+      await updateDraftItem(req.models, req.params.id, req.params.itemId, req.body, { actorUserId: actorUserId(req) });
+      return redirectWith(req, res, 'success', 'Payroll item adjusted.');
+    } catch (err) { return redirectWith(req, res, 'error', err?.message || 'Could not adjust payroll item.'); }
   },
 
-  processRun: async (req, res) => {
-    const { PayrollRun } = req.models;
-
-    if (!isValidId(req.params.id)) {
-      req.flash?.("error", "Invalid payroll run ID.");
-      return res.redirect("/admin/payroll");
-    }
-
-    await PayrollRun.updateOne(
-      { _id: req.params.id, isDeleted: { $ne: true } },
-      { $set: { status: "Processed", updatedBy: actorUserId(req) } }
-    );
-
-    req.flash?.("success", "Payroll run processed.");
-    return res.redirect("/admin/payroll");
+  holdItem: async (req, res) => {
+    if (!isValidId(req.params.id) || !isValidId(req.params.itemId)) return redirectWith(req, res, 'error', 'Invalid payroll item.');
+    try {
+      await setItemHold(req.models, req.params.id, req.params.itemId, true, req.body.reason, { actorUserId: actorUserId(req) });
+      return redirectWith(req, res, 'success', 'Payroll item placed on hold.');
+    } catch (err) { return redirectWith(req, res, 'error', err?.message || 'Could not hold payroll item.'); }
   },
 
-  approveRun: async (req, res) => {
-    const { PayrollRun } = req.models;
-
-    if (!isValidId(req.params.id)) {
-      req.flash?.("error", "Invalid payroll run ID.");
-      return res.redirect("/admin/payroll");
-    }
-
-    await PayrollRun.updateOne(
-      { _id: req.params.id, isDeleted: { $ne: true } },
-      { $set: { status: "Approved", updatedBy: actorUserId(req) } }
-    );
-
-    req.flash?.("success", "Payroll run approved.");
-    return res.redirect("/admin/payroll");
+  releaseItem: async (req, res) => {
+    if (!isValidId(req.params.id) || !isValidId(req.params.itemId)) return redirectWith(req, res, 'error', 'Invalid payroll item.');
+    try {
+      await setItemHold(req.models, req.params.id, req.params.itemId, false, '', { actorUserId: actorUserId(req) });
+      return redirectWith(req, res, 'success', 'Payroll item released.');
+    } catch (err) { return redirectWith(req, res, 'error', err?.message || 'Could not release payroll item.'); }
   },
 
-  closeRun: async (req, res) => {
-    const { PayrollRun } = req.models;
-
-    if (!isValidId(req.params.id)) {
-      req.flash?.("error", "Invalid payroll run ID.");
-      return res.redirect("/admin/payroll");
-    }
-
-    await PayrollRun.updateOne(
-      { _id: req.params.id, isDeleted: { $ne: true } },
-      { $set: { status: "Closed", updatedBy: actorUserId(req) } }
-    );
-
-    req.flash?.("success", "Payroll run closed.");
-    return res.redirect("/admin/payroll");
-  },
-
-  deleteRun: async (req, res) => {
-    const { PayrollRun, PayrollItem } = req.models;
-
-    if (!isValidId(req.params.id)) {
-      req.flash?.("error", "Invalid payroll run ID.");
-      return res.redirect("/admin/payroll");
-    }
-
-    await PayrollRun.updateOne(
-      { _id: req.params.id, isDeleted: { $ne: true } },
-      {
-        $set: {
-          isDeleted: true,
-          deletedAt: new Date(),
-          updatedBy: actorUserId(req),
-        },
-      }
-    );
-
-    if (PayrollItem) {
-      await PayrollItem.updateMany(
-        { payrollRunId: req.params.id, isDeleted: { $ne: true } },
-        {
-          $set: {
-            isDeleted: true,
-            deletedAt: new Date(),
-            updatedBy: actorUserId(req),
-          },
-        }
-      );
-    }
-
-    req.flash?.("success", "Payroll run deleted.");
-    return res.redirect("/admin/payroll");
+  payItem: async (req, res) => {
+    if (!isValidId(req.params.id) || !isValidId(req.params.itemId)) return redirectWith(req, res, 'error', 'Invalid payroll item.');
+    try {
+      await markItemPaid(req.models, req.params.id, req.params.itemId, req.body, { actorUserId: actorUserId(req) });
+      return redirectWith(req, res, 'success', 'Payroll item marked paid.');
+    } catch (err) { return redirectWith(req, res, 'error', err?.message || 'Could not mark payroll item paid.'); }
   },
 
   bulkAction: async (req, res) => {
-    const { PayrollRun } = req.models;
-
-    const ids = str(req.body.ids)
-      .split(",")
-      .map((x) => x.trim())
-      .filter((x) => isValidId(x));
-
-    if (!ids.length) {
-      req.flash?.("error", "No payroll runs selected.");
-      return res.redirect("/admin/payroll");
+    const ids = str(req.body.ids).split(',').map((x) => x.trim()).filter(isValidId);
+    if (!ids.length) return redirectWith(req, res, 'error', 'No payroll runs selected.');
+    const actionName = str(req.body.action);
+    const handlers = {
+      process: (id) => processRun(req.models, id, { actorUserId: actorUserId(req) }),
+      approve: (id) => approveRun(req.models, id, { actorUserId: actorUserId(req) }),
+      pay: (id) => markRunPaid(req.models, id, {}, { actorUserId: actorUserId(req) }),
+      close: (id) => closeRun(req.models, id, { actorUserId: actorUserId(req) }),
+      delete: (id) => deleteDraftRun(req.models, id, { actorUserId: actorUserId(req) }),
+    };
+    const handler = handlers[actionName];
+    if (!handler) return redirectWith(req, res, 'error', 'Invalid payroll bulk action.');
+    let changed = 0; const failures = [];
+    for (const id of ids) {
+      try { await handler(id); changed += 1; }
+      catch (err) { failures.push(err?.message || id); }
     }
+    if (failures.length) req.flash?.('error', `${failures.length} payroll run(s) were skipped because their lifecycle did not allow this action.`);
+    req.flash?.('success', `${changed} payroll run(s) updated.`);
+    return res.redirect('/admin/payroll');
+  },
 
-    const action = str(req.body.action);
-    const patch = { updatedBy: actorUserId(req) };
-
-    if (action === "process") patch.status = "Processed";
-    if (action === "approve") patch.status = "Approved";
-    if (action === "close") patch.status = "Closed";
-    if (action === "draft") patch.status = "Draft";
-    if (action === "delete") {
-      patch.isDeleted = true;
-      patch.deletedAt = new Date();
+  exportCsv: async (req, res) => {
+    const data = await loadFiltered(req, { paginate: false, includeItems: false });
+    const lines = [[
+      'Run Number','Title','Period','Department','Pay Date','Status','Staff','Gross','Deductions','Net','Created/Processed/Approved/Closed'
+    ].map(csvCell).join(',')];
+    for (const run of data.runs) {
+      lines.push([
+        run.runNumber, run.title, `${run.month} ${run.year}`, run.departmentName, run.payDate, run.status,
+        run.staffCount, run.grossAmount, run.deductionsAmount, run.netAmount,
+        [run.processedAt && `Processed ${run.processedAt}`, run.approvedAt && `Approved ${run.approvedAt}`, run.closedAt && `Closed ${run.closedAt}`].filter(Boolean).join(' | '),
+      ].map(csvCell).join(','));
     }
-
-    await PayrollRun.updateMany(
-      { _id: { $in: ids }, isDeleted: { $ne: true } },
-      { $set: patch }
-    );
-
-    req.flash?.("success", "Bulk action applied.");
-    return res.redirect("/admin/payroll");
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="payroll-runs.csv"');
+    return res.send(`\ufeff${lines.join('\n')}\n`);
   },
 };

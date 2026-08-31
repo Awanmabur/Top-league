@@ -10,42 +10,57 @@
 </head>
 <body data-portal="student">
 <%- include("./navbar") %>
-
 <main class="main">
   <div class="topbar">
     <div>
       <div class="title">Jobs & Opportunities</div>
-      <div class="subtitle">Internships, graduate roles, part-time jobs, and student opportunities.</div>
+      <div class="subtitle">Published opportunities available to your current student level.</div>
     </div>
   </div>
-
-  <%-include("../tenant/partials/flash") %>
+  <%- include("../tenant/partials/flash") %>
 
   <div class="kpi-row">
-    <div class="card"><div class="section-title">Total</div><div style="font-size:22px;font-weight:800;"><%= stats.total %></div></div>
+    <div class="card"><div class="section-title">Open</div><div style="font-size:22px;font-weight:800;"><%= stats.total %></div></div>
     <div class="card"><div class="section-title">Internships</div><div style="font-size:22px;font-weight:800;"><%= stats.internships %></div></div>
-    <div class="card"><div class="section-title">Part Time</div><div style="font-size:22px;font-weight:800;"><%= stats.partTime %></div></div>
+    <div class="card"><div class="section-title">My active applications</div><div style="font-size:22px;font-weight:800;"><%= stats.applied %></div></div>
   </div>
 
   <section class="card" style="margin-top:16px;">
     <div class="section-title">Available opportunities</div>
-    <div class="section-sub">Current postings available to students.</div>
-
+    <div class="section-sub">Only currently published, unexpired postings are shown.</div>
     <div class="notif-list" style="margin-top:10px;">
-      <% if (jobs?.length) { %>
-        <% jobs.forEach(function(job){ %>
-          <div class="notif-item">
-            <div class="notif-icon"><i class="fa-solid fa-briefcase"></i></div>
-            <div>
-              <div class="notif-title"><%= job.title %></div>
-              <div class="notif-meta"><%= job.company %> • <%= job.location %> • <%= job.type %></div>
-              <div class="small-muted" style="margin-top:4px;"><%= job.summary %></div>
-              <div class="small-muted" style="margin-top:4px;">Deadline: <%= job.deadline ? new Date(job.deadline).toDateString() : "Open" %></div>
+      <% if (jobs?.length) { jobs.forEach(function(job){ %>
+        <div class="notif-item" style="align-items:flex-start;">
+          <div class="notif-icon"><i class="fa-solid fa-briefcase"></i></div>
+          <div style="flex:1;min-width:0;">
+            <div class="notif-title"><%= job.title %></div>
+            <div class="notif-meta"><%= job.company %> • <%= job.location %> • <%= job.type %></div>
+            <div class="small-muted" style="margin-top:6px;white-space:pre-line;"><%= job.summary %></div>
+            <% if (job.requirements) { %><div class="small-muted" style="margin-top:6px;"><strong>Requirements:</strong> <%= job.requirements %></div><% } %>
+            <div class="small-muted" style="margin-top:6px;">Deadline: <%= job.deadline ? new Date(job.deadline).toDateString() : "Open" %></div>
+            <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+              <% if (job.application) { %>
+                <span class="btn"><i class="fa-solid fa-circle-check"></i> <%= job.application.status %></span>
+                <% if (job.application.canWithdraw) { %>
+                  <form method="post" action="/student/jobs/applications/<%= job.application.id %>/withdraw">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>">
+                    <button class="btn" type="submit">Withdraw</button>
+                  </form>
+                <% } %>
+              <% } else { %>
+                <form method="post" action="/student/jobs/<%= job.id %>/apply" style="width:100%;">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>">
+                  <label class="small-muted" for="cover-<%= job.id %>">Optional application note</label>
+                  <textarea id="cover-<%= job.id %>" name="coverNote" maxlength="2000" rows="3" style="width:100%;margin:6px 0;"></textarea>
+                  <button class="btn primary" type="submit"><i class="fa-solid fa-paper-plane"></i> Apply</button>
+                  <% if (job.externalApplyUrl) { %><a class="btn" href="<%= job.externalApplyUrl %>" target="_blank" rel="noopener noreferrer">Employer page</a><% } %>
+                </form>
+              <% } %>
             </div>
           </div>
-        <% }) %>
-      <% } else { %>
-        <div class="small-muted">No jobs or opportunities found.</div>
+        </div>
+      <% }); } else { %>
+        <div class="small-muted">No open opportunities match your student level right now.</div>
       <% } %>
     </div>
   </section>

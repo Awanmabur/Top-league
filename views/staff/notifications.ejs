@@ -16,7 +16,27 @@
         <div class="title">Notifications</div>
         <div class="subtitle">Recent account and school updates for you.</div>
       </div>
+      <form method="POST" action="/staff/notifications/read-all">
+        <% if (typeof csrfToken !== "undefined" && csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
+        <button class="btn light" type="submit"><i class="fa-solid fa-check-double"></i> Mark all read</button>
+      </form>
     </div>
+
+    <section class="card" style="margin-bottom:16px;">
+      <div class="section-title">Notification Preferences</div>
+      <div class="section-sub">Choose optional in-app categories. System notices always remain enabled.</div>
+      <form method="POST" action="/staff/notifications/preferences" style="display:grid;gap:10px;margin-top:12px;">
+        <% if (typeof csrfToken !== "undefined" && csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
+        <label><input type="checkbox" name="inApp" <%= preference?.inApp !== false ? 'checked' : '' %>> In-app notifications</label>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+          <% (preferenceCategories || []).filter(function(c){ return c !== 'system'; }).forEach(function(category){ %>
+            <label><input type="checkbox" name="<%= category %>" <%= preference?.[category] !== false ? 'checked' : '' %>> <%= category.replace(/_/g,' ').replace(/\b\w/g,function(x){return x.toUpperCase();}) %></label>
+          <% }); %>
+          <label><input type="checkbox" checked disabled> System (required)</label>
+        </div>
+        <div><button class="btn primary" type="submit"><i class="fa-solid fa-floppy-disk"></i> Save preferences</button></div>
+      </form>
+    </section>
 
     <section class="card">
       <div class="notif-list">
@@ -30,6 +50,7 @@
               </div>
               <% if (!item.readAt) { %>
                 <form method="post" action="/staff/notifications/<%= item._id %>/read">
+                  <% if (typeof csrfToken !== "undefined" && csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
                   <button class="btn light" type="submit">Mark Read</button>
                 </form>
               <% } %>

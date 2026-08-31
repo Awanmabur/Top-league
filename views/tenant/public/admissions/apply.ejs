@@ -9,7 +9,7 @@
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
         crossorigin="anonymous" referrerpolicy="no-referrer"/>
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     :root{
       --blue:#0a3d62; --blue2:#083454; --accent:#0a6fbf;
       --bg:#f4f8ff; --card:#fff; --muted:#6b7280; --text:#0f172a;
@@ -176,6 +176,7 @@
   const schoolLevelsArr = (typeof schoolLevels !== "undefined" && Array.isArray(schoolLevels)) ? schoolLevels : [];
   const classLevelsArr = (typeof classLevels !== "undefined" && Array.isArray(classLevels)) ? classLevels : [];
   const termsArr = (typeof terms !== "undefined" && Array.isArray(terms)) ? terms : [];
+  const requirementsArr = (typeof requirements !== "undefined" && Array.isArray(requirements)) ? requirements : [];
   const selectedSchoolUnitIdValue = (typeof selectedSchoolUnitId !== "undefined" && selectedSchoolUnitId) ? String(selectedSchoolUnitId) : "";
   const selectedSchoolUnitObj = (typeof selectedSchoolUnit !== "undefined" && selectedSchoolUnit) ? selectedSchoolUnit : null;
   const applyActionValue = (typeof applyAction !== "undefined" && applyAction) ? String(applyAction) : "/admissions/apply";
@@ -492,7 +493,10 @@
           <div class="section">
             <h3><i class="fa-solid fa-folder-open"></i> Documents Upload</h3>
             <div class="muted" style="margin-bottom:10px">
-              Admission requirements are listed below. Passport Photo is always mandatory. Other items are marked red only when mandatory.
+              Admission requirements below are the active requirements for your selected Intake and Section. Your submitted application keeps a snapshot of this list for audit consistency.
+            </div>
+            <div id="dynamicRequirements" class="note" style="margin-bottom:12px;">
+              Select an Intake and Section to see the applicable requirements.
             </div>
 
             <div class="grid-2">
@@ -643,10 +647,12 @@
 
 </div>
 
-<textarea id="streamsData" class="hidden"><%- JSON.stringify(streamsArr) %></textarea>
-<textarea id="sectionsData" class="hidden"><%- JSON.stringify(sectionsArr) %></textarea>
-<textarea id="qualificationMapData" class="hidden"><%- JSON.stringify(qualificationMapObj) %></textarea>
-<textarea id="storedUploadsData" class="hidden"><%- JSON.stringify(storedUploadsObj) %></textarea>
+<textarea id="termsData" class="hidden"><%- JSON.stringify(termsArr).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
+<textarea id="streamsData" class="hidden"><%- JSON.stringify(streamsArr).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
+<textarea id="sectionsData" class="hidden"><%- JSON.stringify(sectionsArr).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
+<textarea id="requirementsData" class="hidden"><%- JSON.stringify(requirementsArr).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
+<textarea id="qualificationMapData" class="hidden"><%- JSON.stringify(qualificationMapObj).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
+<textarea id="storedUploadsData" class="hidden"><%- JSON.stringify(storedUploadsObj).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
 <input type="hidden" id="applyActionUrl" value="<%= applyActionValue %>">
 <input type="hidden" id="uploadDraftUrl" value="/admissions/upload-draft">
 <script src="/js/apply.js" defer></script>

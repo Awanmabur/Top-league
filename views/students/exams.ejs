@@ -28,8 +28,8 @@
       <div class="section-title">Next Exam</div>
       <div class="small-muted" style="margin-top:8px;">
         <% if (kpis.nextExam) { %>
-          <strong><%= kpis.nextExam.courseCode || kpis.nextExam.courseTitle %></strong><br/>
-          <%= kpis.nextExam.date ? new Date(kpis.nextExam.date).toDateString() : "-" %>
+          <strong><%= kpis.nextExam.subjectCode || kpis.nextExam.subjectTitle || kpis.nextExam.title %></strong><br/>
+          <%= kpis.nextExam.examDate ? new Date(kpis.nextExam.examDate).toDateString() : "-" %>
         <% } else { %>
           No upcoming exam
         <% } %>
@@ -57,11 +57,11 @@
           <% if (exams?.length) { %>
             <% exams.forEach(function(exam) { %>
               <tr>
-                <td><%= exam.courseCode %> - <%= exam.courseTitle %></td>
-                <td><%= exam.date ? new Date(exam.date).toDateString() : "-" %></td>
-                <td><%= exam.time %></td>
-                <td><%= exam.venue %></td>
-                <td><%= exam.type %></td>
+                <td><%= [exam.subjectCode, exam.subjectTitle].filter(Boolean).join(" - ") || exam.title %></td>
+                <td><%= exam.examDate ? new Date(exam.examDate).toDateString() : "-" %></td>
+                <td><%= [exam.startTime, exam.endTime].filter(Boolean).join(" - ") || "TBA" %></td>
+                <td><%= [exam.room, exam.campus].filter(Boolean).join(", ") || "TBA" %></td>
+                <td><%= exam.examType %></td>
                 <td><%= exam.status %></td>
               </tr>
             <% }) %>

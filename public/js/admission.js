@@ -69,35 +69,12 @@
     $('bulkForm').submit();
   });
 
-  // Export CSV (simple client-side)
-  $('btnExport').addEventListener('click', ()=>{
-    const rows = [];
-    const head = ["applicationId","name","email","phone","program","intake","status","createdAt"];
-    rows.push(head.join(","));
-
-    document.querySelectorAll('tr[data-id]').forEach(tr=>{
-      const vals = [
-        tr.dataset.app || "",
-        tr.dataset.name || "",
-        tr.dataset.email || "",
-        tr.dataset.phone || "",
-        tr.dataset.program || "",
-        tr.dataset.intake || "",
-        tr.dataset.status || "",
-        tr.querySelector('td:nth-child(7)')?.innerText?.trim() || ""
-      ].map(v => `"${String(v).replaceAll('"','""')}"`);
-      rows.push(vals.join(","));
-    });
-
-    const blob = new Blob([rows.join("\n")], {type:"text/csv;charset=utf-8"});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "admissions.csv";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+  // Export the complete filtered result set through the server-side, formula-safe CSV route.
+  $('btnExport')?.addEventListener('click', ()=>{
+    const params = new URLSearchParams(window.location.search);
+    params.delete('page');
+    const qs = params.toString();
+    window.location.href = `/admin/admissions/applicants/export${qs ? `?${qs}` : ''}`;
   });
 
   // Quick modal
@@ -108,14 +85,26 @@
 
     $('mTitle').textContent = `Applicant • ${tr.dataset.name || ""}`;
     const miss = tr.dataset.miss ? `Missing: ${tr.dataset.miss}` : "All required docs present";
-    $('mBody').innerHTML = `
-      <div class="strong">${tr.dataset.name || "—"}</div>
-      <div class="muted">${tr.dataset.app || "—"} • ${tr.dataset.phone || ""} ${tr.dataset.email ? "• "+tr.dataset.email : ""}</div>
-      <div class="muted">Program: ${tr.dataset.program || "—"}</div>
-      <div class="muted">Intake: ${tr.dataset.intake || "—"}</div>
-      <div class="muted">Status: ${tr.dataset.status || "—"}</div>
-      <div class="muted" style="margin-top:8px">${miss}</div>
-    `;
+    const body = $('mBody');
+    const line = (text, className = 'muted') => {
+      const el = document.createElement('div');
+      el.className = className;
+      el.textContent = text;
+      return el;
+    };
+    const identity = [tr.dataset.app || "—", tr.dataset.phone || "", tr.dataset.email || ""]
+      .filter(Boolean)
+      .join(' • ');
+    const missLine = line(miss);
+    missLine.style.marginTop = '8px';
+    body.replaceChildren(
+      line(tr.dataset.name || "—", 'strong'),
+      line(identity),
+      line(`Program: ${tr.dataset.program || "—"}`),
+      line(`Intake: ${tr.dataset.intake || "—"}`),
+      line(`Status: ${tr.dataset.status || "—"}`),
+      missLine,
+    );
 
     $('mOpen').href = `/admin/admissions/applicants/${id}`;
     $('mAdmit').href = `/admin/admissions/applicants/${id}#admit`;
@@ -133,10 +122,6 @@
   $('mClose').addEventListener('click', closeQuick);
   $('mCancel').addEventListener('click', closeQuick);
   $('mQuick').addEventListener('click', (e)=>{ if(e.target.id==='mQuick') closeQuick(); });
-
-  // Right-side buttons placeholders
-  $('qReports').addEventListener('click', ()=>alert("Reports page next (we can build /admin/admissions/reports)."));
-  $('qIntake').addEventListener('click', ()=>alert("Intake management next (we can build /admin/admissions/intakes)."));
 
   // Init
   setView("list");

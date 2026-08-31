@@ -8,7 +8,7 @@
         crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
-  <style>
+  <style nonce="<%= cspNonce %>">
     .flash-wrap{display:grid;gap:10px;margin-bottom:12px}
     .flash{padding:12px 14px;border-radius:12px;font-weight:700}
     .flash-success{background:#ecfdf3;color:#166534;border:1px solid #bbf7d0}
@@ -97,6 +97,7 @@
           <div class="subtitle">Generate, preview, issue, print and verify academy transcripts automatically.</div>
         </div>
         <div class="top-actions">
+          <a class="btn light" href="/admin/transcripts/letters"><i class="fa-solid fa-envelope-open-text"></i> Letter Requests</a>
           <button class="btn light" type="button" data-action="openCreate"><i class="fa-solid fa-plus"></i> Generate Single</button>
           <button class="btn primary" type="button" data-action="toggleBulkGenerate"><i class="fa-solid fa-gears"></i> Bulk Generate</button>
         </div>
@@ -335,6 +336,7 @@
             <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
             <input type="hidden" name="action" id="bulkActionVal" value="">
             <input type="hidden" name="ids" id="bulkIdsVal" value="">
+            <input type="hidden" name="reason" id="bulkReasonVal" value="">
           </form>
 
           <form id="issueForm" method="POST" action="#" style="display:none;">
@@ -563,8 +565,9 @@
               <label>Include Draft Results</label>
               <label class="view-input" style="justify-content:flex-start;gap:10px;">
                 <input type="checkbox" id="mIncludeDraft" name="includeDraftResults" value="1" />
-                Include Draft Results
+                Unofficial draft preview only
               </label>
+              <div class="muted">Official transcripts always use published Results only.</div>
             </div>
 
             <div class="field">
@@ -603,10 +606,10 @@
     </div>
   </div>
 
-  <textarea id="classesData" style="display:none" aria-hidden="true"><%- JSON.stringify(classes || []) %></textarea>
-  <textarea id="sectionsData" style="display:none" aria-hidden="true"><%- JSON.stringify(sections || []) %></textarea>
-  <textarea id="streamsData" style="display:none" aria-hidden="true"><%- JSON.stringify(streams || []) %></textarea>
-  <textarea id="studentsData" style="display:none" aria-hidden="true"><%- JSON.stringify(studentsData || studentsList || []) %></textarea>
+  <textarea id="classesData" class="json-data" style="display:none" aria-hidden="true"><%- JSON.stringify(classes || []).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
+  <textarea id="sectionsData" class="json-data" style="display:none" aria-hidden="true"><%- JSON.stringify(sections || []).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
+  <textarea id="streamsData" class="json-data" style="display:none" aria-hidden="true"><%- JSON.stringify(streams || []).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
+  <textarea id="studentsData" class="json-data" style="display:none" aria-hidden="true"><%- JSON.stringify(studentsData || studentsList || []).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
   <script src="/js/navbar.js" defer></script>
   <script src="/js/academic-selector.js" defer></script>
   <script src="/js/transcripts.js" defer></script>

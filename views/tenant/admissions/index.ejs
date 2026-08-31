@@ -15,7 +15,7 @@
 <%-include("../partials/header") %>
   <!-- Shared CSS (keep your existing file) -->
    
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .input,.select,.textarea{padding:10px 12px;border-radius:12px;border:1px solid rgba(13,64,96,.16);background:#fff;outline:none}
@@ -135,11 +135,20 @@
       return { ok, total:reqDocs.length, miss, other };
     };
 
+    const isInterviewScheduled = (x)=> String(x?.interviewStatus || "").toLowerCase() === "scheduled";
+    const displayStage = (x)=> {
+      const s = String(x?.status || "").toLowerCase();
+      if(["converted","accepted","rejected"].includes(s)) return s;
+      if(isInterviewScheduled(x)) return "interview";
+      if(!s || s === "submitted") return "received";
+      if(s === "under_review") return "under_review";
+      return s;
+    };
     const countBy = (fn)=> A.reduce((n,x)=> n + (fn(x)?1:0), 0);
-    const cReceived = countBy(x=> ["","received","submitted"].includes(String(x?.status||"").toLowerCase()));
-    const cReview   = countBy(x=> ["under_review","reviewed"].includes(String(x?.status||"").toLowerCase()));
-    const cInter    = countBy(x=> ["interview"].includes(String(x?.status||"").toLowerCase()));
-    const cAcc      = countBy(x=> ["accepted","converted"].includes(String(x?.status||"").toLowerCase()));
+    const cReceived = countBy(x=> displayStage(x) === "received");
+    const cReview   = countBy(x=> displayStage(x) === "under_review");
+    const cInter    = countBy(x=> displayStage(x) === "interview");
+    const cAcc      = countBy(x=> ["accepted","converted"].includes(displayStage(x)));
 
     const buildQS = (overrides={})=>{
       const params = {
@@ -168,7 +177,7 @@
       </div>
       <div class="top-actions">
         <button class="btn light" id="btnExport"><i class="fa-solid fa-file-arrow-down"></i> Export</button>
-        <a class="btn light" href="/apply" target="_blank" rel="noopener"><i class="fa-solid fa-link"></i> Public Apply</a>
+        <a class="btn light" href="/apply" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-link"></i> Public Apply</a>
         <a class="btn primary" href="/admin/admissions" title="Refresh"><i class="fa-solid fa-rotate"></i> Refresh</a>
       </div>
     </div>
@@ -215,7 +224,7 @@
             <option value="" <%= !qStatus ? "selected" : "" %>>All Stages</option>
             <option value="received" <%= qStatus==="received" ? "selected" : "" %>>Received</option>
             <option value="under_review" <%= qStatus==="under_review" ? "selected" : "" %>>Under Review</option>
-            <option value="interview" <%= qStatus==="interview" ? "selected" : "" %>>Interview</option>
+            <option value="interview" <%= qStatus==="interview" ? "selected" : "" %>>Interview Scheduled</option>
             <option value="accepted" <%= qStatus==="accepted" ? "selected" : "" %>>Accepted</option>
             <option value="converted" <%= qStatus==="converted" ? "selected" : "" %>>Converted</option>
             <option value="rejected" <%= qStatus==="rejected" ? "selected" : "" %>>Rejected</option>
@@ -296,7 +305,8 @@
                   const name = safe(a.fullName || [a.firstName,a.middleName,a.lastName].filter(Boolean).join(" "));
                   const pid = a.section1 || a.program1;
                   const prog = sectionLabel(pid);
-                  const sm = statusToPill(a.status);
+                  const stage = displayStage(a);
+                  const sm = statusToPill(stage);
                   const dm = docsMeta(a);
                   const docsText = `${dm.ok}/${dm.total} required` + (dm.other ? ` • ${dm.other} other` : "");
                   const docsPill = (dm.ok===dm.total) ? {cls:"ok", icon:"fa-check", text:"Complete"} : {cls:"warn", icon:"fa-triangle-exclamation", text:"Missing"};
@@ -309,7 +319,7 @@
                     data-email="<%= safe(a.email) %>"
                     data-program="<%= safe(prog) %>"
                     data-intake="<%= safe(a.intake) %>"
-                    data-status="<%= safe(a.status) %>"
+                    data-status="<%= safe(stage) %>"
                     data-miss="<%= safe(dm.miss.join(", ")) %>">
                   <td>
                     <input type="checkbox" class="rowCheck" value="<%= a._id %>">
@@ -349,9 +359,8 @@
                       <form method="POST" action="/admin/admissions/applicants/<%= a._id %>/status" style="display:inline-flex;gap:6px;align-items:center">
                         <input type="hidden" name="_csrf" value="<%= safe(csrfToken) %>">
                         <select class="select" name="status" style="padding:6px 10px;border-radius:10px">
-                          <option value="received" <%= String(a.status||"").toLowerCase()==="received" ? "selected":"" %>>Received</option>
+                          <option value="submitted" <%= String(a.status||"").toLowerCase()==="submitted" ? "selected":"" %>>Received / Submitted</option>
                           <option value="under_review" <%= String(a.status||"").toLowerCase()==="under_review" ? "selected":"" %>>Under Review</option>
-                          <option value="interview" <%= String(a.status||"").toLowerCase()==="interview" ? "selected":"" %>>Interview</option>
                           <option value="accepted" <%= String(a.status||"").toLowerCase()==="accepted" ? "selected":"" %>>Accepted</option>
                           <option value="rejected" <%= String(a.status||"").toLowerCase()==="rejected" ? "selected":"" %>>Rejected</option>
                         </select>
@@ -397,12 +406,9 @@
               {key:"rejected",    label:"Rejected"},
             ];
             const stageBucket = (x)=>{
-              const s = String(x?.status||"").toLowerCase();
-              if(!s || s==="submitted") return "received";
-              if(["reviewed"].includes(s)) return "under_review";
-              if(["converted"].includes(s)) return "accepted";
-              if(STAGES.find(z=>z.key===s)) return s;
-              return "received";
+              const stage = displayStage(x);
+              if(stage === "converted") return "accepted";
+              return STAGES.find(z=>z.key===stage) ? stage : "received";
             };
           %>
 
@@ -440,7 +446,7 @@
                                 data-email="<%= safe(a.email) %>"
                                 data-program="<%= safe(prog) %>"
                                 data-intake="<%= safe(a.intake) %>"
-                                data-status="<%= safe(a.status) %>"
+                                data-status="<%= safe(st.key) %>"
                                 data-miss="<%= safe(dm.miss.join(", ")) %>">
                           <i class="fa-solid fa-eye"></i> Quick
                         </button>
@@ -459,7 +465,7 @@
         </div>
 
         <div class="note" style="margin-top:12px;">
-          <strong>Included:</strong> server-rendered list, filters, pagination, bulk actions posting to your controller, pipeline view, quick-view modal.
+          Use the list or pipeline view to review applicants, update valid application stages, and open the full record for decisions, interviews, documents, offers, and admission.
         </div>
       </section>
 
@@ -471,15 +477,15 @@
         <div class="mini-list">
           <div class="mini-item">
             <div class="left"><div class="strong">Open Public Apply Form</div><div class="muted">Test applicant submission</div></div>
-            <a class="btn-xs" href="/admissions/apply" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+            <a class="btn-xs" href="/admissions/apply" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
           </div>
           <div class="mini-item">
-            <div class="left"><div class="strong">Admissions Reports</div><div class="muted">KPIs & exports (next)</div></div>
-            <button class="btn-xs" type="button" id="qReports"><i class="fa-solid fa-chart-column"></i></button>
+            <div class="left"><div class="strong">Admissions Reports</div><div class="muted">School reports & exports</div></div>
+            <a class="btn-xs" href="/admin/reports" id="qReports"><i class="fa-solid fa-chart-column"></i></a>
           </div>
           <div class="mini-item">
             <div class="left"><div class="strong">Intake Management</div><div class="muted">Configure sections and dates</div></div>
-            <button class="btn-xs" type="button" id="qIntake"><i class="fa-solid fa-calendar-check"></i></button>
+            <a class="btn-xs" href="/admin/admissions/intakes" id="qIntake"><i class="fa-solid fa-calendar-check"></i></a>
           </div>
         </div>
 

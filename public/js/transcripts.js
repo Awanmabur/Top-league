@@ -7,6 +7,7 @@
   const bulkAction = $("bulkAction");
   const bulkActionVal = $("bulkActionVal");
   const bulkIdsVal = $("bulkIdsVal");
+  const bulkReasonVal = $("bulkReasonVal");
   const bulkForm = $("bulkForm");
   const bulkGeneratePanel = $("bulkGeneratePanel");
   const issueForm = $("issueForm");
@@ -66,6 +67,13 @@
     });
   }
 
+  function syncDraftOption() {
+    if (!mIncludeDraft || !mKind) return;
+    const official = mKind.value === "official";
+    if (official) mIncludeDraft.checked = false;
+    mIncludeDraft.disabled = official;
+  }
+
   function refreshAcademicSelector() {
     window.AcademicSelector?.refresh(document);
   }
@@ -92,6 +100,7 @@
     mStatus.value = "draft";
     refreshAcademicSelector();
     toggleRangeFields();
+    syncDraftOption();
   }
 
   function openCreate() {
@@ -132,6 +141,7 @@
     mHeadTeacherComment.value = btn.dataset.headteachercomment || "";
 
     toggleRangeFields();
+    syncDraftOption();
     refreshAcademicSelector();
     open(trModal);
   }
@@ -141,7 +151,9 @@
     if (mRangeMode.value === "custom") {
       const tf = Number(mTermFrom.value || 1);
       const tt = Number(mTermTo.value || 3);
-      if (tf > tt) return alert("Term From cannot be greater than Term To.");
+      const yf = String(mAYFrom.value || "").trim();
+      const yt = String(mAYTo.value || "").trim();
+      if (yf && yt && yf === yt && tf > tt) return alert("For the same academic year, Term From cannot be greater than Term To.");
     }
     trForm.submit();
   }
@@ -185,7 +197,12 @@
     }
 
     if (action === "delete" && !window.confirm(`Delete ${ids.length} transcript(s)?`)) return;
-    if (action === "revoke" && !window.confirm(`Revoke ${ids.length} transcript(s)?`)) return;
+    if (action === "revoke") {
+      const reason = (window.prompt("Reason for revoking the selected issued transcripts:") || "").trim().slice(0, 300);
+      if (reason.length < 5) return alert("A revoke reason of at least 5 characters is required.");
+      if (!window.confirm(`Revoke ${ids.length} transcript(s)?`)) return;
+      if (bulkReasonVal) bulkReasonVal.value = reason;
+    } else if (bulkReasonVal) bulkReasonVal.value = "";
     if (action === "issue" && !window.confirm(`Issue ${ids.length} transcript(s)?`)) return;
     if (action === "regenerate" && !window.confirm(`Regenerate ${ids.length} draft transcript(s) from latest results?`)) return;
 
@@ -233,6 +250,10 @@
   if (mRangeMode) {
     mRangeMode.addEventListener("change", toggleRangeFields);
     toggleRangeFields();
+  }
+  if (mKind) {
+    mKind.addEventListener("change", syncDraftOption);
+    syncDraftOption();
   }
 
   if (trModal) {

@@ -24,33 +24,43 @@
     return Array.from(arguments).some((name) => modelSet.has(name));
   }
 
+  function hasAllModels() {
+    return Array.from(arguments).every((name) => modelSet.has(name));
+  }
+
   function visibleItems(items) {
     return items.filter((item) => !item.hidden);
   }
 
-  const showSubjectSelection = hasAnyModel("Subject", "CourseRegistration", "RegistrationWindow");
-  const showSubjects = hasAnyModel("Subject", "CourseRegistration");
+  const showSubjectSelection = hasAllModels("Student", "Subject", "CourseRegistration", "RegistrationWindow", "StudentHold");
+  const showSubjects = hasAllModels("Subject", "CourseRegistration");
   const showTimetable = hasAnyModel("Timetable", "TimetableEntry", "ClassTimetable", "Schedule");
   const showAssignments = hasAnyModel("Assignment");
+  const showAcademicCalendar = hasAnyModel("AcademicEvent");
   const showExams = hasAnyModel("Exam");
   const showResults = hasAnyModel("Result");
   const showTranscript = hasAnyModel("Transcript", "Result");
-  const showFinance = hasAnyModel("Invoice", "Payment", "FeeStructure", "Receipt");
+  const showFinance = modelSet.has("Invoice") && modelSet.has("Payment");
   const showAttendance = hasAnyModel("Attendance");
-  const showHostel = hasAnyModel("Hostel", "HostelAllocation", "HostelApplication");
-  const showLibrary = hasAnyModel("LibraryBook", "LibraryLoan", "LibraryReservation");
-  const showJobs = hasAnyModel("Job", "Opportunity");
-  const showEvents = hasAnyModel("Event");
+  const showDiscipline = hasAnyModel("DisciplineCase");
+  const showDocuments = hasAnyModel("StudentDoc");
+  const showHostel = hasAllModels("Hostel", "HostelAllocation", "HostelApplication");
+  const showTransport = hasAllModels("Transport", "TransportAssignment");
+  const showAssets = hasAnyModel("Asset");
+  const showLibrary = hasAllModels("LibraryBook", "LibraryLoan", "LibraryReservation", "LibraryFine", "LibraryHold");
+  const showJobs = hasAllModels("Student", "JobOpportunity", "JobApplication");
+  const showEvents = hasAllModels("Event", "EventRegistration", "EventSubscription", "EventView");
   const showNotifications = hasAnyModel("Notification", "Announcement");
   const showSupport =
-    tenantAccess?.featureFlags?.helpdesk !== false &&
-    hasAnyModel("SupportTicket", "Ticket");
+    tenantAccess?.featureFlags?.helpdesk === true &&
+    hasAllModels("HelpdeskTicket");
 
   const learningItems = visibleItems([
     { label: "Dashboard", icon: "fa-house", href: "/student/dashboard", hidden: false },
     { label: "Subject Selection", icon: "fa-list-check", href: "/student/subject-selection", hidden: !showSubjectSelection },
     { label: "My Subjects", icon: "fa-book-open-reader", href: "/student/subjects", hidden: !showSubjects },
     { label: "Timetable", icon: "fa-calendar-week", href: "/student/timetable", hidden: !showTimetable },
+    { label: "Academic Calendar", icon: "fa-calendar-days", href: "/student/calendar", hidden: !showAcademicCalendar },
     { label: "Assignments", icon: "fa-file-pen", href: "/student/assignments", hidden: !showAssignments },
     { label: "Exams", icon: "fa-clipboard-list", href: "/student/exams", hidden: !showExams },
   ]);
@@ -59,11 +69,15 @@
     { label: "Results", icon: "fa-award", href: "/student/results", hidden: !showResults },
     { label: "Transcript", icon: "fa-file-pdf", href: "/student/transcript", hidden: !showTranscript },
     { label: "Attendance", icon: "fa-user-check", href: "/student/attendance", hidden: !showAttendance },
+    { label: "Discipline", icon: "fa-scale-balanced", href: "/student/discipline", hidden: !showDiscipline },
+    { label: "Documents", icon: "fa-folder-open", href: "/student/documents", hidden: !showDocuments },
     { label: "Finance", icon: "fa-sack-dollar", href: "/student/finance", hidden: !showFinance },
   ]);
 
   const servicesItems = visibleItems([
     { label: "Hostel", icon: "fa-bed", href: "/student/hostel", hidden: !showHostel },
+    { label: "Transport", icon: "fa-bus", href: "/student/transport", hidden: !showTransport },
+    { label: "School Assets", icon: "fa-boxes-stacked", href: "/student/assets", hidden: !showAssets },
     { label: "Library", icon: "fa-book", href: "/student/library", hidden: !showLibrary },
     { label: "Events", icon: "fa-calendar-days", href: "/student/events", hidden: !showEvents },
     { label: "Jobs", icon: "fa-briefcase", href: "/student/jobs", hidden: !showJobs },
@@ -158,3 +172,8 @@
       <div class="navfoot">Portal: <strong>Student</strong></div>
     </nav>
   </aside>
+
+<script src="/js/offline/db.js" defer></script>
+<script src="/js/offline/queue.js" defer></script>
+<script src="/js/offline/forms.js" defer></script>
+<script src="/js/csp-actions.js" defer></script>

@@ -1,204 +1,129 @@
 const { getParent, canAccessChild } = require("./_helpers");
-
-function num(v) {
-  return Number(v || 0);
-}
+const { isValidId, safeAmount } = require("../../../services/tenant/financeService");
+const { accountSnapshot, liveInvoiceStatus } = require("../../../services/tenant/financeVisibilityService");
 
 function fmtDate(v) {
-  if (!v) return "—";
-  try {
-    return new Date(v).toLocaleDateString();
-  } catch {
-    return String(v);
-  }
+  if (!v) return "â€”";
+  const d = new Date(v);
+  return Number.isNaN(d.getTime()) ? "â€”" : d.toLocaleDateString();
 }
 
 function normalizeInvoiceRows(rows = []) {
   return rows.map((r) => {
-    const amount = num(r.amount || r.totalAmount || r.billAmount || r.expectedAmount);
-    const paid = num(r.paidAmount || r.amountPaid || r.settledAmount);
-    const balance = Math.max(0, num(r.balance || r.balanceAmount || (amount - paid)));
-
+    const amount = safeAmount(r.totalAmount);
+    const paid = safeAmount(r.paidAmount);
+    const balance = Math.max(0, safeAmount(r.balance));
     return {
       ...r,
-      title: r.title || r.name || r.feeItem || r.description || "Fee Item",
-      category: r.category || r.type || r.feeType || "General",
-      academicYear: r.academicYear || "—",
-      semester: r.semester || "—",
-      dueDate: fmtDate(r.dueDate || r.deadline || r.dateDue),
+      title: r.items?.[0]?.title || r.reference || r.invoiceNumber || "School Fees",
+      category: r.items?.[0]?.category || "General",
+      academicYear: r.academicYear || "â€”",
+      term: r.term || "â€”",
+      semester: r.term || "â€”",
+      dueDate: fmtDate(r.dueDate),
       amount,
       paid,
       balance,
-      status:
-        r.status ||
-        (balance <= 0 ? "paid" : paid > 0 ? "partial" : "unpaid"),
-      reference: r.reference || r.invoiceNo || r.invoiceNumber || r.code || "—",
-      notes: r.notes || r.remarks || "—",
+      status: liveInvoiceStatus(r).toLowerCase(),
+      reference: r.invoiceNumber || r.reference || "â€”",
+      notes: r.notes || "â€”",
     };
   });
 }
 
 function normalizePayments(rows = []) {
-  return rows.map((r) => {
-    const amount = num(r.amount || r.amountPaid || r.total);
-    return {
-      ...r,
-      amount,
-      date: fmtDate(r.paymentDate || r.date || r.createdAt),
-      method: r.method || r.paymentMethod || "—",
-      reference: r.reference || r.receiptNo || r.transactionId || r.paymentRef || "—",
-      status: r.status || "completed",
-      notes: r.notes || r.remarks || "—",
-    };
-  });
+  return rows.map((r) => ({
+    ...r,
+    amount: safeAmount(r.amount),
+    date: fmtDate(r.paymentDate || r.createdAt),
+    method: r.method || "â€”",
+    reference: r.reference || r.receiptNumber || "â€”",
+    status: r.status || "Pending",
+    notes: r.notes || "â€”",
+    receiptUrl: `/parent/fees/receipts/${r._id}`,
+  }));
 }
 
-function buildFeeSummary(invoices = [], payments = []) {
-  const billed = invoices.reduce((sum, x) => sum + num(x.amount), 0);
-  const invoicePaid = invoices.reduce((sum, x) => sum + num(x.paid), 0);
-  const paymentTotal = payments.reduce((sum, x) => sum + num(x.amount), 0);
-
-  const paid = Math.max(invoicePaid, paymentTotal);
-  const balance = Math.max(0, billed - paid);
-
-  const overdueCount = invoices.filter(
-    (x) => String(x.status || "").toLowerCase() !== "paid" && x.dueDate && x.dueDate !== "—"
-  ).length;
-
-  const paidItems = invoices.filter((x) => String(x.status || "").toLowerCase() === "paid").length;
-  const partialItems = invoices.filter((x) => String(x.status || "").toLowerCase() === "partial").length;
-  const unpaidItems = invoices.filter((x) => String(x.status || "").toLowerCase() === "unpaid").length;
-
+function buildFeeSummary(rawInvoices = [], rawPayments = []) {
+  const snapshot = accountSnapshot(rawInvoices, rawPayments);
+  const rows = normalizeInvoiceRows(rawInvoices).filter((x) => String(x.status).toLowerCase() !== "cancelled");
   return {
-    billed,
-    paid,
-    balance,
-    overdueCount,
-    paidItems,
-    partialItems,
-    unpaidItems,
+    billed: snapshot.billed,
+    paid: snapshot.paid,
+    applied: snapshot.applied,
+    invoiceOutstanding: snapshot.invoiceOutstanding,
+    unallocatedCredit: snapshot.unallocatedCredit,
+    balance: snapshot.balance,
+    credit: snapshot.credit,
+    overdueCount: rows.filter((x) => x.status === "overdue").length,
+    paidItems: rows.filter((x) => x.status === "paid").length,
+    partialItems: rows.filter((x) => x.status === "partially paid").length,
+    unpaidItems: rows.filter((x) => ["unpaid", "overdue"].includes(x.status)).length,
   };
+}
+
+async function parentContext(req) {
+  const { Student } = req.models || {};
+  const { user, parent } = await getParent(req);
+  if (!user) return { user: null, parent, children: [], student: null };
+  const childIds = Array.isArray(parent?.childrenStudentIds) ? parent.childrenStudentIds : [];
+  const children = parent && Student && childIds.length
+    ? await Student.find({ _id: { $in: childIds }, isDeleted: { $ne: true }, status: { $ne: "archived" } })
+      .select("firstName lastName middleName fullName regNo studentNo programId classId className classLevel schoolLevel academicYear term status")
+      .populate({ path: "programId", select: "code name title" })
+      .sort({ firstName: 1, lastName: 1 }).lean()
+    : [];
+  const requested = req.query?.student ? String(req.query.student) : null;
+  let student = requested && canAccessChild(parent, requested) ? children.find((c) => String(c._id) === requested) || null : null;
+  if (!student && children.length) student = children[0];
+  return { user, parent, children, student };
 }
 
 module.exports = {
   async index(req, res) {
-    const log = (...a) =>
-      console.log(
-        `[PARENT-FEES] tenant=${req.tenant?.code || req.tenant?._id || "?"}`,
-        ...a
-      );
-
     try {
-      const { Student, FeeInvoice, FeePayment, Payment, Fee, Invoice } = req.models || {};
-
-      const { user, parent } = await getParent(req);
+      const { Invoice, Payment } = req.models || {};
+      const { user, parent, children, student } = await parentContext(req);
       if (!user) return res.redirect("/login");
-
-      const childIds = Array.isArray(parent?.childrenStudentIds)
-        ? parent.childrenStudentIds
-        : [];
-
-      const children =
-        parent && Student && childIds.length
-          ? await Student.find({ _id: { $in: childIds } })
-              .select(
-                "firstName lastName middleName fullName regNo program classGroup yearLevel academicYear semester status"
-              )
-              .populate({ path: "program", select: "code name title level faculty" })
-              .populate({ path: "classGroup", select: "code name title" })
-              .sort({ firstName: 1, lastName: 1 })
-              .lean()
-              .catch(() => [])
-          : [];
-
-      const selectedStudentId = req.query?.student ? String(req.query.student) : null;
-
-      let student = null;
-      if (selectedStudentId && canAccessChild(parent, selectedStudentId)) {
-        student = children.find((c) => String(c._id) === selectedStudentId) || null;
-      }
-      if (!student && children.length) student = children[0];
-
+      if (!Invoice || !Payment) return res.status(503).send("Parent finance is unavailable.");
+      res.set("Cache-Control", "private, no-store");
       if (!student) {
-        return res.render("parents/fees", {
-          tenant: req.tenant,
-          user,
-          parent,
-          children,
-          student: null,
-          invoices: [],
-          payments: [],
-          summary: {
-            billed: 0,
-            paid: 0,
-            balance: 0,
-            overdueCount: 0,
-            paidItems: 0,
-            partialItems: 0,
-            unpaidItems: 0,
-          },
-          error: "No linked student found for this parent account.",
-        });
+        return res.render("parents/fees", { tenant: req.tenant, user, parent, children, student: null, invoices: [], payments: [], summary: buildFeeSummary(), error: "No linked student found for this parent account." });
       }
 
-      const invoiceModel = FeeInvoice || Fee || Invoice || null;
-      const paymentModel = FeePayment || Payment || null;
-
-      const rawInvoices = invoiceModel
-        ? await invoiceModel
-            .find({
-              deletedAt: null,
-              $or: [{ student: student._id }, { studentId: student._id }],
-            })
-            .sort({ dueDate: 1, createdAt: -1 })
-            .lean()
-            .catch(() => [])
-        : [];
-
-      const rawPayments = paymentModel
-        ? await paymentModel
-            .find({
-              deletedAt: null,
-              $or: [{ student: student._id }, { studentId: student._id }],
-            })
-            .sort({ paymentDate: -1, date: -1, createdAt: -1 })
-            .lean()
-            .catch(() => [])
-        : [];
-
+      const [rawInvoices, rawPayments] = await Promise.all([
+        Invoice.find({ studentId: student._id, isDeleted: { $ne: true }, status: { $ne: "Draft" } }).sort({ dueDate: 1, issueDate: -1, createdAt: -1 }).lean(),
+        Payment.find({ studentId: student._id, isDeleted: { $ne: true } }).sort({ paymentDate: -1, createdAt: -1 }).lean(),
+      ]);
       const invoices = normalizeInvoiceRows(rawInvoices);
       const payments = normalizePayments(rawPayments);
-      const summary = buildFeeSummary(invoices, payments);
-
-      log(
-        "user:",
-        user ? { id: user._id, email: user.email, roles: user.roles } : null
-      );
-      log(
-        "parent:",
-        parent
-          ? { id: parent._id, email: parent.email, kids: (parent.childrenStudentIds || []).length }
-          : null
-      );
-      log("children:", children.length);
-      log("selectedStudent:", student ? String(student._id) : null);
-      log("invoices:", invoices.length);
-      log("payments:", payments.length);
-
       return res.render("parents/fees", {
-        tenant: req.tenant,
-        user,
-        parent,
-        children,
-        student,
-        invoices,
-        payments,
-        summary,
-        error: null,
+        tenant: req.tenant, user, parent, children, student, invoices, payments,
+        summary: buildFeeSummary(rawInvoices, rawPayments), error: null,
       });
     } catch (err) {
       console.error("PARENT FEES ERROR:", err);
       return res.status(500).send("Failed to load parent fees page");
     }
   },
+
+  async receipt(req, res) {
+    try {
+      const { Payment } = req.models || {};
+      if (!Payment || !isValidId(req.params.id)) return res.status(404).send("Receipt not found");
+      const { user, children } = await parentContext(req);
+      if (!user) return res.redirect("/login");
+      const allowedIds = new Set(children.map((c) => String(c._id)));
+      const payment = await Payment.findOne({ _id: req.params.id, isDeleted: { $ne: true } })
+        .populate("studentId", "firstName middleName lastName fullName admissionNumber regNo")
+        .populate({ path: "invoiceId", populate: { path: "studentId", select: "firstName middleName lastName fullName admissionNumber regNo" } });
+      if (!payment || !allowedIds.has(String(payment.studentId?._id || payment.studentId || ""))) return res.status(404).send("Receipt not found");
+      res.set("Cache-Control", "private, no-store");
+      return res.render("tenant/finance/receipts/view", { tenant: req.tenant, payment, invoice: payment.invoiceId || null, receiptStatus: payment.status });
+    } catch (_) {
+      return res.status(404).send("Receipt not found");
+    }
+  },
+
+  _private: { normalizeInvoiceRows, normalizePayments, buildFeeSummary, parentContext },
 };

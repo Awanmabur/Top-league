@@ -14,40 +14,35 @@ module.exports = (connection) => {
       driverPhone: { type: String, default: "", trim: true, maxlength: 40 },
       pickupPoints: { type: [String], default: [] },
       feeAmount: { type: Number, default: 0, min: 0 },
-      capacity: { type: Number, default: 0, min: 0 },
+      capacity: { type: Number, default: 1, min: 1 },
+      // Retained only for backward-compatible migration. Real assignments live in TransportAssignment.
       assignedLearners: { type: Number, default: 0, min: 0 },
+      legacyAssignedLearners: { type: Number, default: 0, min: 0 },
       status: {
         type: String,
-        enum: ["active", "inactive", "maintenance"],
-        default: "active",
+        enum: ["active", "inactive", "maintenance", "archived"],
+        default: "inactive",
         index: true,
       },
       notes: { type: String, default: "", trim: true, maxlength: 1000 },
+      revision: { type: Number, default: 1, min: 1 },
+      firstActivatedAt: { type: Date, default: null, index: true },
+      archivedAt: { type: Date, default: null, index: true },
+      migrationQuarantinedAt: { type: Date, default: null, index: true },
+      migrationQuarantineReason: { type: String, default: "", trim: true, maxlength: 500 },
+      isDeleted: { type: Boolean, default: false, index: true },
+      deletedAt: { type: Date, default: null },
       createdBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
       updatedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
     },
     { timestamps: true }
   );
 
-  TransportSchema.index({ routeCode: 1 }, { unique: true });
-  TransportSchema.index({ status: 1, routeName: 1 });
-
-  TransportSchema.pre("validate", function normalize(next) {
-    this.routeCode = String(this.routeCode || "")
-      .trim()
-      .toUpperCase()
-      .replace(/[^A-Z0-9-]+/g, "-")
-      .replace(/-{2,}/g, "-")
-      .replace(/(^-|-$)/g, "");
-    this.vehicleRegNo = String(this.vehicleRegNo || "").trim().toUpperCase();
-    this.pickupPoints = Array.isArray(this.pickupPoints)
-      ? this.pickupPoints.map((x) => String(x || "").trim()).filter(Boolean)
-      : String(this.pickupPoints || "")
-          .split(/\r?\n|,/)
-          .map((x) => x.trim())
-          .filter(Boolean);
-    next();
-  });
+  TransportSchema.index(
+    { routeCode: 1 },
+    { name: "uniq_active_transport_route_code", unique: true, partialFilterExpression: { isDeleted: false, migrationQuarantinedAt: null } }
+  );
+  TransportSchema.index({ status: 1, routeName: 1, isDeleted: 1 });
 
   return connection.model("Transport", TransportSchema);
 };

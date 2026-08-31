@@ -20,13 +20,11 @@
     currentViewId: null,
   };
 
-  function escapeHtml(v) {
-    return String(v ?? "")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#39;");
+  function makeEl(tag, className, text) {
+    const el = document.createElement(tag);
+    if (className) el.className = className;
+    if (text !== undefined && text !== null) el.textContent = String(text);
+    return el;
   }
 
   function openModal(id) {
@@ -49,10 +47,16 @@
   }
 
   function statusPill(status) {
-    if (status === "scheduled") return '<span class="pill ok">Scheduled</span>';
-    if (status === "completed") return '<span class="pill info">Completed</span>';
-    if (status === "archived") return '<span class="pill bad">Archived</span>';
-    return '<span class="pill warn">Draft</span>';
+    const normalized = String(status || "draft").toLowerCase();
+    const classes = normalized === "scheduled" ? "pill ok"
+      : normalized === "completed" ? "pill info"
+      : normalized === "archived" ? "pill bad"
+      : "pill warn";
+    const label = normalized === "scheduled" ? "Scheduled"
+      : normalized === "completed" ? "Completed"
+      : normalized === "archived" ? "Archived"
+      : "Draft";
+    return makeEl("span", classes, label);
   }
 
   function formatDateTime(v) {
@@ -62,44 +66,69 @@
     return d.toLocaleString();
   }
 
+  function textCell(className, text) {
+    const td = makeEl("td", className);
+    td.appendChild(makeEl("span", "cell-ellipsis", text));
+    return td;
+  }
+
   function renderTable() {
-    $("tbodyExams").innerHTML =
-      EXAMS.map((e) => {
-        const checked = state.selected.has(e.id) ? "checked" : "";
-        return `
-          <tr class="row-clickable" data-id="${escapeHtml(e.id)}">
-            <td class="col-check"><input type="checkbox" class="rowCheck" data-id="${escapeHtml(e.id)}" ${checked}></td>
-            <td class="col-title">
-              <div class="exam-main">
-                <div class="exam-title">${escapeHtml(e.title || "-")}</div>
-                <div class="exam-sub">${escapeHtml(e.code || "-")}</div>
-              </div>
-            </td>
-            <td class="col-class"><span class="cell-ellipsis">${escapeHtml(e.className || "-")}</span></td>
-            <td class="col-section"><span class="cell-ellipsis">${escapeHtml(e.sectionName || "Whole Class")}</span></td>
-            <td class="col-stream"><span class="cell-ellipsis">${escapeHtml(e.streamName || "All Streams")}</span></td>
-            <td class="col-subject"><span class="cell-ellipsis">${escapeHtml(e.subjectName || "-")}</span></td>
-            <td class="col-type"><span class="cell-ellipsis">${escapeHtml(e.examType || "-")}</span></td>
-            <td class="col-date"><span class="cell-ellipsis">${escapeHtml(e.examDateLabel || "-")}</span></td>
-            <td class="col-marks"><span class="cell-ellipsis">${escapeHtml(String(e.maxMarks || 0))} / ${escapeHtml(String(e.passMark || 0))}</span></td>
-            <td class="col-status">${statusPill(e.status)}</td>
-            <td class="col-actions">
-              <div class="actions">
-                <button class="btn-xs actView" type="button">View</button>
-                <button class="btn-xs actEdit" type="button">Edit</button>
-                <button class="btn-xs actDelete" type="button">Delete</button>
-              </div>
-            </td>
-          </tr>
-        `;
-      }).join("") ||
-      `
-      <tr>
-        <td colspan="11" style="padding:18px;">
-          <div class="muted">No exams found.</div>
-        </td>
-      </tr>
-      `;
+    const tbody = $("tbodyExams");
+    tbody.replaceChildren();
+
+    if (!EXAMS.length) {
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.colSpan = 11;
+      td.style.padding = "18px";
+      td.appendChild(makeEl("div", "muted", "No exams found."));
+      tr.appendChild(td);
+      tbody.appendChild(tr);
+    } else {
+      EXAMS.forEach((e) => {
+        const tr = makeEl("tr", "row-clickable");
+        tr.dataset.id = String(e.id || "");
+
+        const checkTd = makeEl("td", "col-check");
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.className = "rowCheck";
+        checkbox.dataset.id = String(e.id || "");
+        checkbox.checked = state.selected.has(e.id);
+        checkTd.appendChild(checkbox);
+        tr.appendChild(checkTd);
+
+        const titleTd = makeEl("td", "col-title");
+        const main = makeEl("div", "exam-main");
+        main.appendChild(makeEl("div", "exam-title", e.title || "-"));
+        main.appendChild(makeEl("div", "exam-sub", e.code || "-"));
+        titleTd.appendChild(main);
+        tr.appendChild(titleTd);
+
+        tr.appendChild(textCell("col-class", e.className || "-"));
+        tr.appendChild(textCell("col-section", e.sectionName || "Whole Class"));
+        tr.appendChild(textCell("col-stream", e.streamName || "All Streams"));
+        tr.appendChild(textCell("col-subject", e.subjectName || "-"));
+        tr.appendChild(textCell("col-type", e.examType || "-"));
+        tr.appendChild(textCell("col-date", e.examDateLabel || "-"));
+        tr.appendChild(textCell("col-marks", `${Number(e.maxMarks || 0)} / ${Number(e.passMark || 0)}`));
+
+        const statusTd = makeEl("td", "col-status");
+        statusTd.appendChild(statusPill(e.status));
+        tr.appendChild(statusTd);
+
+        const actionsTd = makeEl("td", "col-actions");
+        const actions = makeEl("div", "actions");
+        [["actView", "View"], ["actEdit", "Edit"], ["actDelete", "Delete"]].forEach(([cls, label]) => {
+          const button = makeEl("button", `btn-xs ${cls}`, label);
+          button.type = "button";
+          actions.appendChild(button);
+        });
+        actionsTd.appendChild(actions);
+        tr.appendChild(actionsTd);
+        tbody.appendChild(tr);
+      });
+    }
 
     $("checkAll").checked = EXAMS.length > 0 && EXAMS.every((e) => state.selected.has(e.id));
     syncBulkbar();
@@ -162,7 +191,7 @@
     $("vMarks").textContent = `${e.maxMarks || 0} max / ${e.passMark || 0} pass`;
     $("vRoom").textContent = e.room || "-";
     $("vCampus").textContent = e.campus || "-";
-    $("vStatus").innerHTML = statusPill(e.status || "draft");
+    $("vStatus").replaceChildren(statusPill(e.status || "draft"));
     $("vInstructions").textContent = e.instructions || "-";
 
     openModal("mView");

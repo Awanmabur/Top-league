@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar {
       display: flex;
       gap: 10px;
@@ -999,7 +999,7 @@
   </div>
 
   <script src="/js/navbar.js"></script>
-  <script>
+  <script nonce="<%= cspNonce %>">
     (function () {
       const $ = (id) => document.getElementById(id);
 

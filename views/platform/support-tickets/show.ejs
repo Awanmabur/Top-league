@@ -6,7 +6,7 @@
   <title>Support Ticket Details — Classic Academy</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <link rel="stylesheet" href="/css/navbar.css" />
-  <style>
+  <style nonce="<%= cspNonce %>">
     body{margin:0;background:#f5f8ff;font-family:Poppins,Segoe UI,Arial,sans-serif;color:#0f172a;overflow-x:hidden}
     *{box-sizing:border-box;min-width:0}
     .main{flex:1;padding:20px 26px;display:flex;flex-direction:column;gap:16px}
@@ -70,6 +70,8 @@
             <div class="card">
               <div style="font-weight:800;color:#083454;margin-bottom:12px;">Reply</div>
               <form action="/super-admin/support-tickets/<%= ticket._id %>/reply" method="POST">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                <input type="hidden" name="revision" value="<%= ticket.revision || 1 %>" />
                 <label>Message</label>
                 <textarea name="body" required></textarea>
                 <div style="margin-top:12px;">
@@ -92,6 +94,8 @@
           <% if (canManageSupport) { %>
             <div class="card">
               <form action="/super-admin/support-tickets/<%= ticket._id %>/assign" method="POST">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                <input type="hidden" name="revision" value="<%= ticket.revision || 1 %>" />
                 <label>Assign To</label>
                 <select name="assignedTo">
                   <option value="">Unassigned</option>
@@ -107,6 +111,8 @@
 
             <div class="card">
               <form action="/super-admin/support-tickets/<%= ticket._id %>/status" method="POST">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                <input type="hidden" name="revision" value="<%= ticket.revision || 1 %>" />
                 <label>Status</label>
                 <select name="status">
                   <option value="open" <%= ticket.status === 'open' ? 'selected' : '' %>>Open</option>

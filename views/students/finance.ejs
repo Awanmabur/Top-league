@@ -16,7 +16,7 @@
     <div>
       <div class="title">Student Finance</div>
       <div class="subtitle">
-        View your fees, invoices, payments, and receipts for all semesters.
+        View your fees, invoices, payments, and receipts by academic year and term.
       </div>
     </div>
     <div class="top-actions">
@@ -33,36 +33,39 @@
 
   <section class="card">
     <div class="section-title">Fees summary</div>
-    <div class="section-sub">Select academic year & semester to view detailed breakdown.</div>
+    <div class="section-sub">Select academic year and term to view a consistent account snapshot.</div>
 
-    <div class="filters-row" style="margin-top:10px;">
-      <div>
-        <label class="small-muted">Academic year</label><br/>
-        <select class="select">
-          <option selected><%= meta.academicYear %></option>
-        </select>
-      </div>
-      <div>
-        <label class="small-muted">Semester</label><br/>
-        <select class="select">
-          <option selected><%= meta.semester %></option>
-        </select>
-      </div>
-      <div style="flex:1;min-width:220px;">
+    <div class="filters-row" style="margin-top:10px;align-items:flex-end;">
+      <form method="get" action="/student/finance" class="filters-row" style="margin:0;align-items:flex-end;">
+        <div>
+          <label class="small-muted" for="financeAcademicYear">Academic year</label><br/>
+          <select class="select" id="financeAcademicYear" name="academicYear">
+            <option value="all" <%= filters?.academicYear === 'all' ? 'selected' : '' %>>All years</option>
+            <% (periodOptions?.academicYears || []).forEach(function(year){ %>
+              <option value="<%= year %>" <%= filters?.academicYear === String(year) ? 'selected' : '' %>><%= year %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div>
+          <label class="small-muted" for="financeTerm">Term</label><br/>
+          <select class="select" id="financeTerm" name="term">
+            <option value="all" <%= filters?.term === 'all' ? 'selected' : '' %>>All terms</option>
+            <% (periodOptions?.terms || []).forEach(function(term){ %>
+              <option value="<%= term %>" <%= filters?.term === String(term) ? 'selected' : '' %>>Term <%= term %></option>
+            <% }) %>
+          </select>
+        </div>
+        <button class="btn primary" type="submit"><i class="fa-solid fa-filter"></i> Apply</button>
+        <a class="btn light" href="/student/finance"><i class="fa-solid fa-rotate-left"></i> Reset</a>
+      </form>
+      <div style="flex:1;min-width:260px;">
         <label class="small-muted">Summary</label>
         <div class="mini-list" style="margin-top:4px;">
-          <div class="mini-item">
-            <span>Total billed</span>
-            <span>UGX <%= Number(totals.billed || 0).toLocaleString() %></span>
-          </div>
-          <div class="mini-item">
-            <span>Total paid</span>
-            <span>UGX <%= Number(totals.paid || 0).toLocaleString() %></span>
-          </div>
-          <div class="mini-item">
-            <span>Outstanding</span>
-            <span style="color:#f59e0b;">UGX <%= Number(totals.balance || 0).toLocaleString() %></span>
-          </div>
+          <div class="mini-item"><span>Total billed</span><span>UGX <%= Number(totals.billed || 0).toLocaleString() %></span></div>
+          <div class="mini-item"><span>Completed payments</span><span>UGX <%= Number(totals.paid || 0).toLocaleString() %></span></div>
+          <div class="mini-item"><span>Invoice outstanding</span><span>UGX <%= Number(totals.invoiceOutstanding || 0).toLocaleString() %></span></div>
+          <div class="mini-item"><span>Unallocated account credit</span><span>UGX <%= Number(totals.unallocatedCredit || 0).toLocaleString() %></span></div>
+          <div class="mini-item"><span>Net amount due</span><span style="color:#f59e0b;">UGX <%= Number(totals.balance || 0).toLocaleString() %></span></div>
         </div>
       </div>
     </div>
@@ -71,7 +74,7 @@
   <div class="content">
     <section class="card">
       <div class="section-title">Fees breakdown</div>
-      <div class="section-sub">Per semester line items.</div>
+      <div class="section-sub">Line items for the selected academic period.</div>
 
       <div style="margin-top:10px;overflow-x:auto;">
         <table style="width:100%;border-collapse:collapse;font-size:13px;">
@@ -146,6 +149,7 @@
                 <th style="text-align:left;padding:6px 4px;">Amount</th>
                 <th style="text-align:left;padding:6px 4px;">Method</th>
                 <th style="text-align:left;padding:6px 4px;">Reference</th>
+                <th style="text-align:left;padding:6px 4px;">Status</th>
               </tr>
             </thead>
             <tbody>
@@ -155,11 +159,12 @@
                     <td><%= p.date ? new Date(p.date).toDateString() : "-" %></td>
                     <td>UGX <%= Number(p.amount || 0).toLocaleString() %></td>
                     <td><%= p.method %></td>
-                    <td><%= p.reference %></td>
+                    <td><a href="<%= p.receiptUrl %>"><%= p.reference %></a></td>
+                    <td><%= p.status %></td>
                   </tr>
                 <% }) %>
               <% } else { %>
-                <tr><td colspan="4">No payments found.</td></tr>
+                <tr><td colspan="5">No payments found.</td></tr>
               <% } %>
             </tbody>
           </table>
@@ -170,10 +175,10 @@
             <div class="section-title" style="font-size:13px;">Receipts</div>
             <div class="mini-list" style="margin-top:8px;">
               <% recentReceipts.forEach(function(r){ %>
-                <div class="mini-item">
+                <a class="mini-item" href="<%= r.url %>">
                   <span><%= r.number %></span>
                   <span>UGX <%= Number(r.amount || 0).toLocaleString() %></span>
-                </div>
+                </a>
               <% }) %>
             </div>
           </div>

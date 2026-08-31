@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .input,.select,.textarea,.view-input{padding:10px 12px;border-radius:12px;border:1px solid rgba(13,64,96,.16);background:#fff;outline:none}
@@ -122,6 +122,7 @@
         </div>
         <div class="top-actions">
           <button class="btn light" id="btnPrint" type="button"><i class="fa-solid fa-print"></i> Print</button>
+          <button class="btn light" id="btnExport" type="button"><i class="fa-solid fa-file-arrow-down"></i> Export</button>
           <button class="btn light" id="btnImport" type="button"><i class="fa-solid fa-file-arrow-up"></i> Import</button>
           <button class="btn primary" id="btnCreate" type="button"><i class="fa-solid fa-plus"></i> Add Student</button>
         </div>
@@ -235,12 +236,12 @@
     </main>
   </div>
 
-  <textarea id="studentsData" class="json-data"><%- JSON.stringify(students || []) %></textarea>
-  <textarea id="termsData" class="json-data"><%- JSON.stringify(terms || []) %></textarea>
-  <textarea id="streamsData" class="json-data"><%- JSON.stringify(streams || []) %></textarea>
-  <textarea id="sectionsData" class="json-data"><%- JSON.stringify(sections || []) %></textarea>
-  <textarea id="qualificationMapData" class="json-data"><%- JSON.stringify(qualificationMap || {}) %></textarea>
-  <textarea id="classLevelMap" class="json-data"><%- JSON.stringify(classLevelMap || {}) %></textarea>
+  <textarea id="studentsData" class="json-data"><%- JSON.stringify(students || []).replace(/</g, "\\u003c") %></textarea>
+  <textarea id="termsData" class="json-data"><%- JSON.stringify(terms || []).replace(/</g, "\\u003c") %></textarea>
+  <textarea id="streamsData" class="json-data"><%- JSON.stringify(streams || []).replace(/</g, "\\u003c") %></textarea>
+  <textarea id="sectionsData" class="json-data"><%- JSON.stringify(sections || []).replace(/</g, "\\u003c") %></textarea>
+  <textarea id="qualificationMapData" class="json-data"><%- JSON.stringify(qualificationMap || {}).replace(/</g, "\\u003c") %></textarea>
+  <textarea id="classLevelMap" class="json-data"><%- JSON.stringify(classLevelMap || {}).replace(/</g, "\\u003c") %></textarea>
 
   <form id="rowActionForm" method="POST" style="display:none;">
     <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
@@ -355,7 +356,7 @@
                 </div>
                 <div class="field">
                   <label>Academic Year <span class="req">*</span></label>
-                  <select class="select" id="mAcademicYear" name="academicYear" required data-default-options="<%- JSON.stringify(academicYears || []) %>">
+                  <select class="select" id="mAcademicYear" name="academicYear" required data-default-options="<%= JSON.stringify(academicYears || []) %>">
                     <option value="">Select</option>
                     <% (academicYears || []).forEach(function(year){ %>
                       <option value="<%= year %>"><%= year %></option>
@@ -603,7 +604,7 @@
           <button class="btn-xs" type="button" data-close-modal="mImport"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div class="modal-body">
-          <div class="help-note">Use the existing CSV import route for bulk uploads. Manual add/edit now follows the public admissions structure.</div>
+          <div class="help-note">CSV columns supported: full_name (or first_name + last_name), school_level, class_level, reg_no, email, phone, stream, section, academic_year, term, status, guardian_name, guardian_email, guardian_phone. Registration numbers may be left blank for secure auto-generation. Imported accounts are created in invited state and can be reviewed before setup links are resent.</div>
           <div class="field" style="margin-top:12px;">
             <label>CSV File</label>
             <input class="input" type="file" name="file" accept=".csv,text/csv" />

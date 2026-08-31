@@ -20,60 +20,35 @@
     currentViewId: null,
   };
 
-  function escapeHtml(v) {
-    return String(v ?? "")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#39;");
-  }
-
-  function openModal(id) {
-    const el = $(id);
-    if (!el) return;
-    el.classList.add("show");
-    document.body.style.overflow = "hidden";
-  }
-
-  function closeModal(id) {
-    const el = $(id);
-    if (!el) return;
-    el.classList.remove("show");
-    document.body.style.overflow = "";
-  }
-
-  function syncBulkbar() {
-    $("selCount").textContent = String(state.selected.size);
-    $("bulkbar").classList.toggle("show", state.selected.size > 0);
+  function make(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined && text !== null) node.textContent = String(text);
+    return node;
   }
 
   function statusPill(status) {
-    if (status === "accepted" || status === "converted") {
-      return `<span class="pill ok"><i class="fa-solid fa-circle-check"></i> ${escapeHtml(status === "converted" ? "Converted" : "Accepted")}</span>`;
-    }
-    if (status === "rejected") {
-      return `<span class="pill bad"><i class="fa-solid fa-xmark"></i> Rejected</span>`;
-    }
-    if (status === "under_review") {
-      return `<span class="pill warn"><i class="fa-solid fa-magnifying-glass"></i> Under Review</span>`;
-    }
-    return `<span class="pill info"><i class="fa-solid fa-paper-plane"></i> Submitted</span>`;
+    const value = status === "accepted" || status === "converted"
+      ? (status === "converted" ? "Converted" : "Accepted")
+      : status === "rejected"
+        ? "Rejected"
+        : status === "under_review"
+          ? "Under Review"
+          : "Submitted";
+    const tone = status === "accepted" || status === "converted" ? "ok" : status === "rejected" ? "bad" : status === "under_review" ? "warn" : "info";
+    const icon = status === "accepted" || status === "converted" ? "fa-circle-check" : status === "rejected" ? "fa-xmark" : status === "under_review" ? "fa-magnifying-glass" : "fa-paper-plane";
+    const pill = make("span", `pill ${tone}`);
+    const i = make("i", `fa-solid ${icon}`);
+    pill.append(i, document.createTextNode(` ${value}`));
+    return pill;
   }
 
   function docsPill(docs) {
-    const done = [
-      docs?.passportPhoto,
-      docs?.idDocument,
-      docs?.transcript,
-      Number(docs?.otherDocsCount || 0) > 0,
-    ].filter(Boolean).length;
-    const total = 4;
-
-    if (done === total) {
-      return `<span class="pill ok"><i class="fa-solid fa-folder-open"></i> ${done}/${total}</span>`;
-    }
-    return `<span class="pill warn"><i class="fa-solid fa-folder-open"></i> ${done}/${total}</span>`;
+    const done = [docs?.passportPhoto, docs?.idDocument, docs?.transcript].filter(Boolean).length;
+    const total = 3;
+    const pill = make("span", `pill ${done === total ? "ok" : "warn"}`);
+    pill.append(make("i", "fa-solid fa-folder-open"), document.createTextNode(` ${done}/${total}`));
+    return pill;
   }
 
   function initials(name) {
@@ -88,72 +63,85 @@
     return d.toISOString().slice(0, 10);
   }
 
+  function actionButton(className, title, iconClass) {
+    const button = make("button", `btn-xs ${className}`);
+    button.type = "button";
+    button.title = title;
+    button.appendChild(make("i", `fa-solid ${iconClass}`));
+    return button;
+  }
+
   function renderTable() {
-    $("tbodyApplicants").innerHTML =
-      APPLICANTS.map((a) => {
-        const checked = state.selected.has(a.id) ? "checked" : "";
+    const host = $("tbodyApplicants");
+    host.replaceChildren();
 
-        return `
-          <tr class="row-clickable" data-id="${escapeHtml(a.id)}">
-            <td class="col-check no-print">
-              <input type="checkbox" class="rowCheck" data-id="${escapeHtml(a.id)}" ${checked}>
-            </td>
+    if (!APPLICANTS.length) {
+      const tr = make("tr");
+      const td = make("td");
+      td.colSpan = 9;
+      td.style.padding = "18px";
+      td.appendChild(make("div", "muted", "No applicants found."));
+      tr.appendChild(td);
+      host.appendChild(tr);
+    } else {
+      APPLICANTS.forEach((a) => {
+        const tr = make("tr", "row-clickable");
+        tr.dataset.id = String(a.id || "");
 
-            <td class="col-applicant">
-              <div class="row-flex">
-                <div class="avatar">${escapeHtml(initials(a.name))}</div>
-                <div class="app-main">
-                  <div class="app-title" title="${escapeHtml(a.name)}">${escapeHtml(a.name || "—")}</div>
-                  <div class="app-sub" title="${escapeHtml((a.email || "—") + " • " + (a.phone || "—"))}">
-                    ${escapeHtml(a.email || "—")} • ${escapeHtml(a.phone || "—")}
-                  </div>
-                </div>
-              </div>
-            </td>
+        const checkTd = make("td", "col-check no-print");
+        const checkbox = make("input", "rowCheck");
+        checkbox.type = "checkbox";
+        checkbox.dataset.id = String(a.id || "");
+        checkbox.checked = state.selected.has(a.id);
+        checkTd.appendChild(checkbox);
 
-            <td class="col-application">
-              <span class="cell-ellipsis strong" title="${escapeHtml(a.applicationId || "—")}">
-                ${escapeHtml(a.applicationId || "—")}
-              </span>
-              <span class="cell-ellipsis muted">${escapeHtml(a.intake || "—")}</span>
-            </td>
+        const applicantTd = make("td", "col-applicant");
+        const flex = make("div", "row-flex");
+        flex.appendChild(make("div", "avatar", initials(a.name)));
+        const appMain = make("div", "app-main");
+        const title = make("div", "app-title", a.name || "—");
+        title.title = String(a.name || "");
+        const sub = make("div", "app-sub", `${a.email || "—"} • ${a.phone || "—"}`);
+        sub.title = `${a.email || "—"} • ${a.phone || "—"}`;
+        appMain.append(title, sub);
+        flex.appendChild(appMain);
+        applicantTd.appendChild(flex);
 
-            <td class="col-program">
-              <span class="cell-ellipsis" title="${escapeHtml(a.programLabel || "—")}">
-                ${escapeHtml(a.programLabel || "—")}
-              </span>
-            </td>
+        const applicationTd = make("td", "col-application");
+        const appId = make("span", "cell-ellipsis strong", a.applicationId || "—");
+        appId.title = String(a.applicationId || "—");
+        applicationTd.append(appId, make("span", "cell-ellipsis muted", a.intake || "—"));
 
-            <td class="col-stage">${statusPill(a.status)}</td>
+        const programTd = make("td", "col-program");
+        const program = make("span", "cell-ellipsis", a.programLabel || "—");
+        program.title = String(a.programLabel || "—");
+        programTd.appendChild(program);
 
-            <td class="col-docs">${docsPill(a.docs)}</td>
+        const statusTd = make("td", "col-stage");
+        statusTd.appendChild(statusPill(a.status));
+        const docsTd = make("td", "col-docs");
+        docsTd.appendChild(docsPill(a.docs));
+        const paymentTd = make("td", "col-payment");
+        const payment = make("span", "pill info");
+        payment.append(make("i", "fa-solid fa-circle"), document.createTextNode(` ${a.paymentLabel || "N/A"}`));
+        paymentTd.appendChild(payment);
+        const submittedTd = make("td", "col-submitted");
+        submittedTd.appendChild(make("span", "cell-ellipsis", formatDate(a.submittedAt)));
 
-            <td class="col-payment">
-              <span class="pill info"><i class="fa-solid fa-circle"></i> ${escapeHtml(a.paymentLabel || "N/A")}</span>
-            </td>
+        const actionsTd = make("td", "col-actions no-print");
+        const actions = make("div", "actions");
+        actions.append(
+          actionButton("actView", "View", "fa-eye"),
+          actionButton("actReview", "Review", "fa-magnifying-glass"),
+          actionButton("actAccept", "Accept", "fa-check"),
+          actionButton("actReject", "Reject", "fa-xmark"),
+        );
+        actionsTd.appendChild(actions);
 
-            <td class="col-submitted">
-              <span class="cell-ellipsis">${escapeHtml(formatDate(a.submittedAt))}</span>
-            </td>
-
-            <td class="col-actions no-print">
-              <div class="actions">
-                <button class="btn-xs actView" type="button" title="View"><i class="fa-solid fa-eye"></i></button>
-                <button class="btn-xs actReview" type="button" title="Review"><i class="fa-solid fa-magnifying-glass"></i></button>
-                <button class="btn-xs actAccept" type="button" title="Accept"><i class="fa-solid fa-check"></i></button>
-                <button class="btn-xs actReject" type="button" title="Reject"><i class="fa-solid fa-xmark"></i></button>
-              </div>
-            </td>
-          </tr>
-        `;
-      }).join("") ||
-      `
-      <tr>
-        <td colspan="9" style="padding:18px;">
-          <div class="muted">No applicants found.</div>
-        </td>
-      </tr>
-      `;
+        tr.append(checkTd, applicantTd, applicationTd, programTd, statusTd, docsTd, paymentTd, submittedTd, actionsTd);
+        host.appendChild(tr);
+      });
+    }
 
     const allSelected = APPLICANTS.length > 0 && APPLICANTS.every((a) => state.selected.has(a.id));
     if ($("checkAll")) $("checkAll").checked = allSelected;
@@ -165,7 +153,6 @@
       ["Passport Photo", !!d?.passportPhoto],
       ["ID Document", !!d?.idDocument],
       ["Transcript", !!d?.transcript],
-      ["Other Docs", Number(d?.otherDocsCount || 0) > 0],
     ];
 
     return items.map(([label, ok]) => `${label}: ${ok ? "Available" : "Missing"}`).join("\n");
@@ -190,7 +177,7 @@
     $("vProgram").textContent = a.programLabel || "—";
     $("vIntake").textContent = a.intake || "—";
     $("vPayment").textContent = a.paymentLabel || "N/A";
-    $("vStatus").innerHTML = statusPill(a.status || "submitted");
+    $("vStatus").replaceChildren(statusPill(a.status || "submitted"));
     $("vDocs").textContent = docsHtml(a.docs || {});
     $("vNote").value = a.adminNotes || "";
 

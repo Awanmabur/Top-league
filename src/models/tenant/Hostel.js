@@ -98,7 +98,7 @@ module.exports = function HostelModel(conn) {
 
   const hostelSchema = new mongoose.Schema(
     {
-      roomId: { type: String, trim: true, index: true },
+      roomId: { type: String, trim: true },
       block: { type: String, trim: true, required: true, index: true },
       code: { type: String, trim: true, required: true },
       gender: {
@@ -137,6 +137,10 @@ module.exports = function HostelModel(conn) {
   );
 
   hostelSchema.index({ code: 1 }, { unique: true });
+  hostelSchema.index(
+    { roomId: 1 },
+    { name: "uniq_hostel_room_id", unique: true, partialFilterExpression: { roomId: { $gt: "" } } }
+  );
 
   return conn.model("Hostel", hostelSchema);
 };

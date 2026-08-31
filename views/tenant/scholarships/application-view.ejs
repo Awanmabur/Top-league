@@ -15,6 +15,7 @@
   const safe=(v)=> (v===null||v===undefined) ? "" : String(v);
   const app = (typeof application!=="undefined" && application) ? application : null;
   const csrf = (typeof csrfToken!=="undefined" && csrfToken) ? csrfToken : "";
+  const safeUrl=(v)=>{ try { const u=new URL(String(v||"")); return ["http:","https:"].includes(u.protocol) ? u.toString() : ""; } catch(e){ return ""; } };
 %>
 
 <div class="app">
@@ -94,11 +95,11 @@
 
           <div class="card-title">Documents</div>
           <div class="muted" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">
-            <% if(app.transcript && app.transcript.url){ %><a class="link" target="_blank" href="<%= app.transcript.url %>">Transcript</a><% } %>
-            <% if(app.idDocument && app.idDocument.url){ %><a class="link" target="_blank" href="<%= app.idDocument.url %>">ID Document</a><% } %>
-            <% if(app.recommendationLetter && app.recommendationLetter.url){ %><a class="link" target="_blank" href="<%= app.recommendationLetter.url %>">Recommendation</a><% } %>
+            <% if(app.transcript && app.transcript.url){ %><a class="link" target="_blank" href="<%= safeUrl(app.transcript.url) % rel="noopener noreferrer">" rel="noopener noreferrer">Transcript</a><% } %>
+            <% if(app.idDocument && app.idDocument.url){ %><a class="link" target="_blank" href="<%= safeUrl(app.idDocument.url) % rel="noopener noreferrer">" rel="noopener noreferrer">ID Document</a><% } %>
+            <% if(app.recommendationLetter && app.recommendationLetter.url){ %><a class="link" target="_blank" href="<%= safeUrl(app.recommendationLetter.url) % rel="noopener noreferrer">" rel="noopener noreferrer">Recommendation</a><% } %>
             <% if(app.otherDocs && app.otherDocs.length){ app.otherDocs.forEach((d,idx)=>{ %>
-              <a class="link" target="_blank" href="<%= d.url %>">Other <%= idx+1 %></a>
+              <a class="link" target="_blank" href="<%= safeUrl(d.url) % rel="noopener noreferrer">" rel="noopener noreferrer">Other <%= idx+1 %></a>
             <% }) } %>
           </div>
 

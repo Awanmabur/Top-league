@@ -5,7 +5,7 @@ module.exports = function StaffModel(conn) {
 
   const StaffSchema = new mongoose.Schema(
     {
-      userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null, index: true },
+      userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
 
       employeeId: { type: String, trim: true, default: "", index: true },
       firstName: { type: String, trim: true, required: true },
@@ -40,6 +40,11 @@ module.exports = function StaffModel(conn) {
         index: true,
       },
 
+      leaveOps: {
+        lockToken: { type: String, default: null, select: false },
+        lockUntil: { type: Date, default: null, select: false },
+      },
+
       address: { type: String, trim: true, default: "" },
       emergencyContactName: { type: String, trim: true, default: "" },
       emergencyContactPhone: { type: String, trim: true, default: "" },
@@ -56,6 +61,10 @@ module.exports = function StaffModel(conn) {
   );
 
   StaffSchema.index({ isDeleted: 1, status: 1, departmentId: 1, createdAt: -1 });
+  StaffSchema.index(
+    { userId: 1 },
+    { name: "uniq_active_staff_user", unique: true, partialFilterExpression: { isDeleted: false, userId: { $type: "objectId" } } },
+  );
   StaffSchema.index({ firstName: 1, lastName: 1, email: 1, employeeId: 1 });
 
   return conn.models.Staff || conn.model("Staff", StaffSchema);

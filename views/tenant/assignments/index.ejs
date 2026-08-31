@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .input,.select,.textarea,.view-input{padding:10px 12px;border-radius:12px;border:1px solid rgba(13,64,96,.16);background:#fff;outline:none}
@@ -22,11 +22,11 @@
     .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:900;white-space:nowrap}
     .ok{background:#ecfdf3;color:#15803d}.warn{background:#fef9c3;color:#92400e}.bad{background:#fee2e2;color:#b91c1c}.info{background:#eef2ff;color:#3730a3}
     .table-wrap{overflow-x:auto;overflow-y:hidden;border:1px solid rgba(13,64,96,.10);border-radius:12px;max-width:100%;-webkit-overflow-scrolling:touch}
-    table{width:100%;min-width:1580px;border-collapse:separate;border-spacing:0;background:#fff;table-layout:fixed}
+    table{width:100%;min-width:1740px;border-collapse:separate;border-spacing:0;background:#fff;table-layout:fixed}
     th,td{padding:10px 12px;border-bottom:1px solid rgba(13,64,96,.08);vertical-align:middle}
     th{font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;text-align:left;background:rgba(13,64,96,.03);position:sticky;top:0;z-index:1;white-space:nowrap}
     tr:hover td{background:rgba(10,111,191,.04)} tr.row-clickable{cursor:pointer}
-    .col-check{width:48px}.col-assignment{width:290px}.col-subject{width:220px}.col-class{width:180px}.col-section{width:150px}.col-stream{width:150px}.col-due{width:170px}.col-points{width:110px}.col-status{width:130px}.col-actions{width:230px}
+    .col-check{width:48px}.col-assignment{width:290px}.col-subject{width:220px}.col-class{width:180px}.col-section{width:150px}.col-stream{width:150px}.col-due{width:170px}.col-points{width:110px}.col-submissions{width:190px}.col-status{width:130px}.col-actions{width:260px}
     .cell-ellipsis{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
     .item-main{min-width:0}.item-title{font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.item-sub{font-size:12px;color:#6b7280;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:nowrap;overflow:hidden}
@@ -49,7 +49,7 @@
     @media (max-width:1100px){.grid-2{grid-template-columns:1fr}}
     @media (max-width:900px){.form-grid{grid-template-columns:1fr}.topbar{flex-wrap:wrap}.top-actions{width:100%;justify-content:flex-start}}
     @media (max-width:680px){.grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}.input{min-width:160px}}
-    @media (max-width:520px){.toolbar .left,.toolbar .right{width:100%}.toolbar .left>*,.toolbar .right>*{max-width:100%}table{min-width:1580px}}
+    @media (max-width:520px){.toolbar .left,.toolbar .right{width:100%}.toolbar .left>*,.toolbar .right>*{max-width:100%}table{min-width:1740px}}
     @media print{body *{visibility:hidden!important}#printArea,#printArea *{visibility:visible!important}#printArea{position:absolute;inset:0;background:#fff;padding:20px}}
   </style>
 </head>
@@ -75,7 +75,7 @@
           <div class="subtitle">Create and manage coursework by class, section, stream and subject.</div>
         </div>
         <div class="top-actions">
-          <a class="btn light" href="/admin/assignments/export?<%= new URLSearchParams({q:query?.q||'',course:query?.course||'',classGroup:query?.classGroup||'',sectionId:query?.sectionId||'',streamId:query?.streamId||'',status:query?.status||''}).toString() %>"><i class="fa-solid fa-file-arrow-down"></i> Export CSV</a>
+          <a class="btn light" href="/admin/assignments/export.csv?<%= new URLSearchParams({q:query?.q||'',course:query?.course||'',classGroup:query?.classGroup||'',sectionId:query?.sectionId||'',streamId:query?.streamId||'',status:query?.status||''}).toString() %>"><i class="fa-solid fa-file-arrow-down"></i> Export CSV</a>
           <button class="btn light" id="btnImport" type="button"><i class="fa-solid fa-file-import"></i> Import CSV</button>
           <button class="btn light" id="btnPrint" type="button"><i class="fa-solid fa-print"></i> Print</button>
           <button class="btn primary" id="btnCreate" type="button"><i class="fa-solid fa-plus"></i> Add Assignment</button>
@@ -123,6 +123,7 @@
             <button class="btn-xs" id="bulkPublish" type="button">Publish</button>
             <button class="btn-xs" id="bulkUnpublish" type="button">Draft</button>
             <button class="btn-xs" id="bulkClose" type="button">Close</button>
+            <button class="btn-xs" id="bulkReopen" type="button">Reopen</button>
             <button class="btn-xs" id="bulkArchive" type="button">Archive</button>
             <button class="btn-xs" id="bulkClear" type="button">Clear</button>
           </div>
@@ -148,6 +149,7 @@
                     <th class="col-stream">Stream</th>
                     <th class="col-due">Due Date</th>
                     <th class="col-points">Points</th>
+                    <th class="col-submissions">Submissions</th>
                     <th class="col-status">Status</th>
                     <th class="col-actions" style="text-align:right;">Actions</th>
                   </tr>
@@ -178,7 +180,7 @@
           <div class="mini-list">
             <div class="mini-item"><div class="left"><div class="strong">Add Draft</div><div class="muted">Prepare before publishing</div></div><button class="btn-xs" id="quickDraft" type="button"><i class="fa-solid fa-pen-to-square"></i></button></div>
             <div class="mini-item"><div class="left"><div class="strong">Add Published</div><div class="muted">Visible immediately</div></div><button class="btn-xs" id="quickPublished" type="button"><i class="fa-solid fa-eye"></i></button></div>
-            <div class="mini-item"><div class="left"><div class="strong">Import CSV</div><div class="muted">Bulk upload assignments</div></div><button class="btn-xs" type="button" onclick="document.getElementById('btnImport').click()"><i class="fa-solid fa-file-import"></i></button></div>
+            <div class="mini-item"><div class="left"><div class="strong">Import CSV</div><div class="muted">Bulk upload assignments</div></div><button class="btn-xs" type="button" data-click-target="btnImport"><i class="fa-solid fa-file-import"></i></button></div>
           </div>
         </aside>
       </div>
@@ -202,7 +204,8 @@
             <div class="field"><label>Subject</label><select class="select" id="mCourse" name="course" data-role="subject" data-placeholder="Select Subject" required><option value="">Select Subject</option></select></div>
             <div class="field"><label>Due Date</label><input class="input" id="mDue" name="dueDate" type="datetime-local" /></div>
             <div class="field"><label>Total Points</label><input class="input" id="mPoints" name="totalPoints" type="number" min="0" max="1000" value="100" /></div>
-            <div class="field"><label>Status</label><select class="select" id="mStatus" name="status"><option value="draft">Draft</option><option value="published">Published</option><option value="closed">Closed</option><option value="archived">Archived</option></select></div>
+            <div class="field"><label>Status</label><select class="select" id="mStatus" name="status"><option value="draft">Draft</option><option value="published">Published</option></select><div class="muted" id="mStatusHelp">New assignments may be saved as Draft or Published.</div></div>
+            <div class="field"><label>Late submissions</label><label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;"><input type="checkbox" id="mLate" name="allowLateSubmissions" value="1" /> Allow after deadline</label></div>
             <div class="field full"><label>Instructions</label><textarea class="textarea" id="mInstr" name="instructions"></textarea></div>
             <div class="field full"><label>Rubric</label><textarea class="textarea" id="mRubric" name="rubric"></textarea></div>
             <div class="field full"><label>Attachments (one URL per line)</label><textarea class="textarea" id="mAttach" placeholder="https://..."></textarea><div id="mAttachWrap"></div></div>
@@ -232,14 +235,14 @@
           <div class="field"><label>Due Date</label><div class="view-input" id="vDue">-</div></div>
           <div class="field"><label>Points</label><div class="view-input" id="vPoints">-</div></div>
           <div class="field"><label>Status</label><div class="view-input" id="vStatus">-</div></div>
+          <div class="field"><label>Submissions</label><div class="view-input" id="vSubmissions">-</div></div>
         </div>
         <div class="field" style="margin-top:12px;"><label>Instructions</label><div class="view-input multiline" id="vInstr">-</div></div>
         <div class="field" style="margin-top:12px;"><label>Rubric</label><div class="view-input multiline" id="vRubric">-</div></div>
         <div class="field" style="margin-top:12px;"><label>Attachments</label><div class="view-input multiline" id="vAttach">-</div></div>
       </div>
       <div class="modal-footer">
-        <button class="btn light" type="button" id="viewPublishBtn">Publish</button>
-        <button class="btn light" type="button" id="viewArchiveBtn">Archive</button>
+        <button class="btn light" type="button" id="viewSubmissionsBtn">Submissions</button>
         <button class="btn light" type="button" data-close-modal="mView">Close</button>
         <button class="btn primary" type="button" id="viewEditBtn">Edit</button>
       </div>
@@ -256,7 +259,7 @@
         <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
         <div class="modal-body">
           <div class="field"><label>CSV File</label><input class="input" type="file" name="file" accept=".csv,text/csv" required /></div>
-          <div class="muted">Supported headers: title, subjectCode, dueDate, totalPoints, status, instructions, rubric, attachments.</div>
+          <div class="muted">Supported headers: title, subjectCode, dueDate, totalPoints, status (draft/published), instructions, rubric, attachments. The entire file is validated before any row is written.</div>
         </div>
         <div class="modal-footer">
           <button class="btn light" type="button" data-close-modal="mImport">Cancel</button>
@@ -275,30 +278,18 @@
 
   <textarea id="assignmentsData" class="json-data" aria-hidden="true"><%- JSON.stringify(items.map(function(a){
     return {
-      id: String(a._id || ""),
-      title: a.title || "",
-      classId: a.classGroup?._id ? String(a.classGroup._id) : String(a.classGroup || ""),
-      className: a.classGroup?.name || a.className || "",
-      sectionId: a.sectionId?._id ? String(a.sectionId._id) : String(a.sectionId || ""),
-      sectionName: a.sectionName || a.sectionId?.name || "",
-      streamId: a.streamId?._id ? String(a.streamId._id) : String(a.streamId || ""),
-      streamName: a.streamName || a.streamId?.name || "",
-      courseId: a.course?._id ? String(a.course._id) : String(a.course || ""),
-      courseName: a.course?.title || a.course?.code || a.courseName || "",
-      dueDate: a.dueDate ? new Date(a.dueDate).toISOString().slice(0,16) : "",
-      dueDisplay: a.dueDate ? new Date(a.dueDate).toLocaleString() : "",
-      totalPoints: Number(a.totalPoints ?? 100),
-      status: a.status || "draft",
-      instructions: a.instructions || "",
-      rubric: a.rubric || "",
-      attachments: Array.isArray(a.attachments) ? a.attachments : []
+      id: String(a.id || a._id || ""), title: a.title || "", classId: a.classId || "", className: a.className || "",
+      sectionId: a.sectionId || "", sectionName: a.sectionName || "", streamId: a.streamId || "", streamName: a.streamName || "",
+      courseId: a.courseId || "", courseName: a.courseName || "", dueInput: a.dueInput || "", dueDisplay: a.dueDisplay || "",
+      totalPoints: Number(a.totalPoints ?? 100), allowLateSubmissions: !!a.allowLateSubmissions, status: a.status || "draft",
+      instructions: a.instructions || "", rubric: a.rubric || "", attachments: Array.isArray(a.attachments) ? a.attachments : [],
+      submissionCount: Number(a.submissionCount || 0), submittedCount: Number(a.submittedCount || 0), gradedCount: Number(a.gradedCount || 0)
     };
-  })) %></textarea>
-  <textarea id="classesData" class="json-data" aria-hidden="true"><%- JSON.stringify(classes || []) %></textarea>
-  <textarea id="sectionsData" class="json-data" aria-hidden="true"><%- JSON.stringify(sections || []) %></textarea>
-  <textarea id="streamsData" class="json-data" aria-hidden="true"><%- JSON.stringify(streams || []) %></textarea>
-  <textarea id="subjectOptionsData" class="json-data" aria-hidden="true"><%- JSON.stringify(subjectOptions || subjects || courses || []) %></textarea>
-
+  })).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
+  <textarea id="classesData" class="json-data" aria-hidden="true"><%- JSON.stringify(classes || []).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
+  <textarea id="sectionsData" class="json-data" aria-hidden="true"><%- JSON.stringify(sections || []).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
+  <textarea id="streamsData" class="json-data" aria-hidden="true"><%- JSON.stringify(streams || []).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
+  <textarea id="subjectOptionsData" class="json-data" aria-hidden="true"><%- JSON.stringify(subjectOptions || subjects || courses || []).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
   <script src="/js/navbar.js"></script>
   <script src="/js/academic-selector.js"></script>
   <script src="/js/assignments.js"></script>

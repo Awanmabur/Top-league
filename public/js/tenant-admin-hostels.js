@@ -27,7 +27,7 @@
     });
   });
 
-  ["mRoom", "mViewRoom", "mAssign", "mMaint"].forEach((id) => {
+  ["mRoom", "mViewRoom", "mAssign", "mMaint", "mPolicies"].forEach((id) => {
     const modal = $(id);
     if (!modal) return;
     modal.addEventListener("click", function (e) {
@@ -101,8 +101,8 @@
       $("vWarden").textContent = room.warden || "—";
       $("vUpdated").textContent = room.updatedAt ? String(room.updatedAt).slice(0, 10) : "—";
       $("vNotes").textContent = room.notes || "No notes";
-      $("vApplications").textContent = (room.applications || []).length;
-      $("vCheckins").textContent = (room.checkins || []).length;
+      $("vApplications").textContent = room._applicationCount ?? (room.applications || []).length;
+      $("vCheckins").textContent = room._allocationCount ?? (room.checkins || []).length;
       $("vMaintenance").textContent = (room.maintenanceTickets || []).length;
       $("vDiscipline").textContent = (room.disciplineCases || []).length;
       $("vFees").textContent = (room.feeReceipts || []).length;
@@ -116,6 +116,10 @@
       const code = this.dataset.code;
       $("assignForm").action = "/admin/hostels/rooms/" + id + "/allocate";
       $("assignRoomCode").textContent = code || "—";
+      if ($("assignStudentId")) $("assignStudentId").value = this.dataset.studentId || "";
+      if ($("assignApplicationId")) $("assignApplicationId").value = this.dataset.applicationId || "";
+      if ($("assignStudentName")) $("assignStudentName").value = this.dataset.studentName || "";
+      if ($("assignRegNo")) $("assignRegNo").value = this.dataset.regNo || "";
       openModal("mAssign");
     });
   });
@@ -131,14 +135,15 @@
   });
 
   $("btnExport")?.addEventListener("click", function () {
-    alert("Export hostel report can be wired next.");
+    const query = window.location.search || "";
+    window.location.href = "/admin/hostels/export.csv" + query;
   });
 
   $("btnReports")?.addEventListener("click", function () {
-    alert("Hostel reports page can be added next.");
+    window.location.href = "/admin/hostels/report";
   });
 
   $("btnPolicies")?.addEventListener("click", function () {
-    alert("Hostel policies page/modal can be added next.");
+    openModal("mPolicies");
   });
 })();

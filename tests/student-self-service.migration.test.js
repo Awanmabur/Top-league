@@ -1,0 +1,16 @@
+const test=require('node:test'); const assert=require('node:assert/strict'); const fs=require('node:fs'); const path=require('node:path');
+const {legacyJobStatus,legacyJobType,legacyAppStatus,legacyLetterStatus}=require('../scripts/lib/migrateStudentSelfService');
+const root=path.resolve(__dirname,'..'); const read=(p)=>fs.readFileSync(path.join(root,p),'utf8');
+
+test('legacy job statuses normalize conservatively',()=>{ assert.equal(legacyJobStatus('open'),'Published'); assert.equal(legacyJobStatus('expired'),'Closed'); assert.equal(legacyJobStatus('unknown'),'Draft'); });
+test('legacy job types normalize to bounded canonical enum',()=>{ assert.equal(legacyJobType('student internship'),'Internship'); assert.equal(legacyJobType('part time'),'Part-time'); assert.equal(legacyJobType('x'),'Opportunity'); });
+test('legacy application statuses map to canonical lifecycle',()=>{ assert.equal(legacyAppStatus('pending'),'Submitted'); assert.equal(legacyAppStatus('approved'),'Accepted'); assert.equal(legacyAppStatus('cancelled'),'Withdrawn'); });
+test('legacy letter statuses map to canonical registry lifecycle',()=>{ assert.equal(legacyLetterStatus('submitted'),'Pending'); assert.equal(legacyLetterStatus('issued'),'Ready'); assert.equal(legacyLetterStatus('canceled'),'Cancelled'); });
+test('student self-service migration is a package command',()=>{ const p=JSON.parse(read('package.json')); assert.equal(p.scripts['migrate:student-self-service'],'node scripts/migrate-student-self-service.js'); });
+test('student self-service migration runs before tenant index synchronization',()=>{ const s=read('scripts/create-indexes.js'); const migration=s.lastIndexOf('migrateStudentSelfService(tenantModels)'); const indexes=s.indexOf('createModelIndexes(label, tenantModels)',migration); assert.ok(migration>0 && indexes>migration); });
+test('migration clears only expired self-service leases',()=>{ const s=read('scripts/lib/migrateStudentSelfService.js'); assert.match(s,/selfServiceLeaseExpiresAt:\s*\{ \$lte: now \}/); assert.match(s,/selfServiceLeaseToken:\"\"/); });
+test('migration closes expired registration windows and published opportunities',()=>{ const s=read('scripts/lib/migrateStudentSelfService.js'); assert.match(s,/RegistrationWindow\.updateMany\(\{ status:"open", closesAt:\{ \$lt: now \}/); assert.match(s,/JobOpportunity\.updateMany\(\{ status:"Published", deadline:\{ \$lt: now \}/); });
+test('legacy job import is idempotent through durable source keys',()=>{ const s=read('scripts/lib/migrateStudentSelfService.js'); assert.match(s,/legacySourceId = `\$\{collectionName\}:\$\{String\(row\._id\)\}`/); assert.match(s,/JobOpportunity\.exists\(\{ legacySourceId \}\)/); });
+test('canonical imported job application requires a resolvable student and opportunity',()=>{ const s=read('scripts/lib/migrateStudentSelfService.js'); assert.match(s,/!oid\(studentId\) \|\| !oldJobId/); assert.match(s,/if \(!job\).*legacyApplicationsSkipped/); });
+
+test('legacy issued letters without snapshot are forced through reissue',()=>{ const s=read('scripts/lib/migrateStudentSelfService.js'); assert.match(s,/status: \{ \$in: \["Ready", "Collected"\] \}/); assert.match(s,/"issuedSnapshot\.studentName"/); assert.match(s,/status: "Approved"/); });

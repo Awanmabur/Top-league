@@ -2,6 +2,7 @@ const crypto = require("crypto");
 const { platformConnection, getTenantConnection } = require("../../../config/db");
 const Tenant = require("../../../models/platform/Tenant")(platformConnection);
 const loadTenantModels = require("../../../models/tenant/loadModels");
+const { publicCanonicalContent, submitCanonicalReview, sanitizePublicBranding, sanitizePublicProfileForRender, sanitizeReview, sanitizeFaq, ratingSummary } = require("../../../services/tenant/publicPresenceService");
 
 function safeInt(n, def = 0) {
   const x = Number(n);
@@ -240,7 +241,7 @@ function ipHash(ip) {
 }
 
 function useLiveTenantProfile(req) {
-  return process.env.PUBLIC_PROFILE_LIVE_TENANT_DB === "1" || String(req.query.live || "") === "1";
+  return process.env.PUBLIC_PROFILE_LIVE_TENANT_DB === "1" || (process.env.NODE_ENV !== "production" && String(req.query.live || "") === "1");
 }
 
 async function getTenantModels(req, tenantDoc) {
@@ -330,7 +331,12 @@ async function loadSubjects(models = {}, profile = {}) {
 
 function loadFaqFromProfile(profile) {
   const faqs = Array.isArray(profile.faqs) ? profile.faqs : [];
-  return faqs.slice().sort((a, b) => (a.sort || 0) - (b.sort || 0));
+  return faqs
+    .filter((row) => row && !row.isDeleted && row.isPublished !== false)
+    .slice()
+    .sort((a, b) => Number(a.order ?? a.sort ?? 0) - Number(b.order ?? b.sort ?? 0))
+    .slice(0, 100)
+    .map(sanitizeFaq);
 }
 
 function loadNewsFromProfile(profile) {
@@ -345,28 +351,11 @@ function loadNewsFromProfile(profile) {
 
 function loadApprovedReviewsFromProfile(profile) {
   const all = Array.isArray(profile.reviews) ? profile.reviews : [];
-
   const approvedAll = all
-    .filter(
-      (r) =>
-        String(r.status || "")
-          .trim()
-          .toLowerCase() === "approved",
-    )
-    .sort(
-      (a, b) =>
-        (b.featured ? 1 : 0) - (a.featured ? 1 : 0) ||
-        new Date(b.createdAt || 0) - new Date(a.createdAt || 0),
-    );
-
-  const count = approvedAll.length;
-  const avg = count
-    ? approvedAll.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) / count
-    : 0;
-
-  const items = approvedAll.slice(0, 12);
-
-  return { items, avg: Math.round(avg * 10) / 10, count };
+    .filter((r) => r && !r.isDeleted && String(r.status || "").trim().toLowerCase() === "approved" && Number(r.rating) >= 1 && Number(r.rating) <= 5)
+    .sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0) || new Date(b.approvedAt || b.createdAt || 0) - new Date(a.approvedAt || a.createdAt || 0));
+  const summary = ratingSummary(approvedAll);
+  return { items: approvedAll.slice(0, 100).map(sanitizeReview), avg: summary.avg, count: summary.count };
 }
 
 function normalizeAdmissions(profile) {
@@ -605,21 +594,35 @@ module.exports = {
         return res.status(404).render("platform/public/404");
       }
 
-      const { profile, branding, schoolUnit } = buildPublicProfile(req, tenantDoc);
+      let { profile, branding, schoolUnit } = buildPublicProfile(req, tenantDoc);
+      profile = sanitizePublicProfileForRender(profile);
+      branding = sanitizePublicBranding(branding);
 
       if (profile.enabled === false) {
         return res.status(404).render("platform/public/404");
       }
 
       const tenantModels = useLiveTenantProfile(req) ? await getTenantModels(req, tenantDoc) : {};
+      if (tenantModels.TenantProfile) {
+        const canonicalProfile = await tenantModels.TenantProfile.findOne({ singletonKey: "school", isDeleted: { $ne: true } }).lean();
+        if (canonicalProfile?.publicProfile && Object.keys(canonicalProfile.publicProfile).length) {
+          profile = sanitizePublicProfileForRender({ ...profile, ...canonicalProfile.publicProfile });
+          branding = sanitizePublicBranding({ ...branding, ...(canonicalProfile.branding || {}) });
+        }
+      }
       const counts = await computeCounts(tenantModels);
       const subjects = await loadSubjects(tenantModels, {
         ...profile,
         extraSubjects: tenantDoc.settings?.academics?.extraSubjects,
       });
-      const faqs = loadFaqFromProfile(profile);
+      const canonicalContent = tenantModels.SchoolFAQ && tenantModels.SchoolReview
+        ? await publicCanonicalContent(tenantModels)
+        : null;
+      const faqs = canonicalContent ? canonicalContent.faqs : loadFaqFromProfile(profile);
       const announcements = loadNewsFromProfile(profile);
-      const reviews = loadApprovedReviewsFromProfile(profile);
+      const reviews = canonicalContent
+        ? { items: canonicalContent.reviews, avg: canonicalContent.summary.avg, count: canonicalContent.summary.count }
+        : loadApprovedReviewsFromProfile(profile);
       const admissions = normalizeAdmissions(profile);
       const schoolUnitId = getSchoolUnitQueryValue(req, schoolUnit);
       const profileApplyHref = appendSchoolUnitQuery("/apply", schoolUnitId);
@@ -649,6 +652,7 @@ module.exports = {
         100,
       );
 
+      res.set("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
       return res.render("platform/public/school-profile", {
         tenant: {
           ...tenantDoc,
@@ -742,14 +746,14 @@ module.exports = {
       }
 
       if (!SchoolInquiry) {
-        return res.json({
-          ok: true,
-          message: "Message submitted ✅",
+        return res.status(503).json({
+          ok: false,
+          message: "Inquiry service is temporarily unavailable.",
         });
       }
 
       const saved = await SchoolInquiry.create({
-        schoolCode: code,
+        schoolCode: clean(req.tenant?.code || code, 80).toLowerCase(),
         name,
         contact,
         message,
@@ -772,66 +776,21 @@ module.exports = {
   // POST /schools/:code/reviews
   async review(req, res) {
     try {
-      const code = String(req.params.code || "")
-        .trim()
-        .toLowerCase();
-
-      const tenant = await Tenant.findOne({
-        code,
-        isDeleted: { $ne: true },
-      });
-
-      if (!tenant) {
-        return res
-          .status(404)
-          .json({ ok: false, message: "School not found." });
+      const code = String(req.params.code || "").trim().toLowerCase();
+      const tenant = req.tenant && String(req.tenant.code || "").toLowerCase() === code
+        ? req.tenant
+        : await Tenant.findOne({ code, isDeleted: { $ne: true } });
+      if (!tenant) return res.status(404).json({ ok: false, message: "School not found." });
+      if (tenant.settings?.profile?.enabled === false || tenant.settings?.preferences?.allowReviews === false) {
+        return res.status(403).json({ ok: false, message: "Reviews are not enabled for this school." });
       }
-
-      const name = clean(req.body.name, 80);
-      const email = clean(req.body.email, 120).toLowerCase();
-      const rating = Number(req.body.rating);
-      const title = clean(req.body.title, 80);
-      const message = clean(req.body.message, 1200);
-
-      if (!name) {
-        return res
-          .status(400)
-          .json({ ok: false, message: "Name is required." });
-      }
-
-      if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
-        return res
-          .status(400)
-          .json({ ok: false, message: "Rating must be 1–5." });
-      }
-
-      tenant.settings = tenant.settings || {};
-      tenant.settings.profile = tenant.settings.profile || {};
-      tenant.settings.profile.reviews = tenant.settings.profile.reviews || [];
-
-      tenant.settings.profile.reviews.push({
-        name,
-        email,
-        rating,
-        title,
-        message,
-        status: "pending",
-        featured: false,
-        ipHash: ipHash(req.ip),
-        userAgent: String(req.get("user-agent") || "").slice(0, 200),
-        createdAt: new Date(),
-      });
-
-      tenant.markModified("settings.profile.reviews");
-      await tenant.save();
-
-      return res.json({
-        ok: true,
-        message: "Review submitted ✅ (pending approval)",
-      });
+      const tenantModels = await getTenantModels(req, tenant);
+      await submitCanonicalReview({ models: tenantModels, payload: req.body, ip: req.ip, userAgent: req.get("user-agent") || "" });
+      return res.status(202).json({ ok: true, message: "Review submitted and is pending moderation." });
     } catch (e) {
-      console.error("review:", e);
-      return res.status(500).json({ ok: false, message: "Server error" });
+      const duplicate = /already submitted/i.test(String(e?.message || ""));
+      return res.status(duplicate ? 429 : 400).json({ ok: false, message: e?.message || "Failed to submit review." });
     }
+
   },
 };

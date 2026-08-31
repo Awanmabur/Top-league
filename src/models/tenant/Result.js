@@ -20,7 +20,8 @@ module.exports = (connection) => {
       academicYear: { type: String, default: "", trim: true, index: true },
       term: { type: Number, default: 1, min: 1, max: 3, index: true },
 
-      totalMarks: { type: Number, default: 100, min: 0, max: 100000 },
+      totalMarks: { type: Number, default: 100, min: 0.01, max: 100000 },
+      passMark: { type: Number, default: 50, min: 0, max: 100000 },
       score: { type: Number, default: 0, min: 0, max: 100000 },
       percentage: { type: Number, default: 0, min: 0, max: 100 },
 
@@ -30,13 +31,30 @@ module.exports = (connection) => {
       status: { type: String, enum: ["draft", "published"], default: "draft", index: true },
 
       enteredBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
-      publishedAt: { type: Date, default: null },
+      updatedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
+      publishedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
+      firstPublishedAt: { type: Date, default: null, index: true },
+      publishedAt: { type: Date, default: null, index: true },
+      reopenedAt: { type: Date, default: null },
+      reopenedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
+      revision: { type: Number, default: 0, min: 0 },
+
+      migrationQuarantinedAt: { type: Date, default: null, index: true },
+      migrationQuarantineReason: { type: String, default: "", trim: true, maxlength: 500 },
     },
     { timestamps: true }
   );
 
-  ResultSchema.index({ exam: 1, student: 1 }, { unique: true });
+  ResultSchema.index(
+    { exam: 1, student: 1 },
+    {
+      unique: true,
+      name: "uniq_active_result_exam_student",
+      partialFilterExpression: { migrationQuarantinedAt: null },
+    }
+  );
   ResultSchema.index({ classGroup: 1, sectionId: 1, streamId: 1, academicYear: 1, term: 1 });
+  ResultSchema.index({ student: 1, status: 1, academicYear: 1, term: 1 });
 
   return connection.model("Result", ResultSchema);
 };

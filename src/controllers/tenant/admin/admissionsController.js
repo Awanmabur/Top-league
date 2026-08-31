@@ -2,13 +2,28 @@ const mongoose = require("mongoose");
 const csv = require("csv-parser");
 const { Readable } = require("stream");
 
-const { makeApplicationId } = require("../../../utils/id");
 const { uploadBuffer, safeDestroy } = require("../../../utils/cloudinaryUpload");
 const { nextRegNo } = require("../../../utils/regNo");
 const { sendMail } = require("../../../utils/mailer");
 const { createSetPasswordInvite } = require("../../../utils/inviteService");
 const { setupPasswordEmail } = require("../../../utils/emailTemplates");
 const { syncApplicantDocsToStudentDocs } = require("../../../utils/studentDocs");
+const {
+  allocateApplicationId,
+  assertApplicantTransition,
+  claimApplicantConversion,
+  csvCell,
+  documentCompleteness,
+  finalizeApplicantConversion,
+  interviewEmail,
+  normalizeChecklist,
+  normalizeInterviewMode,
+  normalizeRequestChannel,
+  normalizeRequestedDocKeys,
+  releaseApplicantConversion,
+  requestDocsEmail,
+  sanitizeTags,
+} = require("../../../services/tenant/admissionsService");
 const {
   ensureSingleRoleForUser,
   singleRoleUpdate,
@@ -75,7 +90,12 @@ function applicantBaseFilter({ q, section, program, status }) {
   if (sectionId && isValidId(sectionId)) {
     and.push({ $or: [{ section1: sectionId }, { program1: sectionId }] });
   }
-  if (status && ALLOWED_STATUSES.includes(status)) filter.status = status;
+  if (status === "received") filter.status = "submitted";
+  else if (status === "interview") {
+    filter.status = "under_review";
+    filter.interviewStatus = "Scheduled";
+  }
+  else if (status && ALLOWED_STATUSES.includes(status)) filter.status = status;
   if (and.length) filter.$and = and;
 
   return filter;
@@ -391,18 +411,35 @@ async function getApplicantListing(req) {
   const perPage = 20;
 
   const filter = applicantBaseFilter({ q, section, status });
-  const total = await Applicant.countDocuments(filter);
+  const sectionsPromise = Section
+    ? Section.find({ status: { $ne: "archived" } })
+        .select("code name levelType classLevel classStream className campusName")
+        .sort({ levelType: 1, classLevel: 1, classStream: 1, name: 1 })
+        .lean()
+    : Promise.resolve([]);
+  const summaryPromise = Applicant.aggregate([
+    { $match: filter },
+    {
+      $group: {
+        _id: null,
+        total: { $sum: 1 },
+        pending: { $sum: { $cond: [{ $in: ["$status", ["submitted", "under_review"]] }, 1, 0] } },
+        accepted: { $sum: { $cond: [{ $in: ["$status", ["accepted", "converted"]] }, 1, 0] } },
+        rejected: { $sum: { $cond: [{ $eq: ["$status", "rejected"] }, 1, 0] } },
+      },
+    },
+  ]);
+
+  const summaryRows = await summaryPromise;
+  const summary = summaryRows[0] || {};
+  const total = Number(summary.total || 0);
   const totalPages = Math.max(Math.ceil(total / perPage), 1);
   const safePage = Math.min(page, totalPages);
 
-  const pendingFilter = { ...filter, status: { $in: ["submitted", "under_review"] } };
-  const acceptedFilter = { ...filter, status: { $in: ["accepted", "converted"] } };
-  const rejectedFilter = { ...filter, status: "rejected" };
-
-  const [applicants, sections, pending, accepted, rejected] = await Promise.all([
+  const [applicants, sections] = await Promise.all([
     Applicant.find(filter)
       .select(
-        "applicationId fullName firstName middleName lastName email phone intake status createdAt section1 section2 program1 program2 passportPhoto idDocument transcript otherDocs adminNotes notes",
+        "applicationId fullName firstName middleName lastName email phone intake status interviewStatus interviewWhen createdAt section1 section2 program1 program2 passportPhoto idDocument transcript otherDocs adminNotes notes",
       )
       .sort({ createdAt: -1, _id: -1 })
       .skip((safePage - 1) * perPage)
@@ -412,16 +449,11 @@ async function getApplicantListing(req) {
       .populate("program1", "name levelType classLevel classStream className")
       .populate("program2", "code name levelType classLevel classStream className")
       .lean(),
-    Section
-      ? Section.find({ status: { $ne: "archived" } })
-          .select("code name levelType classLevel classStream className campusName")
-          .sort({ levelType: 1, classLevel: 1, classStream: 1, name: 1 })
-          .lean()
-      : Promise.resolve([]),
-    Applicant.countDocuments(pendingFilter),
-    Applicant.countDocuments(acceptedFilter),
-    Applicant.countDocuments(rejectedFilter),
+    sectionsPromise,
   ]);
+  const pending = Number(summary.pending || 0);
+  const accepted = Number(summary.accepted || 0);
+  const rejected = Number(summary.rejected || 0);
 
   return {
     applicants,
@@ -519,12 +551,7 @@ module.exports = {
         }),
       ];
 
-      const esc = (value) => {
-        const s = String(value ?? "");
-        return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-      };
-
-      const csvText = csvRows.map((row) => row.map(esc).join(",")).join("\n");
+      const csvText = csvRows.map((row) => row.map(csvCell).join(",")).join("\n");
 
       res.setHeader("Content-Type", "text/csv; charset=utf-8");
       res.setHeader("Content-Disposition", 'attachment; filename="applicants-export.csv"');
@@ -601,12 +628,7 @@ module.exports = {
           continue;
         }
 
-        let applicationId = makeApplicationId();
-        for (let i = 0; i < 5; i++) {
-          const found = await Applicant.findOne({ applicationId, isDeleted: { $ne: true } }).lean();
-          if (!found) break;
-          applicationId = makeApplicationId();
-        }
+        const applicationId = await allocateApplicationId(Applicant);
 
         inserted.push({
           applicationId,
@@ -656,7 +678,7 @@ module.exports = {
   },
 
   viewApplicant: async (req, res) => {
-    const { Applicant, Class, Section, AuditLog, Intake } = req.models;
+    const { Applicant, Class, Section, AuditLog, Intake, OfferLetter } = req.models;
 
     if (!isValidId(req.params.id)) return res.status(404).send("Invalid applicant ID");
 
@@ -720,6 +742,15 @@ module.exports = {
       createdAt: x.createdAt,
       by: x.actorName || x.actorEmail || "System",
     }));
+
+    applicant.documentStats = documentCompleteness(applicant);
+    applicant.latestOfferLetter = OfferLetter
+      ? await OfferLetter.findOne({ applicant: applicant._id, isDeleted: { $ne: true } })
+          .sort({ createdAt: -1, _id: -1 })
+          .select("letterNo status revision deliveryStatus issuedAt sentAt sentToEmail subject")
+          .lean()
+          .catch(() => null)
+      : null;
 
     return res.render("tenant/admissions/applicant-view", {
       tenant: req.tenant,
@@ -803,12 +834,7 @@ module.exports = {
         otherDocs.push(mkDoc(f, up));
       }
 
-      let applicationId = makeApplicationId();
-      for (let i = 0; i < 5; i++) {
-        const exists = await Applicant.findOne({ applicationId, isDeleted: { $ne: true } }).lean();
-        if (!exists) break;
-        applicationId = makeApplicationId();
-      }
+      const applicationId = await allocateApplicationId(Applicant);
 
       const section1 = str(req.body.section1 || req.body.sectionId || req.body.program1 || req.body.programId);
       const section2 = str(req.body.section2 || req.body.section2Id || req.body.program2 || req.body.program2Id);
@@ -875,35 +901,12 @@ module.exports = {
     }
   },
 
-  updateStatus: async (req, res) => {
-    const { Applicant } = req.models;
-
-    if (!isValidId(req.params.id)) return res.status(404).send("Invalid applicant ID");
-
-    const status = str(req.body.status);
-    const notes = str(req.body.notes);
-
-    await Applicant.findOneAndUpdate(
-      { _id: req.params.id, isDeleted: { $ne: true } },
-      {
-        status,
-        adminNotes: notes,
-        decidedAt: ["accepted", "rejected", "converted"].includes(status) ? new Date() : null,
-        decidedBy: ["accepted", "rejected", "converted"].includes(status)
-          ? req.user?._id || null
-          : null,
-      },
-    );
-
-    return res.redirect(`/admin/admissions/applicants/${req.params.id}`);
-  },
-
   acceptApplicant: async (req, res) => {
     const { Applicant, Student, Section, StudentDoc } = req.models;
 
     if (!isValidId(req.params.id)) return res.status(404).send("Invalid applicant ID");
 
-    const applicant = await Applicant.findOne({
+    let applicant = await Applicant.findOne({
       _id: req.params.id,
       isDeleted: { $ne: true },
     });
@@ -929,18 +932,40 @@ module.exports = {
       return res.redirect(`/admin/admissions/applicants/${req.params.id}?err=section_invalid`);
     }
 
-    if (modelHasPath(Student, "applicationId")) {
-      const existing = await Student.findOne({ applicationId: applicant._id, isDeleted: { $ne: true } }).lean();
-      if (existing) {
-        applicant.status = "converted";
-        applicant.convertedStudentId = existing._id;
-        applicant.linkedStudent = existing._id;
-        await applicant.save().catch(() => {});
-        return res.redirect(`/admin/students?regNo=${encodeURIComponent(existing.regNo || "")}`);
-      }
+    let conversionClaim = null;
+    let conversionFinalized = false;
+    try {
+      conversionClaim = await claimApplicantConversion(Applicant, {
+        id: applicant._id,
+        currentStatus: applicant.status,
+        actorUserId: actorUserId(req),
+        decisionNote: req.body.decisionNote || applicant.decisionNote || "",
+      });
+      applicant = conversionClaim.applicant;
+    } catch (err) {
+      req.flash?.("error", err.message || "Applicant could not be claimed for admission.");
+      return res.redirect(`/admin/admissions/applicants/${req.params.id}`);
     }
 
-    const regNo = await nextRegNo(req.models);
+    try {
+      if (modelHasPath(Student, "applicationId")) {
+        const existing = await Student.findOne({ applicationId: applicant._id, isDeleted: { $ne: true } }).lean();
+        if (existing) {
+          await finalizeApplicantConversion(Applicant, {
+            id: applicant._id, token: conversionClaim.token, studentId: existing._id,
+            regNo: existing.regNo || applicant.regNo || "", sectionId: section._id,
+          });
+          conversionFinalized = true;
+          return res.redirect(`/admin/students?regNo=${encodeURIComponent(existing.regNo || "")}`);
+        }
+      }
+    } catch (err) {
+      await releaseApplicantConversion(Applicant, applicant._id, conversionClaim.token);
+      req.flash?.("error", err.message || "Existing student could not be linked safely.");
+      return res.redirect(`/admin/admissions/applicants/${req.params.id}`);
+    }
+
+    let regNo = "";
 
     const builtFullName =
       str(applicant.fullName) ||
@@ -953,6 +978,7 @@ module.exports = {
     let student = null;
 
     try {
+      regNo = await nextRegNo(req.models);
       const studentPayload = {
         fullName: builtFullName,
         firstName: applicant.firstName,
@@ -1013,16 +1039,14 @@ module.exports = {
         });
       }
 
-      applicant.status = "converted";
-      applicant.decidedAt = new Date();
-      applicant.decidedBy = req.user?._id || null;
-      applicant.decisionNote = str(req.body.decisionNote || applicant.decisionNote || "");
-      applicant.section1 = section._id;
-      applicant.program1 = section._id;
-      applicant.convertedStudentId = student._id;
-      applicant.linkedStudent = student._id;
-      applicant.regNo = regNo;
-      await applicant.save();
+      await finalizeApplicantConversion(Applicant, {
+        id: applicant._id,
+        token: conversionClaim.token,
+        studentId: student._id,
+        regNo,
+        sectionId: section._id,
+      });
+      conversionFinalized = true;
 
       const result = await provisionAccountsForStudent({ req, studentDoc: student });
 
@@ -1045,11 +1069,22 @@ module.exports = {
       return res.redirect(`/admin/students?regNo=${encodeURIComponent(regNo)}`);
     } catch (err) {
       console.error("ACCEPT APPLICANT ERROR:", err);
+      if (conversionClaim?.token && !conversionFinalized) {
+        await releaseApplicantConversion(Applicant, applicant?._id || req.params.id, conversionClaim.token);
+      }
 
-      if (student?._id) {
+      if (student?._id && conversionFinalized) {
         req.flash?.("success", `Applicant accepted. Student created (${regNo}).`);
         req.flash?.("error", `But provisioning failed: ${err.message}`);
         return res.redirect(`/admin/students?regNo=${encodeURIComponent(regNo)}`);
+      }
+
+
+      if (student?._id && !conversionFinalized) {
+        await Student.updateOne(
+          { _id: student._id, isDeleted: { $ne: true } },
+          { $set: { isDeleted: true, deletedAt: new Date(), status: "inactive" } },
+        ).catch(() => null);
       }
 
       req.flash?.("error", err.message || "Failed to accept applicant.");
@@ -1058,68 +1093,70 @@ module.exports = {
   },
 
   rejectApplicant: async (req, res) => {
-    const { Applicant } = req.models;
-
-    if (!isValidId(req.params.id)) return res.status(404).send("Invalid applicant ID");
-
-    const reason = str(req.body.reason || req.body.notes || req.body.decisionNote || "");
-
-    await Applicant.findOneAndUpdate(
-      { _id: req.params.id, isDeleted: { $ne: true } },
-      {
-        status: "rejected",
-        adminNotes: reason,
-        decidedAt: new Date(),
-        decidedBy: req.user?._id || null,
-      },
-    );
-
-    return res.redirect(admissionsBackUrl(req, "/admin/admissions/applicants"));
+    const fallback = `/admin/admissions/applicants/${req.params.id}`;
+    try {
+      const { Applicant } = req.models;
+      if (!isValidId(req.params.id)) return res.status(404).send("Invalid applicant ID");
+      const current = await Applicant.findOne({ _id: req.params.id, isDeleted: { $ne: true } }).lean();
+      if (!current) return res.status(404).send("Applicant not found");
+      const target = assertApplicantTransition(current.status, "rejected");
+      const reason = str(req.body.reason || req.body.notes || req.body.decisionNote || "").slice(0, 400);
+      const result = await Applicant.updateOne(
+        { _id: current._id, status: current.status, isDeleted: { $ne: true } },
+        { $set: { status: target, decisionNote: reason, decidedAt: new Date(), decidedBy: actorUserId(req) } },
+      );
+      if (!result.modifiedCount && current.status !== target) throw new Error("Applicant changed while you were reviewing it. Reload and try again.");
+      req.flash?.("success", "Applicant rejected.");
+    } catch (err) {
+      console.error("REJECT APPLICANT ERROR:", err);
+      req.flash?.("error", err?.message || "Failed to reject applicant.");
+    }
+    return res.redirect(admissionsBackUrl(req, fallback));
   },
 
   bulkAction: async (req, res) => {
     try {
       const { Applicant } = req.models;
-
       const action = str(req.body.action);
-      const message = str(req.body.message);
-
-      const ids = str(req.body.ids)
-        .split(",")
-        .map((x) => x.trim())
-        .filter((x) => isValidId(x));
-
+      const message = str(req.body.message).slice(0, 400);
+      const ids = str(req.body.ids).split(",").map((x) => x.trim()).filter((x) => isValidId(x));
       if (!ids.length) {
         req.flash?.("error", "No applicants selected.");
         return res.redirect(admissionsBackUrl(req, "/admin/admissions/applicants"));
       }
-
-      const patch = {};
-      if (action === "set_under_review") {
-        patch.status = "under_review";
-        patch.decidedAt = null;
-        patch.decidedBy = null;
-      } else if (action === "accept") {
-        patch.status = "accepted";
-        patch.decidedAt = new Date();
-        patch.decidedBy = req.user?._id || null;
-      } else if (action === "reject") {
-        patch.status = "rejected";
-        patch.decidedAt = new Date();
-        patch.decidedBy = req.user?._id || null;
-      } else {
+      const target = action === "set_under_review" ? "under_review" : action === "accept" ? "accepted" : action === "reject" ? "rejected" : "";
+      if (!target) {
         req.flash?.("error", "Invalid bulk action.");
         return res.redirect(admissionsBackUrl(req, "/admin/admissions/applicants"));
       }
 
-      if (message) patch.adminNotes = message.slice(0, 1200);
-
-      await Applicant.updateMany(
-        { _id: { $in: ids }, isDeleted: { $ne: true } },
-        { $set: patch },
-      );
-
-      req.flash?.("success", "Bulk action applied.");
+      const rows = await Applicant.find({ _id: { $in: ids }, isDeleted: { $ne: true } }).select("_id status").lean();
+      let changed = 0;
+      let skipped = 0;
+      for (const row of rows) {
+        try {
+          const status = assertApplicantTransition(row.status, target);
+          const patch = { status };
+          if (["accepted", "rejected"].includes(status)) {
+            patch.decidedAt = new Date();
+            patch.decidedBy = actorUserId(req);
+            if (message) patch.decisionNote = message;
+          } else {
+            patch.decidedAt = null;
+            patch.decidedBy = null;
+          }
+          const result = await Applicant.updateOne(
+            { _id: row._id, status: row.status, isDeleted: { $ne: true } },
+            { $set: patch },
+          );
+          if (result.modifiedCount || row.status === status) changed += 1;
+          else skipped += 1;
+        } catch (_) {
+          skipped += 1;
+        }
+      }
+      req.flash?.("success", `Bulk action applied to ${changed} applicant${changed === 1 ? "" : "s"}.`);
+      if (skipped) req.flash?.("error", `${skipped} applicant${skipped === 1 ? " was" : "s were"} skipped because the lifecycle transition was not allowed or the record changed.`);
       return res.redirect(admissionsBackUrl(req, "/admin/admissions/applicants"));
     } catch (err) {
       console.error("BULK APPLICANTS ACTION ERROR:", err);
@@ -1134,13 +1171,13 @@ module.exports = {
       if (!isValidId(req.params.id)) return res.status(404).send("Invalid applicant ID");
 
       const a = await Applicant.findOne({ _id: req.params.id, isDeleted: { $ne: true } })
-        .populate("section1", "name classLevel classStream")
-        .populate("program1", "name classLevel classStream")
+        .populate("section1", "code name className classLevel classStream")
+        .populate("program1", "code name className classLevel classStream")
         .lean();
-
       if (!a) return res.status(404).send("Applicant not found");
 
       const sec = a.section1 || a.program1 || {};
+      const stats = documentCompleteness(a);
       const rows = [
         ["Field", "Value"],
         ["Application ID", a.applicationId || ""],
@@ -1151,16 +1188,15 @@ module.exports = {
         ["Academic Year", a.academicYear || ""],
         ["Term", a.term || ""],
         ["Status", a.status || ""],
+        ["Required Documents Uploaded", `${stats.uploaded}/${stats.total}`],
+        ["Required Documents Verified", `${stats.verified}/${stats.total}`],
+        ["Interview Status", a.interviewStatus || ""],
+        ["Interview At", a.interviewWhen ? new Date(a.interviewWhen).toISOString() : ""],
       ];
 
-      const esc = (value) => {
-        const s = String(value ?? "");
-        return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-      };
-
       res.setHeader("Content-Type", "text/csv; charset=utf-8");
-      res.setHeader("Content-Disposition", `attachment; filename="${a.applicationId || "applicant"}.csv"`);
-      return res.send(rows.map((row) => row.map(esc).join(",")).join("\n"));
+      res.setHeader("Content-Disposition", `attachment; filename="${String(a.applicationId || "applicant").replace(/[^A-Za-z0-9_.-]/g, "_")}.csv"`);
+      return res.send(rows.map((row) => row.map(csvCell).join(",")).join("\n"));
     } catch (err) {
       console.error("EXPORT APPLICANT ERROR:", err);
       req.flash?.("error", "Failed to export applicant.");
@@ -1169,131 +1205,338 @@ module.exports = {
   },
 
   updateStatus: async (req, res) => {
+    const fallback = `/admin/admissions/applicants/${req.params.id}`;
     try {
       const { Applicant } = req.models;
       if (!isValidId(req.params.id)) return res.status(404).send("Invalid applicant ID");
+      const current = await Applicant.findOne({ _id: req.params.id, isDeleted: { $ne: true } }).lean();
+      if (!current) return res.status(404).send("Applicant not found");
 
-      const status = safeStatus(req.body.status, "under_review");
+      const requested = str(req.body.status).toLowerCase();
+      if (!ALLOWED_STATUSES.includes(requested)) throw new Error("Invalid applicant status.");
+      const status = assertApplicantTransition(current.status, requested);
+      const now = new Date();
       const patch = {
         status,
-        decisionNote: str(req.body.decisionNote || req.body.notes || ""),
+        decisionNote: str(req.body.decisionNote || req.body.notes || "").slice(0, 400),
       };
-      if (["accepted", "rejected", "converted"].includes(status)) {
-        patch.decidedAt = new Date();
-        patch.decidedBy = req.user?._id || null;
+      if (["accepted", "rejected"].includes(status)) {
+        patch.decidedAt = now;
+        patch.decidedBy = actorUserId(req);
+      } else {
+        patch.decidedAt = null;
+        patch.decidedBy = null;
       }
 
-      await Applicant.updateOne({ _id: req.params.id, isDeleted: { $ne: true } }, { $set: patch });
+      const result = await Applicant.updateOne(
+        { _id: req.params.id, status: current.status, isDeleted: { $ne: true } },
+        { $set: patch },
+      );
+      if (!result.modifiedCount && status !== current.status) throw new Error("Applicant changed while you were reviewing it. Reload and try again.");
       req.flash?.("success", "Applicant status updated.");
-      return res.redirect(admissionsBackUrl(req, `/admin/admissions/applicants/${req.params.id}`));
     } catch (err) {
       console.error("UPDATE APPLICANT STATUS ERROR:", err);
-      req.flash?.("error", "Failed to update status.");
-      return res.redirect(admissionsBackUrl(req, `/admin/admissions/applicants/${req.params.id}`));
+      req.flash?.("error", err?.message || "Failed to update status.");
     }
+    return res.redirect(admissionsBackUrl(req, fallback));
   },
 
   shortlistApplicant: async (req, res) => {
+    const fallback = `/admin/admissions/applicants/${req.params.id}`;
     try {
       const { Applicant } = req.models;
       if (!isValidId(req.params.id)) return res.status(404).send("Invalid applicant ID");
-
-      await Applicant.updateOne(
-        { _id: req.params.id, isDeleted: { $ne: true } },
-        { $set: { status: "under_review", adminNotes: "Shortlisted for review" } },
+      const current = await Applicant.findOne({ _id: req.params.id, isDeleted: { $ne: true } }).lean();
+      if (!current) return res.status(404).send("Applicant not found");
+      const target = assertApplicantTransition(current.status, "under_review");
+      const result = await Applicant.updateOne(
+        { _id: current._id, status: current.status, isDeleted: { $ne: true } },
+        { $set: { status: target } },
       );
+      if (!result.modifiedCount && current.status !== target) throw new Error("Applicant changed while you were reviewing it. Reload and try again.");
       req.flash?.("success", "Applicant shortlisted for review.");
-      return res.redirect(admissionsBackUrl(req, `/admin/admissions/applicants/${req.params.id}`));
     } catch (err) {
       console.error("SHORTLIST APPLICANT ERROR:", err);
-      req.flash?.("error", "Failed to shortlist applicant.");
-      return res.redirect(admissionsBackUrl(req, `/admin/admissions/applicants/${req.params.id}`));
+      req.flash?.("error", err?.message || "Failed to shortlist applicant.");
     }
+    return res.redirect(admissionsBackUrl(req, fallback));
   },
 
   saveNotes: async (req, res) => {
     try {
       const { Applicant } = req.models;
       if (!isValidId(req.params.id)) return res.status(404).send("Invalid applicant ID");
-
-      const tags = str(req.body.tags)
-        .split(",")
-        .map((x) => x.trim())
-        .filter(Boolean)
-        .slice(0, 20);
-
       await Applicant.updateOne(
         { _id: req.params.id, isDeleted: { $ne: true } },
-        { $set: { adminNotes: str(req.body.adminNotes).slice(0, 1200), tags } },
+        { $set: { adminNotes: str(req.body.adminNotes).slice(0, 1200), tags: sanitizeTags(req.body.tags) } },
       );
       req.flash?.("success", "Applicant notes saved.");
-      return res.redirect(admissionsBackUrl(req, `/admin/admissions/applicants/${req.params.id}`));
     } catch (err) {
       console.error("SAVE APPLICANT NOTES ERROR:", err);
       req.flash?.("error", "Failed to save notes.");
-      return res.redirect(admissionsBackUrl(req, `/admin/admissions/applicants/${req.params.id}`));
     }
+    return res.redirect(admissionsBackUrl(req, `/admin/admissions/applicants/${req.params.id}`));
   },
 
   requestDocs: async (req, res) => {
+    const fallback = `/admin/admissions/applicants/${req.params.id}`;
     try {
       const { Applicant } = req.models;
       if (!isValidId(req.params.id)) return res.status(404).send("Invalid applicant ID");
-
       const applicant = await Applicant.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
       if (!applicant) return res.status(404).send("Applicant not found");
 
-      const missingKeys = str(req.body.missingKeys)
-        .split(",")
-        .map((x) => x.trim())
-        .filter(Boolean);
-      applicant.requestedDocs = applicant.requestedDocs || [];
+      const via = normalizeRequestChannel(req.body.via);
+      if (via !== "email") throw new Error("SMS delivery is not configured in this application. Choose Email.");
+      if (!cleanEmail(applicant.email)) throw new Error("Applicant does not have a valid email address.");
+
+      let missingKeys = normalizeRequestedDocKeys(req.body.missingKeys);
+      if (!missingKeys.length) missingKeys = documentCompleteness(applicant).missingKeys;
+      if (!missingKeys.length) throw new Error("All required documents are already uploaded.");
+
+      const deadline = asDate(req.body.deadline);
+      if (req.body.deadline && !deadline) throw new Error("Invalid document deadline.");
+      if (deadline && deadline.getTime() < Date.now() - 60000) throw new Error("Document deadline cannot be in the past.");
+      const message = str(req.body.message).slice(0, 1200);
+      const mail = requestDocsEmail({
+        applicant,
+        keys: missingKeys,
+        deadline,
+        message,
+        tenantName: req.tenant?.name || "Classic Academy",
+      });
+      await sendMail({ to: cleanEmail(applicant.email), subject: mail.subject, html: mail.html });
+
+      applicant.requestedDocs = Array.isArray(applicant.requestedDocs) ? applicant.requestedDocs.slice(-99) : [];
       applicant.requestedDocs.push({
         missingKeys,
-        via: str(req.body.via) || "email",
-        deadline: asDate(req.body.deadline),
-        message: str(req.body.message).slice(0, 1200),
+        via: "email",
+        deadline,
+        message,
         requestedAt: new Date(),
-        requestedBy: req.user?._id || null,
+        requestedBy: actorUserId(req),
       });
-      applicant.adminNotes = [applicant.adminNotes, "Missing documents requested"].filter(Boolean).join("\n").slice(0, 1200);
       await applicant.save();
-
-      req.flash?.("success", "Document request recorded.");
-      return res.redirect(admissionsBackUrl(req, `/admin/admissions/applicants/${req.params.id}`));
+      req.flash?.("success", "Missing-document request emailed and recorded.");
     } catch (err) {
       console.error("REQUEST DOCS ERROR:", err);
-      req.flash?.("error", "Failed to request documents.");
-      return res.redirect(admissionsBackUrl(req, `/admin/admissions/applicants/${req.params.id}`));
+      req.flash?.("error", err?.message || "Failed to request documents.");
     }
+    return res.redirect(admissionsBackUrl(req, fallback));
   },
 
   scheduleInterview: async (req, res) => {
+    const fallback = `/admin/admissions/applicants/${req.params.id}`;
     try {
       const { Applicant } = req.models;
       if (!isValidId(req.params.id)) return res.status(404).send("Invalid applicant ID");
+      const applicant = await Applicant.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
+      if (!applicant) return res.status(404).send("Applicant not found");
+      assertApplicantTransition(applicant.status, "under_review");
 
-      const when = asDate(`${str(req.body.date)}T${str(req.body.time) || "00:00"}`);
-      await Applicant.updateOne(
-        { _id: req.params.id, isDeleted: { $ne: true } },
-        {
-          $set: {
-            status: "under_review",
-            interviewStatus: "Scheduled",
-            interviewWhen: when,
-            interviewMode: str(req.body.mode) || "in-person",
-            interviewPanel: str(req.body.panel),
-            adminNotes: str(req.body.notes).slice(0, 1200),
-          },
-        },
-      );
+      const date = str(req.body.date);
+      const time = str(req.body.time);
+      const when = asDate(`${date}T${time}`);
+      if (!date || !time || !when) throw new Error("A valid interview date and time are required.");
+      if (when.getTime() <= Date.now()) throw new Error("Interview must be scheduled in the future.");
 
-      req.flash?.("success", "Interview scheduled.");
-      return res.redirect(admissionsBackUrl(req, `/admin/admissions/applicants/${req.params.id}`));
+      applicant.status = "under_review";
+      applicant.interviewStatus = "Scheduled";
+      applicant.interviewWhen = when;
+      applicant.interviewMode = normalizeInterviewMode(req.body.mode);
+      applicant.interviewPanel = str(req.body.panel).slice(0, 200);
+      applicant.interviewUpdatedAt = new Date();
+      applicant.interviewUpdatedBy = actorUserId(req);
+      if (str(req.body.notes)) {
+        applicant.adminNotes = [applicant.adminNotes, `Interview note: ${str(req.body.notes).slice(0, 600)}`]
+          .filter(Boolean).join("\n").slice(-1200);
+      }
+      await applicant.save();
+
+      if (cleanEmail(applicant.email)) {
+        try {
+          const mail = interviewEmail({ applicant, when, mode: applicant.interviewMode, panel: applicant.interviewPanel, tenantName: req.tenant?.name });
+          await sendMail({ to: cleanEmail(applicant.email), subject: mail.subject, html: mail.html });
+          req.flash?.("success", "Interview scheduled and applicant emailed.");
+        } catch (mailErr) {
+          req.flash?.("success", "Interview scheduled.");
+          req.flash?.("error", `Interview email was not sent: ${mailErr.message}`);
+        }
+      } else {
+        req.flash?.("success", "Interview scheduled. Applicant has no email address for notification.");
+      }
     } catch (err) {
       console.error("SCHEDULE INTERVIEW ERROR:", err);
-      req.flash?.("error", "Failed to schedule interview.");
-      return res.redirect(admissionsBackUrl(req, `/admin/admissions/applicants/${req.params.id}`));
+      req.flash?.("error", err?.message || "Failed to schedule interview.");
     }
+    return res.redirect(admissionsBackUrl(req, fallback));
+  },
+
+  cancelInterview: async (req, res) => {
+    const fallback = `/admin/admissions/applicants/${req.params.id}`;
+    try {
+      const { Applicant } = req.models;
+      if (!isValidId(req.params.id)) return res.status(404).send("Invalid applicant ID");
+      const applicant = await Applicant.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
+      if (!applicant) return res.status(404).send("Applicant not found");
+      if (!applicant.interviewWhen || String(applicant.interviewStatus).toLowerCase() === "cancelled") {
+        throw new Error("There is no active interview to cancel.");
+      }
+      const previousWhen = applicant.interviewWhen;
+      applicant.interviewStatus = "Cancelled";
+      applicant.interviewUpdatedAt = new Date();
+      applicant.interviewUpdatedBy = actorUserId(req);
+      await applicant.save();
+
+      if (cleanEmail(applicant.email)) {
+        try {
+          const mail = interviewEmail({ applicant, when: previousWhen, cancelled: true, tenantName: req.tenant?.name });
+          await sendMail({ to: cleanEmail(applicant.email), subject: mail.subject, html: mail.html });
+          req.flash?.("success", "Interview cancelled and applicant emailed.");
+        } catch (mailErr) {
+          req.flash?.("success", "Interview cancelled.");
+          req.flash?.("error", `Cancellation email was not sent: ${mailErr.message}`);
+        }
+      } else req.flash?.("success", "Interview cancelled.");
+    } catch (err) {
+      console.error("CANCEL INTERVIEW ERROR:", err);
+      req.flash?.("error", err?.message || "Failed to cancel interview.");
+    }
+    return res.redirect(admissionsBackUrl(req, fallback));
+  },
+
+  verifyDocument: async (req, res) => {
+    const fallback = `/admin/admissions/applicants/${req.params.id}`;
+    try {
+      const { Applicant } = req.models;
+      if (!isValidId(req.params.id)) return res.status(404).send("Invalid applicant ID");
+      const key = normalizeRequestedDocKeys([req.params.key])[0];
+      if (!key) throw new Error("Unsupported applicant document.");
+      const applicant = await Applicant.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
+      if (!applicant) return res.status(404).send("Applicant not found");
+      const doc = applicant[key];
+      if (!doc?.url) throw new Error("Upload the document before verifying it.");
+      doc.verified = true;
+      doc.verifiedAt = new Date();
+      doc.verifiedBy = actorUserId(req);
+      await applicant.save();
+      req.flash?.("success", "Document verified.");
+    } catch (err) {
+      req.flash?.("error", err?.message || "Failed to verify document.");
+    }
+    return res.redirect(admissionsBackUrl(req, fallback));
+  },
+
+  verifyAllDocuments: async (req, res) => {
+    const fallback = `/admin/admissions/applicants/${req.params.id}`;
+    try {
+      const { Applicant } = req.models;
+      if (!isValidId(req.params.id)) return res.status(404).send("Invalid applicant ID");
+      const applicant = await Applicant.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
+      if (!applicant) return res.status(404).send("Applicant not found");
+      const keys = ["idDocument", "passportPhoto", "transcript"];
+      const missing = keys.filter((key) => !applicant[key]?.url);
+      if (missing.length) throw new Error("All required documents must be uploaded before Verify All.");
+      const now = new Date();
+      for (const key of keys) {
+        applicant[key].verified = true;
+        applicant[key].verifiedAt = now;
+        applicant[key].verifiedBy = actorUserId(req);
+      }
+      await applicant.save();
+      req.flash?.("success", "All required documents verified.");
+    } catch (err) {
+      req.flash?.("error", err?.message || "Failed to verify documents.");
+    }
+    return res.redirect(admissionsBackUrl(req, fallback));
+  },
+
+  uploadApplicantDocument: async (req, res) => {
+    const fallback = `/admin/admissions/applicants/${req.params.id}`;
+    let uploaded = null;
+    try {
+      const { Applicant } = req.models;
+      if (!isValidId(req.params.id)) return res.status(404).send("Invalid applicant ID");
+      if (!req.file) throw new Error("Select a document to upload.");
+      const key = str(req.body.key);
+      if (!["idDocument", "passportPhoto", "transcript", "otherDocs"].includes(key)) throw new Error("Unsupported document type.");
+      const applicant = await Applicant.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
+      if (!applicant) return res.status(404).send("Applicant not found");
+
+      const folder = `classic-academy/${req.tenant?.slug || req.tenant?.code || "tenant"}/admissions/${applicant.applicationId || applicant._id}`;
+      uploaded = await uploadBuffer(req.file, folder, { resource_type: key === "passportPhoto" ? "image" : "auto" });
+      const payload = {
+        url: uploaded.secure_url,
+        publicId: uploaded.public_id,
+        resourceType: uploaded.resource_type || (key === "passportPhoto" ? "image" : "auto"),
+        originalName: str(req.file.originalname).slice(0, 200),
+        bytes: req.file.size || uploaded.bytes || 0,
+        mimeType: str(req.file.mimetype).slice(0, 80),
+        verified: false,
+        verifiedAt: null,
+        verifiedBy: null,
+      };
+
+      let oldDoc = null;
+      if (key === "otherDocs") applicant.otherDocs.push(payload);
+      else {
+        oldDoc = applicant[key] ? { publicId: applicant[key].publicId, resourceType: applicant[key].resourceType } : null;
+        applicant[key] = payload;
+      }
+      await applicant.save();
+      if (oldDoc?.publicId) await safeDestroy(oldDoc.publicId, oldDoc.resourceType || "auto");
+      req.flash?.("success", "Applicant document uploaded.");
+    } catch (err) {
+      if (uploaded?.public_id) await safeDestroy(uploaded.public_id, uploaded.resource_type || "auto");
+      console.error("UPLOAD APPLICANT DOCUMENT ERROR:", err);
+      req.flash?.("error", err?.message || "Failed to upload document.");
+    }
+    return res.redirect(admissionsBackUrl(req, fallback));
+  },
+
+  saveChecklist: async (req, res) => {
+    try {
+      const { Applicant } = req.models;
+      if (!isValidId(req.params.id)) return res.status(404).send("Invalid applicant ID");
+      const applicant = await Applicant.findOne({ _id: req.params.id, isDeleted: { $ne: true } }).lean();
+      if (!applicant) return res.status(404).send("Applicant not found");
+      const checklist = normalizeChecklist(req.body);
+      const stats = documentCompleteness(applicant);
+      checklist.identityVerified = checklist.identityVerified && applicant.idDocument?.verified === true;
+      checklist.documentsComplete = checklist.documentsComplete && stats.uploaded === stats.total;
+      await Applicant.updateOne(
+        { _id: req.params.id, isDeleted: { $ne: true } },
+        { $set: { reviewChecklist: checklist, checklistUpdatedAt: new Date(), checklistUpdatedBy: actorUserId(req) } },
+      );
+      req.flash?.("success", "Review checklist saved.");
+    } catch (err) {
+      req.flash?.("error", err?.message || "Failed to save review checklist.");
+    }
+    return res.redirect(admissionsBackUrl(req, `/admin/admissions/applicants/${req.params.id}`));
+  },
+
+  emailApplicant: async (req, res) => {
+    try {
+      const { Applicant } = req.models;
+      if (!isValidId(req.params.id)) return res.status(404).send("Invalid applicant ID");
+      const applicant = await Applicant.findOne({ _id: req.params.id, isDeleted: { $ne: true } }).lean();
+      if (!applicant) return res.status(404).send("Applicant not found");
+      const to = cleanEmail(applicant.email);
+      const subject = str(req.body.subject).slice(0, 160);
+      const message = str(req.body.message).slice(0, 4000);
+      if (!to) throw new Error("Applicant email is unavailable.");
+      if (!subject || !message) throw new Error("Email subject and message are required.");
+      const html = `<p>${message.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>")}</p>`;
+      await sendMail({ to, subject, html, text: message });
+      req.flash?.("success", "Email sent to applicant.");
+    } catch (err) {
+      req.flash?.("error", err?.message || "Failed to email applicant.");
+    }
+    return res.redirect(admissionsBackUrl(req, `/admin/admissions/applicants/${req.params.id}`));
+  },
+
+  smsApplicant: async (req, res) => {
+    req.flash?.("error", "SMS delivery is not available because no SMS transport is configured in this application.");
+    return res.redirect(admissionsBackUrl(req, `/admin/admissions/applicants/${req.params.id}`));
   },
 };

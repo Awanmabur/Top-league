@@ -19,6 +19,16 @@ module.exports = (connection) => {
         ref: "Plan",
       },
 
+      subscriptionId: {
+        type: Schema.Types.ObjectId,
+        ref: "PlatformSubscription",
+      },
+
+      subscriptionRevision: {
+        type: Number,
+        min: 1,
+      },
+
       type: {
         type: String,
         enum: [
@@ -51,6 +61,12 @@ module.exports = (connection) => {
         maxlength: 120,
       },
 
+      referenceKey: {
+        type: String,
+        trim: true,
+        maxlength: 260,
+      },
+
       provider: {
         type: String,
         enum: ["manual", "stripe", "flutterwave", "pesapal", "mtn", "airtel", "bank", "other"],
@@ -59,7 +75,7 @@ module.exports = (connection) => {
 
       status: {
         type: String,
-        enum: ["pending", "completed", "failed", "cancelled", "refunded"],
+        enum: ["pending", "processing", "completed", "failed", "cancelled", "refunded", "reconciliation_required"],
         default: "pending",
       },
 
@@ -91,6 +107,24 @@ module.exports = (connection) => {
         type: Schema.Types.ObjectId,
         ref: "PlatformUser",
       },
+
+      revision: {
+        type: Number,
+        default: 1,
+        min: 1,
+      },
+
+      migrationQuarantined: {
+        type: Boolean,
+        default: false,
+      },
+
+      quarantineReason: {
+        type: String,
+        default: "",
+        trim: true,
+        maxlength: 500,
+      },
     },
     { timestamps: true }
   );
@@ -99,6 +133,18 @@ module.exports = (connection) => {
   PlatformPaymentSchema.index({ status: 1, type: 1 });
   PlatformPaymentSchema.index({ status: 1, createdAt: -1 });
   PlatformPaymentSchema.index({ reference: 1 }, { sparse: true });
+  PlatformPaymentSchema.index(
+    { referenceKey: 1 },
+    {
+      unique: true,
+      name: "unique_platform_payment_reference_key",
+      partialFilterExpression: {
+        referenceKey: { $type: "string" },
+        migrationQuarantined: false,
+      },
+    },
+  );
+  PlatformPaymentSchema.index({ subscriptionId: 1, createdAt: -1 });
 
   return connection.model("PlatformPayment", PlatformPaymentSchema);
 };

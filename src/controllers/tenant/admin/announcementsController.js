@@ -1,11 +1,31 @@
 const mongoose = require("mongoose");
+const {
+  escapeRegex,
+  normalizeAudienceType,
+  activateAnnouncement,
+  publishDueAnnouncements,
+  getReceipts,
+  remindUnreadRecipients,
+} = require("../../../services/tenant/announcementService");
+
+const CATEGORIES = ["Academic", "Finance", "Hostel", "Library", "Exams", "General", "Emergency"];
+const AUDIENCE_TYPES = [
+  "All Students",
+  "All Staff",
+  "All Parents",
+  "Specific Department",
+  "Specific Program",
+  "Specific Subject",
+  "Year/Cohort",
+  "Hostel Residents",
+];
 
 const actorUserId = (req) =>
   req.user?.userId || req.user?._id || req.session?.tenantUser?.id || null;
 
 const isValidId = (id) => mongoose.Types.ObjectId.isValid(String(id || ""));
-
 const str = (v) => String(v ?? "").trim();
+const asBool = (v) => ["1", "true", "yes", "on"].includes(String(v || "").toLowerCase());
 
 const asDate = (v) => {
   if (!v) return null;
@@ -13,44 +33,132 @@ const asDate = (v) => {
   return Number.isNaN(d.getTime()) ? null : d;
 };
 
-const asBool = (v) => ["1", "true", "yes", "on"].includes(String(v || "").toLowerCase());
+function normalizeChannels(req) {
+  const requestedEmail = asBool(req.body.channelEmail);
+  const requestedSms = asBool(req.body.channelSms);
+  const requestedPush = asBool(req.body.channelPush);
+  const warnings = [];
+
+  const smtpReady = !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
+  if (requestedEmail && !smtpReady) warnings.push("Email was not enabled because SMTP is not configured.");
+  if (requestedSms) warnings.push("SMS was not enabled because no SMS delivery provider is configured in this build.");
+  if (requestedPush) warnings.push("Push was not enabled because no push delivery provider is configured in this build.");
+
+  return {
+    channels: {
+      portal: true,
+      email: requestedEmail && smtpReady,
+      sms: false,
+      push: false,
+    },
+    warnings,
+  };
+}
+
+function validatePayload(req, existing = null) {
+  const title = str(req.body.title);
+  const body = str(req.body.body);
+  const category = CATEGORIES.includes(str(req.body.category)) ? str(req.body.category) : "General";
+  const priority = str(req.body.priority) === "Pinned" ? "Pinned" : "Normal";
+  const audienceType = normalizeAudienceType(req.body.audienceType);
+  const audienceValue = str(req.body.audienceValue || "—") || "—";
+  const requiresAcknowledgement = asBool(req.body.requiresAcknowledgement);
+  const publishMode = str(req.body.publishMode || "Publish Now");
+  const scheduleAt = asDate(req.body.scheduleAt);
+  const expiryDate = asDate(req.body.expiryDate);
+  const { channels, warnings } = normalizeChannels(req);
+
+  const errors = [];
+  if (!title) errors.push("Title is required.");
+  if (!body) errors.push("Message is required.");
+  if (title.length > 220) errors.push("Title must be 220 characters or fewer.");
+  if (body.length > 5000) errors.push("Message must be 5000 characters or fewer.");
+  if (!AUDIENCE_TYPES.includes(audienceType)) errors.push("Choose a valid audience type.");
+
+  if (!["All Students", "All Staff", "All Parents"].includes(audienceType) && (!audienceValue || audienceValue === "—")) {
+    errors.push("Audience Value is required for the selected targeted audience.");
+  }
+
+  const now = new Date();
+  if (publishMode === "Schedule") {
+    if (!scheduleAt) errors.push("A valid schedule date/time is required.");
+    else if (scheduleAt <= now) errors.push("Scheduled publishing must be in the future.");
+  }
+  if (expiryDate) {
+    const startsAt = publishMode === "Schedule" ? scheduleAt : now;
+    if (startsAt && expiryDate <= startsAt) errors.push("Expiry must be after the publish/schedule time.");
+  }
+
+  let status = existing?.status || "Draft";
+  if (publishMode === "Schedule") status = "Scheduled";
+  else if (publishMode === "Save as Draft") status = "Draft";
+  else status = "Published";
+
+  return {
+    errors,
+    warnings,
+    value: {
+      title,
+      body,
+      category,
+      priority,
+      audienceType,
+      audienceValue,
+      requiresAcknowledgement,
+      publishMode,
+      scheduleAt,
+      expiryDate,
+      channels,
+      status,
+    },
+  };
+}
 
 function buildAnnouncementFilters(query = {}) {
   const q = str(query.q);
   const status = str(query.status || "all");
   const category = str(query.category || "all");
-  const audience = str(query.audience || "all");
+  const audience = normalizeAudienceType(query.audience || "all");
   const view = str(query.view || "list") || "list";
 
   const mongo = { isDeleted: { $ne: true } };
-
   if (q) {
+    const re = new RegExp(escapeRegex(q), "i");
     mongo.$or = [
-      { title: new RegExp(q, "i") },
-      { body: new RegExp(q, "i") },
-      { category: new RegExp(q, "i") },
-      { audienceType: new RegExp(q, "i") },
-      { audienceValue: new RegExp(q, "i") },
-      { status: new RegExp(q, "i") },
+      { title: re },
+      { body: re },
+      { category: re },
+      { audienceType: re },
+      { audienceValue: re },
+      { status: re },
     ];
   }
-
   if (status && status !== "all") mongo.status = status;
   if (category && category !== "all") mongo.category = category;
   if (audience && audience !== "all") mongo.audienceType = audience;
 
+  return { mongo, clean: { q, status, category, audience, view } };
+}
+
+function serializeReceipt(r) {
   return {
-    mongo,
-    clean: { q, status, category, audience, view },
+    id: String(r._id || ""),
+    user: r.name || "",
+    email: r.email || "",
+    role: r.role || "",
+    status: r.status || "Unread",
+    readAt: r.readAt ? new Date(r.readAt).toISOString().slice(0, 16).replace("T", " ") : "—",
+    ackAt: r.ackAt ? new Date(r.ackAt).toISOString().slice(0, 16).replace("T", " ") : "—",
   };
 }
 
-function serializeAnnouncement(doc) {
+function serializeAnnouncement(doc, receipts = []) {
+  const receiptRows = receipts.length ? receipts : (Array.isArray(doc.receipts) ? doc.receipts : []);
   return {
     id: String(doc._id),
     title: doc.title || "",
     cat: doc.category || "General",
-    audType: doc.audienceType || "All Students",
+    audType: normalizeAudienceType(doc.audienceType || "All Students"),
     audVal: doc.audienceValue || "—",
     ch: {
       portal: !!doc.channels?.portal,
@@ -72,18 +180,27 @@ function serializeAnnouncement(doc) {
       clicks: Number(doc.stats?.clicks || 0),
       ack: Number(doc.stats?.acknowledgements || 0),
     },
-    attachments: Array.isArray(doc.attachments) ? doc.attachments : [],
-    receipts: Array.isArray(doc.receipts)
-      ? doc.receipts.map((r) => ({
-          id: String(r._id),
-          user: r.name || "",
-          email: r.email || "",
-          role: r.role || "",
-          status: r.status || "Unread",
-          readAt: r.readAt ? new Date(r.readAt).toISOString().slice(0, 16).replace("T", " ") : "—",
-          ackAt: r.ackAt ? new Date(r.ackAt).toISOString().slice(0, 16).replace("T", " ") : "—",
-        }))
-      : [],
+    receipts: receiptRows.map(serializeReceipt),
+  };
+}
+
+function serializeTemplate(doc) {
+  return {
+    id: String(doc._id),
+    name: doc.name || "Template",
+    title: doc.title || "",
+    body: doc.body || "",
+    cat: doc.category || "General",
+    pinned: doc.priority === "Pinned",
+    audType: normalizeAudienceType(doc.audienceType || "All Students"),
+    audVal: doc.audienceValue || "—",
+    ack: !!doc.requiresAcknowledgement,
+    ch: {
+      portal: true,
+      email: !!doc.channels?.email,
+      sms: false,
+      push: false,
+    },
   };
 }
 
@@ -96,299 +213,316 @@ function computeKpis(list = []) {
   };
 }
 
+function flashWarnings(req, warnings = []) {
+  for (const warning of warnings) req.flash?.("warning", warning);
+}
+
+function csvCell(value) {
+  let text = String(value ?? "").replace(/\r?\n/g, " ");
+  if (/^[=+\-@]/.test(text)) text = `'${text}`;
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
 module.exports = {
-  /**
-   * GET /admin/announcements
-   */
   index: async (req, res) => {
-    const { Announcement } = req.models;
+    const { Announcement, AnnouncementTemplate } = req.models;
+    await publishDueAnnouncements(req).catch((err) => console.error("ANNOUNCEMENT SCHEDULER ERROR:", err));
 
     const { mongo, clean } = buildAnnouncementFilters(req.query);
-
-    const announcements = await Announcement.find(mongo)
-      .sort({ priority: -1, publishedAt: -1, createdAt: -1 })
-      .lean();
-
-    const data = announcements.map(serializeAnnouncement);
-    const kpis = computeKpis(data);
+    const pageSize = 100;
+    const page = Math.max(1, Math.min(100000, Number.parseInt(req.query.page, 10) || 1));
+    const [announcements, total, kpiRows, templates] = await Promise.all([
+      Announcement.find(mongo)
+        .sort({ priority: -1, publishedAt: -1, createdAt: -1 })
+        .skip((page - 1) * pageSize)
+        .limit(pageSize)
+        .lean(),
+      Announcement.countDocuments(mongo),
+      Announcement.aggregate([
+        { $match: mongo },
+        { $group: {
+          _id: null,
+          published: { $sum: { $cond: [{ $eq: ["$status", "Published"] }, 1, 0] } },
+          scheduled: { $sum: { $cond: [{ $eq: ["$status", "Scheduled"] }, 1, 0] } },
+          drafts: { $sum: { $cond: [{ $eq: ["$status", "Draft"] }, 1, 0] } },
+          ackRequired: { $sum: { $cond: ["$requiresAcknowledgement", 1, 0] } },
+        } },
+      ]).catch(() => []),
+      AnnouncementTemplate
+        ? AnnouncementTemplate.find({ isDeleted: { $ne: true }, isActive: true }).sort({ name: 1 }).limit(200).lean().catch(() => [])
+        : Promise.resolve([]),
+    ]);
+    const receiptsByAnnouncement = await getReceipts(req, announcements.map((x) => x._id));
+    const data = announcements.map((doc) => serializeAnnouncement(doc, receiptsByAnnouncement.get(String(doc._id)) || []));
+    const pageCount = Math.max(1, Math.ceil(total / pageSize));
+    const makePageUrl = (target) => { const qs = new URLSearchParams(req.query || {}); qs.set("page", String(target)); return `/admin/announcements?${qs.toString()}`; };
 
     return res.render("tenant/announcements/index", {
       tenant: req.tenant,
       csrfToken: req.csrfToken?.(),
       announcements: data,
-      kpis,
+      templates: templates.map(serializeTemplate),
+      kpis: kpiRows[0] || { published: 0, scheduled: 0, drafts: 0, ackRequired: 0 },
       query: clean,
+      pagination: { page, pageSize, total, pageCount, prevUrl: page > 1 ? makePageUrl(page - 1) : "", nextUrl: page < pageCount ? makePageUrl(page + 1) : "" },
     });
   },
 
-  /**
-   * POST /admin/announcements
-   */
   create: async (req, res) => {
     const { Announcement } = req.models;
-
-    const title = str(req.body.title);
-    const body = str(req.body.body);
-    const category = str(req.body.category || "General");
-    const priority = str(req.body.priority || "Normal");
-    const audienceType = str(req.body.audienceType || "All Students");
-    const audienceValue = str(req.body.audienceValue || "—");
-    const requiresAcknowledgement = asBool(req.body.requiresAcknowledgement);
-
-    const publishMode = str(req.body.publishMode || "Publish Now");
-    const scheduleAt = asDate(req.body.scheduleAt);
-    const expiryDate = asDate(req.body.expiryDate);
-
-    if (!title || !body) {
-      req.flash?.("error", "Title and message are required.");
+    const checked = validatePayload(req);
+    if (checked.errors.length) {
+      req.flash?.("error", checked.errors.join(" "));
+      flashWarnings(req, checked.warnings);
       return res.redirect("/admin/announcements");
     }
-
-    let status = "Draft";
-    let publishedAt = null;
-
-    if (publishMode === "Publish Now") {
-      status = "Published";
-      publishedAt = new Date();
-    } else if (publishMode === "Schedule") {
-      status = "Scheduled";
-    } else {
-      status = "Draft";
-    }
-
-    await Announcement.create({
-      title,
-      body,
-      category,
-      priority: priority === "Pinned" ? "Pinned" : "Normal",
-      audienceType,
-      audienceValue: audienceValue || "—",
-      requiresAcknowledgement,
-      channels: {
-        portal: true,
-        email: asBool(req.body.channelEmail),
-        sms: asBool(req.body.channelSms),
-        push: asBool(req.body.channelPush),
-      },
-      status,
-      scheduleAt: status === "Scheduled" ? scheduleAt : null,
-      publishedAt,
-      expiryDate,
+    const v = checked.value;
+    const doc = await Announcement.create({
+      title: v.title,
+      body: v.body,
+      category: v.category,
+      priority: v.priority,
+      audienceType: v.audienceType,
+      audienceValue: v.audienceValue,
+      requiresAcknowledgement: v.requiresAcknowledgement,
+      channels: v.channels,
+      status: v.status === "Published" ? "Draft" : v.status,
+      scheduleAt: v.status === "Scheduled" ? v.scheduleAt : null,
+      publishedAt: null,
+      expiryDate: v.expiryDate,
       createdBy: actorUserId(req),
       updatedBy: actorUserId(req),
     });
 
-    req.flash?.("success", "Announcement created successfully.");
+    if (v.status === "Published") await activateAnnouncement(req, doc, new Date(), { updatedBy: actorUserId(req) });
+    flashWarnings(req, checked.warnings);
+    req.flash?.("success", v.status === "Published" ? "Announcement published successfully." : "Announcement saved successfully.");
     return res.redirect("/admin/announcements");
   },
 
-  /**
-   * POST /admin/announcements/:id/update
-   */
   update: async (req, res) => {
     const { Announcement } = req.models;
-
     if (!isValidId(req.params.id)) {
       req.flash?.("error", "Invalid announcement ID.");
       return res.redirect("/admin/announcements");
     }
-
-    const existing = await Announcement.findOne({
-      _id: req.params.id,
-      isDeleted: { $ne: true },
-    });
-
+    const existing = await Announcement.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
     if (!existing) {
       req.flash?.("error", "Announcement not found.");
       return res.redirect("/admin/announcements");
     }
 
-    const title = str(req.body.title);
-    const body = str(req.body.body);
-    const category = str(req.body.category || "General");
-    const priority = str(req.body.priority || "Normal");
-    const audienceType = str(req.body.audienceType || "All Students");
-    const audienceValue = str(req.body.audienceValue || "—");
-    const requiresAcknowledgement = asBool(req.body.requiresAcknowledgement);
-
-    const publishMode = str(req.body.publishMode || "Publish Now");
-    const scheduleAt = asDate(req.body.scheduleAt);
-    const expiryDate = asDate(req.body.expiryDate);
-
-    if (!title || !body) {
-      req.flash?.("error", "Title and message are required.");
+    const checked = validatePayload(req, existing);
+    if (checked.errors.length) {
+      req.flash?.("error", checked.errors.join(" "));
+      flashWarnings(req, checked.warnings);
       return res.redirect("/admin/announcements");
     }
-
-    let status = "Draft";
-    let publishedAt = existing.publishedAt || null;
-
-    if (publishMode === "Publish Now") {
-      status = "Published";
-      publishedAt = existing.publishedAt || new Date();
-    } else if (publishMode === "Schedule") {
-      status = "Scheduled";
-      publishedAt = null;
-    } else {
-      status = "Draft";
-      publishedAt = null;
-    }
-
-    existing.title = title;
-    existing.body = body;
-    existing.category = category;
-    existing.priority = priority === "Pinned" ? "Pinned" : "Normal";
-    existing.audienceType = audienceType;
-    existing.audienceValue = audienceValue || "—";
-    existing.requiresAcknowledgement = requiresAcknowledgement;
-
-    existing.channels = {
-      portal: true,
-      email: asBool(req.body.channelEmail),
-      sms: asBool(req.body.channelSms),
-      push: asBool(req.body.channelPush),
-    };
-
-    existing.status = status;
-    existing.scheduleAt = status === "Scheduled" ? scheduleAt : null;
-    existing.publishedAt = publishedAt;
-    existing.expiryDate = expiryDate;
+    const v = checked.value;
+    existing.title = v.title;
+    existing.body = v.body;
+    existing.category = v.category;
+    existing.priority = v.priority;
+    existing.audienceType = v.audienceType;
+    existing.audienceValue = v.audienceValue;
+    existing.requiresAcknowledgement = v.requiresAcknowledgement;
+    existing.channels = v.channels;
+    existing.expiryDate = v.expiryDate;
     existing.updatedBy = actorUserId(req);
 
-    await existing.save();
+    if (v.status === "Published") {
+      existing.status = "Published";
+      existing.scheduleAt = null;
+      existing.publishedAt = existing.publishedAt || new Date();
+      await existing.save();
+      await activateAnnouncement(req, existing, new Date(), { updatedBy: actorUserId(req) });
+    } else {
+      existing.status = v.status;
+      existing.scheduleAt = v.status === "Scheduled" ? v.scheduleAt : null;
+      existing.publishedAt = null;
+      await existing.save();
+    }
 
+    flashWarnings(req, checked.warnings);
     req.flash?.("success", "Announcement updated successfully.");
     return res.redirect("/admin/announcements");
   },
 
-  /**
-   * POST /admin/announcements/:id/publish
-   */
   publish: async (req, res) => {
     const { Announcement } = req.models;
-
     if (!isValidId(req.params.id)) {
       req.flash?.("error", "Invalid announcement ID.");
       return res.redirect("/admin/announcements");
     }
-
-    await Announcement.updateOne(
-      { _id: req.params.id, isDeleted: { $ne: true } },
-      {
-        $set: {
-          status: "Published",
-          scheduleAt: null,
-          publishedAt: new Date(),
-          updatedBy: actorUserId(req),
-        },
-      }
-    );
-
-    req.flash?.("success", "Announcement published.");
+    const doc = await Announcement.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
+    if (!doc) {
+      req.flash?.("error", "Announcement not found.");
+      return res.redirect("/admin/announcements");
+    }
+    const alreadyPublished = doc.status === "Published";
+    const activated = await activateAnnouncement(req, doc, new Date(), { updatedBy: actorUserId(req) });
+    if (!activated) {
+      req.flash?.("error", "Expired announcements cannot be published. Update the expiry date first.");
+      return res.redirect("/admin/announcements");
+    }
+    req.flash?.("success", alreadyPublished ? "Announcement recipients synchronized." : "Announcement published.");
     return res.redirect("/admin/announcements");
   },
 
-  /**
-   * POST /admin/announcements/:id/unpublish
-   */
   unpublish: async (req, res) => {
     const { Announcement } = req.models;
-
     if (!isValidId(req.params.id)) {
       req.flash?.("error", "Invalid announcement ID.");
       return res.redirect("/admin/announcements");
     }
-
-    await Announcement.updateOne(
+    const result = await Announcement.updateOne(
       { _id: req.params.id, isDeleted: { $ne: true } },
-      {
-        $set: {
-          status: "Unpublished",
-          updatedBy: actorUserId(req),
-        },
-      }
+      { $set: { status: "Unpublished", scheduleAt: null, updatedBy: actorUserId(req) } }
     );
-
-    req.flash?.("success", "Announcement unpublished.");
+    req.flash?.(result.matchedCount ? "success" : "error", result.matchedCount ? "Announcement unpublished." : "Announcement not found.");
     return res.redirect("/admin/announcements");
   },
 
-  /**
-   * POST /admin/announcements/:id/delete
-   */
   delete: async (req, res) => {
     const { Announcement } = req.models;
-
     if (!isValidId(req.params.id)) {
       req.flash?.("error", "Invalid announcement ID.");
       return res.redirect("/admin/announcements");
     }
-
-    await Announcement.updateOne(
+    const result = await Announcement.updateOne(
       { _id: req.params.id, isDeleted: { $ne: true } },
-      {
-        $set: {
-          isDeleted: true,
-          deletedAt: new Date(),
-          updatedBy: actorUserId(req),
-        },
-      }
+      { $set: { isDeleted: true, deletedAt: new Date(), updatedBy: actorUserId(req) } }
     );
-
-    req.flash?.("success", "Announcement deleted.");
+    req.flash?.(result.matchedCount ? "success" : "error", result.matchedCount ? "Announcement deleted." : "Announcement not found.");
     return res.redirect("/admin/announcements");
   },
 
-  /**
-   * POST /admin/announcements/bulk
-   */
   bulkAction: async (req, res) => {
     const { Announcement } = req.models;
-
-    const ids = str(req.body.ids)
-      .split(",")
-      .map((x) => x.trim())
-      .filter((x) => isValidId(x));
-
+    const ids = str(req.body.ids).split(",").map((x) => x.trim()).filter(isValidId);
     if (!ids.length) {
       req.flash?.("error", "No announcements selected.");
       return res.redirect("/admin/announcements");
     }
-
     const action = str(req.body.action);
-
-    const patch = { updatedBy: actorUserId(req) };
+    const allowed = ["publish", "unpublish", "pin", "unpin", "draft"];
+    if (!allowed.includes(action)) {
+      req.flash?.("error", "Invalid bulk action.");
+      return res.redirect("/admin/announcements");
+    }
 
     if (action === "publish") {
-      patch.status = "Published";
-      patch.scheduleAt = null;
-      patch.publishedAt = new Date();
+      const docs = await Announcement.find({ _id: { $in: ids }, isDeleted: { $ne: true } });
+      let expiredSkipped = 0;
+      for (const doc of docs) {
+        const activated = await activateAnnouncement(req, doc, new Date(), { updatedBy: actorUserId(req) });
+        if (!activated) expiredSkipped += 1;
+      }
+      if (expiredSkipped) req.flash?.("warning", `${expiredSkipped} expired announcement(s) were not published.`);
+    } else {
+      const patch = { updatedBy: actorUserId(req) };
+      if (action === "unpublish") Object.assign(patch, { status: "Unpublished", scheduleAt: null });
+      if (action === "pin") patch.priority = "Pinned";
+      if (action === "unpin") patch.priority = "Normal";
+      if (action === "draft") Object.assign(patch, { status: "Draft", publishedAt: null, scheduleAt: null });
+      await Announcement.updateMany({ _id: { $in: ids }, isDeleted: { $ne: true } }, { $set: patch });
     }
-
-    if (action === "unpublish") {
-      patch.status = "Unpublished";
-    }
-
-    if (action === "pin") {
-      patch.priority = "Pinned";
-    }
-
-    if (action === "unpin") {
-      patch.priority = "Normal";
-    }
-
-    if (action === "draft") {
-      patch.status = "Draft";
-      patch.publishedAt = null;
-      patch.scheduleAt = null;
-    }
-
-    await Announcement.updateMany(
-      { _id: { $in: ids }, isDeleted: { $ne: true } },
-      { $set: patch }
-    );
 
     req.flash?.("success", "Bulk action applied.");
+    return res.redirect("/admin/announcements");
+  },
+
+  remind: async (req, res) => {
+    const { Announcement } = req.models;
+    await publishDueAnnouncements(req).catch(() => {});
+    if (!isValidId(req.params.id)) {
+      req.flash?.("error", "Invalid announcement ID.");
+      return res.redirect("/admin/announcements?view=receipts");
+    }
+    const doc = await Announcement.findOne({ _id: req.params.id, isDeleted: { $ne: true }, status: "Published" });
+    if (!doc) {
+      req.flash?.("error", "Only published announcements can send reminders.");
+      return res.redirect("/admin/announcements?view=receipts");
+    }
+    const result = await remindUnreadRecipients(req, doc);
+    req.flash?.("success", `Reminder queued for ${result.reminded} recipient(s).`);
+    if (result.failedEmails) req.flash?.("warning", `${result.failedEmails} reminder email(s) could not be delivered.`);
+    return res.redirect("/admin/announcements?view=receipts");
+  },
+
+  exportCsv: async (req, res) => {
+    const { Announcement } = req.models;
+    await publishDueAnnouncements(req).catch(() => {});
+    const { mongo } = buildAnnouncementFilters(req.query);
+    const rows = await Announcement.find(mongo).sort({ createdAt: -1 }).lean();
+    const headers = ["Title", "Category", "Audience Type", "Audience Value", "Priority", "Status", "Published At", "Scheduled At", "Expires", "Requires Acknowledgement", "Views", "Acknowledgements"];
+    const lines = [headers.map(csvCell).join(",")];
+    for (const row of rows) {
+      lines.push([
+        row.title,
+        row.category,
+        normalizeAudienceType(row.audienceType),
+        row.audienceValue,
+        row.priority,
+        row.status,
+        row.publishedAt ? new Date(row.publishedAt).toISOString() : "",
+        row.scheduleAt ? new Date(row.scheduleAt).toISOString() : "",
+        row.expiryDate ? new Date(row.expiryDate).toISOString() : "",
+        row.requiresAcknowledgement ? "Yes" : "No",
+        Number(row.stats?.views || 0),
+        Number(row.stats?.acknowledgements || 0),
+      ].map(csvCell).join(","));
+    }
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="announcements-${new Date().toISOString().slice(0, 10)}.csv"`);
+    return res.send(`\uFEFF${lines.join("\r\n")}`);
+  },
+
+  createTemplate: async (req, res) => {
+    const { AnnouncementTemplate } = req.models;
+    if (!AnnouncementTemplate) {
+      req.flash?.("error", "Announcement templates are unavailable for this tenant.");
+      return res.redirect("/admin/announcements");
+    }
+    const name = str(req.body.name);
+    const title = str(req.body.title);
+    const body = str(req.body.body);
+    if (!name || !title || !body) {
+      req.flash?.("error", "Template name, title and message are required.");
+      return res.redirect("/admin/announcements");
+    }
+    const category = CATEGORIES.includes(str(req.body.category)) ? str(req.body.category) : "General";
+    const audienceType = AUDIENCE_TYPES.includes(normalizeAudienceType(req.body.audienceType))
+      ? normalizeAudienceType(req.body.audienceType)
+      : "All Students";
+    await AnnouncementTemplate.create({
+      name,
+      title,
+      body,
+      category,
+      priority: str(req.body.priority) === "Pinned" ? "Pinned" : "Normal",
+      audienceType,
+      audienceValue: str(req.body.audienceValue || "—") || "—",
+      requiresAcknowledgement: asBool(req.body.requiresAcknowledgement),
+      channels: { portal: true, email: false, sms: false, push: false },
+      createdBy: actorUserId(req),
+      updatedBy: actorUserId(req),
+    });
+    req.flash?.("success", "Announcement template created.");
+    return res.redirect("/admin/announcements");
+  },
+
+  deleteTemplate: async (req, res) => {
+    const { AnnouncementTemplate } = req.models;
+    if (!AnnouncementTemplate || !isValidId(req.params.id)) {
+      req.flash?.("error", "Invalid announcement template.");
+      return res.redirect("/admin/announcements");
+    }
+    await AnnouncementTemplate.updateOne(
+      { _id: req.params.id, isDeleted: { $ne: true } },
+      { $set: { isDeleted: true, isActive: false, deletedAt: new Date(), updatedBy: actorUserId(req) } }
+    );
+    req.flash?.("success", "Announcement template deleted.");
     return res.redirect("/admin/announcements");
   },
 };

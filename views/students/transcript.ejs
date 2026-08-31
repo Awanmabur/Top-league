@@ -16,84 +16,80 @@
     <div>
       <div class="title">Transcripts & Official Letters</div>
       <div class="subtitle">
-        View your academic record, GPA/CGPA, and request official letters such as admission or bonafide letters.
+        View your published marks, term averages, grades, official transcript, and school letters.
       </div>
     </div>
     <div class="top-actions">
       <a class="btn light" href="/student/dashboard">
         <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
       </a>
-      <button class="btn primary" onclick="window.print()">
-        <i class="fa-solid fa-file-arrow-down"></i> Download Unofficial Transcript
-      </button>
+      <% if (officialTranscript) { %>
+        <a class="btn primary" href="/student/transcript/<%= officialTranscript.id %>/print" target="_blank">
+          <i class="fa-solid fa-file-shield"></i> Open Official Transcript
+        </a>
+      <% } else { %>
+        <button class="btn primary" type="button" data-print>
+          <i class="fa-solid fa-print"></i> Print Published Results
+        </button>
+      <% } %>
     </div>
   </div>
 
   <%-include("../tenant/partials/flash") %>
 
   <section class="card">
-    <div class="section-title">Transcript filters</div>
-    <div class="section-sub">Select programme, level and semester to refine your transcript view.</div>
+    <div class="section-title">Academic record</div>
+    <div class="section-sub">This view contains published Results only. Draft or quarantined marks are never shown here.</div>
 
     <div class="filters-row" style="margin-top:10px;">
       <div>
-        <label class="small-muted">Programme</label><br/>
-        <select class="select"><option selected><%= meta.program %></option></select>
-      </div>
-      <div>
-        <label class="small-muted">Level / Year</label><br/>
+        <label class="small-muted">Class / Level</label><br/>
         <select class="select"><option selected><%= meta.level %></option></select>
       </div>
       <div>
-        <label class="small-muted">Semester</label><br/>
-        <select class="select"><option selected><%= meta.semester %></option></select>
+        <label class="small-muted">Academic year</label><br/>
+        <select class="select"><option selected><%= overview.latestAcademicYear || meta.academicYear %></option></select>
+      </div>
+      <div>
+        <label class="small-muted">Latest term</label><br/>
+        <select class="select"><option selected><%= overview.latestTerm ? ('Term ' + overview.latestTerm) : '—' %></option></select>
       </div>
       <div>
         <label class="small-muted">Format</label><br/>
-        <select class="select"><option selected>Detailed view</option></select>
+        <select class="select"><option selected>Published results</option></select>
       </div>
     </div>
   </section>
 
+  <% if (officialTranscript) { %>
+    <section class="card" style="margin-top:12px;">
+      <div class="section-title">Official transcript available</div>
+      <div class="section-sub">Issue <strong><%= officialTranscript.issueNumber %></strong> • Issued <%= officialTranscript.issuedAt ? new Date(officialTranscript.issuedAt).toDateString() : '—' %>. The issued snapshot is immutable and QR-verifiable.</div>
+    </section>
+  <% } %>
+
   <div class="kpi-row">
     <div class="card" style="flex:1;">
-      <div class="section-title">Cumulative GPA (CGPA)</div>
-      <div class="section-sub">Overall academic performance</div>
-      <div style="margin-top:8px;">
-        <div style="font-size:22px;font-weight:700;"><%= overview.cgpa %> / 4.00</div>
-        <div class="small-muted">Standing: <span style="color:#16a34a;font-weight:600;"><%= overview.classification %></span></div>
-      </div>
+      <div class="section-title">Overall average</div>
+      <div class="section-sub">Across published results</div>
+      <div style="margin-top:8px;"><div style="font-size:22px;font-weight:700;"><%= overview.average %>%</div><div class="small-muted">Grade: <strong><%= overview.overallGrade %></strong> • <%= overview.overallRemark %></div></div>
     </div>
-
     <div class="card" style="flex:1;">
-      <div class="section-title">Last semester GPA</div>
-      <div class="section-sub">Most recent term</div>
-      <div style="margin-top:8px;">
-        <div style="font-size:22px;font-weight:700;"><%= overview.lastSemesterGpa %></div>
-      </div>
+      <div class="section-title">Latest term average</div>
+      <div class="section-sub"><%= overview.latestAcademicYear || 'Current record' %><%= overview.latestTerm ? (' • Term ' + overview.latestTerm) : '' %></div>
+      <div style="margin-top:8px;"><div style="font-size:22px;font-weight:700;"><%= overview.latestTermAverage %>%</div></div>
     </div>
-
     <div class="card" style="flex:1;">
-      <div class="section-title">Total credits earned</div>
-      <div class="section-sub">Towards graduation</div>
-      <div style="margin-top:8px;">
-        <div style="font-size:22px;font-weight:700;"><%= overview.earnedCredits %></div>
-        <div class="mini-list" style="margin-top:6px;">
-          <div class="mini-item"><span>Total attempted</span><span><%= overview.totalCredits %></span></div>
-          <div class="mini-item"><span>Remaining</span><span><%= overview.remainingCredits %></span></div>
-        </div>
-      </div>
+      <div class="section-title">Subjects passed</div>
+      <div class="section-sub">Based on each exam pass threshold</div>
+      <div style="margin-top:8px;"><div style="font-size:22px;font-weight:700;"><%= overview.passed %> / <%= overview.totalSubjects %></div><div class="small-muted"><%= overview.failed %> below pass threshold</div></div>
     </div>
-
     <div class="card" style="flex:1;">
       <div class="section-title">Academic status</div>
-      <div class="section-sub">Current standing</div>
-      <div style="margin-top:8px;">
-        <div class="pill-status"><i class="fa-solid fa-circle-check"></i> <%= overview.academicStatus %></div>
-      </div>
+      <div class="section-sub">Current account standing</div>
+      <div style="margin-top:8px;"><div class="pill-status"><i class="fa-solid fa-circle-check"></i> <%= overview.academicStatus %></div></div>
     </div>
   </div>
-
   <div class="content">
     <section class="card">
       <div class="section-title">Academic transcript</div>
@@ -103,30 +99,32 @@
         <table style="width:100%;border-collapse:collapse;font-size:13px;">
           <thead>
             <tr style="border-bottom:1px solid #e5edff;">
-              <th style="text-align:left;padding:6px 4px;">Course code</th>
-              <th style="text-align:left;padding:6px 4px;">Course title</th>
-              <th style="text-align:center;padding:6px 4px;">Level</th>
-              <th style="text-align:center;padding:6px 4px;">Credits</th>
+              <th style="text-align:left;padding:6px 4px;">Academic year</th>
+              <th style="text-align:center;padding:6px 4px;">Term</th>
+              <th style="text-align:left;padding:6px 4px;">Subject</th>
+              <th style="text-align:left;padding:6px 4px;">Exam</th>
+              <th style="text-align:center;padding:6px 4px;">Marks</th>
+              <th style="text-align:center;padding:6px 4px;">Percentage</th>
               <th style="text-align:center;padding:6px 4px;">Grade</th>
-              <th style="text-align:center;padding:6px 4px;">Grade points</th>
-              <th style="text-align:left;padding:6px 4px;">Status</th>
+              <th style="text-align:left;padding:6px 4px;">Remark</th>
             </tr>
           </thead>
           <tbody>
             <% if (transcriptRows?.length) { %>
               <% transcriptRows.forEach(function(row){ %>
                 <tr>
-                  <td><%= row.courseCode %></td>
-                  <td><%= row.courseTitle %></td>
-                  <td style="text-align:center;"><%= row.level %></td>
-                  <td style="text-align:center;"><%= row.credits %></td>
+                  <td><%= row.academicYear || '—' %></td>
+                  <td style="text-align:center;">Term <%= row.term %></td>
+                  <td><%= row.subjectCode ? (row.subjectCode + ' — ') : '' %><%= row.subjectTitle %></td>
+                  <td><%= row.examTitle %></td>
+                  <td style="text-align:center;"><%= row.rawScore %> / <%= row.totalMarks %></td>
+                  <td style="text-align:center;"><%= row.percentage %>%</td>
                   <td style="text-align:center;"><%= row.grade %></td>
-                  <td style="text-align:center;"><%= row.gradePoints %></td>
-                  <td><%= row.status %></td>
+                  <td><%= row.remark %></td>
                 </tr>
               <% }) %>
             <% } else { %>
-              <tr><td colspan="7">No transcript rows found.</td></tr>
+              <tr><td colspan="8">No published results found.</td></tr>
             <% } %>
           </tbody>
         </table>
@@ -139,9 +137,9 @@
         <div class="section-sub">Key indicators from your academic record.</div>
 
         <div class="mini-list" style="margin-top:8px;">
-          <div class="mini-item"><span>Programme</span><span><%= meta.program %></span></div>
+          <div class="mini-item"><span>Class / Level</span><span><%= meta.level %></span></div>
           <div class="mini-item"><span>Student ID</span><span><%= meta.studentNumber %></span></div>
-          <div class="mini-item"><span>Level</span><span><%= meta.level %></span></div>
+          <div class="mini-item"><span>Latest term</span><span><%= overview.latestTerm ? ('Term ' + overview.latestTerm) : '—' %></span></div>
           <div class="mini-item"><span>Academic year</span><span><%= meta.academicYear %></span></div>
         </div>
       </section>
@@ -154,7 +152,7 @@
           <li class="mini-item"><span>Unofficial copy</span><span>For personal use only</span></li>
           <li class="mini-item"><span>Official transcript</span><span>Issued by Registry Office</span></li>
           <li class="mini-item"><span>Processing time</span><span>2–5 working days</span></li>
-          <li class="mini-item"><span>Outstanding fees</span><span>May delay release</span></li>
+          <li class="mini-item"><span>Outstanding fees</span><span>May delay official release</span></li>
         </ul>
       </section>
     </aside>
@@ -163,47 +161,37 @@
   <div class="content" style="margin-top:16px;">
     <section class="card">
       <div class="section-title">Official letters</div>
-      <div class="section-sub">Request and track official letters.</div>
-
+      <div class="section-sub">Request and track official letters. Only Registry can approve and release them.</div>
       <div style="margin-top:10px;overflow-x:auto;">
         <table style="width:100%;border-collapse:collapse;font-size:13px;">
-          <thead>
-            <tr style="border-bottom:1px solid #e5edff;">
-              <th style="text-align:left;padding:6px 4px;">Letter</th>
-              <th style="text-align:left;padding:6px 4px;">Purpose</th>
-              <th style="text-align:left;padding:6px 4px;">Format</th>
-              <th style="text-align:left;padding:6px 4px;">Status</th>
-              <th style="text-align:left;padding:6px 4px;">Requested</th>
-            </tr>
-          </thead>
+          <thead><tr style="border-bottom:1px solid #e5edff;"><th style="text-align:left;padding:6px 4px;">Letter</th><th style="text-align:left;padding:6px 4px;">Purpose</th><th style="text-align:left;padding:6px 4px;">Status</th><th style="text-align:left;padding:6px 4px;">Action</th></tr></thead>
           <tbody>
-            <% if (lettersCatalogue?.length) { %>
-              <% lettersCatalogue.forEach(function(letter){ %>
-                <tr>
-                  <td><strong><%= letter.type %></strong></td>
-                  <td><%= letter.purpose %></td>
-                  <td><%= letter.format %></td>
-                  <td><%= letter.status %></td>
-                  <td><%= letter.requestedAt ? new Date(letter.requestedAt).toDateString() : "—" %></td>
-                </tr>
-              <% }) %>
-            <% } else { %>
-              <tr><td colspan="5">No letter options available.</td></tr>
-            <% } %>
+            <% if (lettersCatalogue?.length) { lettersCatalogue.forEach(function(letter){ %>
+              <tr style="border-bottom:1px solid #eef3ff;">
+                <td style="padding:8px 4px;"><strong><%= letter.type %></strong><div class="small-muted"><%= letter.format %></div></td>
+                <td style="padding:8px 4px;"><%= letter.purpose %></td>
+                <td style="padding:8px 4px;"><%= letter.request?.status || 'Not requested' %><% if (letter.request?.requestedAt) { %><div class="small-muted"><%= new Date(letter.request.requestedAt).toDateString() %></div><% } %></td>
+                <td style="padding:8px 4px;">
+                  <% if (!letter.request || ['Rejected','Cancelled'].includes(letter.request.status)) { %>
+                    <form method="post" action="/student/letters/request">
+                      <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>"><input type="hidden" name="type" value="<%= letter.type %>">
+                      <input type="text" name="purpose" maxlength="1000" placeholder="Optional purpose" style="max-width:220px;"> <button class="btn primary" type="submit">Request</button>
+                    </form>
+                  <% } else if (letter.request.canOpen) { %>
+                    <a class="btn primary" href="/student/letters/<%= letter.request.id %>/print" target="_blank" rel="noopener">Open letter</a>
+                  <% } else if (letter.request.canCancel) { %>
+                    <form method="post" action="/student/letters/<%= letter.request.id %>/cancel"><input type="hidden" name="_csrf" value="<%= csrfToken || '' %>"><button class="btn" type="submit">Cancel request</button></form>
+                  <% } else { %><span class="small-muted">Registry processing</span><% } %>
+                </td>
+              </tr>
+            <% }); } else { %><tr><td colspan="4">No letter options available.</td></tr><% } %>
           </tbody>
         </table>
       </div>
     </section>
-
     <section class="card">
-      <div class="section-title">Letter history</div>
-      <div class="section-sub">Quick stats.</div>
-
-      <div class="mini-list" style="margin-top:8px;">
-        <div class="mini-item"><span>Letters requested this year</span><span><%= lettersStats.requestedThisYear %></span></div>
-        <div class="mini-item"><span>Pending letters</span><span><%= lettersStats.pending %></span></div>
-        <div class="mini-item"><span>Maximum online requests per semester</span><span><%= lettersStats.maxPerSemester %></span></div>
-      </div>
+      <div class="section-title">Letter history</div><div class="section-sub">Current request limits and status.</div>
+      <div class="mini-list" style="margin-top:8px;"><div class="mini-item"><span>Letters requested this academic year</span><span><%= lettersStats.requestedThisYear %></span></div><div class="mini-item"><span>Pending letters</span><span><%= lettersStats.pending %></span></div><div class="mini-item"><span>Maximum online requests per term</span><span><%= lettersStats.maxPerTerm %></span></div></div>
     </section>
   </div>
 </main>

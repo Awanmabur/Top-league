@@ -2,13 +2,10 @@ const express = require("express");
 const router = express.Router();
 
 const ctrl = require("../../../controllers/tenant/admin/academicCalendarController");
+const { createCsvUpload, validateCsvUpload } = require("../../../middleware/csvUpload");
 
 // multer for CSV upload
-const multer = require("multer");
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 3 * 1024 * 1024 },
-});
+const upload = createCsvUpload({ maxBytes: 3 * 1024 * 1024 });
 
 // NOTE: no router.use(auth) here (admin/index already protects)
 
@@ -23,7 +20,7 @@ router.post("/", ctrl.eventRules, ctrl.create);
 router.post("/bulk-archive", ctrl.bulkArchive);
 
 // Import
-router.post("/import", upload.single("file"), ctrl.importCsv);
+router.post("/import", upload.single("file"), validateCsvUpload, ctrl.importCsv);
 
 // Archive/Delete
 router.post("/:id/archive", ctrl.archive);

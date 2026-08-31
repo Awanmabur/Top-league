@@ -31,13 +31,19 @@
   const showChildren = hasAnyModel("Student");
   const showAttendance = hasAnyModel("Attendance");
   const showResults = hasAnyModel("Result");
-  const showFees = hasAnyModel("FeeInvoice", "FeePayment", "Payment", "Fee", "Invoice");
-  const showTimetable = hasAnyModel("Timetable", "ClassTimetable", "Schedule");
+  const showAssignments = modelSet.has("Assignment") && modelSet.has("AssignmentSubmission") && modelSet.has("Student") && modelSet.has("Subject");
+  const showFees = modelSet.has("Invoice") && modelSet.has("Payment");
+  const showTimetable = hasAnyModel("Timetable", "TimetableEntry", "ClassTimetable", "Schedule");
+  const showAcademicCalendar = hasAnyModel("AcademicEvent");
+  const showDiscipline = hasAnyModel("DisciplineCase");
+  const showDocuments = hasAnyModel("StudentDoc");
+  const showTransport = modelSet.has("Transport") && modelSet.has("TransportAssignment");
+  const showAssets = hasAnyModel("Asset");
   const showAnnouncements = hasAnyModel("Announcement");
   const showNotifications = hasAnyModel("Notification");
   const showSupport =
-    tenantAccess?.featureFlags?.helpdesk !== false &&
-    hasAnyModel("SupportTicket", "Ticket");
+    tenantAccess?.featureFlags?.helpdesk === true &&
+    hasAnyModel("HelpdeskTicket");
 
   const homeItems = visibleItems([
     { label: "Dashboard", icon: "fa-house", href: "/parent/dashboard", hidden: false },
@@ -47,8 +53,14 @@
     { label: "Children", icon: "fa-user-graduate", href: "/parent/children", hidden: !showChildren },
     { label: "Attendance", icon: "fa-user-check", href: "/parent/attendance", hidden: !showAttendance },
     { label: "Results", icon: "fa-award", href: "/parent/results", hidden: !showResults },
+    { label: "Assignments", icon: "fa-list-check", href: "/parent/assignments", hidden: !showAssignments },
     { label: "Fees", icon: "fa-credit-card", href: "/parent/fees", hidden: !showFees },
     { label: "Timetable", icon: "fa-clock", href: "/parent/timetable", hidden: !showTimetable },
+    { label: "Academic Calendar", icon: "fa-calendar-days", href: "/parent/calendar", hidden: !showAcademicCalendar },
+    { label: "Discipline", icon: "fa-scale-balanced", href: "/parent/discipline", hidden: !showDiscipline },
+    { label: "Documents", icon: "fa-folder-open", href: "/parent/documents", hidden: !showDocuments },
+    { label: "Transport", icon: "fa-bus", href: "/parent/transport", hidden: !showTransport },
+    { label: "School Assets", icon: "fa-boxes-stacked", href: "/parent/assets", hidden: !showAssets },
   ]);
 
   const updateItems = visibleItems([
@@ -144,3 +156,8 @@
       <div class="navfoot">Portal: <strong>Parent</strong></div>
     </nav>
   </aside>
+
+<script src="/js/offline/db.js" defer></script>
+<script src="/js/offline/queue.js" defer></script>
+<script src="/js/offline/forms.js" defer></script>
+<script src="/js/csp-actions.js" defer></script>

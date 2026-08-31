@@ -12,6 +12,8 @@ module.exports = function AssetModel(conn) {
         enum: ["Staff", "Department", "Office", "Student", "Other"],
         default: "Staff",
       },
+      assigneeId: { type: mongoose.Schema.Types.ObjectId, default: null, index: true },
+      quantity: { type: Number, min: 1, default: 1 },
       assignedAt: { type: Date, default: Date.now },
       dueBackAt: { type: Date, default: null },
       status: {
@@ -19,6 +21,9 @@ module.exports = function AssetModel(conn) {
         enum: ["Assigned", "Returned", "Overdue"],
         default: "Assigned",
       },
+      returnedAt: { type: Date, default: null },
+      returnedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+      updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
       note: { type: String, trim: true, default: "" },
     },
     { _id: true }
@@ -53,6 +58,7 @@ module.exports = function AssetModel(conn) {
         required: true,
       },
       actorName: { type: String, trim: true, default: "" },
+      actorId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
       note: { type: String, trim: true, default: "" },
       date: { type: Date, default: Date.now },
     },
@@ -100,6 +106,13 @@ module.exports = function AssetModel(conn) {
         index: true,
       },
       assignedCount: { type: Number, min: 0, default: 0 },
+      revision: { type: Number, min: 1, default: 1 },
+      firstAssignedAt: { type: Date, default: null },
+      firstMaintenanceAt: { type: Date, default: null },
+      disposedAt: { type: Date, default: null },
+      isDeleted: { type: Boolean, default: false, index: true },
+      deletedAt: { type: Date, default: null },
+      maintenanceMigratedAt: { type: Date, default: null },
       notes: { type: String, trim: true, default: "" },
 
       assignments: [assignmentSchema],
@@ -112,7 +125,8 @@ module.exports = function AssetModel(conn) {
     { timestamps: true }
   );
 
-  assetSchema.index({ assetTag: 1 }, { unique: true });
+  assetSchema.index({ assetTag: 1 }, { name: "uniq_active_asset_tag", unique: true, partialFilterExpression: { isDeleted: false } });
+  assetSchema.index({ status: 1, isDeleted: 1, category: 1 });
 
   return conn.model("Asset", assetSchema);
 };

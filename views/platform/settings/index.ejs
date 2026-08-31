@@ -6,7 +6,7 @@
   <title>Platform Settings — Classic Academy</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <link rel="stylesheet" href="/css/navbar.css" />
-  <style>
+  <style nonce="<%= cspNonce %>">
     body{margin:0;background:#f5f8ff;font-family:Poppins,Segoe UI,Arial,sans-serif;color:#0f172a;overflow-x:hidden}
     *{box-sizing:border-box;min-width:0}
     .main{flex:1;padding:20px 26px;display:flex;flex-direction:column;gap:16px}
@@ -21,6 +21,9 @@
     .card-title{font-size:15px;font-weight:800;color:#083454;margin-bottom:12px}
     .alert{padding:12px 14px;border-radius:10px;background:#fff1f2;color:#991b1b;border:1px solid #fecdd3}
     .meta{font-size:12px;color:#6b7280}
+    .status-pill{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:800;background:#eef2ff;color:#334155}
+    .status-pill.ok{background:#ecfdf5;color:#166534}.status-pill.bad{background:#fff1f2;color:#991b1b}
+    .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
     @media (max-width:900px){.grid{grid-template-columns:1fr}.main{padding:16px}}
   </style>
 </head>
@@ -41,6 +44,8 @@
       <div class="card">
         <div class="card-title">General Settings</div>
         <form action="/super-admin/settings/general" method="POST">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+          <input type="hidden" name="revision" value="<%= revision || 1 %>" />
           <div class="field">
             <label>Platform Name</label>
             <input type="text" name="platform_name" value="<%= values?.platform_name || 'Classic Academy' %>" />
@@ -68,6 +73,8 @@
       <div class="card">
         <div class="card-title">Branding Settings</div>
         <form action="/super-admin/settings/branding" method="POST">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+          <input type="hidden" name="revision" value="<%= revision || 1 %>" />
           <div class="field">
             <label>Primary Color</label>
             <input type="text" name="brand_primary_color" value="<%= values?.brand_primary_color || '#0a3d62' %>" />
@@ -90,25 +97,84 @@
       <div class="card">
         <div class="card-title">Security Settings</div>
         <form action="/super-admin/settings/security" method="POST">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+          <input type="hidden" name="revision" value="<%= revision || 1 %>" />
           <div class="field">
             <label>Password Min Length</label>
-            <input type="number" name="password_min_length" value="<%= values?.password_min_length || 10 %>" min="10" />
+            <input type="number" name="password_min_length" value="<%= values?.password_min_length || 10 %>" min="10" max="128" />
           </div>
 
           <div class="field">
             <label>Session Timeout Minutes</label>
-            <input type="number" name="session_timeout_minutes" value="<%= values?.session_timeout_minutes || 120 %>" min="15" />
+            <input type="number" name="session_timeout_minutes" value="<%= values?.session_timeout_minutes || 120 %>" min="15" max="1440" />
           </div>
 
           <div class="field">
             <label style="display:flex;align-items:center;gap:8px;">
-              <input type="checkbox" name="allow_superadmin_2fa" <%= values?.allow_superadmin_2fa ? 'checked' : '' %> />
-              Enable Superadmin 2FA
+              <input type="checkbox" name="require_superadmin_email_2fa" <%= values?.require_superadmin_email_2fa ? 'checked' : '' %> />
+              Require Super Admin email verification at sign-in
             </label>
           </div>
 
           <button type="submit" class="btn">Save Security Settings</button>
         </form>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Google Calendar Booking</div>
+        <% const gc = googleCalendar || {}; const serviceAccountMode = gc.authMode === 'service_account'; %>
+        <div class="status-pill <%= gc.connected ? 'ok' : 'bad' %>">
+          <i class="fa-solid <%= gc.connected ? 'fa-circle-check' : 'fa-triangle-exclamation' %>"></i>
+          <%= gc.connected ? 'Connected' : (gc.status === 'reconnect_required' ? (serviceAccountMode ? 'Configuration requires attention' : 'Reconnect required') : (gc.status === 'configured' ? 'Configured — test pending' : 'Disconnected')) %>
+        </div>
+        <div class="meta" style="margin-top:10px;line-height:1.6">
+          Authentication: <strong><%= serviceAccountMode ? 'Workspace service account' : 'OAuth 2.0' %></strong><br>
+          Calendar: <strong><%= gc.calendarId || 'primary' %></strong><br>
+          <% if (serviceAccountMode) { %>
+            Service account: <strong><%= gc.serviceAccountEmail || 'not configured' %></strong><br>
+            Delegated organizer: <strong><%= gc.delegatedSubject || 'not configured' %></strong><br>
+          <% } else { %>
+            OAuth consent mode: <strong><%= gc.consentStatus || 'unknown' %></strong><br>
+          <% } %>
+          Last healthy check: <%= gc.lastSuccessAt ? new Date(gc.lastSuccessAt).toLocaleString() : 'Not yet verified' %>
+          <% if (gc.lastErrorCode) { %><br>Last error: <strong><%= gc.lastErrorCode %></strong><% } %>
+          <% if (gc.source === 'legacy_env') { %><br>Legacy environment token imported — reconnect once through OAuth to replace it.<% } %>
+        </div>
+        <% if (!serviceAccountMode && !gc.durableConsent) { %>
+          <div class="meta" style="margin-top:10px"><strong>Action required:</strong> set the Google OAuth consent screen to In production (or Internal for a Google Workspace organization) and set <code>GOOGLE_OAUTH_CONSENT_STATUS=production</code>. Testing-mode credentials are not suitable for live booking.</div>
+        <% } %>
+        <% if (serviceAccountMode && !gc.connected) { %>
+          <div class="meta" style="margin-top:10px"><strong>Service-account requirement:</strong> the configured Workspace service account must have domain-wide delegation for the Calendar scopes and impersonate the intended organizer. This avoids user refresh tokens entirely.</div>
+        <% } %>
+        <div class="actions">
+          <% if (!serviceAccountMode) { %>
+            <form action="/super-admin/settings/google-calendar/connect" method="POST" style="display:inline-flex;margin:0;">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+              <button class="btn" type="submit">
+                <i class="fa-brands fa-google"></i><%= gc.connected ? 'Reconnect Google Calendar' : 'Connect Google Calendar' %>
+              </button>
+            </form>
+          <% } %>
+          <% if (gc.configured) { %>
+            <form action="/super-admin/settings/google-calendar/test" method="POST">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+              <button type="submit" class="btn"><i class="fa-solid fa-heart-pulse"></i>Test Connection</button>
+            </form>
+          <% } %>
+          <% if (gc.connected && !serviceAccountMode) { %>
+            <form action="/super-admin/settings/google-calendar/disconnect" method="POST">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+              <button type="submit" class="btn"><i class="fa-solid fa-link-slash"></i>Disconnect</button>
+            </form>
+          <% } %>
+        </div>
+        <div class="meta" style="margin-top:10px">
+          <% if (serviceAccountMode) { %>
+            Uses Google server-to-server credentials with Workspace domain-wide delegation. No end-user refresh token is stored, so periodic OAuth refresh-token expiry/revocation is removed from the booking path. Rotate the service-account key through the deployment secret manager when required.
+          <% } else { %>
+            Uses encrypted server-side refresh credentials and the minimum Calendar event/free-busy scopes. If Google revokes the credential, booking fails closed and this page switches to “Reconnect required”.<br><strong>Production requirement:</strong> the Google Cloud OAuth consent screen must be <strong>In production</strong> (or an Internal Workspace app). Google Testing-mode refresh tokens are time-limited and are unsuitable for live booking.
+          <% } %>
+        </div>
       </div>
 
       <div class="card">

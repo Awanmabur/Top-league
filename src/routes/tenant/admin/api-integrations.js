@@ -4,6 +4,7 @@ const ctrl = require("../../../controllers/tenant/admin/api-integrationsControll
 
 router.get("/", ctrl.index);
 router.post("/", ctrl.save);
+router.get("/logs/export", ctrl.exportLogs);
 router.post("/bulk", ctrl.bulkAction);
 router.post("/:id/toggle", ctrl.toggle);
 router.post("/:id/test", ctrl.test);

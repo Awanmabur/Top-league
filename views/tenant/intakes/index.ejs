@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
@@ -438,9 +438,7 @@
   }
 
   function intakeApplicants(it){
-    const k1 = safe(it?.code);
-    const k2 = safe(it?.name);
-    return Number(applicantCountsSafe[k1] || applicantCountsSafe[k2] || 0);
+    return Number(applicantCountsSafe[String(it?._id || "")] || 0);
   }
 
   const counts = {
@@ -483,6 +481,7 @@
       term: safe(it?.term || it?.name),
       status: safe(it?.status, "draft"),
       isActive: !!it?.isActive,
+      revision: Number(it?.revision || 1),
       applicationOpenDate: fmtInputDate(it?.applicationOpenDate),
       applicationCloseDate: fmtInputDate(it?.applicationCloseDate),
       startDate: fmtInputDate(it?.startDate),
@@ -504,6 +503,7 @@
         return {
           program: pid,
           capacity: Number(x?.capacity || 0),
+          isOpen: x?.isOpen !== false,
           name: safe(pobj?.name || pobj?.className || "Section"),
           code: safe(pobj?.code)
         };
@@ -706,6 +706,7 @@
 
       <form id="intakeForm" method="POST" action="/admin/admissions/intakes/new">
         <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
+        <input type="hidden" name="revision" id="mRevision" value="">
 
         <div class="modal-body">
           <div class="form-grid">
@@ -917,11 +918,12 @@
   <form id="rowActionForm" method="POST" style="display:none;">
     <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
     <input type="hidden" name="status" id="rowActionStatus" value="">
+    <input type="hidden" name="revision" id="rowActionRevision" value="">
   </form>
 
   <form id="bulkForm" method="POST" action="/admin/admissions/intakes/bulk-status" style="display:none;">
     <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
-    <input type="hidden" name="ids" id="bulkIds">
+    <input type="hidden" name="items" id="bulkItems">
     <input type="hidden" name="status" id="bulkStatus">
   </form>
 

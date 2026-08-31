@@ -13,6 +13,14 @@ const {
   uploadBuffer,
   safeDestroy,
 } = require("../../../utils/cloudinaryUpload");
+const {
+  listCanonicalContent,
+  syncPublicProjection,
+  submitCanonicalReview,
+  validatePublicProfileInput,
+  safeColor,
+} = require("../../../services/tenant/publicPresenceService");
+const { invalidatePublicSchoolCache } = require("../../../services/platformPublicCacheService");
 
 function safeLower(v) {
   if (Array.isArray(v)) v = v[v.length - 1];
@@ -56,6 +64,80 @@ function wantsJson(req) {
 function actorUserId(req) {
   return req.user?.userId || req.user?._id || req.session?.tenantUser?.id || null;
 }
+
+async function tenantContentModels(tenantDoc) {
+  const conn = await getTenantConnection(tenantDoc.dbName);
+  return loadTenantModels(conn);
+}
+
+function plain(value) {
+  if (value && typeof value.toObject === "function") return value.toObject({ depopulate: true });
+  return JSON.parse(JSON.stringify(value || {}));
+}
+
+async function persistCanonicalProfileSnapshot(tenantDoc, models) {
+  const p = tenantDoc.settings?.profile || {};
+  const br = tenantDoc.settings?.branding || {};
+  const prefs = tenantDoc.settings?.preferences || {};
+  if (!models?.TenantProfile) return null;
+  return models.TenantProfile.findOneAndUpdate(
+    { singletonKey: "school", isDeleted: { $ne: true } },
+    { $set: {
+      schoolName: str(tenantDoc.name), shortName: str(p.shortName), tagline: str(p.tagline), category: str(p.category || p.type),
+      email: safeLower(p.contact?.email), phone: str(p.contact?.phone), altPhone: str(p.contact?.altPhone), address: str(p.contact?.addressFull), website: str(p.contact?.website),
+      logoUrl: str(br.logoUrl), faviconUrl: str(br.faviconUrl), primaryColor: str(br.primaryColor || "#0a6fbf"), secondaryColor: str(br.secondaryColor || "#0d4060"),
+      motto: str(p.motto), description: str(p.about), tenantCode: str(tenantDoc.code), planName: str(tenantDoc.planName || "Starter"),
+      subdomain: str(tenantDoc.subdomain), customDomain: str(tenantDoc.customDomain), status: str(tenantDoc.status || "Active"),
+      publicProfile: plain(p), branding: plain(br), publicPreferences: { allowPublicProfile: prefs.allowPublicProfile !== false, allowReviews: prefs.allowReviews !== false, showContactForm: prefs.showContactForm !== false, showGallery: prefs.showGallery !== false },
+      revision: Number(p.revision || 1), publishedAt: prefs.allowPublicProfile === false || p.enabled === false ? null : new Date(), updatedBy: tenantDoc.updatedBy || null,
+    }, $setOnInsert: { createdBy: tenantDoc.updatedBy || null } },
+    { upsert: true, new: true, setDefaultsOnInsert: true }
+  );
+}
+
+async function markPublicPresenceSyncPending(tenantDoc, pending) {
+  try {
+    await Tenant.updateOne({ _id: tenantDoc._id }, { $set: { "meta.publicPresenceSyncPending": !!pending } });
+    tenantDoc.meta = tenantDoc.meta || {};
+    tenantDoc.meta.publicPresenceSyncPending = !!pending;
+  } catch (err) {
+    console.error("public presence sync marker error:", err);
+  }
+}
+
+async function reconcilePublicPresenceBestEffort(tenantDoc, models, { profileSnapshot = false } = {}) {
+  try {
+    if (profileSnapshot) await persistCanonicalProfileSnapshot(tenantDoc, models);
+    const projected = await syncPublicProjection(tenantDoc, models);
+    if (!projected?.stale) await markPublicPresenceSyncPending(tenantDoc, false);
+    await invalidatePublicSchoolCache();
+    return projected;
+  } catch (err) {
+    console.error("public presence reconciliation deferred:", err);
+    await markPublicPresenceSyncPending(tenantDoc, true);
+    return null;
+  }
+}
+
+async function saveProfileWithRevision(tenantDoc, selectedSchoolUnit) {
+  const p = tenantDoc.settings.profile;
+  const expected = Math.max(1, Number(p.revision || 1));
+  p.revision = expected + 1;
+  const query = { _id: tenantDoc._id };
+  if (expected === 1) query.$or = [{ "settings.profile.revision": 1 }, { "settings.profile.revision": { $exists: false } }];
+  else query["settings.profile.revision"] = expected;
+  const set = {
+    name: tenantDoc.name, planName: tenantDoc.planName, customDomain: tenantDoc.customDomain, country: tenantDoc.country, timezone: tenantDoc.timezone, currency: tenantDoc.currency, updatedBy: tenantDoc.updatedBy,
+    "settings.profile": plain(tenantDoc.settings.profile), "settings.branding": plain(tenantDoc.settings.branding), "settings.preferences": plain(tenantDoc.settings.preferences),
+    "meta.lastProfileUpdateAt": tenantDoc.meta?.lastProfileUpdateAt || new Date(), "meta.lastPublicContentUpdateAt": tenantDoc.meta?.lastPublicContentUpdateAt || new Date(),
+  };
+  if (selectedSchoolUnit) set["settings.academics.schoolUnits"] = plain(tenantDoc.settings?.academics?.schoolUnits || []);
+  const result = await Tenant.updateOne(query, { $set: set });
+  if (!result.modifiedCount) throw new Error("School profile changed in another session. Reload and retry.");
+  const models = await tenantContentModels(tenantDoc);
+  await reconcilePublicPresenceBestEffort(tenantDoc, models, { profileSnapshot: true });
+}
+
 
 function formatDateTime(v) {
   if (!v) return "—";
@@ -545,19 +627,21 @@ module.exports = {
           : liveStats.campuses,
       };
 
-      tenantDoc.settings.profile.ratingSummary = calculateRatingSummary(
-        tenantDoc.settings.profile.reviews
-      );
+      const contentModels = await tenantContentModels(tenantDoc);
+      const canonicalContent = await listCanonicalContent(contentModels);
+      tenantDoc.settings.profile.ratingSummary = canonicalContent.summary;
+      if (tenantDoc.meta?.publicPresenceSyncPending) {
+        await reconcilePublicPresenceBestEffort(tenantDoc, contentModels, { profileSnapshot: true });
+      }
 
       if (shouldRefreshProfileStats(req)) {
         tenantDoc.markModified("settings.profile.stats");
-        tenantDoc.markModified("settings.profile.ratingSummary");
         await tenantDoc.save();
       }
 
-      const reviews = tenantDoc.settings.profile.reviews || [];
-      const pending = reviews.filter((r) => r.status === "pending");
-      const approved = reviews.filter((r) => r.status === "approved");
+      const pending = canonicalContent.reviews.filter((r) => r.status === "pending");
+      const approved = canonicalContent.reviews.filter((r) => r.status === "approved");
+      tenantDoc.settings.profile.faqs = canonicalContent.faqs;
 
       return res.render("tenant/profile/index", {
         tenant: tenantDoc.toObject(),
@@ -581,7 +665,7 @@ module.exports = {
       });
     } catch (err) {
       console.error("profile page error:", err);
-      return res.status(500).send(err.message || "Failed to load profile.");
+      return res.status(500).send("Failed to load profile.");
     }
   },
 
@@ -596,6 +680,7 @@ module.exports = {
       }
 
       const b = req.body || {};
+      validatePublicProfileInput(b);
       const p = tenantDoc.settings.profile;
       const c = p.contact;
       const s = p.socials;
@@ -719,10 +804,10 @@ module.exports = {
         b.structuredDataEnabled === "off"
       );
 
-      br.primaryColor = str(b.primaryColor || br.primaryColor || "#0a3d62");
-      br.accentColor = str(b.accentColor || br.accentColor || "#0a6fbf");
-      br.secondaryColor = str(b.secondaryColor || br.secondaryColor || "#083454");
-      br.textColor = str(b.textColor || br.textColor || "#0f172a");
+      br.primaryColor = safeColor(b.primaryColor, br.primaryColor || "#0a3d62");
+      br.accentColor = safeColor(b.accentColor, br.accentColor || "#0a6fbf");
+      br.secondaryColor = safeColor(b.secondaryColor, br.secondaryColor || "#083454");
+      br.textColor = safeColor(b.textColor, br.textColor || "#0f172a");
       br.buttonRadius = str(b.buttonRadius) ? Number(str(b.buttonRadius)) : br.buttonRadius;
 
       prefs.allowPublicProfile = !(
@@ -762,7 +847,7 @@ module.exports = {
         syncTenantSettingsBackToSchoolUnit(tenantDoc, selectedSchoolUnit);
       }
 
-      await tenantDoc.save();
+      await saveProfileWithRevision(tenantDoc, selectedSchoolUnit);
       return res.redirect(
         profileRedirectPath(selectedSchoolUnit ? String(selectedSchoolUnit._id) : "")
       );
@@ -791,15 +876,14 @@ module.exports = {
       });
 
       const oldPublicId = tenantDoc.settings.branding.logoPublicId;
-      if (oldPublicId) await safeDestroy(oldPublicId, "image");
-
       tenantDoc.settings.branding.logoUrl = result.secure_url || result.url;
       tenantDoc.settings.branding.logoPublicId = result.public_id;
       tenantDoc.meta.lastProfileUpdateAt = new Date();
-
       tenantDoc.markModified("settings.branding");
       if (selectedSchoolUnit) syncTenantSettingsBackToSchoolUnit(tenantDoc, selectedSchoolUnit);
-      await tenantDoc.save();
+      try { await saveProfileWithRevision(tenantDoc, selectedSchoolUnit); }
+      catch (err) { await safeDestroy(result.public_id, "image").catch(() => {}); throw err; }
+      if (oldPublicId && oldPublicId !== result.public_id) await safeDestroy(oldPublicId, "image");
 
       return res.json({
         ok: true,
@@ -833,15 +917,14 @@ module.exports = {
       });
 
       const oldPublicId = tenantDoc.settings.branding.faviconPublicId;
-      if (oldPublicId) await safeDestroy(oldPublicId, "image");
-
       tenantDoc.settings.branding.faviconUrl = result.secure_url || result.url;
       tenantDoc.settings.branding.faviconPublicId = result.public_id;
       tenantDoc.meta.lastProfileUpdateAt = new Date();
-
       tenantDoc.markModified("settings.branding");
       if (selectedSchoolUnit) syncTenantSettingsBackToSchoolUnit(tenantDoc, selectedSchoolUnit);
-      await tenantDoc.save();
+      try { await saveProfileWithRevision(tenantDoc, selectedSchoolUnit); }
+      catch (err) { await safeDestroy(result.public_id, "image").catch(() => {}); throw err; }
+      if (oldPublicId && oldPublicId !== result.public_id) await safeDestroy(oldPublicId, "image");
 
       return res.json({
         ok: true,
@@ -875,16 +958,15 @@ module.exports = {
       });
 
       const oldPublicId = tenantDoc.settings.branding.coverPublicId;
-      if (oldPublicId) await safeDestroy(oldPublicId, "image");
-
       tenantDoc.settings.branding.coverUrl = result.secure_url || result.url;
       tenantDoc.settings.branding.coverPublicId = result.public_id;
       tenantDoc.meta.lastProfileUpdateAt = new Date();
       tenantDoc.meta.lastPublicContentUpdateAt = new Date();
-
       tenantDoc.markModified("settings.branding");
       if (selectedSchoolUnit) syncTenantSettingsBackToSchoolUnit(tenantDoc, selectedSchoolUnit);
-      await tenantDoc.save();
+      try { await saveProfileWithRevision(tenantDoc, selectedSchoolUnit); }
+      catch (err) { await safeDestroy(result.public_id, "image").catch(() => {}); throw err; }
+      if (oldPublicId && oldPublicId !== result.public_id) await safeDestroy(oldPublicId, "image");
 
       return res.json({
         ok: true,
@@ -925,6 +1007,7 @@ module.exports = {
       normalizeGallery(p);
 
       const folder = `classic-academy/${tenantDoc.code}/gallery`;
+      const uploadedPublicIds = [];
 
       for (const f of files) {
         if (!f || !f.buffer) {
@@ -945,6 +1028,7 @@ module.exports = {
           resource_type: "image",
         });
 
+        uploadedPublicIds.push(result.public_id);
         p.gallery.push({
           _id: new mongoose.Types.ObjectId(),
           url: result.secure_url || result.url,
@@ -959,7 +1043,8 @@ module.exports = {
       tenantDoc.meta.lastPublicContentUpdateAt = new Date();
       tenantDoc.markModified("settings.profile.gallery");
       if (selectedSchoolUnit) syncTenantSettingsBackToSchoolUnit(tenantDoc, selectedSchoolUnit);
-      await tenantDoc.save();
+      try { await saveProfileWithRevision(tenantDoc, selectedSchoolUnit); }
+      catch (err) { await Promise.allSettled(uploadedPublicIds.map((id) => safeDestroy(id, "image"))); throw err; }
 
       return res.json({
         ok: true,
@@ -1012,7 +1097,7 @@ module.exports = {
       tenantDoc.meta.lastPublicContentUpdateAt = new Date();
       tenantDoc.markModified("settings.profile.gallery");
       if (selectedSchoolUnit) syncTenantSettingsBackToSchoolUnit(tenantDoc, selectedSchoolUnit);
-      await tenantDoc.save();
+      await saveProfileWithRevision(tenantDoc, selectedSchoolUnit);
 
       if (publicId) await safeDestroy(publicId, "image");
 
@@ -1029,351 +1114,99 @@ module.exports = {
   addFaq: async (req, res) => {
     try {
       const tenantDoc = await getTenantFromReq(req);
-      const selectedSchoolUnit = getSelectedSchoolUnit(tenantDoc, req);
-      if (selectedSchoolUnit) {
-        seedSchoolUnitFromTenantIfEmpty(tenantDoc, selectedSchoolUnit);
-        mirrorSchoolUnitToTenantSettings(tenantDoc, selectedSchoolUnit);
-      }
-
+      const models = await tenantContentModels(tenantDoc);
       const q = str(req.body.q).slice(0, 160);
       const a = str(req.body.a).slice(0, 900);
-
-      if (!q || !a) {
-        return res.status(400).json({
-          ok: false,
-          message: "Question and answer are required.",
-        });
-      }
-
-      tenantDoc.settings.profile.faqs.push({
-        q,
-        a,
-        sort: tenantDoc.settings.profile.faqs.length,
-      });
-
-      tenantDoc.meta.lastPublicContentUpdateAt = new Date();
-      tenantDoc.markModified("settings.profile.faqs");
-      if (selectedSchoolUnit) syncTenantSettingsBackToSchoolUnit(tenantDoc, selectedSchoolUnit);
-      await tenantDoc.save();
-
-      return res.json({ ok: true });
-    } catch (err) {
-      console.error("addFaq error:", err);
-      return res.status(500).json({
-        ok: false,
-        message: err.message || "Failed to add FAQ.",
-      });
-    }
+      if (!q || !a) return res.status(400).json({ ok: false, message: "Question and answer are required." });
+      const count = await models.SchoolFAQ.countDocuments({ isDeleted: { $ne: true } });
+      const row = await models.SchoolFAQ.create({ q, a, order: count, isPublished: req.body.isPublished !== false && req.body.isPublished !== "false", createdBy: actorUserId(req), updatedBy: actorUserId(req), revision: 1 });
+      await reconcilePublicPresenceBestEffort(tenantDoc, models);
+      return res.json({ ok: true, faq: row });
+    } catch (err) { return res.status(400).json({ ok: false, message: err.message || "Failed to add FAQ." }); }
   },
 
   editFaq: async (req, res) => {
     try {
       const tenantDoc = await getTenantFromReq(req);
-      const selectedSchoolUnit = getSelectedSchoolUnit(tenantDoc, req);
-      if (selectedSchoolUnit) {
-        seedSchoolUnitFromTenantIfEmpty(tenantDoc, selectedSchoolUnit);
-        mirrorSchoolUnitToTenantSettings(tenantDoc, selectedSchoolUnit);
-      }
-
-      const faqId = req.params.faqId;
-
-      if (!mongoose.isValidObjectId(faqId)) {
-        return res.status(400).json({ ok: false, message: "Invalid FAQ id." });
-      }
-
-      const q = str(req.body.q).slice(0, 160);
-      const a = str(req.body.a).slice(0, 900);
-
-      if (!q || !a) {
-        return res.status(400).json({
-          ok: false,
-          message: "Question and answer are required.",
-        });
-      }
-
-      const item = tenantDoc.settings.profile.faqs.id(faqId);
-      if (!item) {
-        return res.status(404).json({ ok: false, message: "FAQ not found." });
-      }
-
-      item.q = q;
-      item.a = a;
-
-      tenantDoc.meta.lastPublicContentUpdateAt = new Date();
-      tenantDoc.markModified("settings.profile.faqs");
-      if (selectedSchoolUnit) syncTenantSettingsBackToSchoolUnit(tenantDoc, selectedSchoolUnit);
-      await tenantDoc.save();
-
+      const models = await tenantContentModels(tenantDoc);
+      if (!mongoose.isValidObjectId(req.params.faqId)) return res.status(400).json({ ok: false, message: "Invalid FAQ id." });
+      const q = str(req.body.q).slice(0, 160); const a = str(req.body.a).slice(0, 900);
+      if (!q || !a) return res.status(400).json({ ok: false, message: "Question and answer are required." });
+      const current = await models.SchoolFAQ.findOne({ _id: req.params.faqId, isDeleted: { $ne: true } }).lean();
+      if (!current) return res.status(404).json({ ok: false, message: "FAQ not found." });
+      const result = await models.SchoolFAQ.updateOne({ _id: current._id, revision: Number(current.revision || 1), isDeleted: { $ne: true } }, { $set: { q, a, isPublished: req.body.isPublished === undefined ? current.isPublished !== false : !(req.body.isPublished === false || req.body.isPublished === "false"), updatedBy: actorUserId(req) }, $inc: { revision: 1 } });
+      if (!result.modifiedCount) return res.status(409).json({ ok: false, message: "FAQ changed in another session. Reload and retry." });
+      await reconcilePublicPresenceBestEffort(tenantDoc, models);
       return res.json({ ok: true });
-    } catch (err) {
-      console.error("editFaq error:", err);
-      return res.status(500).json({
-        ok: false,
-        message: err.message || "Failed to edit FAQ.",
-      });
-    }
+    } catch (err) { return res.status(400).json({ ok: false, message: err.message || "Failed to edit FAQ." }); }
   },
 
   deleteFaq: async (req, res) => {
     try {
-      const tenantDoc = await getTenantFromReq(req);
-      const selectedSchoolUnit = getSelectedSchoolUnit(tenantDoc, req);
-      if (selectedSchoolUnit) {
-        seedSchoolUnitFromTenantIfEmpty(tenantDoc, selectedSchoolUnit);
-        mirrorSchoolUnitToTenantSettings(tenantDoc, selectedSchoolUnit);
-      }
-
-      const faqId = req.params.faqId;
-
-      if (!mongoose.isValidObjectId(faqId)) {
-        return res.status(400).json({ ok: false, message: "Invalid FAQ id." });
-      }
-
-      const item = tenantDoc.settings.profile.faqs.id(faqId);
-      if (!item) {
-        return res.status(404).json({ ok: false, message: "FAQ not found." });
-      }
-
-      item.deleteOne();
-
-      tenantDoc.meta.lastPublicContentUpdateAt = new Date();
-      tenantDoc.markModified("settings.profile.faqs");
-      if (selectedSchoolUnit) syncTenantSettingsBackToSchoolUnit(tenantDoc, selectedSchoolUnit);
-      await tenantDoc.save();
-
-      return res.json({ ok: true });
-    } catch (err) {
-      console.error("deleteFaq error:", err);
-      return res.status(500).json({
-        ok: false,
-        message: err.message || "Failed to delete FAQ.",
-      });
-    }
+      const tenantDoc = await getTenantFromReq(req); const models = await tenantContentModels(tenantDoc);
+      const current = await models.SchoolFAQ.findOne({ _id: req.params.faqId, isDeleted: { $ne: true } }).lean();
+      if (!current) return res.status(404).json({ ok: false, message: "FAQ not found." });
+      const result = await models.SchoolFAQ.updateOne({ _id: current._id, revision: Number(current.revision || 1), isDeleted: { $ne: true } }, { $set: { isDeleted: true, deletedAt: new Date(), isPublished: false, updatedBy: actorUserId(req) }, $inc: { revision: 1 } });
+      if (!result.modifiedCount) return res.status(409).json({ ok: false, message: "FAQ changed in another session. Reload and retry." });
+      await reconcilePublicPresenceBestEffort(tenantDoc, models); return res.json({ ok: true });
+    } catch (err) { return res.status(400).json({ ok: false, message: err.message || "Failed to delete FAQ." }); }
   },
 
   approveReview: async (req, res) => {
     try {
-      const tenantDoc = await getTenantFromReq(req);
-      const selectedSchoolUnit = getSelectedSchoolUnit(tenantDoc, req);
-      if (selectedSchoolUnit) {
-        seedSchoolUnitFromTenantIfEmpty(tenantDoc, selectedSchoolUnit);
-        mirrorSchoolUnitToTenantSettings(tenantDoc, selectedSchoolUnit);
-      }
-
-      const reviewId = req.params.reviewId;
-
-      const review = tenantDoc.settings.profile.reviews.id(reviewId);
-      if (!review) {
-        return res.status(404).json({ ok: false, message: "Review not found." });
-      }
-
-      review.status = "approved";
-      review.approvedAt = new Date();
-
-      tenantDoc.settings.profile.ratingSummary = calculateRatingSummary(
-        tenantDoc.settings.profile.reviews
-      );
-      tenantDoc.meta.lastPublicContentUpdateAt = new Date();
-
-      tenantDoc.markModified("settings.profile.reviews");
-      tenantDoc.markModified("settings.profile.ratingSummary");
-      if (selectedSchoolUnit) syncTenantSettingsBackToSchoolUnit(tenantDoc, selectedSchoolUnit);
-      await tenantDoc.save();
-
-      if (wantsJson(req)) return res.json({ ok: true });
-      return res.redirect("/admin/profile?success=1");
-    } catch (err) {
-      console.error("approveReview error:", err);
-      if (wantsJson(req)) {
-        return res.status(500).json({
-          ok: false,
-          message: err.message || "Failed to approve review.",
-        });
-      }
-      return res.status(500).send(err.message || "Failed to approve review.");
-    }
+      const tenantDoc = await getTenantFromReq(req); const models = await tenantContentModels(tenantDoc);
+      const current = await models.SchoolReview.findOne({ _id: req.params.reviewId, isDeleted: { $ne: true } }).lean();
+      if (!current) return res.status(404).json({ ok: false, message: "Review not found." });
+      const result = await models.SchoolReview.updateOne({ _id: current._id, revision: Number(current.revision || 1), isDeleted: { $ne: true } }, { $set: { status: "approved", approvedAt: new Date(), reviewedAt: new Date(), reviewedBy: actorUserId(req), rejectedReason: "" }, $push: { moderationHistory: { action: "approved", at: new Date(), by: actorUserId(req), reason: "" } }, $inc: { revision: 1 } });
+      if (!result.modifiedCount) return res.status(409).json({ ok: false, message: "Review changed in another session. Reload and retry." });
+      await reconcilePublicPresenceBestEffort(tenantDoc, models); if (wantsJson(req)) return res.json({ ok: true }); return res.redirect("/admin/profile?success=1");
+    } catch (err) { if (wantsJson(req)) return res.status(400).json({ ok: false, message: err.message || "Failed to approve review." }); return res.status(400).send(err.message || "Failed to approve review."); }
   },
 
   rejectReview: async (req, res) => {
     try {
-      const tenantDoc = await getTenantFromReq(req);
-      const selectedSchoolUnit = getSelectedSchoolUnit(tenantDoc, req);
-      if (selectedSchoolUnit) {
-        seedSchoolUnitFromTenantIfEmpty(tenantDoc, selectedSchoolUnit);
-        mirrorSchoolUnitToTenantSettings(tenantDoc, selectedSchoolUnit);
-      }
-
-      const reviewId = req.params.reviewId;
-
-      const review = tenantDoc.settings.profile.reviews.id(reviewId);
-      if (!review) {
-        return res.status(404).json({ ok: false, message: "Review not found." });
-      }
-
-      review.status = "rejected";
-
-      tenantDoc.settings.profile.ratingSummary = calculateRatingSummary(
-        tenantDoc.settings.profile.reviews
-      );
-      tenantDoc.meta.lastPublicContentUpdateAt = new Date();
-
-      tenantDoc.markModified("settings.profile.reviews");
-      tenantDoc.markModified("settings.profile.ratingSummary");
-      if (selectedSchoolUnit) syncTenantSettingsBackToSchoolUnit(tenantDoc, selectedSchoolUnit);
-      await tenantDoc.save();
-
-      if (wantsJson(req)) return res.json({ ok: true });
-      return res.redirect("/admin/profile?success=1");
-    } catch (err) {
-      console.error("rejectReview error:", err);
-      if (wantsJson(req)) {
-        return res.status(500).json({
-          ok: false,
-          message: err.message || "Failed to reject review.",
-        });
-      }
-      return res.status(500).send(err.message || "Failed to reject review.");
-    }
+      const tenantDoc = await getTenantFromReq(req); const models = await tenantContentModels(tenantDoc);
+      const current = await models.SchoolReview.findOne({ _id: req.params.reviewId, isDeleted: { $ne: true } }).lean();
+      if (!current) return res.status(404).json({ ok: false, message: "Review not found." });
+      const result = await models.SchoolReview.updateOne({ _id: current._id, revision: Number(current.revision || 1), isDeleted: { $ne: true } }, { $set: { status: "rejected", featured: false, approvedAt: null, reviewedAt: new Date(), reviewedBy: actorUserId(req), rejectedReason: str(req.body.reason).slice(0, 500) }, $push: { moderationHistory: { action: "rejected", at: new Date(), by: actorUserId(req), reason: str(req.body.reason).slice(0, 500) } }, $inc: { revision: 1 } });
+      if (!result.modifiedCount) return res.status(409).json({ ok: false, message: "Review changed in another session. Reload and retry." });
+      await reconcilePublicPresenceBestEffort(tenantDoc, models); if (wantsJson(req)) return res.json({ ok: true }); return res.redirect("/admin/profile?success=1");
+    } catch (err) { if (wantsJson(req)) return res.status(400).json({ ok: false, message: err.message || "Failed to reject review." }); return res.status(400).send(err.message || "Failed to reject review."); }
   },
 
   toggleFeaturedReview: async (req, res) => {
     try {
-      const tenantDoc = await getTenantFromReq(req);
-      const selectedSchoolUnit = getSelectedSchoolUnit(tenantDoc, req);
-      if (selectedSchoolUnit) {
-        seedSchoolUnitFromTenantIfEmpty(tenantDoc, selectedSchoolUnit);
-        mirrorSchoolUnitToTenantSettings(tenantDoc, selectedSchoolUnit);
-      }
-
-      const reviewId = req.params.reviewId;
-
-      const review = tenantDoc.settings.profile.reviews.id(reviewId);
-      if (!review) {
-        return res.status(404).json({ ok: false, message: "Review not found." });
-      }
-
-      review.featured = !review.featured;
-      tenantDoc.meta.lastPublicContentUpdateAt = new Date();
-
-      tenantDoc.markModified("settings.profile.reviews");
-      if (selectedSchoolUnit) syncTenantSettingsBackToSchoolUnit(tenantDoc, selectedSchoolUnit);
-      await tenantDoc.save();
-
-      if (wantsJson(req)) return res.json({ ok: true });
-      return res.redirect("/admin/profile?success=1");
-    } catch (err) {
-      console.error("toggleFeaturedReview error:", err);
-      if (wantsJson(req)) {
-        return res.status(500).json({
-          ok: false,
-          message: err.message || "Failed to update featured review.",
-        });
-      }
-      return res.status(500).send(err.message || "Failed to update featured review.");
-    }
+      const tenantDoc = await getTenantFromReq(req); const models = await tenantContentModels(tenantDoc);
+      const current = await models.SchoolReview.findOne({ _id: req.params.reviewId, isDeleted: { $ne: true } }).lean();
+      if (!current) return res.status(404).json({ ok: false, message: "Review not found." });
+      if (current.status !== "approved") return res.status(409).json({ ok: false, message: "Only approved reviews can be featured." });
+      const result = await models.SchoolReview.updateOne({ _id: current._id, revision: Number(current.revision || 1), status: "approved", isDeleted: { $ne: true } }, { $set: { featured: !current.featured, reviewedAt: new Date(), reviewedBy: actorUserId(req) }, $push: { moderationHistory: { action: current.featured ? "unfeatured" : "featured", at: new Date(), by: actorUserId(req), reason: "" } }, $inc: { revision: 1 } });
+      if (!result.modifiedCount) return res.status(409).json({ ok: false, message: "Review changed in another session. Reload and retry." });
+      await reconcilePublicPresenceBestEffort(tenantDoc, models); if (wantsJson(req)) return res.json({ ok: true }); return res.redirect("/admin/profile?success=1");
+    } catch (err) { if (wantsJson(req)) return res.status(400).json({ ok: false, message: err.message || "Failed to update featured review." }); return res.status(400).send(err.message || "Failed to update featured review."); }
   },
 
   deleteReview: async (req, res) => {
     try {
-      const tenantDoc = await getTenantFromReq(req);
-      const selectedSchoolUnit = getSelectedSchoolUnit(tenantDoc, req);
-      if (selectedSchoolUnit) {
-        seedSchoolUnitFromTenantIfEmpty(tenantDoc, selectedSchoolUnit);
-        mirrorSchoolUnitToTenantSettings(tenantDoc, selectedSchoolUnit);
-      }
-
-      const reviewId = req.params.reviewId;
-
-      const review = tenantDoc.settings.profile.reviews.id(reviewId);
-      if (!review) {
-        return res.status(404).json({ ok: false, message: "Review not found." });
-      }
-
-      review.deleteOne();
-
-      tenantDoc.settings.profile.ratingSummary = calculateRatingSummary(
-        tenantDoc.settings.profile.reviews
-      );
-      tenantDoc.meta.lastPublicContentUpdateAt = new Date();
-
-      tenantDoc.markModified("settings.profile.reviews");
-      tenantDoc.markModified("settings.profile.ratingSummary");
-      if (selectedSchoolUnit) syncTenantSettingsBackToSchoolUnit(tenantDoc, selectedSchoolUnit);
-      await tenantDoc.save();
-
-      if (wantsJson(req)) return res.json({ ok: true });
-      return res.redirect("/admin/profile?success=1");
-    } catch (err) {
-      console.error("deleteReview error:", err);
-      if (wantsJson(req)) {
-        return res.status(500).json({
-          ok: false,
-          message: err.message || "Failed to delete review.",
-        });
-      }
-      return res.status(500).send(err.message || "Failed to delete review.");
-    }
+      const tenantDoc = await getTenantFromReq(req); const models = await tenantContentModels(tenantDoc);
+      const current = await models.SchoolReview.findOne({ _id: req.params.reviewId, isDeleted: { $ne: true } }).lean();
+      if (!current) return res.status(404).json({ ok: false, message: "Review not found." });
+      const result = await models.SchoolReview.updateOne({ _id: current._id, revision: Number(current.revision || 1), isDeleted: { $ne: true } }, { $set: { isDeleted: true, deletedAt: new Date(), featured: false, status: "rejected", reviewedAt: new Date(), reviewedBy: actorUserId(req) }, $push: { moderationHistory: { action: "deleted", at: new Date(), by: actorUserId(req), reason: "" } }, $inc: { revision: 1 } });
+      if (!result.modifiedCount) return res.status(409).json({ ok: false, message: "Review changed in another session. Reload and retry." });
+      await reconcilePublicPresenceBestEffort(tenantDoc, models); if (wantsJson(req)) return res.json({ ok: true }); return res.redirect("/admin/profile?success=1");
+    } catch (err) { if (wantsJson(req)) return res.status(400).json({ ok: false, message: err.message || "Failed to delete review." }); return res.status(400).send(err.message || "Failed to delete review."); }
   },
 
   submitPublicReview: async (req, res) => {
     try {
       const code = safeLower(req.params.code);
-
-      const tenantDoc = await Tenant.findOne({
-        code,
-        isDeleted: { $ne: true },
-      });
-
-      if (!tenantDoc) {
-        return res.status(404).json({ ok: false, message: "School not found." });
-      }
-
-      ensureTenantShape(tenantDoc);
-
-      const name = str(req.body.name).slice(0, 60);
-      const email = safeLower(req.body.email).slice(0, 120);
-      const rating = Number(req.body.rating);
-      const title = str(req.body.title).slice(0, 80);
-      const message = str(req.body.message).slice(0, 1200);
-
-      if (!name) {
-        return res.status(400).json({ ok: false, message: "Name is required." });
-      }
-
-      if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
-        return res.status(400).json({
-          ok: false,
-          message: "Rating must be between 1 and 5.",
-        });
-      }
-
-      tenantDoc.settings.profile.reviews.push({
-        name,
-        email,
-        rating,
-        title,
-        message,
-        status: "pending",
-        featured: false,
-        ipHash: ipHash(req.ip),
-        userAgent: String(req.get("user-agent") || "").slice(0, 200),
-        createdAt: new Date(),
-      });
-
-      tenantDoc.meta.lastPublicContentUpdateAt = new Date();
-      tenantDoc.markModified("settings.profile.reviews");
-      await tenantDoc.save();
-
-      return res.json({
-        ok: true,
-        message: "Thanks! Review submitted for approval.",
-      });
-    } catch (err) {
-      console.error("submitPublicReview error:", err);
-      return res.status(500).json({
-        ok: false,
-        message: "Failed to submit review.",
-      });
-    }
+      const tenantDoc = await Tenant.findOne({ code, isDeleted: { $ne: true } });
+      if (!tenantDoc) return res.status(404).json({ ok: false, message: "School not found." });
+      if (tenantDoc.settings?.preferences?.allowReviews === false || tenantDoc.settings?.profile?.enabled === false) return res.status(403).json({ ok: false, message: "Reviews are not enabled for this school." });
+      const models = await tenantContentModels(tenantDoc);
+      await submitCanonicalReview({ models, payload: req.body, ip: req.ip, userAgent: req.get("user-agent") || "" });
+      return res.status(202).json({ ok: true, message: "Review submitted and is pending moderation." });
+    } catch (err) { return res.status(/already submitted/i.test(err.message || "") ? 429 : 400).json({ ok: false, message: err.message || "Failed to submit review." }); }
   },
+
 };

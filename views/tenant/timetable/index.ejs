@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .input,.select,.textarea,.view-input{padding:10px 12px;border-radius:12px;border:1px solid rgba(13,64,96,.16);background:#fff;outline:none}
@@ -214,8 +214,8 @@
 
             <select class="select" name="status">
               <option value="">All Status</option>
-              <option value="active" <%= query?.status === 'active' ? 'selected' : '' %>>Active</option>
-              <option value="inactive" <%= query?.status === 'inactive' ? 'selected' : '' %>>Inactive</option>
+              <option value="active" <%= query?.status === 'active' ? 'selected' : '' %>>Published</option>
+              <option value="inactive" <%= query?.status === 'inactive' ? 'selected' : '' %>>Draft</option>
               <option value="archived" <%= query?.status === 'archived' ? 'selected' : '' %>>Archived</option>
             </select>
           </div>
@@ -408,6 +408,7 @@
 
       <form id="entryForm" method="POST" action="/admin/timetable" data-academic-selector>
         <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
+        <input type="hidden" name="revision" id="mRevision" value="1">
 
         <div class="modal-body">
           <div class="form-grid">
@@ -444,7 +445,7 @@
               <select class="select" id="mTeacher" name="teacher">
                 <option value="">- Not Assigned -</option>
                 <% (staffList || []).forEach(function(s){ %>
-                  <option value="<%= String(s._id) %>"><%= s.fullName || s.name || 'Staff' %><%= s.role ? (' - ' + s.role) : '' %></option>
+                  <option value="<%= String(s._id) %>"><%= s.fullName || [s.firstName, s.lastName].filter(Boolean).join(' ') || s.name || 'Staff' %><%= (s.jobTitle || s.role) ? (' - ' + (s.jobTitle || s.role)) : '' %></option>
                 <% }) %>
               </select>
             </div>
@@ -504,9 +505,8 @@
             <div class="field">
               <label>Status</label>
               <select class="select" id="mStatus" name="status">
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="archived">Archived</option>
+                <option value="inactive">Draft</option>
+                <option value="active">Published</option>
               </select>
             </div>
 
@@ -517,7 +517,7 @@
 
             <div class="field">
               <label>Conflict Rules</label>
-              <div class="note">Class, teacher and room conflicts are blocked within the same academic year and term unless archived.</div>
+              <div class="note">Published class, teacher and room conflicts are blocked within the same academic year and term. Odd and even week patterns may share a time when they do not overlap.</div>
             </div>
           </div>
 
@@ -657,6 +657,7 @@
   <form id="rowActionForm" method="POST" style="display:none;">
     <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
     <input type="hidden" name="status" id="rowStatusValue">
+    <input type="hidden" name="revision" id="rowRevisionValue">
   </form>
 
   <form id="bulkForm" method="POST" action="/admin/timetable/bulk" style="display:none;">
@@ -665,40 +666,13 @@
     <input type="hidden" name="ids" id="bulkIdsValue">
   </form>
 
-  <textarea id="entriesData" class="json-data" aria-hidden="true"><%- JSON.stringify((entries || []).map(function(e){
-    return {
-      id: String(e._id || ''),
-      academicYear: e.academicYear || '',
-      term: Number(e.term ?? 1),
-      classId: e.classGroup?._id ? String(e.classGroup._id) : '',
-      className: e.classGroup?.name || '',
-      sectionId: e.sectionId?._id ? String(e.sectionId._id) : String(e.sectionId || ''),
-      sectionName: e.sectionName || e.sectionId?.name || '',
-      streamId: e.streamId?._id ? String(e.streamId._id) : String(e.streamId || ''),
-      streamName: e.streamName || e.streamId?.name || '',
-      subjectId: e.subject?._id ? String(e.subject._id) : '',
-      subjectCode: e.subject?.code || '',
-      subjectTitle: e.subject?.title || '',
-      teacherId: e.teacher?._id ? String(e.teacher._id) : '',
-      teacherName: e.teacher?.fullName || e.teacher?.name || '',
-      dayOfWeek: e.dayOfWeek || '',
-      startTime: e.startTime || '',
-      endTime: e.endTime || '',
-      startMinutes: Number(e.startMinutes || 0),
-      endMinutes: Number(e.endMinutes || 0),
-      room: e.room || '',
-      campus: e.campus || '',
-      weekPattern: e.weekPattern || 'all',
-      status: e.status || 'active',
-      note: e.note || ''
-    };
-  })) %></textarea>
+  <textarea id="entriesData" class="json-data" aria-hidden="true"><%- JSON.stringify(entriesData || []).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
 
   <script src="/js/navbar.js"></script>
-  <textarea id="classesData" class="json-data" aria-hidden="true"><%- JSON.stringify(classes || []) %></textarea>
-  <textarea id="sectionsData" class="json-data" aria-hidden="true"><%- JSON.stringify(sections || []) %></textarea>
-  <textarea id="streamsData" class="json-data" aria-hidden="true"><%- JSON.stringify(streams || []) %></textarea>
-  <textarea id="subjectOptionsData" class="json-data" aria-hidden="true"><%- JSON.stringify(subjectOptions || subjects || []) %></textarea>
+  <textarea id="classesData" class="json-data" aria-hidden="true"><%- JSON.stringify(classes || []).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
+  <textarea id="sectionsData" class="json-data" aria-hidden="true"><%- JSON.stringify(sections || []).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
+  <textarea id="streamsData" class="json-data" aria-hidden="true"><%- JSON.stringify(streams || []).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
+  <textarea id="subjectOptionsData" class="json-data" aria-hidden="true"><%- JSON.stringify(subjectOptions || subjects || []).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
   <script src="/js/academic-selector.js"></script>
   <script src="/js/timetable.js"></script>
 </body>

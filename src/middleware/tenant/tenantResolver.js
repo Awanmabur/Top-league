@@ -1,13 +1,21 @@
 // src/middleware/tenant/tenantResolver.js
 const { platformConnection, getTenantConnection, boolEnv } = require("../../config/db");
 const TenantFactory = require("../../models/platform/Tenant");
+const SubscriptionFactory = require("../../models/platform/PlatformSubscription");
 const loadTenantModels = require("../../models/tenant/loadModels");
+const { isSubscriptionOperational } = require("../../services/platformSubscriptionService");
+const {
+  getAccessBundle,
+  setAccessBundle,
+} = require("../../services/platformTenantAccessCache");
 
 const Tenant = TenantFactory(platformConnection);
+const PlatformSubscription = SubscriptionFactory(platformConnection);
 
 function getHost(req) {
-  const raw = req.headers["x-forwarded-host"] || req.headers.host || "";
-  return raw.split(",")[0].trim().split(":")[0].toLowerCase();
+  // Express only applies forwarded-host semantics according to the configured
+  // trust-proxy chain. Avoid trusting X-Forwarded-Host directly here.
+  return String(req.hostname || "").trim().toLowerCase();
 }
 
 function isPlatformHost(host, baseDomain) {
@@ -27,28 +35,6 @@ function extractSubdomain(host, baseDomain) {
   if (host.endsWith(".localhost")) return host.replace(".localhost", "");
   if (baseDomain && host.endsWith(`.${baseDomain}`)) return host.replace(`.${baseDomain}`, "");
   return null;
-}
-
-const TENANT_LOOKUP_CACHE = new Map();
-const TENANT_TTL_MS = 5 * 60 * 1000;
-
-function cacheGet(key) {
-  const hit = TENANT_LOOKUP_CACHE.get(key);
-  if (!hit) return null;
-
-  if (Date.now() > hit.exp) {
-    TENANT_LOOKUP_CACHE.delete(key);
-    return null;
-  }
-
-  return hit.tenant;
-}
-
-function cacheSet(key, tenant) {
-  TENANT_LOOKUP_CACHE.set(key, {
-    tenant,
-    exp: Date.now() + TENANT_TTL_MS,
-  });
 }
 
 function getModelsForConn(conn) {
@@ -78,6 +64,32 @@ function isMongoSrvTimeout(err) {
     err.code === "ETIMEOUT" &&
     String(err.syscall || "").toLowerCase().includes("querysrv")
   );
+}
+
+async function loadTenantWithSubscription(match) {
+  const rows = await Tenant.aggregate([
+    { $match: { ...match, isDeleted: { $ne: true } } },
+    { $limit: 1 },
+    {
+      $lookup: {
+        from: PlatformSubscription.collection.name,
+        let: { tenantId: "$_id" },
+        pipeline: [
+          { $match: { $expr: { $eq: ["$tenantId", "$$tenantId"] }, isDeleted: { $ne: true } } },
+          { $sort: { updatedAt: -1 } },
+          { $limit: 1 },
+        ],
+        as: "__platformSubscription",
+      },
+    },
+    { $set: { __platformSubscription: { $first: "$__platformSubscription" } } },
+  ]);
+
+  const row = rows[0];
+  if (!row) return null;
+  const subscription = row.__platformSubscription || null;
+  delete row.__platformSubscription;
+  return { tenant: row, subscription };
 }
 
 module.exports = async function tenantResolver(req, res, next) {
@@ -116,57 +128,59 @@ module.exports = async function tenantResolver(req, res, next) {
       return next();
     }
 
-    let tenant = null;
+    let lookupKey = host;
+    let lookupKind = "host";
+    let match;
+    let notFoundMessage;
 
     if (isLocalTenantHost || (baseDomain && host.endsWith(`.${baseDomain}`))) {
       const subdomain = extractSubdomain(host, baseDomain);
-
-      if (!subdomain) {
-        return res.status(404).send(`Unknown host: ${host}`);
-      }
-
-      const cacheStartedAt = Date.now();
-      tenant = cacheGet(subdomain);
-      perf("lookup cache get", cacheStartedAt);
-
-      if (!tenant) {
-        const dbLookupStartedAt = Date.now();
-        tenant = await Tenant.findOne({
-          $or: [{ code: subdomain }, { subdomain: host }, { subdomain: subdomain }],
-          isDeleted: { $ne: true },
-        }).lean();
-        perf("tenant db lookup", dbLookupStartedAt);
-
-        if (tenant) {
-          cacheSet(subdomain, tenant);
-        }
-      }
-
-      if (!tenant) {
-        return res.status(404).send(`Tenant '${subdomain}' not found`);
-      }
+      if (!subdomain) return res.status(404).send(`Unknown host: ${host}`);
+      lookupKey = subdomain;
+      lookupKind = "sub";
+      match = { $or: [{ code: subdomain }, { subdomain: host }, { subdomain }] };
+      notFoundMessage = `Tenant '${subdomain}' not found`;
     } else {
-      const cacheStartedAt = Date.now();
-      tenant = cacheGet(host);
-      perf("custom-domain cache get", cacheStartedAt);
-
-      if (!tenant) {
-        const dbLookupStartedAt = Date.now();
-        tenant = await Tenant.findOne({
-          customDomain: host,
-          isDeleted: { $ne: true },
-        }).lean();
-        perf("custom-domain db lookup", dbLookupStartedAt);
-
-        if (tenant) {
-          cacheSet(host, tenant);
-        }
-      }
-
-      if (!tenant) {
-        return res.status(404).send(`Tenant for host '${host}' not found`);
-      }
+      match = { customDomain: host };
+      notFoundMessage = `Tenant for host '${host}' not found`;
     }
+
+    const cacheStartedAt = Date.now();
+    let resolved = await getAccessBundle(lookupKind, lookupKey);
+    perf("redis route cache", cacheStartedAt);
+
+    if (!resolved) {
+      const dbLookupStartedAt = Date.now();
+      resolved = await loadTenantWithSubscription(match);
+      perf("tenant+subscription aggregate", dbLookupStartedAt);
+      if (resolved) void setAccessBundle(lookupKind, lookupKey, resolved.tenant, resolved.subscription);
+    }
+
+    if (!resolved?.tenant) return res.status(404).send(notFoundMessage);
+
+    const tenant = resolved.tenant;
+    const subscription = resolved.subscription || null;
+
+    if (!subscription && isProd) {
+      return res.status(503).send("Tenant subscription is not provisioned.");
+    }
+    if (subscription?.migrationQuarantined) {
+      return res.status(403).send("Tenant subscription requires platform review.");
+    }
+
+    const legacyTrialExpired =
+      !subscription &&
+      tenant.status === "trial" &&
+      tenant.trialEndsAt &&
+      new Date(tenant.trialEndsAt) <= new Date();
+
+    const operational = subscription
+      ? isSubscriptionOperational(subscription)
+      : ["trial", "active"].includes(String(tenant.status || "").toLowerCase()) && !legacyTrialExpired;
+
+    if (!operational) return res.status(403).send("This school subscription is not active.");
+
+    req.platformSubscription = subscription;
 
     if (isPublicProfileRead(req)) {
       req.isPlatform = false;
@@ -177,9 +191,7 @@ module.exports = async function tenantResolver(req, res, next) {
       return next();
     }
 
-    if (!tenant.dbName) {
-      return res.status(500).send("Tenant missing dbName");
-    }
+    if (!tenant.dbName) return res.status(500).send("Tenant missing dbName");
 
     const connStartedAt = Date.now();
     const tenantConn = await getTenantConnection(tenant.dbName);
@@ -191,7 +203,6 @@ module.exports = async function tenantResolver(req, res, next) {
     req.tenantConnection = tenantConn;
     req.models = getModelsForConn(tenantConn);
     perf("load tenant models", modelsStartedAt);
-
     perf("total", totalStartedAt);
     return next();
   } catch (e) {
@@ -199,11 +210,7 @@ module.exports = async function tenantResolver(req, res, next) {
 
     if (isMongoSrvTimeout(e)) {
       const message = "Tenant database is temporarily unavailable. Please try again.";
-
-      if (wantsJson(req)) {
-        return res.status(503).json({ message });
-      }
-
+      if (wantsJson(req)) return res.status(503).json({ message });
       return res.status(503).render(
         "platform/public/500",
         { message },
@@ -213,7 +220,8 @@ module.exports = async function tenantResolver(req, res, next) {
         },
       );
     }
-
     return next(e);
   }
 };
+
+module.exports.loadTenantWithSubscription = loadTenantWithSubscription;

@@ -6,6 +6,7 @@ const ctrl = require("../../../controllers/tenant/admin/usersController");
 router.get("/", ctrl.list);
 router.get("/new", ctrl.newForm);
 router.post("/", ctrl.create);
+router.post("/bulk", ctrl.bulk);
 
 router.get("/:id", ctrl.view);
 router.post("/:id/status", ctrl.updateStatus);

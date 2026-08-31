@@ -4,23 +4,21 @@ const {
   getStudentDisplayName,
   academicMeta,
   renderView,
-  courseCodeFromAny,
-  courseTitleFromAny,
-  attendanceStatus,
 } = require("./_helpers");
+const {
+  studentAttendanceFilter,
+  attendanceSummary,
+  formatInTimezone,
+  idText,
+} = require("../../../services/tenant/attendanceService");
 
 module.exports = {
   attendance: async (req, res) => {
     try {
-      if (!req.models) return res.status(500).send("Tenant models not loaded");
-
-      const { Attendance } = req.models;
-      const got = await getStudent(req);
-      const user = got?.user || null;
-      const student = got?.student || null;
-
+      const { Attendance, Subject, Staff } = req.models || {};
+      if (!Attendance || !Subject) return res.status(503).send("Attendance is not available.");
+      const { user, student } = await getStudent(req);
       if (!user) return res.redirect("/login");
-
       const blocked = mustHaveStudent(
         res,
         { tenant: req.tenant, user, student, currentPath: req.originalUrl, pageTitle: "Attendance" },
@@ -28,86 +26,63 @@ module.exports = {
       );
       if (blocked) return blocked;
 
-      const meta = academicMeta(student);
+      let query = Attendance.find(studentAttendanceFilter(student._id));
+      query = query.populate({ path: "subject", model: Subject, select: "code title shortTitle" });
+      if (Staff) query = query.populate({ path: "teacher", model: Staff, select: "fullName name" });
+      const records = await query.sort({ sessionAt: -1, createdAt: -1 }).limit(500).lean();
 
-      const records = Attendance
-        ? await Attendance.find({ studentId: student._id })
-            .sort({ date: -1 })
-            .limit(300)
-            .lean()
-            .catch(() => [])
-        : [];
-
-      const groupedMap = new Map();
-
-      for (const item of records) {
-        const code = courseCodeFromAny(item) || "UNKNOWN";
-        const title = courseTitleFromAny(item);
-        const current = groupedMap.get(code) || {
-          courseCode: code,
-          courseTitle: title,
-          total: 0,
-          attended: 0,
-          missed: 0,
-          late: 0,
-          trend: "Stable",
-        };
-
-        current.total += 1;
-
-        const status = attendanceStatus(item);
-        if (status === "present") current.attended += 1;
-        else if (status === "late") current.late += 1;
-        else current.missed += 1;
-
-        groupedMap.set(code, current);
+      const grouped = new Map();
+      for (const row of records) {
+        const sid = idText(row.subject?._id || row.subject) || "unknown";
+        if (!grouped.has(sid)) grouped.set(sid, { courseCode: row.subject?.code || "", courseTitle: row.subject?.title || row.subject?.shortTitle || "Subject", rows: [] });
+        grouped.get(sid).rows.push(row);
       }
-
-      const courseSummary = [...groupedMap.values()].map((c) => {
-        const pct = c.total ? Math.round((c.attended / c.total) * 100) : 0;
+      const courseSummary = [...grouped.values()].map((entry) => {
+        const summary = attendanceSummary(entry.rows);
         return {
-          ...c,
-          percentage: pct,
-          trend: pct >= 90 ? "Improving" : pct >= 80 ? "Stable" : "Declining",
+          courseCode: entry.courseCode,
+          courseTitle: entry.courseTitle,
+          total: summary.total,
+          attended: summary.attended,
+          missed: summary.absent,
+          late: summary.late,
+          excused: summary.excused,
+          percentage: summary.rate,
+          trend: summary.rate >= 90 ? "Strong" : summary.rate >= 75 ? "On track" : "Needs attention",
         };
       });
-
-      const total = records.length;
-      const attended = records.filter((r) => attendanceStatus(r) === "present").length;
-      const missed = records.filter((r) => {
-        const s = attendanceStatus(r);
-        return s === "absent" || s === "missed";
-      }).length;
-      const late = records.filter((r) => attendanceStatus(r) === "late").length;
-      const overallPct = total ? Math.round((attended / total) * 100) : 0;
-
-      const atRiskCourses = courseSummary.filter((c) => c.percentage < 80);
+      const overall = attendanceSummary(records);
+      const timezone = req.tenant?.timezone || "UTC";
 
       return renderView(req, res, "students/attendance", {
         pageTitle: "Attendance",
         user,
         student,
         studentName: getStudentDisplayName(student, user),
-        meta,
+        meta: academicMeta(student),
         overview: {
-          overallPct,
-          total,
-          attended,
-          missed,
-          late,
-          atRiskCount: atRiskCourses.length,
+          overallPct: overall.rate,
+          total: overall.total,
+          attended: overall.attended,
+          missed: overall.absent,
+          late: overall.late,
+          excused: overall.excused,
+          atRiskCount: courseSummary.filter((c) => c.percentage < 75).length,
         },
         courseSummary,
         records: records.map((r) => ({
-          date: r.date || r.createdAt || null,
-          courseCode: courseCodeFromAny(r),
-          courseTitle: courseTitleFromAny(r),
-          status: attendanceStatus(r),
-          remark: r.remark || r.notes || "",
+          date: r.sessionAt || r.attendanceDate || r.createdAt || null,
+          dateLabel: formatInTimezone(r.sessionAt || r.attendanceDate, timezone),
+          courseCode: r.subject?.code || "",
+          courseTitle: r.subject?.title || r.subject?.shortTitle || "Subject",
+          teacherName: r.teacher?.fullName || r.teacher?.name || "",
+          status: String(r.status || "present").toLowerCase(),
+          remark: r.notes || "",
         })),
       });
     } catch (err) {
-      return res.status(500).send("Failed to load attendance: " + err.message);
+      console.error("STUDENT ATTENDANCE ERROR:", err);
+      return res.status(500).send("Failed to load attendance.");
     }
   },
 };

@@ -8,7 +8,7 @@
         crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .input,.select,.textarea,.view-input{padding:10px 12px;border-radius:12px;border:1px solid rgba(13,64,96,.16);background:#fff;outline:none}
@@ -73,6 +73,7 @@
           <div class="subtitle">Manage subjects by class, with optional section or stream scope.</div>
         </div>
         <div class="top-actions">
+          <a class="btn light" href="/admin/subjects/registrations"><i class="fa-solid fa-list-check"></i> Registrations</a>
           <button class="btn light" id="btnExport" type="button"><i class="fa-solid fa-file-arrow-down"></i> Export CSV</button>
           <button class="btn light" id="btnPrint" type="button"><i class="fa-solid fa-print"></i> Print</button>
           <button class="btn primary" id="btnCreate" type="button"><i class="fa-solid fa-plus"></i> Add Subject</button>
@@ -299,7 +300,7 @@
       teacherId: s.teacher?._id ? String(s.teacher._id) : (s.teacher ? String(s.teacher) : ''),
       teacherName: s.teacher?.fullName || s.teacher?.name || ''
     };
-  })) %></textarea>
+  })).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
 
   <textarea id="classesData" class="json-data" aria-hidden="true"><%- JSON.stringify((classes || []).map(function(c){
     return {
@@ -314,12 +315,12 @@
       stream: c.stream || '',
       academicYear: c.academicYear || ''
     };
-  })) %></textarea>
+  })).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
 
-  <textarea id="structureData" class="json-data" aria-hidden="true"><%- JSON.stringify(structure || []) %></textarea>
-  <textarea id="sectionsMap" class="json-data" aria-hidden="true"><%- JSON.stringify(sectionsMap || {}) %></textarea>
-  <textarea id="sectionsData" class="json-data" aria-hidden="true"><%- JSON.stringify(sections || []) %></textarea>
-  <textarea id="streamsData" class="json-data" aria-hidden="true"><%- JSON.stringify(streams || []) %></textarea>
+  <textarea id="structureData" class="json-data" aria-hidden="true"><%- JSON.stringify(structure || []).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
+  <textarea id="sectionsMap" class="json-data" aria-hidden="true"><%- JSON.stringify(sectionsMap || {}).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
+  <textarea id="sectionsData" class="json-data" aria-hidden="true"><%- JSON.stringify(sections || []).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
+  <textarea id="streamsData" class="json-data" aria-hidden="true"><%- JSON.stringify(streams || []).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
 
   <script src="/js/navbar.js"></script>
   <script src="/js/academic-selector.js"></script>

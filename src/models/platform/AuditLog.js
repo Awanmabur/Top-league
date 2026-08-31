@@ -1,5 +1,6 @@
 // src/models/platform/AuditLog.js
 const { Schema } = require("mongoose");
+const { sanitizeAuditFields } = require("../../services/platformAuditService");
 
 module.exports = (connection) => {
   if (connection.models.AuditLog) {
@@ -65,6 +66,14 @@ module.exports = (connection) => {
         maxlength: 80,
       },
 
+      ipHash: {
+        type: String,
+        default: "",
+        trim: true,
+        maxlength: 128,
+        select: false,
+      },
+
       userAgent: {
         type: String,
         default: "",
@@ -86,6 +95,26 @@ module.exports = (connection) => {
   AuditLogSchema.index({ entityType: 1, entityId: 1 });
   AuditLogSchema.index({ action: 1, createdAt: -1 });
   AuditLogSchema.index({ actorName: 1, createdAt: -1 });
+
+  AuditLogSchema.pre("validate", function (next) {
+    try {
+      const sanitizeIp = this.isNew || this.isModified("ipAddress") || !this.ipHash;
+      const sanitized = sanitizeAuditFields({
+        ipAddress: this.ipAddress,
+        userAgent: this.userAgent,
+        meta: this.meta,
+      });
+      if (sanitizeIp) {
+        this.ipAddress = sanitized.ipAddress;
+        this.ipHash = sanitized.ipHash;
+      }
+      this.userAgent = sanitized.userAgent;
+      this.meta = sanitized.meta;
+      next();
+    } catch (err) {
+      next(err);
+    }
+  });
 
   return connection.model("AuditLog", AuditLogSchema);
 };

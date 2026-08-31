@@ -17,7 +17,7 @@
     <div>
       <div class="title">Attendance</div>
       <div class="subtitle">
-        View your attendance summary, per-course breakdown, and detailed daily records.
+        View your attendance summary, per-subject breakdown, and detailed daily records.
       </div>
     </div>
     <div class="top-actions">
@@ -61,25 +61,25 @@
     </div>
 
     <div class="card" style="flex:1;">
-      <div class="section-title">At-Risk Courses</div>
+      <div class="section-title">At-Risk Subjects</div>
       <div class="section-sub">Below 80% attendance</div>
       <div style="margin-top:8px;">
         <div style="font-size:22px;font-weight:700;"><%= overview.atRiskCount %></div>
-        <div class="small-muted">Courses requiring attention</div>
+        <div class="small-muted">Subjects requiring attention</div>
       </div>
     </div>
   </div>
 
   <div class="content">
     <section class="card">
-      <div class="section-title">Attendance by Course</div>
-      <div class="section-sub">Current course overview.</div>
+      <div class="section-title">Attendance by Subject</div>
+      <div class="section-sub">Current subject overview.</div>
 
       <div style="margin-top:10px;overflow-x:auto;">
         <table style="width:100%;border-collapse:collapse;font-size:13px;">
           <thead>
             <tr style="border-bottom:1px solid #e5edff;">
-              <th style="text-align:left;padding:6px 4px;">Course</th>
+              <th style="text-align:left;padding:6px 4px;">Subject</th>
               <th style="text-align:center;padding:6px 4px;">Attendance</th>
               <th style="text-align:center;padding:6px 4px;">Attended / Total</th>
               <th style="text-align:right;padding:6px 4px;">Trend</th>
@@ -126,7 +126,7 @@
                 <div>
                   <div class="notif-title"><%= r.courseCode %> - <%= r.courseTitle %></div>
                   <div class="notif-meta">
-                    <%= r.date ? new Date(r.date).toDateString() : "-" %> • <%= r.status %>
+                    <%= r.dateLabel || "-" %> • <%= r.status %>
                     <%= r.remark ? " • " + r.remark : "" %>
                   </div>
                 </div>
@@ -143,10 +143,6 @@
 </div>
 
 <script src="/js/navbar.js"></script>
-<script>
-document.getElementById("exportAttendanceBtn")?.addEventListener("click", function () {
-  window.print();
-});
-</script>
+<script src="/js/student-attendance.js"></script>
 </body>
 </html>

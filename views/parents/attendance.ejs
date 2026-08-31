@@ -13,7 +13,7 @@
 
   <link rel="stylesheet" href="/css/parent-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{
       margin-top:16px;
       display:flex;
@@ -532,13 +532,13 @@
             <b><%= Number(pageStats.children || kids.length || 0) %></b>
           </div>
 
-          <button class="btn light" type="button" onclick="window.location.href='/parent/children'">
+          <a class="btn light" href="/parent/children">
             <i class="fa-solid fa-children"></i> Children
-          </button>
+          </a>
 
-          <button class="btn primary" type="button" onclick="window.location.href='/parent/results'">
+          <a class="btn primary" href="/parent/results">
             <i class="fa-solid fa-file-lines"></i> Results
-          </button>
+          </a>
         </div>
       </div>
 
@@ -571,17 +571,17 @@
             <div class="empty-text">
               Attendance records will appear here once a student is linked to your parent account.
             </div>
-            <button class="btn light" type="button" onclick="window.location.href='/parent/support'">
+            <a class="btn light" href="/parent/support">
               <i class="fa-solid fa-headset"></i> Contact Support
-            </button>
+            </a>
           </div>
         </section>
       <% } else { %>
         <div class="student-tabs" id="studentTabs">
-          <% kids.forEach(function(c, idx){ 
+          <% kids.forEach(function(c, idx){
             const name = fullNameOfStudent(c);
             const regNo = c && c.regNo ? c.regNo : "—";
-            const className = c && c.classGroup && (c.classGroup.title || c.classGroup.name) ? (c.classGroup.title || c.classGroup.name) : "—";
+            const className = c && (c.className || c.classLevel) ? (c.className || c.classLevel) : "—";
             const isActive = selectedStudent ? String(selectedStudent._id) === String(c._id) : idx === 0;
           %>
             <button
@@ -598,7 +598,7 @@
           <% }); %>
         </div>
 
-        <% kids.forEach(function(c, idx){ 
+        <% kids.forEach(function(c, idx){
           const key = String(c._id);
           const bundle = attendanceMap[key] || {};
           const summary = bundle.summary || {};
@@ -608,7 +608,7 @@
 
           const studentName = fullNameOfStudent(c);
           const regNo = c && c.regNo ? c.regNo : "—";
-          const className = c && c.classGroup && (c.classGroup.title || c.classGroup.name) ? (c.classGroup.title || c.classGroup.name) : "—";
+          const className = c && (c.className || c.classLevel) ? (c.className || c.classLevel) : "—";
           const rate = pct(summary.rate || c.attendanceRate || 0);
           const total = Number(summary.totalSessions || entries.length || 0);
           const present = Number(summary.present || 0);
@@ -759,7 +759,7 @@
                     <% if (!courses.length) { %>
                       <div class="mini-note">No course attendance summary available yet.</div>
                     <% } else { %>
-                      <% courses.forEach(function(course){ 
+                      <% courses.forEach(function(course){
                         const cRate = pct(course.rate || 0);
                       %>
                         <div class="course-item">
@@ -845,7 +845,7 @@
     </main>
   </div>
 
-  <script>
+  <script nonce="<%= cspNonce %>">
     (function(){
       const tabs = Array.from(document.querySelectorAll("[data-student-tab]"));
       const panels = Array.from(document.querySelectorAll("[data-student-panel]"));

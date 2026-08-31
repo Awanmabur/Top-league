@@ -1,4 +1,4 @@
-﻿const TENANT_ROLES = [
+const TENANT_ROLES = [
   "admin",
   "registrar",
   "librarian",
@@ -36,6 +36,8 @@ const TENANT_ROLE_PERMISSIONS = {
     "profile.view",
     "finance.view",
     "finance.manage",
+    "payroll.view",
+    "payroll.manage",
   ],
   librarian: [
     "dashboard.view",
@@ -189,6 +191,7 @@ module.exports = {
   getTenantPermissions,
   tenantRoleCan,
   getTenantRoleAccess,
+  permissionMatches,
   getTenantDashboardRedirect,
 };
 

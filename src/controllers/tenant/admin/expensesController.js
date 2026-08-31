@@ -1,189 +1,174 @@
 const mongoose = require("mongoose");
+const {
+  CATEGORIES,
+  METHODS,
+  buildExpenseFilters,
+  computeExpenseKpis,
+  csvCell,
+  generateExpenseNumber,
+  serializeExpense,
+  transitionSpec,
+  validateExpensePayload,
+} = require("../../../services/tenant/expenseService");
 
 const actorUserId = (req) =>
   req.user?.userId || req.user?._id || req.session?.tenantUser?.id || null;
-
 const str = (v) => String(v ?? "").trim();
 const isValidId = (id) => mongoose.Types.ObjectId.isValid(String(id || ""));
 
-const asNum = (v, fallback = 0) => {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : fallback;
-};
-
-const asDate = (v) => {
-  if (!v) return null;
-  const d = new Date(v);
-  return Number.isNaN(d.getTime()) ? null : d;
-};
-
-function makeExpenseNo() {
-  return `EXP-${Date.now()}-${Math.floor(Math.random() * 900 + 100)}`;
+function transitionPatch(action, actor, now = new Date()) {
+  const spec = transitionSpec(action);
+  if (!spec) return null;
+  const patch = { status: spec.to, updatedBy: actor };
+  if (action === "approve") {
+    patch.approvedAt = now;
+    patch.approvedBy = actor;
+    patch.rejectedAt = null;
+    patch.rejectedBy = null;
+  } else if (action === "reject") {
+    patch.rejectedAt = now;
+    patch.rejectedBy = actor;
+    patch.approvedAt = null;
+    patch.approvedBy = null;
+  } else {
+    patch.approvedAt = null;
+    patch.approvedBy = null;
+    if (action === "record") {
+      patch.rejectedAt = null;
+      patch.rejectedBy = null;
+    }
+  }
+  return patch;
 }
 
-function serializeExpense(doc) {
-  return {
-    id: String(doc._id),
-    expenseNo: doc.expenseNumber || "—",
-    voucherNo: doc.voucherNo || "",
-    reference: doc.reference || "",
-    title: doc.title || "",
-    description: doc.description || "",
-    category: doc.category || "Other",
-    amount: Number(doc.amount || 0),
-    expenseDate: doc.expenseDate ? new Date(doc.expenseDate).toISOString().slice(0, 10) : "",
-    paidTo: doc.paidTo || "",
-    method: doc.method || "Cash",
-    status: doc.status || "Recorded",
-    notes: doc.notes || "",
-    createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString().slice(0, 10) : "",
-  };
-}
-
-function computeKpis(list = []) {
-  const total = list.length;
-  const recorded = list.filter((x) => x.status === "Recorded").length;
-  const approved = list.filter((x) => x.status === "Approved").length;
-  const rejected = list.filter((x) => x.status === "Rejected").length;
-  const draft = list.filter((x) => x.status === "Draft").length;
-
-  const amountTotal = list
-    .filter((x) => x.status !== "Rejected")
-    .reduce((sum, x) => sum + Number(x.amount || 0), 0);
-
-  const byCategory = Object.entries(
-    list.reduce((acc, x) => {
-      const key = x.category || "Other";
-      acc[key] = (acc[key] || 0) + Number(x.amount || 0);
-      return acc;
-    }, {})
-  )
-    .map(([label, amount]) => ({ label, amount }))
-    .sort((a, b) => b.amount - a.amount);
-
-  return {
-    total,
-    recorded,
-    approved,
-    rejected,
-    draft,
-    amountTotal,
-    byCategory,
-  };
-}
-
-function buildFilters(query = {}) {
-  const q = str(query.q);
-  const status = str(query.status || "all");
-  const category = str(query.category || "all");
-  const method = str(query.method || "all");
-  const view = str(query.view || "list") || "list";
-
-  const mongo = { isDeleted: { $ne: true } };
-
-  if (status !== "all") mongo.status = status;
-  if (category !== "all") mongo.category = category;
-  if (method !== "all") mongo.method = method;
-
-  if (q) {
-    mongo.$or = [
-      { expenseNumber: new RegExp(q, "i") },
-      { voucherNo: new RegExp(q, "i") },
-      { reference: new RegExp(q, "i") },
-      { title: new RegExp(q, "i") },
-      { description: new RegExp(q, "i") },
-      { category: new RegExp(q, "i") },
-      { paidTo: new RegExp(q, "i") },
-      { method: new RegExp(q, "i") },
-      { status: new RegExp(q, "i") },
-      { notes: new RegExp(q, "i") },
-    ];
+async function transitionOne(req, res, action, successMessage) {
+  const { Expense } = req.models;
+  if (!isValidId(req.params.id)) {
+    req.flash?.("error", "Invalid expense ID.");
+    return res.redirect("/admin/expenses");
   }
 
-  return {
-    mongo,
-    clean: { q, status, category, method, view },
-  };
+  const spec = transitionSpec(action);
+  if (!spec) {
+    req.flash?.("error", "Invalid expense action.");
+    return res.redirect("/admin/expenses");
+  }
+
+  const result = await Expense.updateOne(
+    {
+      _id: req.params.id,
+      isDeleted: { $ne: true },
+      status: { $in: spec.from },
+    },
+    { $set: transitionPatch(action, actorUserId(req)) },
+    { runValidators: true }
+  );
+
+  if (!result.modifiedCount) {
+    const current = await Expense.findOne({ _id: req.params.id, isDeleted: { $ne: true } })
+      .select("status")
+      .lean();
+    req.flash?.(
+      "error",
+      current
+        ? `Expense cannot move from ${current.status} to ${spec.to}.`
+        : "Expense not found."
+    );
+    return res.redirect("/admin/expenses");
+  }
+
+  req.flash?.("success", successMessage);
+  return res.redirect("/admin/expenses");
+}
+
+async function createWithUniqueNumber(Expense, payload, attempts = 8) {
+  let lastError = null;
+  for (let i = 0; i < attempts; i += 1) {
+    const expenseNumber = await generateExpenseNumber(Expense);
+    try {
+      return await Expense.create({ ...payload, expenseNumber });
+    } catch (err) {
+      lastError = err;
+      if (err?.code !== 11000) throw err;
+    }
+  }
+  throw lastError || new Error("Could not allocate a unique expense number.");
 }
 
 module.exports = {
-  /**
-   * GET /admin/expenses
-   */
   index: async (req, res) => {
     const { Expense } = req.models;
-
-    const { mongo, clean } = buildFilters(req.query);
-
-    const expenseDocs = await Expense.find(mongo)
-      .sort({ expenseDate: -1, createdAt: -1 })
-      .lean();
-
+    const { mongo, clean } = buildExpenseFilters(req.query);
+    const expenseDocs = await Expense.find(mongo).sort({ expenseDate: -1, createdAt: -1 }).lean();
     const expenses = expenseDocs.map(serializeExpense);
-    const kpis = computeKpis(expenses);
 
     return res.render("tenant/finance/expenses", {
       tenant: req.tenant,
       csrfToken: req.csrfToken?.(),
       expenses,
-      kpis,
+      kpis: computeExpenseKpis(expenses),
       query: clean,
-      categories: [
-        "Salary",
-        "Utilities",
-        "Rent",
-        "Stationery",
-        "Transport",
-        "Maintenance",
-        "Procurement",
-        "Allowance",
-        "Other",
-      ],
-      methods: ["Cash", "Bank", "Mobile Money", "Card", "Cheque", "Transfer", "Other"],
+      categories: CATEGORIES,
+      methods: METHODS,
     });
   },
 
-  /**
-   * POST /admin/expenses
-   */
+  exportCsv: async (req, res) => {
+    const { Expense } = req.models;
+    const { mongo } = buildExpenseFilters(req.query);
+    const filename = `expenses-${new Date().toISOString().slice(0, 10)}.csv`;
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.write(
+      [
+        "Expense No",
+        "Voucher No",
+        "Reference",
+        "Title",
+        "Category",
+        "Amount",
+        "Expense Date",
+        "Paid To",
+        "Method",
+        "Status",
+        "Description",
+        "Notes",
+      ].map(csvCell).join(",") + "\n"
+    );
+
+    const cursor = Expense.find(mongo).sort({ expenseDate: -1, createdAt: -1 }).lean().cursor();
+    for await (const doc of cursor) {
+      const row = serializeExpense(doc);
+      res.write(
+        [
+          row.expenseNo,
+          row.voucherNo,
+          row.reference,
+          row.title,
+          row.category,
+          row.amount,
+          row.expenseDate,
+          row.paidTo,
+          row.method,
+          row.status,
+          row.description,
+          row.notes,
+        ].map(csvCell).join(",") + "\n"
+      );
+    }
+    return res.end();
+  },
+
   create: async (req, res) => {
     const { Expense } = req.models;
-
-    const voucherNo = str(req.body.voucherNo);
-    const reference = str(req.body.reference);
-    const title = str(req.body.title);
-    const description = str(req.body.description);
-    const category = str(req.body.category || "Other");
-    const amount = Math.max(0, asNum(req.body.amount, 0));
-    const expenseDate = asDate(req.body.expenseDate) || new Date();
-    const paidTo = str(req.body.paidTo);
-    const method = str(req.body.method || "Cash");
-    const status = str(req.body.status || "Recorded");
-    const notes = str(req.body.notes);
-
-    if (!title) {
-      req.flash?.("error", "Expense title is required.");
+    const checked = validateExpensePayload(req.body || {}, { create: true });
+    if (checked.errors.length) {
+      req.flash?.("error", checked.errors.join(" "));
       return res.redirect("/admin/expenses");
     }
 
-    if (!(amount > 0)) {
-      req.flash?.("error", "Expense amount must be greater than zero.");
-      return res.redirect("/admin/expenses");
-    }
-
-    await Expense.create({
-      expenseNumber: makeExpenseNo(),
-      voucherNo,
-      reference,
-      title,
-      description,
-      category,
-      amount,
-      expenseDate,
-      paidTo,
-      method,
-      status: ["Draft", "Recorded", "Approved", "Rejected"].includes(status) ? status : "Recorded",
-      notes,
+    await createWithUniqueNumber(Expense, {
+      ...checked.value,
       createdBy: actorUserId(req),
       updatedBy: actorUserId(req),
     });
@@ -192,141 +177,55 @@ module.exports = {
     return res.redirect("/admin/expenses");
   },
 
-  /**
-   * POST /admin/expenses/:id/update
-   */
   update: async (req, res) => {
     const { Expense } = req.models;
-
     if (!isValidId(req.params.id)) {
       req.flash?.("error", "Invalid expense ID.");
       return res.redirect("/admin/expenses");
     }
 
-    const existing = await Expense.findOne({
-      _id: req.params.id,
-      isDeleted: { $ne: true },
-    });
-
+    const existing = await Expense.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
     if (!existing) {
       req.flash?.("error", "Expense not found.");
       return res.redirect("/admin/expenses");
     }
-
-    const voucherNo = str(req.body.voucherNo);
-    const reference = str(req.body.reference);
-    const title = str(req.body.title);
-    const description = str(req.body.description);
-    const category = str(req.body.category || "Other");
-    const amount = Math.max(0, asNum(req.body.amount, 0));
-    const expenseDate = asDate(req.body.expenseDate) || existing.expenseDate || new Date();
-    const paidTo = str(req.body.paidTo);
-    const method = str(req.body.method || "Cash");
-    const status = str(req.body.status || existing.status || "Recorded");
-    const notes = str(req.body.notes);
-
-    if (!title) {
-      req.flash?.("error", "Expense title is required.");
+    if (existing.status === "Approved") {
+      req.flash?.("error", "Approved expenses are locked. Create a correction/reversal record instead of editing the approved record.");
       return res.redirect("/admin/expenses");
     }
 
-    if (!(amount > 0)) {
-      req.flash?.("error", "Expense amount must be greater than zero.");
+    const checked = validateExpensePayload(req.body || {}, { existingStatus: existing.status });
+    if (checked.errors.length) {
+      req.flash?.("error", checked.errors.join(" "));
       return res.redirect("/admin/expenses");
     }
 
-    existing.voucherNo = voucherNo;
-    existing.reference = reference;
-    existing.title = title;
-    existing.description = description;
-    existing.category = category;
-    existing.amount = amount;
-    existing.expenseDate = expenseDate;
-    existing.paidTo = paidTo;
-    existing.method = method;
-    existing.status = ["Draft", "Recorded", "Approved", "Rejected"].includes(status) ? status : existing.status;
-    existing.notes = notes;
-    existing.updatedBy = actorUserId(req);
-
+    Object.assign(existing, checked.value, { updatedBy: actorUserId(req) });
+    if (checked.value.status !== "Rejected") {
+      existing.rejectedAt = null;
+      existing.rejectedBy = null;
+    }
+    existing.approvedAt = null;
+    existing.approvedBy = null;
     await existing.save();
 
     req.flash?.("success", "Expense updated successfully.");
     return res.redirect("/admin/expenses");
   },
 
-  /**
-   * POST /admin/expenses/:id/record
-   */
-  record: async (req, res) => {
-    const { Expense } = req.models;
+  record: async (req, res) => transitionOne(req, res, "record", "Expense marked as recorded."),
+  approve: async (req, res) => transitionOne(req, res, "approve", "Expense approved."),
+  reject: async (req, res) => transitionOne(req, res, "reject", "Expense rejected."),
 
-    if (!isValidId(req.params.id)) {
-      req.flash?.("error", "Invalid expense ID.");
-      return res.redirect("/admin/expenses");
-    }
-
-    await Expense.updateOne(
-      { _id: req.params.id, isDeleted: { $ne: true } },
-      { $set: { status: "Recorded", updatedBy: actorUserId(req) } }
-    );
-
-    req.flash?.("success", "Expense marked as recorded.");
-    return res.redirect("/admin/expenses");
-  },
-
-  /**
-   * POST /admin/expenses/:id/approve
-   */
-  approve: async (req, res) => {
-    const { Expense } = req.models;
-
-    if (!isValidId(req.params.id)) {
-      req.flash?.("error", "Invalid expense ID.");
-      return res.redirect("/admin/expenses");
-    }
-
-    await Expense.updateOne(
-      { _id: req.params.id, isDeleted: { $ne: true } },
-      { $set: { status: "Approved", updatedBy: actorUserId(req) } }
-    );
-
-    req.flash?.("success", "Expense approved.");
-    return res.redirect("/admin/expenses");
-  },
-
-  /**
-   * POST /admin/expenses/:id/reject
-   */
-  reject: async (req, res) => {
-    const { Expense } = req.models;
-
-    if (!isValidId(req.params.id)) {
-      req.flash?.("error", "Invalid expense ID.");
-      return res.redirect("/admin/expenses");
-    }
-
-    await Expense.updateOne(
-      { _id: req.params.id, isDeleted: { $ne: true } },
-      { $set: { status: "Rejected", updatedBy: actorUserId(req) } }
-    );
-
-    req.flash?.("success", "Expense rejected.");
-    return res.redirect("/admin/expenses");
-  },
-
-  /**
-   * POST /admin/expenses/:id/delete
-   */
   delete: async (req, res) => {
     const { Expense } = req.models;
-
     if (!isValidId(req.params.id)) {
       req.flash?.("error", "Invalid expense ID.");
       return res.redirect("/admin/expenses");
     }
 
-    await Expense.updateOne(
-      { _id: req.params.id, isDeleted: { $ne: true } },
+    const result = await Expense.updateOne(
+      { _id: req.params.id, isDeleted: { $ne: true }, status: { $ne: "Approved" } },
       {
         $set: {
           isDeleted: true,
@@ -335,45 +234,61 @@ module.exports = {
         },
       }
     );
+    if (!result.modifiedCount) {
+      const current = await Expense.findOne({ _id: req.params.id, isDeleted: { $ne: true } }).select("status").lean();
+      req.flash?.(
+        "error",
+        current?.status === "Approved"
+          ? "Approved expenses are locked and cannot be deleted."
+          : "Expense not found."
+      );
+      return res.redirect("/admin/expenses");
+    }
 
     req.flash?.("success", "Expense deleted.");
     return res.redirect("/admin/expenses");
   },
 
-  /**
-   * POST /admin/expenses/bulk
-   */
   bulkAction: async (req, res) => {
     const { Expense } = req.models;
-
-    const ids = str(req.body.ids)
-      .split(",")
-      .map((x) => x.trim())
-      .filter((x) => isValidId(x));
-
+    const ids = [...new Set(
+      str(req.body.ids)
+        .split(",")
+        .map((x) => x.trim())
+        .filter((x) => isValidId(x))
+    )];
     if (!ids.length) {
       req.flash?.("error", "No expenses selected.");
       return res.redirect("/admin/expenses");
     }
 
     const action = str(req.body.action);
-    const patch = { updatedBy: actorUserId(req) };
+    let filter = { _id: { $in: ids }, isDeleted: { $ne: true } };
+    let patch = null;
 
-    if (action === "record") patch.status = "Recorded";
-    if (action === "approve") patch.status = "Approved";
-    if (action === "reject") patch.status = "Rejected";
-    if (action === "draft") patch.status = "Draft";
     if (action === "delete") {
-      patch.isDeleted = true;
-      patch.deletedAt = new Date();
+      filter.status = { $ne: "Approved" };
+      patch = { isDeleted: true, deletedAt: new Date(), updatedBy: actorUserId(req) };
+    } else {
+      const spec = transitionSpec(action);
+      if (!spec) {
+        req.flash?.("error", "Invalid bulk expense action.");
+        return res.redirect("/admin/expenses");
+      }
+      filter.status = { $in: spec.from };
+      patch = transitionPatch(action, actorUserId(req));
     }
 
-    await Expense.updateMany(
-      { _id: { $in: ids }, isDeleted: { $ne: true } },
-      { $set: patch }
-    );
-
-    req.flash?.("success", "Bulk action applied.");
+    const result = await Expense.updateMany(filter, { $set: patch }, { runValidators: true });
+    const skipped = Math.max(0, ids.length - Number(result.modifiedCount || 0));
+    if (!result.modifiedCount) {
+      req.flash?.("error", "None of the selected expenses were eligible for that action.");
+    } else {
+      req.flash?.(
+        "success",
+        `Bulk action applied to ${result.modifiedCount} expense(s).${skipped ? ` ${skipped} selected record(s) were skipped by lifecycle rules.` : ""}`
+      );
+    }
     return res.redirect("/admin/expenses");
   },
 };

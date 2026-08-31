@@ -18,7 +18,7 @@ async function getAuthUser(req) {
   if (!User || !userId || !isValidId(userId)) return null;
 
   return User.findOne({ _id: userId, deletedAt: null })
-    .select("_id email roles status firstName lastName childrenStudentIds")
+    .select("_id email phone roles status firstName lastName childrenStudentIds")
     .lean()
     .catch(() => null);
 }
@@ -42,8 +42,9 @@ async function getParent(req) {
 
   const email = lowerEmail(user.email);
 
-  let parent = await Parent.findOne({ userId: user._id }).lean().catch(() => null);
-  if (!parent && email) parent = await Parent.findOne({ email }).lean().catch(() => null);
+  const accessFilter = { isDeleted: { $ne: true }, status: { $in: ["active", "on_hold"] } };
+  let parent = await Parent.findOne({ userId: user._id, ...accessFilter }).lean().catch(() => null);
+  if (!parent && email) parent = await Parent.findOne({ email, ...accessFilter }).lean().catch(() => null);
 
   const auto = String(process.env.AUTO_CREATE_PARENT_PROFILE || "") === "1";
   const isParentRole = Array.isArray(user.roles) && user.roles.includes("parent");
@@ -60,7 +61,7 @@ async function getParent(req) {
             email,
             phone: "",
             relationship: "Guardian",
-            status: "pending",
+            status: "active",
             childrenStudentIds: [],
           },
           $set: { userId: user._id },
@@ -90,6 +91,44 @@ function canAccessChild(parent, studentId) {
   return ids.includes(sid);
 }
 
+
+const LINKED_CHILD_SELECT = [
+  "firstName", "lastName", "middleName", "fullName", "regNo", "studentNo",
+  "programId", "classId", "className", "classCode", "classLevel", "schoolLevel",
+  "sectionId", "section", "streamId", "stream", "academicYear", "term", "status",
+  "photoUrl", "guardianName", "guardianPhone", "guardianEmail", "financeBalance",
+  "averageScore", "avgScore", "cgpa", "latestResult", "latestAnnouncement",
+  "lastAttendanceDate", "nextEvent", "campusId", "campusName", "homeroomTeacher",
+  "parentRelationship", "dob", "dateOfBirth", "gender", "admissionDate"
+].join(" ");
+
+async function loadLinkedChildren(req, parent, options = {}) {
+  const { Student, Program } = req.models || {};
+  const childIds = Array.isArray(parent?.childrenStudentIds) ? parent.childrenStudentIds : [];
+  if (!parent || !Student || !childIds.length) return [];
+
+  const filter = {
+    _id: { $in: childIds },
+    isDeleted: { $ne: true },
+    status: { $ne: "archived" },
+  };
+  if (options.studentId) {
+    if (!canAccessChild(parent, options.studentId)) return [];
+    filter._id = options.studentId;
+  }
+
+  let query = Student.find(filter).select(`${LINKED_CHILD_SELECT} ${String(options.extraSelect || "").trim()}`.trim());
+  if (Program) query = query.populate({ path: "programId", model: Program, select: "code name title shortTitle levelType status" });
+  query = query.sort(options.sort || { firstName: 1, lastName: 1 });
+  if (Number(options.limit) > 0) query = query.limit(Math.min(500, Number(options.limit)));
+  return query.lean();
+}
+
+async function loadLinkedChild(req, parent, studentId, options = {}) {
+  const rows = await loadLinkedChildren(req, parent, { ...options, studentId, limit: 1 });
+  return rows[0] || null;
+}
+
 function renderError(res, view, data, message) {
   return res.status(400).render(view, { ...data, error: message });
 }
@@ -100,4 +139,6 @@ module.exports = {
   getParent,
   canAccessChild,
   renderError,
+  loadLinkedChildren,
+  loadLinkedChild,
 };

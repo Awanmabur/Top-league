@@ -1,11 +1,14 @@
-const { getParent, canAccessChild, renderError } = require("./_helpers");
+const { getParent, canAccessChild, loadLinkedChild } = require("./_helpers");
+const { studentPublishedResultFilter } = require("../../../services/tenant/resultService");
+const { studentAttendanceFilter, attendanceSummary: summarizeAttendance, formatInTimezone } = require("../../../services/tenant/attendanceService");
+const { accountSnapshot } = require("../../../services/tenant/financeVisibilityService");
 
 function num(v) {
   return Number(v || 0);
 }
 
 function fmtDate(v) {
-  if (!v) return "—";
+  if (!v) return "Â—";
   try {
     return new Date(v).toLocaleDateString();
   } catch {
@@ -33,16 +36,9 @@ module.exports = {
       );
 
     try {
-      const {
-        Student,
-        Attendance,
-        Result,
-        FeeInvoice,
-        FeePayment,
-        Payment,
-        Fee,
-        Invoice,
-      } = req.models || {};
+      const { Student, Attendance, Result, Payment, Invoice } = req.models || {};
+      const Exam = req.models?.Exam || null;
+      const Subject = req.models?.Subject || null;
 
       const { user, parent } = await getParent(req);
       if (!user) return res.redirect("/login");
@@ -52,90 +48,72 @@ module.exports = {
         return res.status(403).send("Forbidden");
       }
 
-      const student = Student
-        ? await Student.findOne({ _id: studentId, deletedAt: null })
-            .select(
-              "firstName lastName middleName fullName regNo program classGroup yearLevel academicYear semester status photoUrl guardianName guardianPhone guardianEmail attendanceRate feeBalance balance averageScore avgScore cgpa latestResult latestAnnouncement lastAttendanceDate nextEvent campus homeroomTeacher parentRelationship dateOfBirth gender admissionDate"
-            )
-            .populate({ path: "program", select: "code name title level faculty" })
-            .populate({ path: "classGroup", select: "code name title" })
-            .lean()
-            .catch(() => null)
-        : null;
+      const student = Student ? await loadLinkedChild(req, parent, studentId) : null;
 
       if (!student) {
         return res.status(404).send("Student not found");
       }
 
       const attendanceRows = Attendance
-        ? await Attendance.find({
-            deletedAt: null,
-            $or: [{ student: student._id }, { studentId: student._id }],
-          })
-            .sort({ date: -1, createdAt: -1 })
+        ? await Attendance.find(studentAttendanceFilter(student._id))
+            .populate({ path: "subject", select: "code title shortTitle" })
+            .sort({ sessionAt: -1, createdAt: -1 })
             .limit(30)
             .lean()
             .catch(() => [])
         : [];
 
-      const resultRows = Result
-        ? await Result.find({
-            deletedAt: null,
-            $or: [{ student: student._id }, { studentId: student._id }],
+      let resultRows = [];
+      if (Result && Exam && Subject) {
+        try {
+          let resultQuery = Result.find(studentPublishedResultFilter(student._id));
+          resultQuery = resultQuery.populate({ path: "exam", model: Exam, select: "title code maxMarks passMark status" });
+          resultQuery = resultQuery.populate({ path: "subject", model: Subject, select: "code title shortTitle" });
+          resultRows = await resultQuery.sort({ publishedAt: -1, createdAt: -1 }).limit(20).lean();
+        } catch {
+          resultRows = [];
+        }
+      }
+
+      const invoiceRows = Invoice
+        ? await Invoice.find({
+            studentId: student._id,
+            isDeleted: { $ne: true },
+            status: { $ne: "Draft" },
           })
-            .sort({ publishedAt: -1, createdAt: -1 })
+            .sort({ dueDate: 1, issueDate: -1, createdAt: -1 })
             .limit(20)
             .lean()
             .catch(() => [])
         : [];
 
-      const invoiceModel = FeeInvoice || Fee || Invoice || null;
-      const paymentModel = FeePayment || Payment || null;
-
-      const invoiceRows = invoiceModel
-        ? await invoiceModel
-            .find({
-              deletedAt: null,
-              $or: [{ student: student._id }, { studentId: student._id }],
-            })
-            .sort({ dueDate: 1, createdAt: -1 })
+      const paymentRows = Payment
+        ? await Payment.find({
+            studentId: student._id,
+            isDeleted: { $ne: true },
+          })
+            .sort({ paymentDate: -1, createdAt: -1 })
             .limit(20)
             .lean()
             .catch(() => [])
         : [];
 
-      const paymentRows = paymentModel
-        ? await paymentModel
-            .find({
-              deletedAt: null,
-              $or: [{ student: student._id }, { studentId: student._id }],
-            })
-            .sort({ paymentDate: -1, date: -1, createdAt: -1 })
-            .limit(20)
-            .lean()
-            .catch(() => [])
-        : [];
-
+      const attendanceBase = summarizeAttendance(attendanceRows);
       const attendanceSummary = {
-        total: attendanceRows.length,
-        present: attendanceRows.filter((x) => String(x.status || "").toLowerCase() === "present").length,
-        absent: attendanceRows.filter((x) => String(x.status || "").toLowerCase() === "absent").length,
-        late: attendanceRows.filter((x) => String(x.status || "").toLowerCase() === "late").length,
+        total: attendanceBase.total,
+        present: attendanceBase.present,
+        absent: attendanceBase.absent,
+        late: attendanceBase.late,
+        excused: attendanceBase.excused,
+        rate: attendanceBase.total ? attendanceBase.rate : num(student.attendanceRate || 0),
       };
-      attendanceSummary.rate = attendanceSummary.total
-        ? Math.round(
-            ((attendanceSummary.present + attendanceSummary.late * 0.75) /
-              attendanceSummary.total) *
-              100
-          )
-        : num(student.attendanceRate || 0);
 
       const normalizedResults = resultRows.map((r) => ({
         ...r,
-        subject: r.subjectName || r.subject || r.courseName || r.course || "Subject",
-        exam: r.examTitle || r.assessment || r.exam || "Assessment",
-        score: num(r.totalScore ?? r.score ?? r.mark ?? r.marks),
-        grade: r.grade || "—",
+        subject: r.subject?.title || r.subject?.shortTitle || r.subject?.code || "Subject",
+        exam: r.exam?.title || r.exam?.code || "Assessment",
+        score: Number.isFinite(Number(r.percentage)) ? Number(r.percentage) : 0,
+        grade: r.grade || "Â—",
         date: fmtDate(r.publishedAt || r.createdAt),
       }));
 
@@ -150,34 +128,38 @@ module.exports = {
       };
 
       const normalizedInvoices = invoiceRows.map((r) => {
-        const amount = num(r.amount || r.totalAmount || r.billAmount || r.expectedAmount);
-        const paid = num(r.paidAmount || r.amountPaid || r.settledAmount);
-        const balance = Math.max(0, num(r.balance || r.balanceAmount || (amount - paid)));
+        const amount = num(r.totalAmount);
+        const paid = num(r.paidAmount);
+        const balance = Math.max(0, num(r.balance));
         return {
           ...r,
-          title: r.title || r.name || r.feeItem || r.description || "Fee Item",
-          dueDate: fmtDate(r.dueDate || r.deadline || r.dateDue),
+          title: r.title || r.description || "Invoice",
+          dueDate: fmtDate(r.dueDate),
           amount,
           paid,
           balance,
-          status:
-            r.status || (balance <= 0 ? "paid" : paid > 0 ? "partial" : "unpaid"),
+          status: r.status || (balance <= 0 ? "Paid" : paid > 0 ? "Partially Paid" : "Unpaid"),
         };
       });
 
       const normalizedPayments = paymentRows.map((r) => ({
         ...r,
-        amount: num(r.amount || r.amountPaid || r.total),
-        date: fmtDate(r.paymentDate || r.date || r.createdAt),
-        method: r.method || r.paymentMethod || "—",
-        reference: r.reference || r.receiptNo || r.transactionId || r.paymentRef || "—",
+        amount: num(r.amount),
+        date: fmtDate(r.paymentDate || r.createdAt),
+        method: r.method || "-",
+        reference: r.receiptNumber || r.reference || "-",
       }));
 
+      const financeSnapshot = accountSnapshot(invoiceRows, paymentRows);
       const feesSummary = {
-        billed: normalizedInvoices.reduce((sum, x) => sum + num(x.amount), 0),
-        paid: normalizedPayments.reduce((sum, x) => sum + num(x.amount), 0),
+        billed: financeSnapshot.billed,
+        paid: financeSnapshot.received,
+        applied: financeSnapshot.applied,
+        invoiceOutstanding: financeSnapshot.invoiceOutstanding,
+        unallocatedCredit: financeSnapshot.unallocatedCredit,
+        balance: financeSnapshot.balance,
+        credit: financeSnapshot.credit,
       };
-      feesSummary.balance = Math.max(0, feesSummary.billed - feesSummary.paid);
 
       log(
         "user:",
@@ -201,11 +183,11 @@ module.exports = {
         },
         attendanceRows: attendanceRows.map((r) => ({
           ...r,
-          date: fmtDate(r.date || r.createdAt),
-          subject: r.subjectName || r.subject || r.courseName || r.course || "Class",
-          teacher: r.teacherName || r.teacher || "—",
+          date: formatInTimezone(r.sessionAt || r.attendanceDate, req.tenant?.timezone || "UTC") || "â€”",
+          subject: r.subject?.title || r.subject?.shortTitle || r.subject?.code || "Subject",
+          teacher: r.teacher?.fullName || r.teacher?.name || "â€”",
           status: String(r.status || "present").toLowerCase(),
-          note: r.note || r.remarks || "—",
+          note: r.notes || "â€”",
         })),
         attendanceSummary,
         resultRows: normalizedResults,

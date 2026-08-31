@@ -22,8 +22,11 @@ module.exports = (connection) => {
       streamCode: { type: String, trim: true, maxlength: 40, default: "" },
 
       // Dates & grading
+      academicYear: { type: String, trim: true, maxlength: 20, default: "", index: true },
+      term: { type: Number, min: 1, max: 3, default: null, index: true },
       dueDate: { type: Date, default: null, index: true },
       totalPoints: { type: Number, min: 0, max: 1000, default: 100 },
+      allowLateSubmissions: { type: Boolean, default: false },
 
       // Content
       instructions: { type: String, trim: true, maxlength: 4000 },
@@ -40,9 +43,20 @@ module.exports = (connection) => {
         index: true,
       },
 
+      publishedAt: { type: Date, default: null },
+      publishedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
+      closedAt: { type: Date, default: null },
+      closedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
+      archivedAt: { type: Date, default: null },
+      archivedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
+      revision: { type: Number, default: 0, min: 0 },
+      migrationQuarantinedAt: { type: Date, default: null, index: true },
+      migrationQuarantineReason: { type: String, trim: true, maxlength: 500, default: "" },
+
       // Soft delete / audit
       isDeleted: { type: Boolean, default: false, index: true },
       deletedAt: { type: Date },
+      deletedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
 
       createdBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
       updatedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
@@ -52,7 +66,7 @@ module.exports = (connection) => {
 
   AssignmentSchema.index({ title: 1 });
   AssignmentSchema.index({ course: 1, status: 1, dueDate: 1 });
-  AssignmentSchema.index({ classGroup: 1, sectionId: 1, streamId: 1, status: 1, dueDate: 1 });
+  AssignmentSchema.index({ classGroup: 1, sectionId: 1, streamId: 1, academicYear: 1, term: 1, status: 1, dueDate: 1 });
 
   AssignmentSchema.pre("save", function (next) {
     if (this.title) this.title = String(this.title).trim().replace(/\s+/g, " ");

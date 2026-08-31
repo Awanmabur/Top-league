@@ -95,6 +95,12 @@ module.exports = (connection) => {
         default: 0,
       },
 
+      revision: {
+        type: Number,
+        default: 1,
+        min: 1,
+      },
+
       isActive: {
         type: Boolean,
         default: true,

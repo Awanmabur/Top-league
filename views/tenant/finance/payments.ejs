@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .input,.select,.textarea{padding:10px 12px;border-radius:12px;border:1px solid rgba(13,64,96,.16);background:#fff;outline:none}
@@ -200,7 +200,7 @@
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             <button class="btn-xs" id="bulkComplete" type="button"><i class="fa-solid fa-circle-check"></i> Complete</button>
-            <button class="btn-xs" id="bulkPending" type="button"><i class="fa-solid fa-clock"></i> Pending</button>
+            <button class="btn-xs" id="bulkRefund" type="button"><i class="fa-solid fa-rotate-left"></i> Refund</button>
             <button class="btn-xs" id="bulkVoid" type="button"><i class="fa-solid fa-ban"></i> Void</button>
             <button class="btn-xs" id="bulkDelete" type="button"><i class="fa-solid fa-trash"></i> Delete</button>
             <button class="btn-xs" id="bulkClear" type="button"><i class="fa-solid fa-xmark"></i> Clear</button>
@@ -412,10 +412,8 @@
             <div class="field">
               <label>Status</label>
               <select class="select" id="pStatus" name="status">
-                <option>Completed</option>
-                <option>Pending</option>
-                <option>Voided</option>
-                <option>Refunded</option>
+                <option value="Completed">Completed</option>
+                <option value="Pending">Pending</option>
               </select>
             </div>
 
@@ -525,8 +523,8 @@
     <input type="hidden" name="action" id="bulkActionInput">
   </form>
 
-  <textarea id="paymentsData" class="json-data" aria-hidden="true"><%- JSON.stringify(payments || []) %></textarea>
-  <textarea id="invoicesData" class="json-data" aria-hidden="true"><%- JSON.stringify(invoices || []) %></textarea>
+  <textarea id="paymentsData" class="json-data" aria-hidden="true"><%- JSON.stringify(payments || []).replace(/</g, "\\u003c") %></textarea>
+  <textarea id="invoicesData" class="json-data" aria-hidden="true"><%- JSON.stringify(invoices || []).replace(/</g, "\\u003c") %></textarea>
 
   <script src="/js/navbar.js"></script>
   <script src="/js/payments.js"></script>

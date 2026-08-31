@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .input,.select,.textarea{padding:10px 12px;border-radius:12px;border:1px solid rgba(13,64,96,.16);background:#fff;outline:none}
@@ -126,7 +126,7 @@
         <div class="card">
           <div class="section-title">Paid</div>
           <div class="kpi-value" style="color:#15803d"><%= formatMoney(totals?.paid || 0) %></div>
-          <div class="muted">Total received value</div>
+          <div class="muted">Completed payments received</div>
         </div>
         <div class="card">
           <div class="section-title">Balance</div>
@@ -138,7 +138,7 @@
       <section class="card" style="margin-top:12px;">
         <form class="toolbar" method="GET" action="/admin/student-statements">
           <div class="left">
-            <input class="input" name="q" value="<%= q.q || '' %>" placeholder="Search student, admission no, class, stream or subject..." />
+            <input class="input" name="q" value="<%= q.q || '' %>" placeholder="Search student, admission no, class, stream or program..." />
 
             <select class="select" name="student">
               <option value="all" <%= q.student === 'all' ? 'selected' : '' %>>All Students</option>
@@ -150,11 +150,25 @@
             </select>
 
             <select class="select" name="program">
-              <option value="all" <%= q.program === 'all' ? 'selected' : '' %>>All Subjects</option>
+              <option value="all" <%= q.program === 'all' ? 'selected' : '' %>>All Programs</option>
               <% (programs || []).forEach(function(program){ %>
                 <option value="<%= program.id %>" <%= q.program === program.id ? 'selected' : '' %>>
                   <%= program.name %>
                 </option>
+              <% }) %>
+            </select>
+
+            <select class="select" name="academicYear">
+              <option value="all" <%= q.academicYear === 'all' ? 'selected' : '' %>>All Academic Years</option>
+              <% (academicYears || []).forEach(function(year){ %>
+                <option value="<%= year %>" <%= q.academicYear === String(year) ? 'selected' : '' %>><%= year %></option>
+              <% }) %>
+            </select>
+
+            <select class="select" name="term">
+              <option value="all" <%= q.term === 'all' ? 'selected' : '' %>>All Terms</option>
+              <% [1,2,3].forEach(function(term){ %>
+                <option value="<%= term %>" <%= q.term === String(term) ? 'selected' : '' %>>Term <%= term %></option>
               <% }) %>
             </select>
           </div>
@@ -187,7 +201,7 @@
                 <thead>
                   <tr>
                     <th>Student</th>
-                    <th>Subject / Class</th>
+                    <th>Program / Class</th>
                     <th>Invoices</th>
                     <th>Payments</th>
                     <th>Total Invoiced</th>
@@ -212,7 +226,7 @@
                     <th>Type</th>
                     <th>Reference</th>
                     <th>Description</th>
-                    <th>Subject / Class</th>
+                    <th>Program / Class</th>
                     <th>Debit</th>
                     <th>Credit</th>
                     <th>Running Balance</th>
@@ -248,7 +262,8 @@
               <strong>Snapshot:</strong>
               <span>Billed: <%= formatMoney(totals?.invoiced || 0) %></span> -
               <span>Paid: <%= formatMoney(totals?.paid || 0) %></span> -
-              <span>Balance: <%= formatMoney(totals?.balance || 0) %></span>
+              <span>Balance: <%= formatMoney(totals?.balance || 0) %></span> -
+              <span>Account credit: <%= formatMoney(totals?.credit || 0) %></span>
             </div>
           </div>
         </section>
@@ -309,7 +324,7 @@
             <div class="view-value" id="vStudentName">-</div>
           </div>
           <div class="view-card">
-            <div class="view-label">Subject / Class</div>
+            <div class="view-label">Program / Class</div>
             <div class="view-value" id="vProgramName">-</div>
           </div>
           <div class="view-card">
@@ -361,7 +376,7 @@
     </div>
   </div>
 
-  <textarea id="statementsData" class="json-data" aria-hidden="true"><%- JSON.stringify(statements || []) %></textarea>
+  <textarea id="statementsData" class="json-data" aria-hidden="true"><%- JSON.stringify(statements || []).replace(/</g, "\\u003c") %></textarea>
 
   <script src="/js/navbar.js"></script>
   <script src="/js/student-statements.js"></script>

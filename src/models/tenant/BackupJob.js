@@ -24,31 +24,43 @@ module.exports = function BackupJobModel(conn) {
       name: { type: String, required: true, trim: true, maxlength: 220 },
       type: {
         type: String,
-        enum: ["Manual", "Scheduled", "Full", "Database", "Media"],
+        enum: ["Manual", "Scheduled"],
         default: "Manual",
       },
       scope: {
         type: String,
-        enum: ["Full System", "Database Only", "Media Only", "Config Only"],
+        enum: ["Full System", "Config Only"],
         default: "Full System",
       },
       storage: {
         type: String,
-        enum: ["Local", "S3", "Cloudinary"],
-        default: "Local",
+        enum: ["Cloudinary"],
+        default: "Cloudinary",
       },
       retentionDays: { type: Number, default: 30, min: 1 },
       scheduleAt: { type: Date, default: null },
       status: {
         type: String,
-        enum: ["Completed", "Running", "Scheduled", "Failed", "Archived"],
+        enum: ["Completed", "Running", "Scheduled", "Failed", "Restoring", "Archived"],
         default: "Scheduled",
       },
       notes: { type: String, trim: true, default: "" },
       sizeBytes: { type: Number, default: 0 },
       sizeLabel: { type: String, trim: true, default: "0.00 GB" },
       checksum: { type: String, trim: true, default: "" },
+      plainHash: { type: String, trim: true, default: "" },
       filePath: { type: String, trim: true, default: "" },
+      filePublicId: { type: String, trim: true, default: "" },
+      fileResourceType: { type: String, trim: true, default: "raw" },
+      accessType: { type: String, enum: ["authenticated", "legacy", "missing"], default: "missing" },
+      artifactVersion: { type: Number, default: 1 },
+      completedAt: { type: Date, default: null },
+      failedAt: { type: Date, default: null },
+      failureReason: { type: String, trim: true, maxlength: 500, default: "" },
+      revision: { type: Number, default: 1, min: 1 },
+      restoreLockUntil: { type: Date, default: null },
+      migrationQuarantinedAt: { type: Date, default: null },
+      migrationQuarantineReason: { type: String, trim: true, maxlength: 300, default: "" },
       restoreHistory: { type: [RestoreHistorySchema], default: [] },
       createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
       updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
@@ -60,6 +72,8 @@ module.exports = function BackupJobModel(conn) {
 
   BackupJobSchema.index({ createdAt: -1 });
   BackupJobSchema.index({ status: 1, type: 1, storage: 1, createdAt: -1 });
+  BackupJobSchema.index({ scheduleAt: 1, status: 1, isDeleted: 1 });
+  BackupJobSchema.index({ checksum: 1 }, { sparse: true });
 
   return conn.models.BackupJob || conn.model("BackupJob", BackupJobSchema);
 };

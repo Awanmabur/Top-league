@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Documentation — Classic Academy</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <meta name="description" content="Overview of the Classic Academy admin, staff, parent, and student portals." />
+  <meta name="robots" content="index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1" />
+  <meta name="theme-color" content="#4a90e2" />
+  <link rel="canonical" href="/docs" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+  <style nonce="<%= cspNonce %>">
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root { --primary: #4a90e2; --ink: #0f172a; --muted: #475569; --page-pad: clamp(1rem, 4vw, 6rem); --shadow2: 0 18px 50px rgba(15, 23, 42, .12); }
+    html { scroll-behavior: smooth; }
+    a { text-decoration: none; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; background: #e0f7fa; color: #333; overflow-x: clip; padding-top: 112px; }
+    @media (max-width: 600px) { body { padding-top: 102px; } }
+    #loader { position: fixed; inset: 0; background: #e0f7fa; display: flex; flex-direction: column; gap: 14px; align-items: center; justify-content: center; z-index: 9999; }
+    .academylogo { width: min(220px, 70vw); } .academylogo img { width: 100%; height: auto; display: block; }
+    .loader { position: relative; width: 18px; height: 28px; perspective: 500px; animation: flip 2s infinite; }
+    .loader:nth-child(3) { animation-delay: 0.2s; } .loader:nth-child(4) { animation-delay: 0.4s; } .loader:nth-child(5) { animation-delay: 0.6s; } .loader:nth-child(6) { animation-delay: 0.8s; }
+    .face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 4px; }
+    .front { background: var(--primary); } .back { background: #d35400; transform: rotateY(180deg); }
+    @keyframes flip { 0%, 100% { transform: rotateY(0deg); } 50% { transform: rotateY(180deg); } }
+    .header { position: fixed; top: 14px; left: var(--page-pad); right: var(--page-pad); padding: .65rem .85rem; border-radius: 999px; background: rgba(255, 255, 255, .70); border: 1px solid rgba(255, 255, 255, .78); backdrop-filter: blur(12px); box-shadow: 0 16px 46px rgba(15, 23, 42, .10); display: flex; align-items: center; justify-content: space-between; gap: .8rem; z-index: 2000; }
+    .brand { display: flex; align-items: center; gap: .75rem; min-width: 0; color: var(--ink); }
+    .brand-mark { width: 40px; height: 40px; border-radius: 14px; object-fit: cover; border: 1px solid rgba(15, 23, 42, .10); background: rgba(255, 255, 255, .85); flex: 0 0 auto; }
+    .brand-txt { display: grid; line-height: 1.05; min-width: 0; }
+    .brand-name { font-weight: 900; letter-spacing: -.02em; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .brand-sub { font-size: .86rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .navbar { display: flex; align-items: center; gap: .35rem; }
+    .navbar a { padding: .55rem .75rem; border-radius: 999px; color: #1d4ed8; font-weight: 600; font-size: 1.02rem; white-space: nowrap; }
+    .navbar a:hover { background: rgba(74, 144, 226, .10); color: var(--ink); }
+    .nav-pill { border: 1px solid rgba(74, 144, 226, .35); background: rgba(74, 144, 226, .10); color: #0f172a !important; font-weight: 800; }
+    .nav-actions { display: flex; align-items: center; gap: .55rem; flex: 0 0 auto; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: .45rem; padding: 0.72rem 1rem; background-color: var(--primary); color: white; border: 1px solid var(--primary); border-radius: 999px; font-weight: 800; box-shadow: 0 10px 28px rgba(74, 144, 226, .18); white-space: nowrap; }
+    .btn.ghost { background: rgba(255, 255, 255, .72); border: 1px solid rgba(15, 23, 42, .12); color: var(--ink); }
+    .btn-sm { padding: .55rem .8rem !important; font-size: .95rem !important; box-shadow: none !important; }
+    .menu-btn { width: 44px; height: 44px; border-radius: 999px; border: 1px solid rgba(15, 23, 42, .12); background: rgba(255, 255, 255, .78); display: none; align-items: center; justify-content: center; cursor: pointer; }
+    @media (max-width: 1024px) {
+      .brand-sub { display: none; } .menu-btn { display: inline-flex; }
+      .navbar { position: absolute; top: calc(100% + .65rem); left: 0; right: 0; margin: 0 .25rem; padding: .75rem; background: rgba(74, 144, 226, .96); border-radius: 20px; display: grid; gap: .4rem; transform: translateY(-8px); opacity: 0; pointer-events: none; transition: transform .2s ease, opacity .2s ease; }
+      .navbar.active { transform: translateY(0); opacity: 1; pointer-events: auto; }
+      .navbar a { color: #fff; border-radius: 16px; padding: .85rem .85rem; background: rgba(255, 255, 255, .08); }
+      .nav-pill { background: rgba(255, 255, 255, .18); color: #fff !important; }
+    }
+    .about-hero { margin: 0 var(--page-pad); border-radius: 26px; background: rgba(255, 255, 255, .28); backdrop-filter: blur(14px); border: 1px solid rgba(255, 255, 255, .55); box-shadow: var(--shadow2); padding: 2rem 2rem; display: grid; grid-template-columns: 1.25fr .9fr; gap: 1.8rem; align-items: center; }
+    .about-hero h1 { font-size: 2.2rem; color: #0f172a; line-height: 1.12; margin-top: .6rem; }
+    .about-hero p { margin-top: .65rem; color: #475569; max-width: 58ch; }
+    .about-hero .kicker { display: inline-flex; gap: .55rem; align-items: center; padding: .45rem .8rem; border-radius: 999px; background: rgba(255, 255, 255, .6); border: 1px solid rgba(255, 255, 255, .75); color: #1f2a44; font-weight: 700; font-size: .95rem; }
+    .about-hero .actions { display: flex; gap: .75rem; flex-wrap: wrap; margin-top: 1.1rem; }
+    .about-hero .media { border-radius: 22px; overflow: hidden; background: rgba(255, 255, 255, .55); border: 1px solid rgba(255, 255, 255, .75); }
+    .about-hero .media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .page-wrap { margin: 0 var(--page-pad); padding: 2.2rem 0 2.8rem 0; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.1rem; }
+    .cardx { background: rgba(255, 255, 255, .70); border: 1px solid rgba(255, 255, 255, .85); border-radius: 22px; box-shadow: 0 12px 30px rgba(15, 23, 42, .10); padding: 1.2rem 1.15rem; }
+    .cardx h3 { margin: 0; color: #0f172a; font-size: 1.15rem; display: flex; gap: .55rem; align-items: center; }
+    .cardx h3 i { color: var(--primary); }
+    .cardx p { margin-top: .6rem; color: #475569; }
+    .cardx ul { list-style: none; padding: 0; margin: .6rem 0 0 0; display: grid; gap: .5rem; }
+    .cardx li { display: flex; gap: .6rem; align-items: flex-start; color: #1f2937; }
+    .cardx li i { color: #16a34a; margin-top: .25rem; }
+    .note { background: rgba(255,255,255,.55); border: 1px dashed rgba(15,23,42,.25); border-radius: 18px; padding: 1rem 1.1rem; margin-top: 1.1rem; color: #1f2937; }
+    @media (max-width: 1024px) { .about-hero { grid-template-columns: 1fr; padding: 1.25rem; } .grid-2 { grid-template-columns: 1fr; } }
+    .footer { display: flex; flex-wrap: wrap; justify-content: space-between; font-size: 0.95rem; background: rgba(255, 255, 255, 0.3); backdrop-filter: blur(10px); border-radius: 25px; margin: 2rem var(--page-pad); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1); }
+    .footer div { margin: 1rem; flex: 1 1 220px; min-width: 220px; }
+    .footer h4 { font-size: 1rem; margin-bottom: 1rem; }
+    .footer ul { list-style: none; padding: 0; }
+    .footer ul li { margin-bottom: 0.5rem; }
+    .footer ul li a { color: #333; }
+    .footer ul li a:hover { text-decoration: underline; }
+    #toTopBtn { position: fixed; bottom: 30px; right: 30px; background-color: var(--primary); color: white; border: none; width: 42px; height: 42px; border-radius: 50%; cursor: pointer; font-size: 1.5rem; display: none; z-index: 1000; }
+    .fab-container { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; position: fixed; bottom: 170px; right: 20px; z-index: 999; }
+    .fab-container:hover .sub-button:nth-child(2) { transform: translateY(-80px); }
+    .fab-container:hover .sub-button:nth-child(3) { transform: translateY(-140px); }
+    .fab-container:hover .sub-button:nth-child(4) { transform: translateY(-200px); }
+    .fab-container .sub-button { position: absolute; display: flex; align-items: center; justify-content: center; bottom: 10px; right: 10px; height: 50px; width: 50px; background-color: #4ba2ff; border-radius: 50%; transition: all 0.3s ease; }
+    .fab-container .fab { position: relative; height: 70px; width: 70px; background-color: #4ba2ff; border-radius: 50%; z-index: 2; }
+    .fab-container .fab .fab-content { display: flex; align-items: center; justify-content: center; height: 100%; width: 100%; border-radius: 50%; cursor: pointer; }
+    .fab-container .fab .fab-content .material-icons { color: #2e2e2e; font-size: 48px; }
+    .fab-container .sub-button .material-icons { color: #2e2e2e; padding-top: 6px; }
+  </style>
+  <script src="/js/public-image-fallback.js"></script>
+</head>
+
+<body>
+  <div id="loader">
+    <div class="academylogo"><img src="/img/academylogo.webp" alt="Classic Academy logo" decoding="async" width="396" height="415"></div>
+    <div style="display:flex; gap:10px;">
+      <div class="loader"><div class="face front"></div><div class="face back"></div></div>
+      <div class="loader"><div class="face front"></div><div class="face back"></div></div>
+      <div class="loader"><div class="face front"></div><div class="face back"></div></div>
+      <div class="loader"><div class="face front"></div><div class="face back"></div></div>
+      <div class="loader"><div class="face front"></div><div class="face back"></div></div>
+    </div>
+  </div>
+
+  <header class="header" id="siteHeader">
+    <a href="/" class="brand" aria-label="Classic Academy Home">
+      <img class="brand-mark" src="/img/academylogo.webp" alt="Classic Academy logo" decoding="async" width="396" height="415">
+      <div class="brand-txt"><span class="brand-name">Classic Academy</span><span class="brand-sub">School management + admissions</span></div>
+    </a>
+    <nav class="navbar" aria-label="Primary">
+      <a href="/">Home</a>
+      <a href="/about">About</a>
+      <a href="/services">Features</a>
+      <a href="/#contact">Contact</a>
+      <a class="nav-pill" href="/#pricing">Join Today</a>
+      <a class="nav-pill" href="/schedule">Sign In</a>
+    </nav>
+    <div class="nav-actions">
+      <a href="/schedule" class="btn btn-sm"><i class="fa-solid fa-calendar-check"></i> Book Demo</a>
+      <button id="menu-btn" class="menu-btn" aria-label="Open menu" aria-expanded="false"><i class="fa-solid fa-bars"></i></button>
+    </div>
+  </header>
+
+  <section class="about-hero reveal">
+    <div>
+      <span class="kicker"><i class="fa-solid fa-book"></i> Documentation</span>
+      <h1>Find your way around the portals</h1>
+      <p>Classic Academy is split into separate portals for admins, staff, parents, and students — each one scoped
+        to what that role needs.</p>
+      <div class="actions">
+        <a class="btn primary" href="/contact"><i class="fa-solid fa-headset"></i> Ask a question</a>
+        <a class="btn ghost" href="/faq"><i class="fa-solid fa-circle-question"></i> FAQ</a>
+      </div>
+    </div>
+    <div class="media"><img src="/img/hero.webp" alt="" decoding="async" width="1600" height="1379"></div>
+  </section>
+
+  <section class="page-wrap">
+    <div class="grid-2 reveal">
+      <div class="cardx">
+        <h3><i class="fa-solid fa-user-shield"></i> Admin portal</h3>
+        <p>Where school administrators manage the school day-to-day:</p>
+        <ul>
+          <li><i class="fa-solid fa-check"></i><span>Students, staff, classes, sections and streams</span></li>
+          <li><i class="fa-solid fa-check"></i><span>Admissions: intakes, applicants, offer letters</span></li>
+          <li><i class="fa-solid fa-check"></i><span>Finance: invoices, payments, fees, payroll</span></li>
+          <li><i class="fa-solid fa-check"></i><span>Attendance, exams, results, transcripts</span></li>
+          <li><i class="fa-solid fa-check"></i><span>Roles, permissions, and audit logs</span></li>
+        </ul>
+      </div>
+
+      <div class="cardx">
+        <h3><i class="fa-solid fa-chalkboard-user"></i> Staff portal</h3>
+        <p>Where teachers and support staff work:</p>
+        <ul>
+          <li><i class="fa-solid fa-check"></i><span>Attendance sheets and gradebooks</span></li>
+          <li><i class="fa-solid fa-check"></i><span>Assignments and timetables</span></li>
+          <li><i class="fa-solid fa-check"></i><span>Leave requests and announcements</span></li>
+        </ul>
+      </div>
+
+      <div class="cardx">
+        <h3><i class="fa-solid fa-user-group"></i> Parent portal</h3>
+        <p>Where parents follow a child's progress:</p>
+        <ul>
+          <li><i class="fa-solid fa-check"></i><span>Results, attendance, and fee statements</span></li>
+          <li><i class="fa-solid fa-check"></i><span>Announcements and messaging with the school</span></li>
+        </ul>
+      </div>
+
+      <div class="cardx">
+        <h3><i class="fa-solid fa-user-graduate"></i> Student portal</h3>
+        <p>Where students check their own records:</p>
+        <ul>
+          <li><i class="fa-solid fa-check"></i><span>Results, timetable, and assignments</span></li>
+          <li><i class="fa-solid fa-check"></i><span>Events, notifications, and library</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="note reveal">
+      <strong>Looking for something specific?</strong> Step-by-step guides for each module are being written up.
+      In the meantime, <a href="/contact">contact us</a> and we'll walk you through it directly.
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div>
+      <h4>About Us</h4>
+      <p>We are excited to introduce our upcoming Classic Academy Plans, where schools will be categorized</p>
+    </div>
+    <div>
+      <h4>Learn about our mission</h4>
+      <ul>
+        <li><a href="/about">Our Story</a></li>
+        <li><a href="/services">What We Offer</a></li>
+        <li><a href="/plan?plan=standard">Plans & Pricing</a></li>
+        <li><a href="/careers">Careers</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Get help with your account</h4>
+      <ul>
+        <li><a href="/contact">Customer Support</a></li>
+        <li><a href="/schedule">Book a Demo</a></li>
+        <li><a href="/faq">FAQ</a></li>
+        <li><a href="/privacy">Privacy Policy</a></li>
+        <li><a href="/terms">Terms</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Join our school community</h4>
+      <ul>
+        <li><a href="/schools">Find Schools</a></li>
+        <li><a href="/admissions">Admissions</a></li>
+        <li><a href="/search">Search</a></li>
+      </ul>
+    </div>
+  </footer>
+
+  <button id="toTopBtn" aria-label="Scroll to top">↑</button>
+
+  <div class="fab-container" aria-hidden="true">
+    <div class="fab shadow"><div class="fab-content"><span class="material-icons">support_agent</span></div></div>
+    <div class="sub-button shadow"><a href="tel:+256781977217"><span class="material-icons">phone</span></a></div>
+    <div class="sub-button shadow"><a href="https://api.whatsapp.com/send?phone=256781977217" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-whatsapp"></i></a></div>
+    <div class="sub-button shadow"><a href="/share" target="_blank" rel="noopener noreferrer"><span class="material-icons">share</span></a></div>
+  </div>
+
+  <script src="/pages/terms.js"></script>
+</body>
+
+</html>

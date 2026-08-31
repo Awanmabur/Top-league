@@ -11,6 +11,24 @@ module.exports = (connection) => {
       originalName: { type: String, trim: true, maxlength: 200 },
       bytes: { type: Number, default: 0 },
       mimeType: { type: String, trim: true, maxlength: 80 },
+      verified: { type: Boolean, default: false },
+      verifiedAt: { type: Date, default: null },
+      verifiedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
+    },
+    { _id: false }
+  );
+
+
+  const RequirementSnapshotSchema = new Schema(
+    {
+      requirementId: { type: Schema.Types.ObjectId, ref: "AdmissionRequirement", default: null },
+      code: { type: String, trim: true, maxlength: 40, default: "" },
+      title: { type: String, trim: true, maxlength: 120, default: "" },
+      category: { type: String, trim: true, maxlength: 20, default: "other" },
+      description: { type: String, trim: true, maxlength: 700, default: "" },
+      isMandatory: { type: Boolean, default: true },
+      feeAmount: { type: Number, default: 0, min: 0 },
+      currency: { type: String, trim: true, uppercase: true, maxlength: 10, default: "UGX" },
     },
     { _id: false }
   );
@@ -75,6 +93,7 @@ module.exports = (connection) => {
       grades: { type: String, trim: true, maxlength: 160 },
 
       notes: { type: String, trim: true, maxlength: 600 },
+      admissionRequirementsSnapshot: { type: [RequirementSnapshotSchema], default: [] },
 
       passportPhoto: { type: DocSchema, default: null },
       idDocument: { type: DocSchema, default: null },
@@ -97,6 +116,16 @@ module.exports = (connection) => {
       interviewWhen: { type: Date, default: null },
       interviewMode: { type: String, trim: true, maxlength: 40, default: "" },
       interviewPanel: { type: String, trim: true, maxlength: 200, default: "" },
+      interviewUpdatedAt: { type: Date, default: null },
+      interviewUpdatedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
+      reviewChecklist: {
+        identityVerified: { type: Boolean, default: false },
+        academicsReviewed: { type: Boolean, default: false },
+        documentsComplete: { type: Boolean, default: false },
+        feeCleared: { type: Boolean, default: false },
+      },
+      checklistUpdatedAt: { type: Date, default: null },
+      checklistUpdatedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
       requestedDocs: {
         type: [
           {
@@ -114,6 +143,10 @@ module.exports = (connection) => {
       linkedStudent: { type: Schema.Types.ObjectId, ref: "Student", default: null, index: true },
       convertedStudentId: { type: Schema.Types.ObjectId, ref: "Student", default: null, index: true },
       regNo: { type: String, trim: true, maxlength: 60 },
+
+      conversionLockToken: { type: String, trim: true, maxlength: 80, default: "" },
+      conversionLockAt: { type: Date, default: null },
+      conversionLockBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
 
       isDeleted: { type: Boolean, default: false, index: true },
       deletedAt: { type: Date },

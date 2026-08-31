@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { escapeRegex } = require("../../../services/tenant/financeService");
 
 const str = (v) => String(v ?? "").trim();
 
@@ -263,7 +264,7 @@ function dateFilter(field, range) {
 }
 
 function sumInvoices(list = []) {
-  return list.reduce((acc, inv) => {
+  return list.filter((inv) => !["Draft", "Cancelled"].includes(inv.status)).reduce((acc, inv) => {
     acc.billed += invoiceAmount(inv);
     acc.paid += invoicePaid(inv);
     acc.balance += invoiceBalance(inv);
@@ -273,7 +274,7 @@ function sumInvoices(list = []) {
 
 function groupPaymentsByMethod(list = []) {
   const map = {};
-  list.forEach((p) => {
+  list.filter((p) => p.status === "Completed").forEach((p) => {
     const key = paymentMethodLabel(p);
     map[key] = (map[key] || 0) + paymentAmount(p);
   });
@@ -286,7 +287,7 @@ function groupPaymentsByMethod(list = []) {
 
 function groupExpensesByCategory(list = []) {
   const map = {};
-  list.forEach((e) => {
+  list.filter((e) => ["Recorded", "Approved"].includes(e.status)).forEach((e) => {
     const key = e.category || "General";
     map[key] = (map[key] || 0) + expenseAmount(e);
   });
@@ -312,7 +313,7 @@ module.exports = {
       Scholarship,
       Expense,
     } = req.models || {};
-    const AcademicSubject = Subject || Program || null;
+    const AcademicProgram = Program || Subject || null;
 
     const { clean } = buildFilters(req.query);
     const range = resolvePeriodRange(clean.period);
@@ -352,27 +353,24 @@ module.exports = {
     }
 
     if (clean.q) {
+      const rx = new RegExp(escapeRegex(clean.q), "i");
       invoiceMongo.$or = [
-        { invoiceNumber: new RegExp(clean.q, "i") },
-        { invoiceNo: new RegExp(clean.q, "i") },
-        { reference: new RegExp(clean.q, "i") },
-        { status: new RegExp(clean.q, "i") },
+        { invoiceNumber: rx },
+        { reference: rx },
+        { status: rx },
       ];
 
       paymentMongo.$or = [
-        { receiptNumber: new RegExp(clean.q, "i") },
-        { receiptNo: new RegExp(clean.q, "i") },
-        { reference: new RegExp(clean.q, "i") },
-        { method: new RegExp(clean.q, "i") },
-        { paymentMethod: new RegExp(clean.q, "i") },
+        { receiptNumber: rx },
+        { reference: rx },
+        { method: rx },
       ];
 
       expenseMongo.$or = [
-        { title: new RegExp(clean.q, "i") },
-        { description: new RegExp(clean.q, "i") },
-        { category: new RegExp(clean.q, "i") },
-        { expenseNumber: new RegExp(clean.q, "i") },
-        { voucherNo: new RegExp(clean.q, "i") },
+        { title: rx },
+        { description: rx },
+        { category: rx },
+        { expenseNumber: rx },
       ];
     }
 
@@ -400,14 +398,14 @@ module.exports = {
       recentExpensesRaw,
     ] = await Promise.all([
       countSafe(Student),
-      countSafe(AcademicSubject),
+      countSafe(AcademicProgram),
       countSafe(FeeStructure),
       countSafe(Scholarship),
       findSafe(Invoice, invoiceMongo),
       findSafe(Payment, paymentMongo),
       findSafe(Expense, expenseMongo),
       findSafe(
-        AcademicSubject,
+        AcademicProgram,
         {},
         "title shortTitle name programName code",
         { sort: { title: 1, shortTitle: 1, name: 1, code: 1 } }
@@ -432,12 +430,16 @@ module.exports = {
     ]);
 
     const invoiceTotals = sumInvoices(invoiceDocs);
-    const totalCollected = paymentDocs.reduce((a, p) => a + paymentAmount(p), 0);
-    const totalExpenses = expenseDocs.reduce((a, e) => a + expenseAmount(e), 0);
+    const completedPayments = paymentDocs.filter((p) => p.status === "Completed");
+    const totalCollected = completedPayments.reduce((a, p) => a + paymentAmount(p), 0);
+    const totalExpenses = expenseDocs
+      .filter((e) => ["Recorded", "Approved"].includes(e.status))
+      .reduce((a, e) => a + expenseAmount(e), 0);
 
-    const unpaidInvoices = invoiceDocs.filter((inv) => invoiceBalance(inv) > 0).length;
-    const paidInvoices = invoiceDocs.filter((inv) => invoiceBalance(inv) <= 0).length;
-    const partialInvoices = invoiceDocs.filter((inv) => invoicePaid(inv) > 0 && invoiceBalance(inv) > 0).length;
+    const activeInvoices = invoiceDocs.filter((inv) => !["Draft", "Cancelled"].includes(inv.status));
+    const unpaidInvoices = activeInvoices.filter((inv) => invoiceBalance(inv) > 0).length;
+    const paidInvoices = activeInvoices.filter((inv) => invoiceBalance(inv) <= 0).length;
+    const partialInvoices = activeInvoices.filter((inv) => invoicePaid(inv) > 0 && invoiceBalance(inv) > 0).length;
 
     const paymentMethods = groupPaymentsByMethod(paymentDocs);
     const expenseCategories = groupExpensesByCategory(expenseDocs);

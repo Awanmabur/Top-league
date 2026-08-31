@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
@@ -695,7 +695,7 @@
       adminNotes: a.adminNotes || a.notes || '',
       openUrl: '/admin/admissions/applicants/' + encodeURIComponent(String(a._id || ''))
     };
-  })) %></textarea>
+  })).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
 
   <script src="/js/navbar.js" defer></script>
   <script src="/js/admin-admissions-applicants.js" defer></script>

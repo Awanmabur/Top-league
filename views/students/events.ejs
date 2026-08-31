@@ -20,12 +20,15 @@
       </div>
     </div>
     <div class="top-actions">
-      <button class="btn light" type="button" disabled>
+      <a class="btn light" href="/student/events/calendar.ics">
         <i class="fa-solid fa-calendar-plus"></i> Add to Calendar
-      </button>
-      <button class="btn primary" type="button" disabled>
-        <i class="fa-solid fa-bell"></i> Subscribe to Alerts
-      </button>
+      </a>
+      <form method="POST" action="/student/events/alerts" style="display:inline;">
+        <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
+        <button class="btn primary" type="submit">
+          <i class="fa-solid fa-bell"></i> <%= eventAlertsEnabled ? "Unsubscribe Alerts" : "Subscribe to Alerts" %>
+        </button>
+      </form>
     </div>
   </div>
 
@@ -41,17 +44,21 @@
         <select id="eventType" class="select">
           <option value="all" selected>All types</option>
           <option value="academic">Academic</option>
-          <option value="club">Clubs &amp; Societies</option>
-          <option value="admin">Administrative</option>
           <option value="sports">Sports</option>
+          <option value="seminar">Seminar</option>
+          <option value="workshop">Workshop</option>
+          <option value="conference">Conference</option>
+          <option value="social">Social</option>
+          <option value="general">General</option>
         </select>
       </div>
       <div>
         <label class="small-muted">Location</label><br/>
         <select id="eventLocation" class="select">
           <option value="all" selected>All locations</option>
-          <option value="main">Main School</option>
-          <option value="city">City Centre</option>
+          <% (eventLocations || []).forEach(function(loc){ %>
+            <option value="<%= String(loc).toLowerCase() %>"><%= loc %></option>
+          <% }) %>
         </select>
       </div>
     </div>
@@ -78,12 +85,20 @@
               <% events.forEach(function(ev){ %>
                 <tr class="event-row"
                     data-type="<%= String(ev.type || '').toLowerCase() %>"
-                    data-location="<%= String(ev.location || '').toLowerCase().includes('city') ? 'city' : 'main' %>">
+                    data-location="<%= String(ev.location || '').toLowerCase() %>">
                   <td><%= ev.date ? new Date(ev.date).toDateString() : "-" %></td>
                   <td>
                     <strong><%= ev.title %></strong>
                     <% if (ev.organizer) { %>
                       <div class="small-muted"><%= ev.organizer %></div>
+                    <% } %>
+                    <% if (ev.canRegister) { %>
+                      <form method="POST" action="/student/events/<%= ev.id %>/register" style="margin-top:6px;">
+                        <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
+                        <button class="btn light" type="submit" style="padding:6px 10px;font-size:12px;">Register</button>
+                      </form>
+                    <% } else { %>
+                      <div class="small-muted" style="margin-top:4px;"><%= ev.registrationLabel %><% if (ev.capacity > 0) { %> · <%= ev.registrations %>/<%= ev.capacity %><% } %></div>
                     <% } %>
                   </td>
                   <td><%= ev.type %></td>
@@ -127,31 +142,6 @@
 </div>
 
 <script src="/js/navbar.js"></script>
-<script>
-(function(){
-  const typeSelect = document.getElementById("eventType");
-  const locationSelect = document.getElementById("eventLocation");
-  const rows = document.querySelectorAll("#eventsTable .event-row");
-
-  function applyFilters() {
-    const t = typeSelect.value;
-    const l = locationSelect.value;
-
-    rows.forEach(row => {
-      const rt = row.getAttribute("data-type");
-      const rl = row.getAttribute("data-location");
-
-      let visible = true;
-      if (t !== "all" && rt !== t) visible = false;
-      if (l !== "all" && rl !== l) visible = false;
-
-      row.style.display = visible ? "" : "none";
-    });
-  }
-
-  typeSelect?.addEventListener("change", applyFilters);
-  locationSelect?.addEventListener("change", applyFilters);
-})();
-</script>
+<script src="/js/student-events.js"></script>
 </body>
 </html>

@@ -5,5 +5,6 @@ const ctrl = require("../../../controllers/tenant/staff/leaveController");
 router.get("/leave", ctrl.list);
 router.get("/leave/new", ctrl.newForm);
 router.post("/leave", ctrl.create);
+router.post("/leave/:id/cancel", ctrl.cancel);
 
 module.exports = router;

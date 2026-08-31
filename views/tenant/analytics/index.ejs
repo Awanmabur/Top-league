@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
@@ -327,12 +327,7 @@
         <div class="card">
           <div class="section-title">Active Students</div>
           <div class="kpi-value"><%= money(k.activeStudents) %></div>
-          <div class="muted">
-            <span class="strong" style="color:<%= num(k.activeStudentsDelta) >= 0 ? '#15803d' : '#b91c1c' %>;">
-              <%= pct(k.activeStudentsDelta) %>
-            </span>
-            vs previous period
-          </div>
+          <div class="muted">Current active enrollment</div>
         </div>
 
         <div class="card">
@@ -372,7 +367,7 @@
               name="search"
               id="search"
               value="<%= safe(q.search) %>"
-              placeholder="Search program or metric..."
+              placeholder="Search section or metric..."
               maxlength="80"
             />
 
@@ -438,8 +433,8 @@
 
         <div class="grid-2" style="margin-top:12px;">
           <section class="card chart-card">
-            <div class="section-title">Fee Collection Breakdown</div>
-            <div class="section-sub">Collected amounts by fee category.</div>
+            <div class="section-title">Billing Breakdown</div>
+            <div class="section-sub">Invoiced amounts by fee category for the selected range.</div>
             <div class="chart-wrap">
               <canvas id="chartFees"></canvas>
             </div>
@@ -542,7 +537,7 @@
 
           <section class="card chart-card">
             <div class="section-title">Top Sections by Student Volume</div>
-            <div class="section-sub">Highest-volume sections in current dataset.</div>
+            <div class="section-sub">Highest-volume sections in the selected academic year.</div>
             <div class="chart-wrap">
               <canvas id="chartPrograms"></canvas>
             </div>
@@ -627,7 +622,7 @@
             </div>
 
             <div class="note" style="margin-top:12px;">
-              Best practice: follow up overdue invoices daily and monitor large outstanding balances by program.
+              Best practice: follow up overdue invoices daily and monitor large outstanding balances by section and program.
             </div>
           </aside>
         </div>
@@ -667,16 +662,15 @@
     </main>
   </div>
 
-  <script id="analyticsData" type="application/json" class="json-data"><%- JSON.stringify({
+  <script nonce="<%= cspNonce %>" id="analyticsData" type="application/json" class="json-data"><%- JSON.stringify({
     query: q,
     kpis: k,
     trends: t,
     feeBreakdown: feeParts,
     programRows: rows
-  }) %></script>
+  }).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></script>
 
   <script src="/js/navbar.js" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
   <script src="/vendor/chart.umd.min.js" defer></script>
   <script src="/js/analytics.js" defer></script>
 </body>

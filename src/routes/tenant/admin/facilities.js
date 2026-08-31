@@ -1,0 +1,1 @@
+const express=require('express');const r=express.Router();const c=require('../../../controllers/tenant/admin/facilitiesController');r.get('/',c.index);r.post('/',c.create);r.post('/:id',c.update);module.exports=r;

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Admin • Helpdesk Templates — Classic Academy</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="/css/navbar.css" />
+  <link rel="stylesheet" href="/css/student-portal.css" />
+  <style nonce="<%= cspNonce %>">
+    .grid{display:grid;grid-template-columns:minmax(320px,.8fr) minmax(0,1.2fr);gap:12px}
+    .form-grid{display:grid;gap:12px}.field label{display:block;font-size:12px;color:#6b7280;margin-bottom:6px}
+    .input,.select,.textarea{width:100%;padding:10px 12px;border-radius:12px;border:1px solid rgba(13,64,96,.16);background:#fff;outline:none}
+    .textarea{min-height:150px;resize:vertical}.stack{display:grid;gap:10px}.template{padding:14px;border:1px solid rgba(13,64,96,.10);border-radius:14px;background:#fff}
+    .template-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.meta{font-size:12px;color:#6b7280;margin-top:5px}.body{white-space:pre-wrap;line-height:1.6;margin-top:10px;color:#0d4060}
+    .flash{padding:12px 14px;border-radius:12px;font-weight:700;margin-bottom:10px}.ok{background:#ecfdf3;color:#166534;border:1px solid #bbf7d0}.bad{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+    @media(max-width:900px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body data-portal="tenant">
+  <div class="app">
+    <%- include("../partials/navbar") %>
+    <main class="main">
+      <% (success || []).forEach(function(msg){ %><div class="flash ok"><%= msg %></div><% }) %>
+      <% (error || []).forEach(function(msg){ %><div class="flash bad"><%= msg %></div><% }) %>
+      <div class="topbar">
+        <div>
+          <div class="title">Helpdesk Templates</div>
+          <div class="subtitle">Reusable response templates for common support workflows.</div>
+        </div>
+        <div class="top-actions">
+          <a class="btn light" href="/admin/helpdesk"><i class="fa-solid fa-arrow-left"></i> Helpdesk</a>
+          <a class="btn light" href="/admin/settings"><i class="fa-solid fa-gear"></i> Settings</a>
+        </div>
+      </div>
+
+      <div class="grid" style="margin-top:12px;">
+        <section class="card">
+          <div class="section-title">Create Template</div>
+          <div class="section-sub">Save a standard response for the support team.</div>
+          <form method="POST" action="/admin/helpdesk/templates" class="form-grid" style="margin-top:12px;">
+            <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
+            <div class="field"><label>Name</label><input class="input" name="name" maxlength="120" required placeholder="e.g., Portal login reset" /></div>
+            <div class="field"><label>Subject</label><input class="input" name="subject" maxlength="220" placeholder="Optional suggested subject" /></div>
+            <div class="field"><label>Category</label><select class="select" name="category"><option>General</option><option>Technical</option><option>Finance</option><option>Admissions</option><option>Library</option><option>Hostel</option><option>Academic</option><option>Attendance</option></select></div>
+            <div class="field"><label>Priority</label><select class="select" name="priority"><option>Low</option><option selected>Medium</option><option>High</option><option>Urgent</option></select></div>
+            <div class="field"><label>Response</label><textarea class="textarea" name="body" maxlength="5000" required placeholder="Write the reusable response..."></textarea></div>
+            <button class="btn primary" type="submit"><i class="fa-solid fa-floppy-disk"></i> Save Template</button>
+          </form>
+        </section>
+
+        <section class="card">
+          <div class="section-title">Saved Templates</div>
+          <div class="section-sub"><%= templates?.length || 0 %> active template<%= (templates?.length || 0) === 1 ? '' : 's' %>.</div>
+          <div class="stack" style="margin-top:12px;">
+            <% if (!templates?.length) { %>
+              <div class="small-muted">No templates yet.</div>
+            <% } %>
+            <% (templates || []).forEach(function(t){ %>
+              <article class="template">
+                <div class="template-head">
+                  <div>
+                    <div class="section-title" style="font-size:15px;"><%= t.name %></div>
+                    <div class="meta"><%= t.category %> • <%= t.priority %><% if (t.subject) { %> • <%= t.subject %><% } %></div>
+                  </div>
+                  <form method="POST" action="/admin/helpdesk/templates/<%= t._id %>/delete" data-confirm="Remove this helpdesk template?">
+                    <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
+                    <button class="btn light" type="submit"><i class="fa-solid fa-trash"></i></button>
+                  </form>
+                </div>
+                <div class="body"><%= t.body %></div>
+              </article>
+            <% }); %>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+  <script src="/js/navbar.js"></script>
+</body>
+</html>

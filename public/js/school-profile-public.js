@@ -151,11 +151,26 @@ function initCover() {
   const cover = $("cover");
   if (!cover) return;
 
-  const url = (cover.dataset.coverUrl || "").trim();
-  if (!url) return;
+  const fallbackUrl = "/img/hero.webp";
+  const requestedUrl = (cover.dataset.coverUrl || "").trim();
 
-  const safe = url.replace(/"/g, '\\"');
-  cover.style.setProperty("--cover-url", `url("${safe}")`);
+  function applyCover(url) {
+    const safe = String(url || fallbackUrl).replace(/"/g, '\"');
+    cover.style.setProperty("--cover-url", `url("${safe}")`);
+  }
+
+  if (!requestedUrl) {
+    applyCover(fallbackUrl);
+    return;
+  }
+
+  // CSS background-image errors do not emit an element error event. Preload the
+  // tenant cover so a deleted/blocked remote URL cannot leave the hero blank.
+  const probe = new Image();
+  probe.decoding = "async";
+  probe.onload = () => applyCover(requestedUrl);
+  probe.onerror = () => applyCover(fallbackUrl);
+  probe.src = requestedUrl;
 }
 
 function initSubjectSearch() {

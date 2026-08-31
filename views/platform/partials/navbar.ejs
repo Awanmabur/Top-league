@@ -67,7 +67,7 @@
       <div class="navcat">ACCOUNT</div>
       <div class="group">
         <% if (access.role === "SuperAdmin") { %>
-          <a class="<%= navClass('/super-admin/platform-users/create') %>" href="/super-admin/platform-users/create" data-label="Platform Users">
+          <a class="<%= navClass('/super-admin/platform-users') %>" href="/super-admin/platform-users" data-label="Platform Users">
             <i class="fa-solid fa-user-shield"></i>
             <span>Platform Users</span>
           </a>
@@ -87,3 +87,8 @@
       <div class="navfoot">Role: <strong><%= access.role %></strong></div>
     </nav>
   </aside>
+
+<script src="/js/offline/db.js" defer></script>
+<script src="/js/offline/queue.js" defer></script>
+<script src="/js/offline/forms.js" defer></script>
+<script src="/js/csp-actions.js" defer></script>

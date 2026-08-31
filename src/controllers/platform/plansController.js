@@ -2,28 +2,54 @@ const { platformConnection } = require("../../config/db");
 
 const Plan = require("../../models/platform/Plan")(platformConnection);
 const Tenant = require("../../models/platform/Tenant")(platformConnection);
+const PlatformSubscription = require("../../models/platform/PlatformSubscription")(platformConnection);
 const AuditLog = require("../../models/platform/AuditLog")(platformConnection);
+const {
+  bool,
+  clean,
+  lower,
+  positiveRevision,
+  validatePlanInput,
+} = require("../../services/platformSubscriptionService");
 
 function safeTrim(v) {
   return String(v || "").trim();
 }
 
-function safeLower(v) {
-  return String(v || "").trim().toLowerCase();
+function normalizePlanCode(value, fallbackName = "") {
+  const source = lower(value || fallbackName);
+  const code = source.replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  if (!code || code.length > 60) throw new Error("Plan code is invalid.");
+  return code;
 }
 
-function toNumber(v, fallback = 0) {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : fallback;
-}
+function planPayload(body = {}, current = null) {
+  const name = clean(body.name);
+  if (!name) throw new Error("Plan name is required.");
+  const code = normalizePlanCode(body.code, name);
+  const validated = validatePlanInput({
+    ...body,
+    featureFlags: {
+      customDomain: bool(body.customDomain),
+      apiAccess: bool(body.apiAccess),
+      prioritySupport: bool(body.prioritySupport),
+      whiteLabel: bool(body.whiteLabel),
+      advancedReports: bool(body.advancedReports),
+      helpdesk: bool(body.helpdesk),
+      backups: body.backups === undefined ? current?.featureFlags?.backups !== false : bool(body.backups),
+      systemHealth: body.systemHealth === undefined ? current?.featureFlags?.systemHealth !== false : bool(body.systemHealth),
+    },
+  });
 
-function normalizeArray(v) {
-  if (Array.isArray(v)) return v.map((x) => safeTrim(x)).filter(Boolean);
-  if (!safeTrim(v)) return [];
-  return String(v)
-    .split(",")
-    .map((x) => safeTrim(x))
-    .filter(Boolean);
+  return {
+    name,
+    code,
+    description: safeTrim(body.description).slice(0, 1000),
+    ...validated,
+    sortOrder: Number.isFinite(Number(body.sortOrder)) ? Number(body.sortOrder) : 0,
+    isPublic: bool(body.isPublic),
+    isActive: bool(body.isActive),
+  };
 }
 
 async function writeAudit(req, payload) {
@@ -41,290 +67,111 @@ async function writeAudit(req, payload) {
       meta: payload.meta || {},
     });
   } catch (err) {
-    console.error("❌ plan audit log failed:", err);
+    console.error("plan audit log failed:", err);
   }
 }
 
 module.exports = {
   listPlans: async (req, res) => {
     try {
-      const plans = await Plan.find({
-        isDeleted: { $ne: true },
-      })
+      const plans = await Plan.find({ isDeleted: { $ne: true } })
         .sort({ sortOrder: 1, createdAt: -1 })
         .lean();
-
       const planIds = plans.map((p) => p._id);
-      const usage = await Tenant.aggregate([
-        {
-          $match: {
-            isDeleted: { $ne: true },
-            planId: { $in: planIds },
-          },
-        },
-        {
-          $group: {
-            _id: "$planId",
-            totalTenants: { $sum: 1 },
-          },
-        },
-      ]);
-
+      const usage = planIds.length
+        ? await PlatformSubscription.aggregate([
+            { $match: { isDeleted: { $ne: true }, planId: { $in: planIds } } },
+            { $group: { _id: "$planId", totalTenants: { $sum: 1 } } },
+          ])
+        : [];
       const usageMap = new Map(usage.map((u) => [String(u._id), u.totalTenants]));
-
-      const rows = plans.map((plan) => ({
-        ...plan,
-        totalTenants: usageMap.get(String(plan._id)) || 0,
-      }));
-
-      return res.render("platform/plans/index", {
-        plans: rows,
-        user: req.user || null,
-        error: null,
-      });
+      const rows = plans.map((plan) => ({ ...plan, totalTenants: usageMap.get(String(plan._id)) || 0 }));
+      return res.render("platform/plans/index", { plans: rows, user: req.user || null, error: null });
     } catch (err) {
-      console.error("❌ listPlans error:", err);
-      return res.status(500).render("platform/plans/index", {
-        plans: [],
-        error: "Failed to load plans.",
-      });
+      console.error("listPlans error:", err);
+      return res.status(500).render("platform/plans/index", { plans: [], error: "Failed to load plans." });
     }
   },
 
-  createPlanForm: async (req, res) => {
-    return res.render("platform/plans/create", {
-      old: {},
-      error: null,
-    });
-  },
+  createPlanForm: async (req, res) => res.render("platform/plans/create", { old: {}, error: null }),
 
   createPlan: async (req, res) => {
     try {
-      const {
-        name,
-        code,
-        description,
-        billingModel,
-        pricePerSchool,
-        pricePerStudent,
-        platformSharePercent,
-        currency,
-        billingInterval,
-        trialDays,
-        maxStudents,
-        maxStaff,
-        maxCampuses,
-        enabledModules,
-        sortOrder,
-        isPublic,
-        isActive,
-        customDomain,
-        apiAccess,
-        prioritySupport,
-        whiteLabel,
-        advancedReports,
-      } = req.body;
-
-      const cleanName = safeTrim(name);
-      const cleanCode = safeLower(code);
-
-      if (!cleanName || !billingModel) {
-        return res.status(400).render("platform/plans/create", {
-          old: req.body,
-          error: "Plan name and billing model are required.",
-        });
-      }
-
+      const payload = planPayload(req.body);
       const existing = await Plan.findOne({
-        $or: [{ name: cleanName }, { code: cleanCode || safeLower(cleanName) }],
+        $or: [{ name: payload.name }, { code: payload.code }],
         isDeleted: { $ne: true },
       }).lean();
-
-      if (existing) {
-        return res.status(400).render("platform/plans/create", {
-          old: req.body,
-          error: "Plan name or code already exists.",
-        });
-      }
+      if (existing) return res.status(400).render("platform/plans/create", { old: req.body, error: "Plan name or code already exists." });
 
       const plan = await Plan.create({
-        name: cleanName,
-        code: cleanCode || safeLower(cleanName).replace(/\s+/g, "-"),
-        description: safeTrim(description),
-        billingModel,
-        pricePerSchool: toNumber(pricePerSchool, 0),
-        pricePerStudent: toNumber(pricePerStudent, 0),
-        platformSharePercent: toNumber(platformSharePercent, 0),
-        currency: safeTrim(currency || "USD").toUpperCase(),
-        billingInterval: safeLower(billingInterval || "monthly"),
-        trialDays: toNumber(trialDays, 0),
-        maxStudents: toNumber(maxStudents, 0),
-        maxStaff: toNumber(maxStaff, 0),
-        maxCampuses: toNumber(maxCampuses, 1),
-        enabledModules: normalizeArray(enabledModules),
-        sortOrder: toNumber(sortOrder, 0),
-        isPublic: !!(isPublic === "on" || isPublic === "true"),
-        isActive: !!(isActive === "on" || isActive === "true"),
-        featureFlags: {
-          customDomain: !!(customDomain === "on" || customDomain === "true"),
-          apiAccess: !!(apiAccess === "on" || apiAccess === "true"),
-          prioritySupport: !!(prioritySupport === "on" || prioritySupport === "true"),
-          whiteLabel: !!(whiteLabel === "on" || whiteLabel === "true"),
-          advancedReports: !!(advancedReports === "on" || advancedReports === "true"),
-        },
+        ...payload,
+        revision: 1,
         createdBy: req.user?._id || null,
         updatedBy: req.user?._id || null,
       });
-
       await writeAudit(req, {
         action: "Create Plan",
         entityId: plan._id,
         description: `Created plan ${plan.name}`,
-        meta: {
-          code: plan.code,
-          billingModel: plan.billingModel,
-        },
+        meta: { code: plan.code, billingModel: plan.billingModel, revision: plan.revision },
       });
-
       return res.redirect("/super-admin/plans");
     } catch (err) {
-      console.error("❌ createPlan error:", err);
-      return res.status(500).render("platform/plans/create", {
-        old: req.body,
-        error: err?.message || "Failed to create plan.",
-      });
+      console.error("createPlan error:", err);
+      return res.status(400).render("platform/plans/create", { old: req.body, error: err?.message || "Failed to create plan." });
     }
   },
 
   editPlanForm: async (req, res) => {
     try {
-      const plan = await Plan.findOne({
-        _id: req.params.id,
-        isDeleted: { $ne: true },
-      }).lean();
-
-      if (!plan) {
-        return res.status(404).render("platform/plans/edit", {
-          plan: null,
-          error: "Plan not found.",
-        });
-      }
-
-      return res.render("platform/plans/edit", {
-        plan,
-        error: null,
-      });
+      const plan = await Plan.findOne({ _id: req.params.id, isDeleted: { $ne: true } }).lean();
+      if (!plan) return res.status(404).render("platform/plans/edit", { plan: null, error: "Plan not found." });
+      return res.render("platform/plans/edit", { plan, error: null });
     } catch (err) {
-      console.error("❌ editPlanForm error:", err);
-      return res.status(500).render("platform/plans/edit", {
-        plan: null,
-        error: "Failed to load plan form.",
-      });
+      console.error("editPlanForm error:", err);
+      return res.status(500).render("platform/plans/edit", { plan: null, error: "Failed to load plan form." });
     }
   },
 
   updatePlan: async (req, res) => {
     try {
-      const plan = await Plan.findOne({
-        _id: req.params.id,
-        isDeleted: { $ne: true },
-      });
+      const expectedRevision = positiveRevision(req.body.revision);
+      const current = await Plan.findOne({ _id: req.params.id, isDeleted: { $ne: true } }).lean();
+      if (!current) return res.status(404).send("Plan not found.");
+      if (Number(current.revision || 1) !== expectedRevision) return res.status(409).send("Plan changed since the page was loaded. Reload and try again.");
 
-      if (!plan) {
-        return res.status(404).send("Plan not found.");
-      }
-
-      const {
-        name,
-        code,
-        description,
-        billingModel,
-        pricePerSchool,
-        pricePerStudent,
-        platformSharePercent,
-        currency,
-        billingInterval,
-        trialDays,
-        maxStudents,
-        maxStaff,
-        maxCampuses,
-        enabledModules,
-        sortOrder,
-        isPublic,
-        isActive,
-        customDomain,
-        apiAccess,
-        prioritySupport,
-        whiteLabel,
-        advancedReports,
-      } = req.body;
-
-      const cleanName = safeTrim(name);
-      const cleanCode = safeLower(code);
-
-      if (!cleanName || !billingModel) {
-        return res.status(400).render("platform/plans/edit", {
-          plan: { ...plan.toObject(), ...req.body },
-          error: "Plan name and billing model are required.",
-        });
-      }
-
+      const payload = planPayload(req.body, current);
       const duplicate = await Plan.findOne({
-        _id: { $ne: plan._id },
-        $or: [{ name: cleanName }, { code: cleanCode }],
+        _id: { $ne: current._id },
+        $or: [{ name: payload.name }, { code: payload.code }],
         isDeleted: { $ne: true },
       }).lean();
-
       if (duplicate) {
         return res.status(400).render("platform/plans/edit", {
-          plan: { ...plan.toObject(), ...req.body },
+          plan: { ...current, ...req.body, revision: expectedRevision },
           error: "Another plan already uses that name or code.",
         });
       }
 
-      plan.name = cleanName;
-      plan.code = cleanCode || plan.code;
-      plan.description = safeTrim(description);
-      plan.billingModel = billingModel;
-      plan.pricePerSchool = toNumber(pricePerSchool, 0);
-      plan.pricePerStudent = toNumber(pricePerStudent, 0);
-      plan.platformSharePercent = toNumber(platformSharePercent, 0);
-      plan.currency = safeTrim(currency || "USD").toUpperCase();
-      plan.billingInterval = safeLower(billingInterval || "monthly");
-      plan.trialDays = toNumber(trialDays, 0);
-      plan.maxStudents = toNumber(maxStudents, 0);
-      plan.maxStaff = toNumber(maxStaff, 0);
-      plan.maxCampuses = toNumber(maxCampuses, 1);
-      plan.enabledModules = normalizeArray(enabledModules);
-      plan.sortOrder = toNumber(sortOrder, 0);
-      plan.isPublic = !!(isPublic === "on" || isPublic === "true");
-      plan.isActive = !!(isActive === "on" || isActive === "true");
-      plan.featureFlags = {
-        customDomain: !!(customDomain === "on" || customDomain === "true"),
-        apiAccess: !!(apiAccess === "on" || apiAccess === "true"),
-        prioritySupport: !!(prioritySupport === "on" || prioritySupport === "true"),
-        whiteLabel: !!(whiteLabel === "on" || whiteLabel === "true"),
-        advancedReports: !!(advancedReports === "on" || advancedReports === "true"),
-      };
-      plan.updatedBy = req.user?._id || null;
-
-      await plan.save();
+      const update = await Plan.updateOne(
+        { _id: current._id, isDeleted: { $ne: true }, revision: expectedRevision },
+        { $set: { ...payload, updatedBy: req.user?._id || null }, $inc: { revision: 1 } },
+      );
+      if (update.modifiedCount !== 1) return res.status(409).send("Plan changed since the page was loaded. Reload and try again.");
 
       await writeAudit(req, {
         action: "Update Plan",
-        entityId: plan._id,
-        description: `Updated plan ${plan.name}`,
-        meta: {
-          code: plan.code,
-          billingModel: plan.billingModel,
-        },
+        entityId: current._id,
+        description: `Updated plan ${payload.name}`,
+        meta: { code: payload.code, billingModel: payload.billingModel, revision: expectedRevision + 1 },
       });
-
       return res.redirect("/super-admin/plans");
     } catch (err) {
-      console.error("❌ updatePlan error:", err);
-      return res.status(500).render("platform/plans/edit", {
-        plan: req.body,
+      console.error("updatePlan error:", err);
+      const code = /revision/i.test(String(err?.message || "")) ? 409 : 400;
+      return res.status(code).render("platform/plans/edit", {
+        plan: { ...req.body, _id: req.params.id, revision: req.body.revision || 1 },
         error: err?.message || "Failed to update plan.",
       });
     }
@@ -332,39 +179,30 @@ module.exports = {
 
   deletePlan: async (req, res) => {
     try {
-      const plan = await Plan.findOne({
-        _id: req.params.id,
-        isDeleted: { $ne: true },
-      });
+      const expectedRevision = positiveRevision(req.body.revision);
+      const plan = await Plan.findOne({ _id: req.params.id, isDeleted: { $ne: true } }).lean();
+      if (!plan) return res.status(404).send("Plan not found.");
+      if (Number(plan.revision || 1) !== expectedRevision) return res.status(409).send("Plan changed since the page was loaded. Reload and try again.");
 
-      if (!plan) {
-        return res.status(404).send("Plan not found.");
+      const [subscriptionsUsingPlan, legacyTenantsUsingPlan] = await Promise.all([
+        PlatformSubscription.countDocuments({ planId: plan._id, isDeleted: { $ne: true } }),
+        Tenant.countDocuments({ planId: plan._id, isDeleted: { $ne: true }, subscriptionId: { $exists: false } }),
+      ]);
+      if (subscriptionsUsingPlan > 0 || legacyTenantsUsingPlan > 0) {
+        return res.status(400).send("Cannot delete a plan referenced by a current school subscription.");
       }
 
-      const tenantsUsingPlan = await Tenant.countDocuments({
-        planId: plan._id,
-        isDeleted: { $ne: true },
-      });
+      const update = await Plan.updateOne(
+        { _id: plan._id, isDeleted: { $ne: true }, revision: expectedRevision },
+        { $set: { isDeleted: true, isActive: false, updatedBy: req.user?._id || null }, $inc: { revision: 1 } },
+      );
+      if (update.modifiedCount !== 1) return res.status(409).send("Plan changed since the page was loaded. Reload and try again.");
 
-      if (tenantsUsingPlan > 0) {
-        return res.status(400).send("Cannot delete a plan currently assigned to schools.");
-      }
-
-      plan.isDeleted = true;
-      plan.isActive = false;
-      plan.updatedBy = req.user?._id || null;
-      await plan.save();
-
-      await writeAudit(req, {
-        action: "Delete Plan",
-        entityId: plan._id,
-        description: `Soft deleted plan ${plan.name}`,
-      });
-
+      await writeAudit(req, { action: "Delete Plan", entityId: plan._id, description: `Soft deleted plan ${plan.name}`, meta: { revision: expectedRevision + 1 } });
       return res.redirect("/super-admin/plans");
     } catch (err) {
-      console.error("❌ deletePlan error:", err);
-      return res.status(500).send("Failed to delete plan.");
+      console.error("deletePlan error:", err);
+      return res.status(/revision/i.test(String(err?.message || "")) ? 409 : 400).send(err?.message || "Failed to delete plan.");
     }
   },
 };

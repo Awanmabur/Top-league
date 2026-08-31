@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="/css/navbar.css"/>
   <link rel="stylesheet" href="/css/parent-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{
       margin-top:16px;
       display:flex;
@@ -375,6 +375,7 @@
           </div>
 
           <form method="POST" action="/parent/notifications/read-all" class="inline-form">
+            <% if (typeof csrfToken !== "undefined" && csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
             <button class="btn primary" type="submit">
               <i class="fa-solid fa-check-double"></i> Mark all read
             </button>
@@ -445,6 +446,22 @@
           </div>
         </div>
 
+        <section class="card" style="margin:0 0 14px;">
+          <div class="section-title">Notification Preferences</div>
+          <div class="section-sub">Choose optional in-app categories. System notices always remain enabled.</div>
+          <form method="POST" action="/parent/notifications/preferences" style="display:grid;gap:10px;margin-top:12px;">
+            <% if (typeof csrfToken !== "undefined" && csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
+            <label><input type="checkbox" name="inApp" <%= preference?.inApp !== false ? 'checked' : '' %>> In-app notifications</label>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+              <% (preferenceCategories || []).filter(function(c){ return c !== 'system'; }).forEach(function(category){ %>
+                <label><input type="checkbox" name="<%= category %>" <%= preference?.[category] !== false ? 'checked' : '' %>> <%= category.replace(/_/g,' ').replace(/\b\w/g,function(x){return x.toUpperCase();}) %></label>
+              <% }); %>
+              <label><input type="checkbox" checked disabled> System (required)</label>
+            </div>
+            <div><button class="btn primary" type="submit"><i class="fa-solid fa-floppy-disk"></i> Save preferences</button></div>
+          </form>
+        </section>
+
         <div class="page-grid">
           <section class="notification-stack">
             <% if (!filtered.length) { %>
@@ -486,6 +503,7 @@
                   <div class="notification-footer">
                     <% if (!item.read) { %>
                       <form method="POST" action="/parent/notifications/<%= item._id %>/read" class="inline-form">
+                        <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>" />
                         <button class="btn-xs" type="submit">
                           <i class="fa-solid fa-check"></i> Mark as read
                         </button>

@@ -95,15 +95,9 @@
             <% if (tickets?.length) { %>
               <% tickets.forEach(function(t){ %>
                 <tr class="ticket-row"
-                    data-id="<%= t.id %>"
+                    data-db-id="<%= t.dbId %>"
                     data-status="<%= t.status %>"
-                    data-category="<%= t.category %>"
-                    data-title="<%= t.title.replace(/"/g, '&quot;') %>"
-                    data-created="<%= t.created ? new Date(t.created).toISOString() : '' %>"
-                    data-updated="<%= t.updated ? new Date(t.updated).toISOString() : '' %>"
-                    data-priority="<%= t.priority %>"
-                    data-description="<%= (t.description || '').replace(/"/g, '&quot;') %>"
-                    data-thread='<%- JSON.stringify(t.thread || []) %>'>
+                    data-category="<%= t.category %>">
                   <td style="padding:6px 4px;cursor:pointer;" data-cell="ticket-main">
                     <div><strong><%= t.id %></strong></div>
                     <div class="small-muted ticket-title"><%= t.title %></div>
@@ -164,16 +158,17 @@
   <div class="modal-card">
     <div class="modal-header">
       <div class="modal-title">Create new ticket</div>
-      <button class="modal-close" type="button" onclick="closeNewModal()">
+      <button class="modal-close" type="button" data-close-target="ticketNewModal">
         <i class="fa-solid fa-xmark"></i>
       </button>
     </div>
     <div class="section-sub">Describe your issue. Support will respond via this portal and email.</div>
 
-    <form style="margin-top:10px;font-size:13px;">
+    <form method="POST" action="/student/support" style="margin-top:10px;font-size:13px;">
+      <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
       <div style="margin-bottom:8px;">
         <label class="small-muted">Category</label><br/>
-        <select class="select" style="width:100%;">
+        <select class="select" name="category" style="width:100%;">
           <option value="finance">Finance &amp; Fees</option>
           <option value="registration">Registration &amp; Courses</option>
           <option value="hostel">Hostel &amp; Accommodation</option>
@@ -183,24 +178,24 @@
       </div>
       <div style="margin-bottom:8px;">
         <label class="small-muted">Subject</label><br/>
-        <input type="text" class="select" style="width:100%;padding:7px 10px;" placeholder="Short summary of your issue" />
+        <input type="text" name="subject" maxlength="220" required class="select" style="width:100%;padding:7px 10px;" placeholder="Short summary of your issue" />
       </div>
       <div style="margin-bottom:8px;">
         <label class="small-muted">Description</label><br/>
-        <textarea style="width:100%;min-height:80px;border-radius:12px;border:1px solid #dbe3f6;padding:8px 10px;font-family:inherit;font-size:13px;background:#f9fbff;"
+        <textarea name="description" maxlength="5000" required style="width:100%;min-height:80px;border-radius:12px;border:1px solid #dbe3f6;padding:8px 10px;font-family:inherit;font-size:13px;background:#f9fbff;"
                   placeholder="Explain what happened, any error messages, and what you already tried."></textarea>
       </div>
       <div style="margin-bottom:8px;">
         <label class="small-muted">Priority</label><br/>
-        <select class="select" style="width:100%;">
+        <select class="select" name="priority" style="width:100%;">
           <option value="Low">Low</option>
           <option value="Medium" selected>Medium</option>
           <option value="High">High</option>
         </select>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn light" onclick="closeNewModal()">Close</button>
-        <button type="button" class="btn primary">
+        <button type="button" class="btn light" data-close-target="ticketNewModal">Close</button>
+        <button type="submit" class="btn primary">
           <i class="fa-solid fa-paper-plane"></i> Submit
         </button>
       </div>
@@ -209,8 +204,10 @@
 </div>
 
 <script src="/js/navbar.js"></script>
-<script>
+<textarea id="studentTicketsData" style="display:none" aria-hidden="true"><%- JSON.stringify(tickets || []).replace(/</g, "\\u003c") %></textarea>
+<script nonce="<%= cspNonce %>">
 (function(){
+  "use strict";
   const ticketsTable = document.getElementById("ticketsTable");
   const detailsBody = document.getElementById("ticketDetailsBody");
   const filterStatus = document.getElementById("filterStatus");
@@ -218,96 +215,106 @@
   const filterSearch = document.getElementById("filterSearch");
   const newTicketBtn = document.getElementById("newTicketBtn");
   const newModal = document.getElementById("ticketNewModal");
+  const csrf = <%- JSON.stringify(csrfToken || "").replace(/</g, "\\u003c") %>;
+  let tickets = [];
+  try { tickets = JSON.parse(document.getElementById("studentTicketsData")?.value || "[]"); } catch { tickets = []; }
+  const ticketMap = new Map(tickets.map(t => [String(t.dbId), t]));
 
-  function parseThread(jsonText) {
-    try { return JSON.parse(jsonText); } catch { return []; }
+  function node(tag, className, value) {
+    const el = document.createElement(tag);
+    if (className) el.className = className;
+    if (value !== undefined) el.textContent = String(value ?? "");
+    return el;
   }
 
-  function renderTicketDetails(row) {
-    if (!row) {
-      detailsBody.innerHTML = '<p class="small-muted">No ticket selected yet. Click on any ticket in the list to see details, status, and messages.</p>';
+  function miniItem(label, value) {
+    const item = node("div", "mini-item");
+    item.append(node("span", "", label), node("span", "", value));
+    return item;
+  }
+
+  function renderTicketDetails(ticket) {
+    detailsBody.replaceChildren();
+    if (!ticket) {
+      detailsBody.append(node("p", "small-muted", "No ticket selected yet. Click on any ticket in the list to see details, status, and messages."));
       return;
     }
 
-    const id = row.getAttribute("data-id");
-    const status = row.getAttribute("data-status");
-    const category = row.getAttribute("data-category");
-    const created = row.getAttribute("data-created");
-    const updated = row.getAttribute("data-updated");
-    const priority = row.getAttribute("data-priority");
-    const description = row.getAttribute("data-description");
-    const thread = parseThread(row.getAttribute("data-thread") || "[]");
+    const list = node("div", "mini-list");
+    list.append(
+      miniItem("Ticket ID", ticket.id),
+      miniItem("Status", ticket.status),
+      miniItem("Category", ticket.category),
+      miniItem("Priority", ticket.priority),
+      miniItem("Created", ticket.created ? new Date(ticket.created).toDateString() : "-"),
+      miniItem("Last update", ticket.updated ? new Date(ticket.updated).toDateString() : "-")
+    );
+    detailsBody.appendChild(list);
 
-    let threadHtml = "";
+    const summary = document.createElement("div"); summary.style.marginTop = "12px";
+    const summaryTitle = node("div", "section-title", "Issue summary"); summaryTitle.style.fontSize = "13px";
+    const summaryBody = node("p", "small-muted", ticket.description || ""); summaryBody.style.marginTop = "4px";
+    summary.append(summaryTitle, summaryBody); detailsBody.appendChild(summary);
+
+    const conversation = document.createElement("div"); conversation.style.marginTop = "12px";
+    const conversationTitle = node("div", "section-title", "Conversation"); conversationTitle.style.fontSize = "13px";
+    conversation.appendChild(conversationTitle);
+    const thread = Array.isArray(ticket.thread) ? ticket.thread : [];
     if (!thread.length) {
-      threadHtml = '<div class="small-muted">No conversation messages recorded yet.</div>';
+      conversation.append(node("div", "small-muted", "No conversation messages recorded yet."));
     } else {
-      threadHtml = '<div class="registered-list" style="margin-top:8px;">';
+      const threadList = node("div", "registered-list"); threadList.style.marginTop = "8px";
       thread.forEach(msg => {
-        threadHtml += `
-          <div class="reg-item">
-            <div><strong>${msg.from}</strong> <span class="small-muted">• ${msg.time || ""}</span></div>
-            <div class="small-muted" style="margin-top:4px;">${msg.body || ""}</div>
-          </div>`;
+        const card = node("div", "reg-item");
+        const head = document.createElement("div");
+        head.append(node("strong", "", msg.from || "Message"), document.createTextNode(" "), node("span", "small-muted", `• ${msg.time ? new Date(msg.time).toLocaleString() : ""}`));
+        const body = node("div", "small-muted", msg.body || ""); body.style.marginTop = "4px";
+        card.append(head, body); threadList.appendChild(card);
       });
-      threadHtml += "</div>";
+      conversation.appendChild(threadList);
     }
+    detailsBody.appendChild(conversation);
 
-    detailsBody.innerHTML = `
-      <div class="mini-list">
-        <div class="mini-item"><span>Ticket ID</span><span>${id}</span></div>
-        <div class="mini-item"><span>Status</span><span>${status}</span></div>
-        <div class="mini-item"><span>Category</span><span>${category}</span></div>
-        <div class="mini-item"><span>Priority</span><span>${priority}</span></div>
-        <div class="mini-item"><span>Created</span><span>${created ? new Date(created).toDateString() : "-"}</span></div>
-        <div class="mini-item"><span>Last update</span><span>${updated ? new Date(updated).toDateString() : "-"}</span></div>
-      </div>
-      <div style="margin-top:12px;">
-        <div class="section-title" style="font-size:13px;">Issue summary</div>
-        <p class="small-muted" style="margin-top:4px;">${description || ""}</p>
-      </div>
-      <div style="margin-top:12px;">
-        <div class="section-title" style="font-size:13px;">Conversation</div>
-        ${threadHtml}
-      </div>`;
+    if (ticket.canReply) {
+      const replyWrap = document.createElement("div"); replyWrap.style.marginTop = "12px";
+      const replyTitle = node("div", "section-title", "Reply"); replyTitle.style.fontSize = "13px";
+      const form = document.createElement("form"); form.method = "POST"; form.action = `/student/support/${encodeURIComponent(ticket.dbId)}/reply`; form.style.marginTop = "8px";
+      if (csrf) { const token = document.createElement("input"); token.type = "hidden"; token.name = "_csrf"; token.value = csrf; form.appendChild(token); }
+      const area = document.createElement("textarea"); area.name = "message"; area.required = true; area.maxLength = 5000; area.placeholder = "Write a reply..."; area.style.cssText = "width:100%;min-height:80px;border-radius:12px;border:1px solid #dbe3f6;padding:8px 10px;font-family:inherit;font-size:13px;background:#f9fbff;";
+      const button = node("button", "btn primary", "Send Reply"); button.type = "submit"; button.style.marginTop = "8px";
+      form.append(area, button); replyWrap.append(replyTitle, form); detailsBody.appendChild(replyWrap);
+    } else {
+      const closed = node("div", "small-muted", "This ticket is closed and no longer accepts replies."); closed.style.marginTop = "12px"; detailsBody.appendChild(closed);
+    }
   }
 
   function applyFilters() {
-    const statusFilter = filterStatus.value;
-    const categoryFilter = filterCategory.value;
-    const query = (filterSearch.value || "").toLowerCase().trim();
-
+    const statusValue = filterStatus?.value || "all";
+    const categoryValue = filterCategory?.value || "all";
+    const query = (filterSearch?.value || "").toLowerCase().trim();
     let firstVisible = null;
-    ticketsTable.querySelectorAll(".ticket-row").forEach(row => {
-      const status = row.getAttribute("data-status");
-      const category = row.getAttribute("data-category");
-      const title = (row.getAttribute("data-title") || "").toLowerCase();
-      const desc = (row.getAttribute("data-description") || "").toLowerCase();
-      const id = (row.getAttribute("data-id") || "").toLowerCase();
-
+    ticketsTable?.querySelectorAll(".ticket-row").forEach(row => {
+      const ticket = ticketMap.get(String(row.dataset.dbId));
+      if (!ticket) { row.style.display = "none"; return; }
       let visible = true;
-      if (statusFilter !== "all" && status !== statusFilter) visible = false;
-      if (categoryFilter !== "all" && category !== categoryFilter) visible = false;
-      if (query && !id.includes(query) && !title.includes(query) && !desc.includes(query)) visible = false;
-
+      if (statusValue !== "all" && ticket.status !== statusValue) visible = false;
+      if (categoryValue !== "all" && ticket.category !== categoryValue) visible = false;
+      const haystack = `${ticket.id} ${ticket.title} ${ticket.description}`.toLowerCase();
+      if (query && !haystack.includes(query)) visible = false;
       row.style.display = visible ? "" : "none";
-      if (visible && !firstVisible) firstVisible = row;
+      if (visible && !firstVisible) firstVisible = ticket;
     });
-
     renderTicketDetails(firstVisible);
   }
 
   ticketsTable?.querySelectorAll(".ticket-row").forEach(row => {
-    row.querySelector('[data-cell="ticket-main"]')?.addEventListener("click", () => renderTicketDetails(row));
+    row.querySelector('[data-cell="ticket-main"]')?.addEventListener("click", () => renderTicketDetails(ticketMap.get(String(row.dataset.dbId))));
   });
-
   filterStatus?.addEventListener("change", applyFilters);
   filterCategory?.addEventListener("change", applyFilters);
   filterSearch?.addEventListener("input", applyFilters);
-
-  newTicketBtn?.addEventListener("click", () => { newModal.style.display = "flex"; });
-  window.closeNewModal = function(){ newModal.style.display = "none"; };
-
+  newTicketBtn?.addEventListener("click", () => { if (newModal) newModal.style.display = "flex"; });
+  window.closeNewModal = function(){ if (newModal) newModal.style.display = "none"; };
   applyFilters();
 })();
 </script>

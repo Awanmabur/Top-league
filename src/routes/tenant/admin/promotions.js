@@ -4,6 +4,7 @@ const router = express.Router();
 const ctrl = require("../../../controllers/tenant/admin/promotionsController");
 
 router.get("/", ctrl.index);
+router.get("/export", ctrl.exportCsv);
 router.post("/apply", ctrl.applyBulk);
 
 module.exports = router;
