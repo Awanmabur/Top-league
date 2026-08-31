@@ -4,7 +4,7 @@
 // /js/offline/queue.js) once connectivity returns via Background Sync.
 importScripts("/js/offline/db.js", "/js/offline/queue.js");
 
-const CACHE_VERSION = "v3";
+const CACHE_VERSION = "v1";
 const CACHE_NAME = `classic-academy-${CACHE_VERSION}`;
 
 const PRECACHE_URLS = [
@@ -13,45 +13,10 @@ const PRECACHE_URLS = [
   "/js/offline/db.js",
   "/js/offline/queue.js",
   "/js/offline/forms.js",
-  "/img/academylogo.webp",
+  "/img/academylogo.png",
 ];
 
 const STATIC_PATH_RE = /^\/(css|js|img|vendor|assets)\//;
-
-// Only immutable/static marketing pages may be retained as navigation HTML.
-// Authenticated dashboards, tenant pages, search, school profiles, booking and
-// other operational routes are always network-only to prevent private/stale
-// HTML from being replayed from Cache Storage after logout or role changes.
-const PUBLIC_NAVIGATION_PATHS = new Set([
-  "/",
-  "/about",
-  "/features",
-  "/services",
-  "/contact",
-  "/plan",
-  "/blog",
-  "/careers",
-  "/faq",
-  "/privacy",
-  "/terms",
-  "/admissions",
-  "/share",
-  "/security",
-  "/integrations",
-  "/resources",
-  "/docs",
-  "/status",
-]);
-
-function mayCacheNavigation(url) {
-  return PUBLIC_NAVIGATION_PATHS.has(url.pathname) && !url.search;
-}
-
-function responseIsCacheable(response) {
-  if (!response || !response.ok) return false;
-  const policy = String(response.headers.get("Cache-Control") || "").toLowerCase();
-  return !policy.includes("no-store") && !policy.includes("private");
-}
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -79,56 +44,43 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
 
   if (STATIC_PATH_RE.test(url.pathname)) {
-    event.respondWith(staleWhileRevalidate(request));
+    event.respondWith(cacheFirst(request));
     return;
   }
 
   if (request.mode === "navigate") {
-    if (mayCacheNavigation(url)) {
-      event.respondWith(networkFirstPublic(request));
-    } else {
-      event.respondWith(networkOnlyNavigation(request));
-    }
+    event.respondWith(networkFirst(request));
   }
 });
 
-async function staleWhileRevalidate(request) {
-  const cache = await caches.open(CACHE_NAME);
-  const cached = await cache.match(request);
-  const refresh = fetch(request)
-    .then((response) => {
-      if (response.ok) cache.put(request, response.clone());
-      return response;
-    })
-    .catch(() => null);
+async function cacheFirst(request) {
+  const cached = await caches.match(request);
   if (cached) return cached;
-  return (await refresh) || Response.error();
-}
 
-async function networkFirstPublic(request) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 3500);
   try {
-    const response = await fetch(request, { signal: controller.signal });
-    clearTimeout(timer);
-    if (responseIsCacheable(response)) {
+    const response = await fetch(request);
+    if (response.ok) {
       const cache = await caches.open(CACHE_NAME);
       cache.put(request, response.clone());
     }
     return response;
   } catch (err) {
-    clearTimeout(timer);
-    const cached = await caches.match(request);
-    if (cached) return cached;
-    return caches.match("/offline.html");
+    return cached || Response.error();
   }
 }
 
-async function networkOnlyNavigation(request) {
+async function networkFirst(request) {
   try {
-    return await fetch(request, { cache: "no-store" });
+    const response = await fetch(request);
+    if (response.ok) {
+      const cache = await caches.open(CACHE_NAME);
+      cache.put(request, response.clone());
+    }
+    return response;
   } catch (err) {
-    return (await caches.match("/offline.html")) || Response.error();
+    const cached = await caches.match(request);
+    if (cached) return cached;
+    return caches.match("/offline.html");
   }
 }
 

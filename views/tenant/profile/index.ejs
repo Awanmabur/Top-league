@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 
-  <style nonce="<%= cspNonce %>">
+  <style>
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center;min-width:0}
     .input,.select,.textarea{padding:10px 12px;border-radius:12px;border:1px solid rgba(13,64,96,.16);background:#fff;outline:none;max-width:100%;min-width:0}
@@ -799,8 +799,8 @@
                   <div class="actions" style="margin-top:10px;justify-content:flex-start">
                     <button type="button" class="btn-xs"
                       data-faqedit="<%= f._id %>"
-                      data-q="<%= safeStr(f.q) %>"
-                      data-a="<%= safeStr(f.a) %>">
+                      data-q="<%- safeStr(f.q).replace(/"/g,'&quot;') %>"
+                      data-a="<%- safeStr(f.a).replace(/"/g,'&quot;') %>">
                       <i class="fa-solid fa-pen"></i> Edit
                     </button>
                     <button type="button" class="btn-xs" data-faqdel="<%= f._id %>">
@@ -927,7 +927,7 @@
   </div>
 </div>
 
-<script nonce="<%= cspNonce %>">
+<script>
   window.__TENANT_CODE__ = "<%= tenantObj.code || '' %>";
 </script>
 <script src="/js/navbar.js"></script>

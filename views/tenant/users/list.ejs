@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Users — Classic Academy</title>
   <link rel="icon" href="data:,">
-  <style nonce="<%= cspNonce %>">
+  <style>
     :root{
       --blue:#0a3d62; --blue2:#083454; --bg:#f4f8ff; --card:#fff;
       --muted:#6b7280; --text:#0f172a; --accent:#0a6fbf;
@@ -93,7 +93,7 @@
           <input id="q" type="search" placeholder="Search name/email/role..." />
         </div>
         <a class="btn" href="/admin/users/new">+ New User</a>
-        <button class="btn secondary" data-reload>Refresh</button>
+        <button class="btn secondary" onclick="location.reload()">Refresh</button>
       </div>
     </header>
 
@@ -153,8 +153,7 @@
                   <td>
                     <form method="POST"
                           action="/admin/users/<%= String(u._id) %>/resend-invite"
-                          data-confirm="Generate a NEW invite link for this user? Old ones will stop working.">
-                      <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>" />
+                          onsubmit="return confirm('Generate a NEW invite link for this user? Old ones will stop working.')">
                       <button class="btn" type="submit">Resend Invite</button>
                     </form>
 
@@ -171,7 +170,7 @@
   </main>
 </div>
 
-<script nonce="<%= cspNonce %>">
+<script>
   const q = document.getElementById('q');
   const rows = Array.from(document.querySelectorAll('#tbl tbody tr'));
   if(q){

@@ -43,198 +43,40 @@ function perf(label, startedAt) {
   }
 }
 
-const AUTHORITY_CACHE = new Map();
-const AUTHORITY_CACHE_TTL_MS = Math.max(
-  1000,
-  Math.min(30_000, Number(process.env.TENANT_AUTHORITY_CACHE_TTL_MS || 15_000)),
-);
+const USER_CACHE = new Map();
+const USER_CACHE_TTL_MS = 60 * 1000;
 
-function authorityCacheKey(tenantCode, userId) {
+function userCacheKey(tenantCode, userId) {
   return `${tenantCode}:${userId}`;
 }
 
-function useLocalAuthorityCache() {
-  // Production authorization is always live so a status/token/role revocation on
-  // another app instance is visible immediately. Development may use a tiny
-  // process-local cache for fast iteration; every lifecycle mutation invalidates it.
-  return process.env.NODE_ENV !== "production" && process.env.DISABLE_TENANT_AUTH_CACHE !== "1";
-}
-
-function getCachedAuthority(tenantCode, userId) {
-  if (!useLocalAuthorityCache()) return null;
-  const key = authorityCacheKey(tenantCode, userId);
-  const hit = AUTHORITY_CACHE.get(key);
+function getCachedUser(tenantCode, userId) {
+  const key = userCacheKey(tenantCode, userId);
+  const hit = USER_CACHE.get(key);
   if (!hit) return null;
+
   if (Date.now() > hit.exp) {
-    AUTHORITY_CACHE.delete(key);
+    USER_CACHE.delete(key);
     return null;
   }
-  return hit.authority;
+
+  return hit.user;
 }
 
-function setCachedAuthority(tenantCode, userId, authority) {
-  if (!useLocalAuthorityCache()) return;
-  AUTHORITY_CACHE.set(authorityCacheKey(tenantCode, userId), {
-    authority,
-    exp: Date.now() + AUTHORITY_CACHE_TTL_MS,
+function setCachedUser(tenantCode, userId, user) {
+  USER_CACHE.set(userCacheKey(tenantCode, userId), {
+    user,
+    exp: Date.now() + USER_CACHE_TTL_MS,
   });
 }
 
 function deleteCachedUser(tenantCode, userId) {
-  AUTHORITY_CACHE.delete(authorityCacheKey(safeLower(tenantCode), userId));
-}
-
-async function loadLiveAuthority(req, userId) {
-  const User = req.models?.User;
-  const Student = req.models?.Student;
-  const Parent = req.models?.Parent;
-  const Staff = req.models?.Staff;
-  const StaffRole = req.models?.StaffRole;
-  if (!User || !Student || !Parent || !Staff || !StaffRole) return null;
-
-  const [authority] = await User.aggregate([
-    {
-      $match: {
-        _id: new mongoose.Types.ObjectId(userId),
-        deletedAt: null,
-        status: "active",
-      },
-    },
-    { $limit: 1 },
-    {
-      $lookup: {
-        from: Student.collection.name,
-        let: { studentId: "$studentId", userId: "$_id" },
-        pipeline: [
-          {
-            $match: {
-              $expr: {
-                $and: [
-                  { $eq: ["$_id", "$$studentId"] },
-                  { $eq: ["$userId", "$$userId"] },
-                  { $ne: ["$isDeleted", true] },
-                  { $not: [{ $in: ["$status", ["suspended", "archived"]] }] },
-                ],
-              },
-            },
-          },
-          { $project: { _id: 1, status: 1 } },
-          { $limit: 1 },
-        ],
-        as: "_studentAuthority",
-      },
-    },
-    {
-      $lookup: {
-        from: Parent.collection.name,
-        let: { userId: "$_id" },
-        pipeline: [
-          {
-            $match: {
-              $expr: {
-                $and: [
-                  { $eq: ["$userId", "$$userId"] },
-                  { $ne: ["$isDeleted", true] },
-                  { $in: ["$status", ["active", "on_hold"]] },
-                ],
-              },
-            },
-          },
-          { $project: { _id: 1, status: 1 } },
-          { $limit: 1 },
-        ],
-        as: "_parentAuthority",
-      },
-    },
-    {
-      $lookup: {
-        from: Staff.collection.name,
-        let: { staffId: "$staffId", userId: "$_id" },
-        pipeline: [
-          {
-            $match: {
-              $expr: {
-                $and: [
-                  { $eq: ["$_id", "$$staffId"] },
-                  { $eq: ["$userId", "$$userId"] },
-                  { $ne: ["$isDeleted", true] },
-                  { $not: [{ $in: ["$status", ["Suspended", "Exited"]] }] },
-                ],
-              },
-            },
-          },
-          { $project: { _id: 1, status: 1, roleId: 1 } },
-          { $limit: 1 },
-        ],
-        as: "_staffAuthority",
-      },
-    },
-    { $set: { _staffAuthority: { $first: "$_staffAuthority" } } },
-    {
-      $lookup: {
-        from: StaffRole.collection.name,
-        let: { roleId: "$_staffAuthority.roleId" },
-        pipeline: [
-          {
-            $match: {
-              $expr: {
-                $and: [
-                  { $eq: ["$_id", "$$roleId"] },
-                  { $ne: ["$isDeleted", true] },
-                ],
-              },
-            },
-          },
-          { $project: { _id: 1, name: 1, code: 1, status: 1, permissions: 1 } },
-          { $limit: 1 },
-        ],
-        as: "_staffRoleAuthority",
-      },
-    },
-    {
-      $project: {
-        _id: 1,
-        email: 1,
-        firstName: 1,
-        lastName: 1,
-        roles: 1,
-        status: 1,
-        tokenVersion: 1,
-        staffId: 1,
-        studentId: 1,
-        studentAuthority: { $first: "$_studentAuthority" },
-        parentAuthority: { $first: "$_parentAuthority" },
-        staffAuthority: "$_staffAuthority",
-        staffRoleAuthority: { $first: "$_staffRoleAuthority" },
-      },
-    },
-  ]).option({ maxTimeMS: 3000 });
-
-  return authority || null;
+  USER_CACHE.delete(userCacheKey(tenantCode, userId));
 }
 
 module.exports = function requireTenantAuth(requiredRole = null) {
   return async function (req, res, next) {
     const totalStartedAt = Date.now();
-
-    // Nested tenant routers sometimes apply an additional role guard after the
-    // parent Admin/Staff router already performed the full live authority
-    // check. Reuse only within this same request; never cache StaffRole or
-    // lifecycle authority across requests.
-    if (req._tenantAuthorityLoaded && req.user) {
-      const allowedRoles = Array.isArray(requiredRole)
-        ? requiredRole
-        : requiredRole
-        ? [requiredRole]
-        : [];
-      if (allowedRoles.length && !allowedRoles.includes(req.user.role)) {
-        if (wantsJson(req)) return res.status(403).json({ message: "Forbidden" });
-        req.flash?.("error", "You don't have permission to access that page.");
-        return res.status(403).send("Forbidden");
-      }
-      perf("same-request authority reuse", totalStartedAt);
-      return next();
-    }
 
     if (!req.tenant?.code) {
       req.flash?.("error", "Tenant context missing");
@@ -303,17 +145,25 @@ module.exports = function requireTenantAuth(requiredRole = null) {
       perf("user id check", userIdCheckStartedAt);
 
       const cacheStartedAt = Date.now();
-      let authority = getCachedAuthority(tenantCode, payload.userId);
-      perf("authority cache get", cacheStartedAt);
+      let user = getCachedUser(tenantCode, payload.userId);
+      perf("user cache get", cacheStartedAt);
 
-      if (!authority) {
+      if (!user) {
         const dbStartedAt = Date.now();
-        authority = await loadLiveAuthority(req, payload.userId);
-        perf("live authority aggregate", dbStartedAt);
-        if (authority) setCachedAuthority(tenantCode, payload.userId, authority);
+        user = await req.models.User.findOne({
+          _id: payload.userId,
+          deletedAt: null,
+          status: "active",
+        })
+          .select("_id email firstName lastName roles status tokenVersion staffId studentId")
+          .lean();
+        perf("user db lookup", dbStartedAt);
+
+        if (user) {
+          setCachedUser(tenantCode, payload.userId, user);
+        }
       }
 
-      const user = authority;
       if (!user) {
         deleteCachedUser(tenantCode, payload.userId);
         clearTenantCookies(req, res, tenantCode);
@@ -366,11 +216,28 @@ module.exports = function requireTenantAuth(requiredRole = null) {
           { $set: { roles } },
         ).catch(() => {});
 
-        user.roles = roles;
+        user = {
+          ...user,
+          roles,
+        };
+        setCachedUser(tenantCode, payload.userId, user);
       }
 
-      if (primaryRole === "student") {
-        if (!user.studentId || !authority.studentAuthority) {
+      if (primaryRole === "student" && req.models?.Student) {
+        if (!user.studentId) {
+          deleteCachedUser(tenantCode, payload.userId);
+          clearTenantCookies(req, res, tenantCode);
+          if (wantsJson(req)) return res.status(403).json({ message: "Student record unavailable" });
+          req.flash?.("error", "Your student record is not linked to this account.");
+          return res.status(403).send("Forbidden");
+        }
+        const studentRecord = await req.models.Student.findOne({
+          _id: user.studentId,
+          userId: user._id,
+          isDeleted: { $ne: true },
+          status: { $nin: ["suspended", "archived"] },
+        }).select("_id status").lean();
+        if (!studentRecord) {
           deleteCachedUser(tenantCode, payload.userId);
           clearTenantCookies(req, res, tenantCode);
           if (wantsJson(req)) return res.status(403).json({ message: "Student access disabled" });
@@ -379,35 +246,69 @@ module.exports = function requireTenantAuth(requiredRole = null) {
         }
       }
 
-      if (primaryRole === "parent" && !authority.parentAuthority) {
-        deleteCachedUser(tenantCode, payload.userId);
-        clearTenantCookies(req, res, tenantCode);
-        if (wantsJson(req)) return res.status(403).json({ message: "Parent access disabled" });
-        req.flash?.("error", "Your parent access is currently disabled.");
-        return res.status(403).send("Forbidden");
+      if (primaryRole === "parent") {
+        if (!req.models?.Parent) {
+          deleteCachedUser(tenantCode, payload.userId);
+          clearTenantCookies(req, res, tenantCode);
+          if (wantsJson(req)) return res.status(403).json({ message: "Parent record unavailable" });
+          req.flash?.("error", "Your parent record is not available.");
+          return res.status(403).send("Forbidden");
+        }
+        const parentRecord = await req.models.Parent.findOne({
+          userId: user._id,
+          isDeleted: { $ne: true },
+          status: { $in: ["active", "on_hold"] },
+        }).select("_id status").lean();
+        if (!parentRecord) {
+          deleteCachedUser(tenantCode, payload.userId);
+          clearTenantCookies(req, res, tenantCode);
+          if (wantsJson(req)) return res.status(403).json({ message: "Parent access disabled" });
+          req.flash?.("error", "Your parent access is currently disabled.");
+          return res.status(403).send("Forbidden");
+        }
       }
 
       let staffAccess = null;
       if (STAFF_PORTAL_ROLES.includes(primaryRole)) {
-        const staffRecord = authority.staffAuthority;
-        if (!user.staffId || !staffRecord) {
+        if (!user.staffId || !req.models?.Staff) {
           deleteCachedUser(tenantCode, payload.userId);
           clearTenantCookies(req, res, tenantCode);
+          if (wantsJson(req)) return res.status(403).json({ message: "Staff record unavailable" });
+          req.flash?.("error", "Your staff record is not linked to this account.");
+          return res.status(403).send("Forbidden");
+        }
+        const staffRecord = await req.models.Staff.findOne({
+          _id: user.staffId,
+          userId: user._id,
+          isDeleted: { $ne: true },
+        })
+          .select("_id status roleId")
+          .lean();
+
+        if (!staffRecord || ["Suspended", "Exited"].includes(String(staffRecord.status || ""))) {
           if (wantsJson(req)) return res.status(403).json({ message: "Staff access disabled" });
           req.flash?.("error", "Your staff access is currently disabled.");
           return res.status(403).send("Forbidden");
         }
 
-        const accessRole = authority.staffRoleAuthority;
-        staffAccess = {
-          roleId: staffRecord.roleId ? String(staffRecord.roleId) : null,
-          roleName: accessRole?.name || "",
-          roleCode: accessRole?.code || "",
-          active: !!accessRole && accessRole.status === "Active",
-          permissions: accessRole && accessRole.status === "Active"
-            ? normalizePermissionList(accessRole.permissions)
-            : [],
-        };
+        if (staffRecord.roleId && req.models?.StaffRole) {
+          const accessRole = await req.models.StaffRole.findOne({
+            _id: staffRecord.roleId,
+            isDeleted: { $ne: true },
+          })
+            .select("_id name code status permissions")
+            .lean();
+
+          staffAccess = {
+            roleId: String(staffRecord.roleId),
+            roleName: accessRole?.name || "",
+            roleCode: accessRole?.code || "",
+            active: !!accessRole && accessRole.status === "Active",
+            permissions: accessRole && accessRole.status === "Active"
+              ? normalizePermissionList(accessRole.permissions)
+              : [],
+          };
+        }
       }
 
       req.user = {
@@ -429,7 +330,6 @@ module.exports = function requireTenantAuth(requiredRole = null) {
         accessPermissions: staffAccess ? staffAccess.permissions : null,
       };
 
-      req._tenantAuthorityLoaded = true;
       perf("total", totalStartedAt);
       return next();
     } catch (e) {

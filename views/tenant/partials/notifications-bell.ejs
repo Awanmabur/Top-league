@@ -6,7 +6,7 @@
   const csrf = (typeof csrfToken !== "undefined" && csrfToken) ? csrfToken : "";
 %>
 
-<style nonce="<%= cspNonce %>">
+<style>
   .bellWrap{position:relative;display:inline-flex}
   .bellBtn{position:relative}
   .bellBadge{
@@ -90,7 +90,7 @@
                   <button class="miniBtn" type="submit"><%= n.isRead ? "Read" : "Mark read" %></button>
                 </form>
 
-                <form method="POST" action="/admin/notifications/<%= n._id %>/delete" style="margin:0" data-confirm="Delete notification?">
+                <form method="POST" action="/admin/notifications/<%= n._id %>/delete" style="margin:0" onsubmit="return confirm('Delete notification?')">
                   <input type="hidden" name="_csrf" value="<%= csrf %>"/>
                   <button class="miniBtn danger" type="submit">Delete</button>
                 </form>
@@ -107,7 +107,7 @@
   </div>
 </div>
 
-<script nonce="<%= cspNonce %>">
+<script>
 (function(){
   var btn = document.getElementById("bellBtn");
   var menu = document.getElementById("bellMenu");

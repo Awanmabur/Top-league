@@ -248,7 +248,7 @@ module.exports = {
       });
     } catch (error) {
       console.error("financeReportsController.index error:", error);
-      return res.status(500).render("platform/public/500", { tenant: req.tenant, message: "Failed to load finance reports." });
+      return res.status(500).render("platform/public/500", { tenant: req.tenant, message: error.message || "Failed to load finance reports." });
     }
   },
 

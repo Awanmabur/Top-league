@@ -618,21 +618,13 @@ module.exports = {
   listTenants: async (req, res) => {
     try {
       const { q = "", status = "", plan = "" } = req.query;
-      const pageSize = 100;
-      const page = Math.max(1, Math.min(100000, Number.parseInt(String(req.query.page || "1"), 10) || 1));
       const filter = { isDeleted: { $ne: true } };
       if (status) filter.status = safeLower(status);
       if (plan) filter.planId = plan;
       if (safeTrim(q)) filter.$text = { $search: safeTrim(q) };
 
-      const [tenantsRaw, total, plans] = await Promise.all([
-        Tenant.find(filter)
-          .populate("planId")
-          .sort(q ? { score: { $meta: "textScore" } } : { createdAt: -1 })
-          .skip((page - 1) * pageSize)
-          .limit(pageSize)
-          .lean(),
-        Tenant.countDocuments(filter),
+      const [tenantsRaw, plans] = await Promise.all([
+        Tenant.find(filter).populate("planId").sort(q ? { score: { $meta: "textScore" } } : { createdAt: -1 }).lean(),
         loadActivePlans(),
       ]);
       const tenantIds = tenantsRaw.map((row) => row._id);
@@ -642,18 +634,11 @@ module.exports = {
       const subscriptionMap = new Map(subscriptions.map((row) => [String(row.tenantId), row]));
       const tenants = tenantsRaw.map((row) => subscriptionForTenantView(row, subscriptionMap.get(String(row._id)) || null));
 
-      const pages = Math.max(1, Math.ceil(total / pageSize));
-      return res.render("platform/tenants/index", {
-        tenants,
-        plans,
-        filters: { q, status, plan },
-        pagination: { page: Math.min(page, pages), pages, total, pageSize },
-        error: null,
-      });
+      return res.render("platform/tenants/index", { tenants, plans, filters: { q, status, plan }, error: null });
     } catch (err) {
       console.error("listTenants error:", err);
       return res.status(500).render("platform/tenants/index", {
-        tenants: [], plans: [], filters: { q: "", status: "", plan: "" }, pagination: { page: 1, pages: 1, total: 0, pageSize: 100 }, error: "Failed to load schools."
+        tenants: [], plans: [], filters: { q: "", status: "", plan: "" }, error: "Failed to load schools."
       });
     }
   },
@@ -1404,8 +1389,7 @@ module.exports = {
       return res.redirect(`/super-admin/schools/${tenant._id}?inviteResent=1`);
     } catch (err) {
       console.error("resendTenantInvite error:", err);
-      const revisionConflict = /revision/i.test(String(err?.message || ""));
-      return res.status(revisionConflict ? 409 : 500).send(revisionConflict ? "School changed since the page was loaded. Reload and try again." : "Failed to resend tenant invite.");
+      return res.status(/revision/i.test(String(err?.message || "")) ? 409 : 400).send(err.message || "Failed to resend tenant invite.");
     }
   },
 

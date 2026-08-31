@@ -176,25 +176,16 @@ module.exports = {
       if (academicYear) filter.academicYear = academicYear;
       if (term && !Number.isNaN(Number(term))) filter.term = Number(term);
 
-      const kpiFilter = { ...filter };
-      delete kpiFilter.status;
-      const [total, statusRows, classes, staffList, scopeLists, academicYearsRaw] = await Promise.all([
-        Subject.countDocuments(filter),
-        Subject.aggregate([
-          { $match: kpiFilter },
-          { $group: { _id: "$status", count: { $sum: 1 } } },
-        ]),
-        Class
-          ? Class.find({}).select("name code schoolUnitId schoolUnitName campusId campusName campusCode levelType classLevel stream academicYear term").sort({ createdAt: -1 }).lean()
-          : [],
-        Staff
-          ? Staff.find({}).select("fullName name role email").sort({ fullName: 1, name: 1 }).lean()
-          : [],
-        loadAcademicScopeLists(req),
-        Subject.distinct("academicYear"),
-      ]);
+      const total = await Subject.countDocuments(filter);
       const totalPages = Math.max(Math.ceil(total / perPage), 1);
       const safePage = Math.min(page, totalPages);
+
+      const classes = Class
+        ? await Class.find({})
+            .select("name code schoolUnitId schoolUnitName campusId campusName campusCode levelType classLevel stream academicYear term")
+            .sort({ createdAt: -1 })
+            .lean()
+        : [];
 
       const subjects = await Subject.find(filter)
         .populate("teacher", "fullName name email role")
@@ -204,9 +195,22 @@ module.exports = {
         .limit(perPage)
         .lean();
 
-      const academicYears = academicYearsRaw.filter(Boolean).sort();
-      const statusCounts = Object.fromEntries(statusRows.map((row) => [String(row._id || ""), Number(row.count || 0)]));
-      const kpis = { total, active: statusCounts.active || 0, draft: statusCounts.draft || 0, archived: statusCounts.archived || 0 };
+      const staffList = Staff
+        ? await Staff.find({})
+            .select("fullName name role email")
+            .sort({ fullName: 1, name: 1 })
+            .lean()
+        : [];
+
+      const scopeLists = await loadAcademicScopeLists(req);
+      const academicYears = (await Subject.distinct("academicYear")).filter(Boolean).sort();
+
+      const kpis = {
+        total,
+        active: await Subject.countDocuments({ ...filter, status: "active" }),
+        draft: await Subject.countDocuments({ ...filter, status: "draft" }),
+        archived: await Subject.countDocuments({ ...filter, status: "archived" }),
+      };
 
       return res.render(VIEW_PATH, {
         tenant: req.tenant || null,

@@ -180,15 +180,14 @@ module.exports = {
       const { TimetableEntry, Staff } = requireModels(req, ["TimetableEntry", "Staff"]);
       const { filter, params } = queryFilter(req); const page = Math.max(Number(req.query.page || 1), 1), perPage = 10;
       const kpiFilter = { ...filter }; delete kpiFilter.status;
-      const [total, statusRows, staffList, academicYearsRaw, lists] = await Promise.all([
-        TimetableEntry.countDocuments(filter), TimetableEntry.aggregate([{ $match:kpiFilter },{ $group:{ _id:"$status",count:{ $sum:1 } } }]),
+      const [total, active, inactive, archived, staffList, academicYearsRaw, lists] = await Promise.all([
+        TimetableEntry.countDocuments(filter), TimetableEntry.countDocuments({ ...kpiFilter, status: "active" }), TimetableEntry.countDocuments({ ...kpiFilter, status: "inactive" }), TimetableEntry.countDocuments({ ...kpiFilter, status: "archived" }),
         Staff.find({ isDeleted: { $ne: true }, status: "Active" }).select("firstName lastName fullName name email jobTitle role").sort({ firstName: 1, lastName: 1 }).limit(1000).lean(),
         TimetableEntry.distinct("academicYear", { migrationQuarantinedAt: null }), loadAcademicScopeLists(req),
       ]);
       const totalPages = Math.max(Math.ceil(total/perPage),1), safePage = Math.min(page,totalPages);
       const entries = await TimetableEntry.find(filter).populate("classGroup","name code classLevel academicYear term").populate("sectionId","name code").populate("streamId","name code").populate("subject","code title shortTitle").populate("teacher","firstName lastName fullName name email").sort({ dayOfWeek:1,startMinutes:1,createdAt:-1 }).skip((safePage-1)*perPage).limit(perPage).lean();
-      const statusCounts=Object.fromEntries(statusRows.map((row)=>[String(row._id||""),Number(row.count||0)]));
-      return res.render("tenant/timetable/index", { tenant:req.tenant||null, entries, entriesData:entries.map(serializeEntry), classes:lists.classes, sections:lists.sections, streams:lists.streams, subjects:lists.subjects, subjectOptions:lists.subjects, staffList, academicYears:academicYearsRaw.filter(Boolean).sort(), days:DAYS, csrfToken:res.locals.csrfToken||null, kpis:{total,active:statusCounts.active||0,inactive:statusCounts.inactive||0,archived:statusCounts.archived||0}, query:{...params,page:safePage,total,totalPages,perPage}, messages:{success:req.flash?req.flash("success"):[],error:req.flash?req.flash("error"):[]} });
+      return res.render("tenant/timetable/index", { tenant:req.tenant||null, entries, entriesData:entries.map(serializeEntry), classes:lists.classes, sections:lists.sections, streams:lists.streams, subjects:lists.subjects, subjectOptions:lists.subjects, staffList, academicYears:academicYearsRaw.filter(Boolean).sort(), days:DAYS, csrfToken:res.locals.csrfToken||null, kpis:{total,active,inactive,archived}, query:{...params,page:safePage,total,totalPages,perPage}, messages:{success:req.flash?req.flash("success"):[],error:req.flash?req.flash("error"):[]} });
     } catch (err) { console.error("TIMETABLE LIST ERROR:",err); return res.status(500).send("Failed to load timetable."); }
   },
 

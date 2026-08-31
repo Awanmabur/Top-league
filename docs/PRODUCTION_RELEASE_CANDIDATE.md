@@ -10,7 +10,7 @@ This document is part of the release package. Do not bypass a failed gate.
 
 ```bash
 npm ci
-npm audit --omit=dev --audit-level=high
+npm audit --omit=dev --audit-level=low
 ```
 
 Do not deploy if either command fails for a dependency/security reason. A transient registry/network failure must be resolved and the commands repeated.
@@ -30,7 +30,7 @@ Required categories are enforced by `npm run release:readiness`:
 - `BASE_DOMAIN` and HTTPS public/platform/application URLs.
 - SMTP host/port/user/password/from address.
 - Cloudinary cloud name/API key/API secret.
-- Explicit Google Calendar auth mode: Workspace service-account delegation (preferred for organizational booking calendars) or production OAuth with encrypted durable credential; a pasted refresh token is never a normal production credential.
+- Google Calendar OAuth client/secret/HTTPS redirect URI/refresh token.
 - Zoom account/client/client-secret configuration.
 
 Production debug/insecure modes and localhost-tenant routing must remain disabled. Configure a specific trusted proxy hop/range rather than `TRUST_PROXY=true`.
@@ -97,7 +97,7 @@ GET /readyz   -> 200 {"status":"ready"}
 
 `/readyz` must return 503 until the platform database connection is ready. Neither endpoint exposes tenant/database details.
 
-Verify graceful SIGTERM/SIGINT handling in staging and confirm a restart does not duplicate scheduled jobs or subscription processing. Set `RUN_SCHEDULERS_IN_WEB=false` only when the dedicated `node src/scheduler.js` worker is deployed; otherwise explicitly set it to `true`.
+Verify graceful SIGTERM/SIGINT handling in staging and confirm a restart does not duplicate scheduled jobs or subscription processing.
 
 ## 6. Required staging smoke journeys
 
@@ -152,10 +152,6 @@ With two staging tenants A and B:
 - Restore a backup from A into B must be rejected by tenant identity validation.
 
 ## 8. External integrations
-
-For Google Calendar, follow `docs/GOOGLE_CALENDAR_PRODUCTION_SETUP.md`. Production must explicitly choose `GOOGLE_CALENDAR_AUTH_MODE=service_account` or `oauth`. Service-account mode requires Workspace domain-wide delegation to the configured organizer. OAuth mode requires the consent project to actually be In Production/Internal; `GOOGLE_OAUTH_CONSENT_STATUS` is an operator assertion checked by the application, not a Google API lookup.
-
-### Integration smoke checks
 
 Before launch, exercise real staging credentials for:
 

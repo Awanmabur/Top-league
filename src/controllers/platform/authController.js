@@ -338,20 +338,11 @@ module.exports = {
 
   listPlatformUsers: async (req, res) => {
     res.set("Cache-Control", "no-store");
-    const pageSize = 100;
-    const page = Math.max(1, Math.min(100000, Number.parseInt(String(req.query?.page || "1"), 10) || 1));
-    const filter = { isDeleted: { $ne: true } };
-    const [users, total] = await Promise.all([
-      PlatformUser.find(filter)
-        .select("firstName lastName name email phone role isActive lastLoginAt revision createdAt")
-        .sort({ role: 1, firstName: 1, lastName: 1 })
-        .skip((page - 1) * pageSize)
-        .limit(pageSize)
-        .lean(),
-      PlatformUser.countDocuments(filter),
-    ]);
-    const pages = Math.max(1, Math.ceil(total / pageSize));
-    return res.render("platform/auth/users", { users, pagination: { page: Math.min(page, pages), pages, total, pageSize }, error: null });
+    const users = await PlatformUser.find({ isDeleted: { $ne: true } })
+      .select("firstName lastName name email phone role isActive lastLoginAt revision createdAt")
+      .sort({ role: 1, firstName: 1, lastName: 1 })
+      .lean();
+    return res.render("platform/auth/users", { users, error: null });
   },
 
   createPlatformUserForm: async (req, res) => {

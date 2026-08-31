@@ -181,7 +181,7 @@ function renderView(req, res, viewName, payload = {}) {
   };
 
   return res.render(viewName, { ...base, ...payload }, (err, html) => {
-    if (err) { console.error(`Student view render failed (${viewName}):`, err); return res.status(500).send("Page rendering failed."); }
+    if (err) return res.status(500).send(`Render failed: ${err.message}`);
     return res.send(html);
   });
 }

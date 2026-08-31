@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
-  <style nonce="<%= cspNonce %>">
+  <style>
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .input,.select,.textarea,.view-input{padding:10px 12px;border-radius:12px;border:1px solid rgba(13,64,96,.16);background:#fff;outline:none}
@@ -180,7 +180,7 @@
           <div class="mini-list">
             <div class="mini-item"><div class="left"><div class="strong">Add Draft Event</div><div class="muted">Keep internal first</div></div><button class="btn-xs" id="quickDraft" type="button"><i class="fa-solid fa-pen-to-square"></i></button></div>
             <div class="mini-item"><div class="left"><div class="strong">Add Active Event</div><div class="muted">Publish to calendar</div></div><button class="btn-xs" id="quickActive" type="button"><i class="fa-solid fa-calendar-check"></i></button></div>
-            <div class="mini-item"><div class="left"><div class="strong">Import CSV</div><div class="muted">Bulk upload events</div></div><button class="btn-xs" type="button" data-click-target="btnImport"><i class="fa-solid fa-file-import"></i></button></div>
+            <div class="mini-item"><div class="left"><div class="strong">Import CSV</div><div class="muted">Bulk upload events</div></div><button class="btn-xs" type="button" onclick="document.getElementById('btnImport').click()"><i class="fa-solid fa-file-import"></i></button></div>
           </div>
         </aside>
       </div>

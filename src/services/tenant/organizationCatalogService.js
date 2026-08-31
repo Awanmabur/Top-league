@@ -88,63 +88,6 @@ async function count(Model, filter) {
   return Number(await Model.countDocuments(filter));
 }
 
-async function groupedReferenceCounts(Model, field, ids) {
-  if (!Model || !ids.length) return new Map();
-  const objectIds = ids.filter(validId).map((value) => new mongoose.Types.ObjectId(id(value)));
-  if (!objectIds.length) return new Map();
-  const rows = await Model.aggregate([
-    { $match: { [field]: { $in: objectIds }, isDeleted: { $ne: true } } },
-    { $group: { _id: `$${field}`, count: { $sum: 1 } } },
-  ]);
-  return new Map(rows.map((row) => [id(row._id), Number(row.count || 0)]));
-}
-
-async function programReferenceCountsMany(models, programIds = []) {
-  const ids = [...new Set(programIds.map(id).filter(validId))];
-  const [students, invoices, payments, feeStructures, scholarships, scholarshipApplications] = await Promise.all([
-    groupedReferenceCounts(models.Student, "programId", ids),
-    groupedReferenceCounts(models.Invoice, "programId", ids),
-    groupedReferenceCounts(models.Payment, "programId", ids),
-    groupedReferenceCounts(models.FeeStructure, "programId", ids),
-    groupedReferenceCounts(models.Scholarship, "programId", ids),
-    groupedReferenceCounts(models.ScholarshipApplication, "program", ids),
-  ]);
-  const result = new Map();
-  for (const programId of ids) {
-    const row = {
-      students: students.get(programId) || 0,
-      invoices: invoices.get(programId) || 0,
-      payments: payments.get(programId) || 0,
-      feeStructures: feeStructures.get(programId) || 0,
-      scholarships: scholarships.get(programId) || 0,
-      scholarshipApplications: scholarshipApplications.get(programId) || 0,
-    };
-    row.total = Object.values(row).reduce((sum, value) => sum + Number(value || 0), 0);
-    result.set(programId, row);
-  }
-  return result;
-}
-
-async function departmentReferenceCountsMany(models, departmentIds = []) {
-  const ids = [...new Set(departmentIds.map(id).filter(validId))];
-  const [staff, payrollRuns, payrollItems] = await Promise.all([
-    groupedReferenceCounts(models.Staff, "departmentId", ids),
-    groupedReferenceCounts(models.PayrollRun, "departmentId", ids),
-    groupedReferenceCounts(models.PayrollItem, "departmentId", ids),
-  ]);
-  const result = new Map();
-  for (const departmentId of ids) {
-    const row = {
-      staff: staff.get(departmentId) || 0,
-      payrollRuns: payrollRuns.get(departmentId) || 0,
-      payrollItems: payrollItems.get(departmentId) || 0,
-    };
-    row.total = Object.values(row).reduce((sum, value) => sum + Number(value || 0), 0);
-    result.set(departmentId, row);
-  }
-  return result;
-}
-
 async function programReferenceCounts(models, programId) {
   const filter = (field) => ({ [field]: programId, isDeleted: { $ne: true } });
   const [students, invoices, payments, feeStructures, scholarships, scholarshipApplications] = await Promise.all([
@@ -262,6 +205,6 @@ async function deleteDepartment(models, departmentId, revision, actorUserId = nu
 
 module.exports = {
   validId, normalizeCode, normalizeProgramInput, normalizeDepartmentInput, parseRevision,
-  assertActiveProgram, assertActiveDepartment, assertProgramAssignment, assertDepartmentAssignment, programReferenceCounts, departmentReferenceCounts, programReferenceCountsMany, departmentReferenceCountsMany,
+  assertActiveProgram, assertActiveDepartment, assertProgramAssignment, assertDepartmentAssignment, programReferenceCounts, departmentReferenceCounts,
   updateProgram, updateDepartment, setProgramStatus, setDepartmentStatus, deleteProgram, deleteDepartment,
 };

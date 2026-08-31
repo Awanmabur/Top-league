@@ -112,61 +112,12 @@ async function syncAttendanceAlert(req, attendance) {
   }
 }
 
-async function mutateExisting(req,current,nextValues,reason="",{skipAlert=false}={}) {
+async function mutateExisting(req,current,nextValues,reason="") {
   const { Attendance }=requireModels(req,["Attendance"]);
   const entry=attendanceCorrectionEntry(current,nextValues,actorId(req),reason||nextValues.lastCorrectionReason,new Date());
   const result=await Attendance.updateOne({_id:current._id,revision:Number(current.revision||0),isDeleted:{$ne:true},migrationQuarantinedAt:null},{$set:{...nextValues,updatedAt:new Date()},$push:{corrections:{$each:[entry],$slice:-50}}},{runValidators:true});
   if(result.modifiedCount!==1)throw new Error("Attendance record changed in another session. Reload and try again.");
-  const after={...current,...nextValues,_id:current._id};
-  if(!skipAlert) await syncAttendanceAlert(req,after).catch((e)=>console.error("ATTENDANCE ALERT ERROR:",e));
-  return after;
-}
-
-async function runBounded(items, limit, worker) {
-  const out=[];
-  for(let i=0;i<items.length;i+=limit){
-    const batch=items.slice(i,i+limit);
-    const settled=await Promise.allSettled(batch.map(worker));
-    out.push(...settled);
-    if(settled.some((r)=>r.status==="rejected")) break;
-  }
-  return out;
-}
-
-async function syncAttendanceAlertsBatch(req, rows, students, subject) {
-  if(!rows.length)return;
-  const { Notification, Parent }=requireModels(req,["Notification","Parent"]);
-  const studentIds=rows.map((r)=>r.student).filter(Boolean);
-  const parents=await Parent.find({childrenStudentIds:{$in:studentIds},isDeleted:{$ne:true},status:{$in:["active","on_hold"]},userId:{$ne:null}}).select("userId childrenStudentIds").lean();
-  const studentMap=new Map(students.map((x)=>[String(x._id),x]));
-  const parentMap=new Map();
-  for(const parent of parents){
-    for(const sid of parent.childrenStudentIds||[]){
-      const key=String(sid); if(!studentMap.has(key))continue;
-      if(!parentMap.has(key))parentMap.set(key,[]);
-      parentMap.get(key).push(parent.userId);
-    }
-  }
-  const clearIds=[]; const ops=[];
-  const subjectName=subject?.title||subject?.shortTitle||subject?.code||"class";
-  for(const row of rows){
-    if(!["absent","late"].includes(String(row.status))){clearIds.push(row._id);continue;}
-    const student=studentMap.get(String(row.student));
-    const recipients=[];
-    if(student?.userId)recipients.push({userId:student.userId,audience:"student",url:"/student/attendance"});
-    if(student?.guardianUserId)recipients.push({userId:student.guardianUserId,audience:"parent",url:`/parent/attendance?student=${row.student}`});
-    for(const userId of parentMap.get(String(row.student))||[])recipients.push({userId,audience:"parent",url:`/parent/attendance?student=${row.student}`});
-    const seen=new Set();
-    for(const recipient of recipients){
-      const key=String(recipient.userId); if(!key||seen.has(key))continue; seen.add(key);
-      const when=formatInTimezone(row.sessionAt,req.tenant?.timezone||"UTC");
-      ops.push({updateOne:{filter:{userId:recipient.userId,entityType:"attendance",entityId:row._id,entityAction:"status"},update:{$set:{audience:recipient.audience,title:row.status==="absent"?"Attendance absence recorded":"Late attendance recorded",message:`${subjectName} — ${when}. Status: ${row.status}.`,type:row.status==="absent"?"danger":"warning",url:recipient.url,isDeleted:false,deletedAt:null,updatedBy:actorId(req)},$setOnInsert:{createdBy:actorId(req)}},upsert:true}});
-    }
-  }
-  await Promise.all([
-    clearIds.length?Notification.updateMany({entityType:"attendance",entityId:{$in:clearIds},isDeleted:{$ne:true}},{$set:{isDeleted:true,deletedAt:new Date(),updatedBy:actorId(req)}}):Promise.resolve(),
-    ops.length?Notification.bulkWrite(ops,{ordered:false}):Promise.resolve(),
-  ]);
+  const after={...current,...nextValues,_id:current._id}; await syncAttendanceAlert(req,after).catch((e)=>console.error("ATTENDANCE ALERT ERROR:",e)); return after;
 }
 
 async function createPrepared(req,prepared) {
@@ -226,18 +177,17 @@ module.exports={
   attendanceRules,
   list:async(req,res)=>{
     try{
-      const { Attendance, Student }=requireModels(req,["Attendance","Student"]); const {filter,params}=queryFilter(req);
-      const listsPromise=loadLists(req,true);
-      const hasSearch=await addSearchFilter(Student,filter,params.q);
-      const page=Math.max(parseInt(req.query.page||"1",10),1),perPage=20; const lists=await listsPromise;
+      const { Attendance, Student }=requireModels(req,["Attendance","Student"]); const {filter,params}=queryFilter(req); const hasSearch=await addSearchFilter(Student,filter,params.q);
+      const page=Math.max(parseInt(req.query.page||"1",10),1),perPage=20; const lists=await loadLists(req,true);
       if(!hasSearch)return res.render("tenant/attendance/index",{tenant:req.tenant||null,records:[],subjects:lists.subjects,classes:lists.classes,sections:lists.sections,streams:lists.streams,students:lists.students,subjectOptions:lists.subjects,studentOptions:lists.students,staffList:lists.staffList,kpis:{total:0,present:0,absent:0,late:0,excused:0,rate:0},csrfToken:res.locals.csrfToken||null,query:{...params,page,perPage,total:0,totalPages:1},messages:{success:req.flash?.("success")||[],error:req.flash?.("error")||[]}});
-      const statsRows=await Attendance.aggregate([
-        {$match:filter},
-        {$group:{_id:null,total:{$sum:1},present:{$sum:{$cond:[{$eq:["$status","present"]},1,0]}},absent:{$sum:{$cond:[{$eq:["$status","absent"]},1,0]}},late:{$sum:{$cond:[{$eq:["$status","late"]},1,0]}},excused:{$sum:{$cond:[{$eq:["$status","excused"]},1,0]}}}},
+      const total=await Attendance.countDocuments(filter), totalPages=Math.max(Math.ceil(total/perPage),1),safePage=Math.min(page,totalPages);
+      const [records,present,absent,late,excused]=await Promise.all([
+        Attendance.find(filter).populate({path:"student",select:"fullName regNo email"}).populate({path:"subject",select:"title code shortTitle"}).populate({path:"classGroup",select:"name code"}).populate({path:"sectionId",select:"name code"}).populate({path:"streamId",select:"name code"}).populate({path:"teacher",select:"fullName name email role"}).sort({sessionAt:-1,createdAt:-1}).skip((safePage-1)*perPage).limit(perPage).lean(),
+        Attendance.countDocuments({...filter,status:"present"}),
+        Attendance.countDocuments({...filter,status:"absent"}),
+        Attendance.countDocuments({...filter,status:"late"}),
+        Attendance.countDocuments({...filter,status:"excused"}),
       ]);
-      const statusStats=statsRows[0]||{},total=Number(statusStats.total||0),present=Number(statusStats.present||0),absent=Number(statusStats.absent||0),late=Number(statusStats.late||0),excused=Number(statusStats.excused||0);
-      const totalPages=Math.max(Math.ceil(total/perPage),1),safePage=Math.min(page,totalPages);
-      const records=await Attendance.find(filter).populate({path:"student",select:"fullName regNo email"}).populate({path:"subject",select:"title code shortTitle"}).populate({path:"classGroup",select:"name code"}).populate({path:"sectionId",select:"name code"}).populate({path:"streamId",select:"name code"}).populate({path:"teacher",select:"fullName name email role"}).sort({sessionAt:-1,createdAt:-1}).skip((safePage-1)*perPage).limit(perPage).lean();
       const attended=present+late+excused;
       const kpis={total,present,absent,late,excused,attended,rate:total?Math.round((attended/total)*10000)/100:0};
       const tz=req.tenant?.timezone||"UTC"; for(const r of records){r.sessionAtInput=formatDateTimeLocal(r.sessionAt,tz);r.sessionAtLabel=formatInTimezone(r.sessionAt,tz);}
@@ -255,49 +205,12 @@ module.exports={
   },
   saveSheet:async(req,res)=>{
     try{
-      const { Attendance, Subject, Student }=requireModels(req,["Attendance","Subject","Student"]);
-      const subjectId=str(req.body.subject||req.body.course,80);
-      if(!isObjId(subjectId))throw new Error("Subject is required.");
-      const subject=await Subject.findOne({_id:subjectId,status:"active"}).lean();
-      if(!subject)throw new Error("Subject not found.");
-      const resolved=await resolveAcademicScope(req,{classId:req.body.classGroup||subject.classId,sectionId:req.body.sectionId||subject.sectionId,streamId:req.body.streamId||subject.streamId});
-      if(resolved.errors.length||!resolved.payload.classId)throw new Error(resolved.errors.join(" ")||"Attendance class is required.");
-      const scope={classGroup:resolved.payload.classId,sectionId:resolved.payload.sectionId,sectionName:resolved.payload.sectionName,sectionCode:resolved.payload.sectionCode,streamId:resolved.payload.streamId,streamName:resolved.payload.streamName,streamCode:resolved.payload.streamCode,academicYear:subject.academicYear||resolved.payload.academicYear,term:Number(subject.term||resolved.payload.term||1)};
-      assertSubjectMatchesAttendanceScope(subject,scope);
-      const sessionAt=parseTenantDateTime(req.body.sessionAt,req.tenant?.timezone||"UTC");
-      const roster=await Student.find(attendanceStudentFilter(scope)).select("_id regNo userId guardianUserId fullName email classId sectionId streamId academicYear term status").lean();
-      const byId=new Map(roster.map((student)=>[String(student._id),student]));
-      const rows=Array.isArray(req.body.rows)?req.body.rows:[];
-      if(!rows.length)throw new Error("No attendance rows submitted.");
-      const submittedIds=rows.map((row)=>str(row.student,80));
-      if(new Set(submittedIds).size!==submittedIds.length)throw new Error("Attendance sheet contains duplicate student rows.");
-      const existingRows=await Attendance.find({student:{$in:submittedIds.filter(isObjId)},subject:subject._id,sessionAt,isDeleted:{$ne:true},migrationQuarantinedAt:null}).lean();
-      const existingByStudent=new Map(existingRows.map((row)=>[String(row.student),row]));
-      const prepared=[];
-      for(const row of rows){
-        const student=byId.get(str(row.student,80));
-        if(!student)throw new Error(`Student ${str(row.regNo,60)||"row"} is not in this attendance scope.`);
-        const current=existingByStudent.get(String(student._id))||null;
-        const values=buildAttendanceValues({student,subject,scope,sessionAt,status:row.status,notes:row.notes,actorId:actorId(req),timezone:req.tenant?.timezone||"UTC",current,correctionReason:"Attendance sheet update"});
-        prepared.push({student,current,values});
-      }
-      const created=[]; const changed=[]; const persisted=[];
-      const settled=await runBounded(prepared,8,async(item)=>{
-        if(item.current){
-          const after=await mutateExisting(req,item.current,item.values,"Attendance sheet update",{skipAlert:true});
-          changed.push({item,expectedRevision:Number(item.values.revision||0)}); persisted.push(after); return after;
-        }
-        const doc=await Attendance.create(item.values); created.push(doc); const plain=doc.toObject?doc.toObject():doc; persisted.push(plain); return plain;
-      });
-      const failed=settled.find((r)=>r.status==="rejected");
-      if(failed){
-        for(const d of created)await Attendance.deleteOne({_id:d._id}).catch(()=>null);
-        for(const change of changed.reverse())await restoreAttendanceSnapshot(req,change.item.current,change.expectedRevision).catch(()=>null);
-        throw failed.reason;
-      }
-      await syncAttendanceAlertsBatch(req,persisted,roster,subject).catch((e)=>console.error("ATTENDANCE BATCH ALERT ERROR:",e));
-      req.flash?.("success",`Saved ${prepared.length} attendance row(s).`);
-      return res.redirect(`/admin/attendance/sheet?course=${encodeURIComponent(subjectId)}&sessionAt=${encodeURIComponent(req.body.sessionAt||"")}`);
+      const { Attendance, Subject, Student }=requireModels(req,["Attendance","Subject","Student"]); const subjectId=str(req.body.subject||req.body.course,80); if(!isObjId(subjectId))throw new Error("Subject is required."); const subject=await Subject.findOne({_id:subjectId,status:"active"}).lean();if(!subject)throw new Error("Subject not found.");
+      const resolved=await resolveAcademicScope(req,{classId:req.body.classGroup||subject.classId,sectionId:req.body.sectionId||subject.sectionId,streamId:req.body.streamId||subject.streamId});if(resolved.errors.length||!resolved.payload.classId)throw new Error(resolved.errors.join(" ")||"Attendance class is required."); const scope={classGroup:resolved.payload.classId,sectionId:resolved.payload.sectionId,sectionName:resolved.payload.sectionName,sectionCode:resolved.payload.sectionCode,streamId:resolved.payload.streamId,streamName:resolved.payload.streamName,streamCode:resolved.payload.streamCode,academicYear:subject.academicYear||resolved.payload.academicYear,term:Number(subject.term||resolved.payload.term||1)};assertSubjectMatchesAttendanceScope(subject,scope);
+      const sessionAt=parseTenantDateTime(req.body.sessionAt,req.tenant?.timezone||"UTC"); const roster=await Student.find(attendanceStudentFilter(scope)).lean();const byId=new Map(roster.map((s)=>[String(s._id),s])); const rows=Array.isArray(req.body.rows)?req.body.rows:[];if(!rows.length)throw new Error("No attendance rows submitted.");
+      const prepared=[];for(const row of rows){const student=byId.get(str(row.student,80));if(!student)throw new Error(`Student ${str(row.regNo,60)||"row"} is not in this attendance scope.`);const current=await Attendance.findOne({student:student._id,subject:subject._id,sessionAt,isDeleted:{$ne:true},migrationQuarantinedAt:null}).lean();const values=buildAttendanceValues({student,subject,scope,sessionAt,status:row.status,notes:row.notes,actorId:actorId(req),timezone:req.tenant?.timezone||"UTC",current,correctionReason:"Attendance sheet update"});prepared.push({student,current,values});}
+      const created=[],changed=[];try{for(const item of prepared){if(item.current){await mutateExisting(req,item.current,item.values,"Attendance sheet update");changed.push(item);}else{const doc=await Attendance.create(item.values);created.push(doc);await syncAttendanceAlert(req,doc.toObject?doc.toObject():doc).catch(()=>null);}}}catch(err){for(const d of created)await Attendance.deleteOne({_id:d._id}).catch(()=>null);for(const item of changed.reverse())await restoreAttendanceSnapshot(req,item.current,Number(item.values.revision||0)).catch(()=>null);throw err;}
+      req.flash?.("success",`Saved ${prepared.length} attendance row(s).`);return res.redirect(`/admin/attendance/sheet?course=${encodeURIComponent(subjectId)}&sessionAt=${encodeURIComponent(req.body.sessionAt||"")}`);
     }catch(err){console.error("ATTENDANCE SHEET SAVE ERROR:",err);req.flash?.("error",err.message||"Failed to save attendance sheet.");return res.redirect("/admin/attendance/sheet");}
   },
   create:async(req,res)=>{try{const errors=validationResult(req);if(!errors.isEmpty())throw new Error(errors.array().map((e)=>e.msg).join(" "));const p=await prepareInput(req);await createPrepared(req,p);req.flash?.("success","Attendance saved.");return res.redirect(req.body._saveAndNew?"/admin/attendance?new=1":"/admin/attendance");}catch(err){req.flash?.("error",err.message||"Failed to save attendance.");return res.redirect("/admin/attendance");}},

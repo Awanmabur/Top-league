@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="/css/navbar.css"/>
   <link rel="stylesheet" href="/css/parent-portal.css" />
 
-  <style nonce="<%= cspNonce %>">
+  <style>
     .hero-card{
       margin-top:16px;
       padding:18px;
@@ -290,12 +290,12 @@
         </div>
 
         <div class="top-actions">
-          <a class="btn light" href="/parent/children">
+          <button class="btn light" type="button" onclick="window.location.href='/parent/children'">
             <i class="fa-solid fa-arrow-left"></i> Back to Children
-          </a>
-          <a class="btn primary" href="/parent/results?student=<%= st._id %>">
+          </button>
+          <button class="btn primary" type="button" onclick="window.location.href='/parent/results?student=<%= st._id %>'">
             <i class="fa-solid fa-file-lines"></i> View Results
-          </a>
+          </button>
         </div>
       </div>
 

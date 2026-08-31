@@ -120,25 +120,6 @@ async function countExamResults(models = {}, examId) {
   return Result.countDocuments({ exam: examId });
 }
 
-async function countExamResultsMany(models = {}, exams = []) {
-  const Result = models.Result;
-  if (!Result) throw new Error("Result model is required for exam lifecycle safety.");
-  const ids = [...new Map(
-    (Array.isArray(exams) ? exams : [])
-      .map((value) => (value && typeof value === "object" && value._id ? value._id : value))
-      .filter(Boolean)
-      .map((value) => [String(value), value]),
-  ).values()];
-  if (!ids.length) return new Map();
-
-  const grouped = await Result.aggregate([
-    { $match: { exam: { $in: ids } } },
-    { $group: { _id: "$exam", count: { $sum: 1 } } },
-  ]);
-
-  return new Map((grouped || []).map((row) => [String(row._id), Number(row.count || 0)]));
-}
-
 async function assertSubjectMatchesScope(models = {}, subjectId, scope = {}, academic = {}) {
   const Subject = models.Subject;
   if (!Subject) throw new Error("Subject model is required.");
@@ -284,7 +265,6 @@ module.exports = {
   assertEditAllowed,
   assertHardDeleteAllowed,
   countExamResults,
-  countExamResultsMany,
   assertSubjectMatchesScope,
   publishedScheduleChanged,
   targetStudentFilter,

@@ -224,35 +224,32 @@ async function notifyEventSubscribers(req, event, now = new Date()) {
   if (recipientIds.length) staleFilter.userId = { $nin: recipientIds };
   await Notification.updateMany(staleFilter, { $set: { isDeleted: true, deletedAt: now } }).catch(() => {});
 
-  const portalRecipients = recipients.filter((user) => subByUser.get(String(user._id))?.portal !== false);
-  if (portalRecipients.length) {
-    await Notification.bulkWrite(
-      portalRecipients.map((user) => ({
-        updateOne: {
-          filter: { entityType: "Event", entityId: event._id, entityAction: "event_published", userId: user._id },
-          update: {
-            $set: {
-              audience: notificationAudienceFor(user),
-              title: `Event: ${str(event.title).slice(0, 130)}`,
-              message: str(event.description).slice(0, 5000),
-              type: event.priority === "Featured" ? "success" : "info",
-              url: isStudentUser(user) ? "/student/events" : "/staff/notifications",
-              isRead: false,
-              readAt: null,
-              isDeleted: false,
-              deletedAt: null,
-              deliverAt: now,
-              updatedBy: req.user?.userId || req.user?._id || null,
-            },
-            $setOnInsert: { createdBy: req.user?.userId || req.user?._id || null },
-          },
-          upsert: true,
+  let notified = 0;
+  for (const user of recipients) {
+    const sub = subByUser.get(String(user._id));
+    if (sub?.portal === false) continue;
+    await Notification.updateOne(
+      { entityType: "Event", entityId: event._id, entityAction: "event_published", userId: user._id },
+      {
+        $set: {
+          audience: notificationAudienceFor(user),
+          title: `Event: ${str(event.title).slice(0, 130)}`,
+          message: str(event.description).slice(0, 5000),
+          type: event.priority === "Featured" ? "success" : "info",
+          url: isStudentUser(user) ? "/student/events" : "/staff/notifications",
+          isRead: false,
+          readAt: null,
+          isDeleted: false,
+          deletedAt: null,
+          deliverAt: now,
+          updatedBy: req.user?.userId || req.user?._id || null,
         },
-      })),
-      { ordered: false },
+        $setOnInsert: { createdBy: req.user?.userId || req.user?._id || null },
+      },
+      { upsert: true }
     );
+    notified += 1;
   }
-  const notified = portalRecipients.length;
 
   const settings = await getCommunicationSettings(req);
   let emailed = 0;
@@ -363,40 +360,23 @@ async function findVisibleEvents(req, context, { limit = 100, now = new Date() }
 async function recordEventViews(req, eventIds = [], userId, now = new Date()) {
   const { Event, EventView } = req.models || {};
   if (!Event || !EventView || !isValidId(userId)) return 0;
-  const ids = [...new Set((eventIds || []).map(String).filter(isValidId))];
-  if (!ids.length) return 0;
-  const result = await EventView.bulkWrite(
-    ids.map((eventId) => ({
-      updateOne: {
-        filter: { eventId, userId },
-        update: {
-          $set: { lastViewedAt: now },
-          $inc: { viewCount: 1 },
-          $setOnInsert: { eventId, userId, firstViewedAt: now },
-        },
-        upsert: true,
+  let uniqueViews = 0;
+  for (const eventId of [...new Set((eventIds || []).map(String).filter(isValidId))]) {
+    const result = await EventView.updateOne(
+      { eventId, userId },
+      {
+        $set: { lastViewedAt: now },
+        $inc: { viewCount: 1 },
+        $setOnInsert: { eventId, userId, firstViewedAt: now },
       },
-    })),
-    { ordered: false },
-  );
-  const upsertedIds = result?.upsertedIds ? Object.values(result.upsertedIds) : [];
-  const uniqueEventIds = upsertedIds
-    .map((row) => row?._id || row)
-    .map(String)
-    .filter(isValidId);
-  // Drivers differ in the exact upsertedIds shape. If the index positions are
-  // available, map them back to the source event ID instead of guessing IDs.
-  const insertedIndexes = result?.upsertedIds ? Object.keys(result.upsertedIds).map(Number).filter(Number.isInteger) : [];
-  const incrementIds = insertedIndexes.length
-    ? insertedIndexes.map((index) => ids[index]).filter(Boolean)
-    : uniqueEventIds;
-  if (incrementIds.length) {
-    await Event.bulkWrite(
-      incrementIds.map((eventId) => ({ updateOne: { filter: { _id: eventId }, update: { $inc: { "stats.views": 1 } } } })),
-      { ordered: false },
+      { upsert: true }
     );
+    if (result.upsertedCount) {
+      uniqueViews += 1;
+      await Event.updateOne({ _id: eventId }, { $inc: { "stats.views": 1 } });
+    }
   }
-  return incrementIds.length;
+  return uniqueViews;
 }
 
 function registrationIdentity(user, student) {

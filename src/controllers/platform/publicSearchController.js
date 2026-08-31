@@ -309,7 +309,7 @@ module.exports = {
           feeMax,
           facilities: facilitiesArr,
           awardsCount: awardsArr.length,
-          img: branding.coverUrl || "/img/feature.webp",
+          img: branding.coverUrl || "https://picsum.photos/seed/search-school/1200/700",
           blurb: clean(
             profile.tagline || "Explore this school profile on Classic Academy.",
             220,

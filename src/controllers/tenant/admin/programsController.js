@@ -1,7 +1,6 @@
 const {
   normalizeProgramInput,
   programReferenceCounts,
-  programReferenceCountsMany,
   updateProgram,
   setProgramStatus,
   deleteProgram,
@@ -22,14 +21,12 @@ function filters(query = {}) {
 }
 
 async function rowsWithRefs(req, docs) {
-  const refsById = await programReferenceCountsMany(req.models, docs.map((doc) => doc._id));
-  return docs.map((doc) => ({
+  return Promise.all(docs.map(async (doc) => ({
     id: String(doc._id), name: doc.name || doc.title || "", code: doc.code || "", shortTitle: doc.shortTitle || "",
     levelType: doc.levelType || "mixed", classLevels: Array.isArray(doc.classLevels) ? doc.classLevels.join(", ") : "",
     description: doc.description || "", status: doc.status || "inactive", revision: Number(doc.revision || 1),
-    refs: refsById.get(String(doc._id)) || { students: 0, invoices: 0, payments: 0, feeStructures: 0, scholarships: 0, scholarshipApplications: 0, total: 0 },
-    legacy: Boolean(doc.legacySubjectId), quarantined: Boolean(doc.migrationQuarantinedAt),
-  }));
+    refs: await programReferenceCounts(req.models, doc._id), legacy: Boolean(doc.legacySubjectId), quarantined: Boolean(doc.migrationQuarantinedAt),
+  })));
 }
 
 module.exports = {

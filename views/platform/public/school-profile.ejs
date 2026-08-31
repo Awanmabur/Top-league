@@ -31,7 +31,7 @@
   <% } else { %>
   <link rel="icon" href="data:,"/>
   <% } %>
-  <script nonce="<%= cspNonce %>" type="application/ld+json"><%- JSON.stringify({
+  <script type="application/ld+json"><%- JSON.stringify({
     "@context": "https://schema.org",
     "@type": "EducationalOrganization",
     "name": tenant.name,
@@ -54,7 +54,7 @@
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
         crossorigin="anonymous" referrerpolicy="no-referrer"/>
 
-  <style nonce="<%= cspNonce %>">
+  <style>
     @font-face{font-family:'PoppinsLocal';src:local('Poppins'),local('Inter'),local('Segoe UI')}
 
     :root{
@@ -649,7 +649,6 @@
       .cta-row{justify-content:center}
     }
   </style>
-  <script src="/js/public-image-fallback.js"></script>
 </head>
 
 <%
@@ -725,7 +724,7 @@
 
 <header class="header" id="siteHeader">
   <a href="<%= mainUrl("/") %>" class="brand" aria-label="Classic Academy Home">
-    <img class="brand-mark" src="<%= mainUrl("/img/academylogo.webp") %>" decoding="async" fetchpriority="high" width="396" height="415" alt="Classic Academy logo">
+    <img class="brand-mark" src="<%= mainUrl("/img/academylogo.png") %>" alt="Classic Academy logo">
     <div class="brand-txt">
       <span class="brand-name">Classic Academy</span>
       <span class="brand-sub">School management + admissions</span>
@@ -760,7 +759,7 @@
       <div class="logo-wrap">
         <div class="logo">
           <% if (b.logoUrl) { %>
-            <img src="<%= b.logoUrl %>" alt="Logo" decoding="async" fetchpriority="high" style="width:100%;height:100%;border-radius:14px;object-fit:cover"/>
+            <img src="<%= b.logoUrl %>" alt="Logo" style="width:100%;height:100%;border-radius:14px;object-fit:cover"/>
           <% } else { %>
             <%= (tenant.name || 'S').split(' ').map(x=>x[0]).slice(0,2).join('').toUpperCase() %>
           <% } %>
@@ -1012,7 +1011,7 @@
       <div class="gallery" id="galleryGrid">
         <% gallery.slice(0,12).forEach(img => { %>
           <button class="g-item" data-src="<%= img.url %>" aria-label="Open photo">
-            <img alt="Gallery" src="<%= img.url %>" loading="lazy" decoding="async">
+            <img alt="Gallery" src="<%= img.url %>">
           </button>
         <% }) %>
         <% if (!gallery.length) { %><div class="muted">No gallery images yet.</div><% } %>
@@ -1022,7 +1021,7 @@
     <div class="lightbox" id="lightbox" aria-hidden="true">
       <button class="lb-close" id="lbClose" aria-label="Close"><i class="fa fa-xmark"></i></button>
       <button class="lb-nav lb-prev" id="lbPrev" aria-label="Previous"><i class="fa fa-chevron-left"></i></button>
-      <img id="lbImg" alt="Preview" decoding="async"/>
+      <img id="lbImg" alt="Preview"/>
       <button class="lb-nav lb-next" id="lbNext" aria-label="Next"><i class="fa fa-chevron-right"></i></button>
     </div>
   </section>
@@ -1233,13 +1232,13 @@
   <div>
     <h4>About Us</h4>
     <p>We are excited to introduce our upcoming Classic Academy Plans, where schools will be categorized</p>
-    <a href="https://play.google.com/store" target="_blank" rel="noopener noreferrer">
-      <img src="/vendor/marketing/google-play-badge.svg"
-        style="height: 50px; width: 150px" alt="Google Play" decoding="async" width="180" height="54" loading="lazy">
+    <a href="https://play.google.com/store" target="_blank" rel="noopener">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg"
+        style="height: 50px; width: 150px" alt="Google Play">
     </a>
-    <a href="https://apps.apple.com/" target="_blank" rel="noopener noreferrer">
-      <img src="/vendor/marketing/app-store-badge.svg"
-        alt="Download on the App Store" style="height: 50px;" decoding="async" width="180" height="54" loading="lazy">
+    <a href="https://apps.apple.com/" target="_blank" rel="noopener">
+      <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg"
+        alt="Download on the App Store" style="height: 50px;">
     </a>
   </div>
 
@@ -1272,7 +1271,7 @@
       <li><a href="<%= mainUrl("/admissions") %>">Admissions</a></li>
       <li><a href="<%= mainUrl("/search") %>">Search</a></li>
       <li><a href="<%= mainUrl("/blog?slug=increase-admissions") %>">Blog</a></li>
-      <li><a href="https://chat.whatsapp.com/HRGoS3fMZoZGgXbz1HDw6a?mode=gi_t" target="_blank" rel="noopener noreferrer">Join whatsapp group</a></li>
+      <li><a href="https://chat.whatsapp.com/HRGoS3fMZoZGgXbz1HDw6a?mode=gi_t" target="_blank" rel="noopener">Join whatsapp group</a></li>
     </ul>
   </div>
 </footer>

@@ -2,9 +2,7 @@ const { platformConnection, getTenantConnection } = require("../../config/db");
 const loadTenantModels = require("../../models/tenant/loadModels");
 const { publishDueAnnouncements } = require("./announcementService");
 
-const { initialDelayMs } = require('../schedulerTiming');
 let timer = null;
-let startTimer = null;
 let running = false;
 
 function schedulerIntervalMs() {
@@ -45,24 +43,18 @@ async function processScheduledAnnouncements() {
 }
 
 function startAnnouncementScheduler() {
-  if (timer || startTimer || process.env.DISABLE_ANNOUNCEMENT_SCHEDULER === "true") return timer || startTimer;
+  if (timer || process.env.DISABLE_ANNOUNCEMENT_SCHEDULER === "true") return timer;
   const interval = schedulerIntervalMs();
-  const run = () => processScheduledAnnouncements().catch(() => {});
-  const delay = initialDelayMs('ANNOUNCEMENT_SCHEDULER_INITIAL_DELAY_MS', 5000, interval);
-  startTimer = setTimeout(() => {
-    startTimer = null;
-    run();
-    timer = setInterval(run, interval);
-    timer.unref?.();
-  }, delay);
-  startTimer.unref?.();
-  return startTimer;
+  timer = setInterval(() => {
+    processScheduledAnnouncements().catch(() => {});
+  }, interval);
+  timer.unref?.();
+  return timer;
 }
 
 function stopAnnouncementScheduler() {
-  if (startTimer) clearTimeout(startTimer);
-  if (timer) clearInterval(timer);
-  startTimer = null;
+  if (!timer) return;
+  clearInterval(timer);
   timer = null;
 }
 

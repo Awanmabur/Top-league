@@ -18,9 +18,8 @@
     <meta content="Classic Academy" name="application-name" />
     <meta content="telephone=no" name="format-detection" />
     <link href="https://www.classicacademy.app/benefits" rel="canonical" />
-    <link href="/img/academylogo.webp" rel="icon" />
-    <link href="/img/academylogo.webp" rel="apple-touch-icon" />
-  <link rel="preload" as="image" href="/img/hero.webp" fetchpriority="high" />
+    <link href="https://www.classicacademy.app/img/academylogo.png" rel="icon" />
+    <link href="https://www.classicacademy.app/img/academylogo.png" rel="apple-touch-icon" />
     <!-- Open Graph -->
     <meta content="website" property="og:type" />
     <meta content="Classic Academy" property="og:site_name" />
@@ -31,7 +30,7 @@
         content="Give your school instant online presence, online admissions, smart fee tracking, results publishing, attendance, parent communication, and reports — all in one secure Classic Academy platform."
         property="og:description" />
     <meta content="https://www.classicacademy.app/benefits" property="og:url" />
-    <meta content="https://www.classicacademy.app/assets/og/classic-academy.jpg" property="og:image" />
+    <meta content="https://www.classicacademy.app/img/hero.png" property="og:image" />
     <meta content="Classic Academy — School Management Platform" property="og:image:alt" />
     <!-- Twitter -->
     <meta content="summary_large_image" name="twitter:card" />
@@ -40,15 +39,15 @@
     <meta
         content="Give your school instant online presence, online admissions, smart fee tracking, results publishing, attendance, parent communication, and reports — all in one secure Classic Academy platform."
         name="twitter:description" />
-    <meta content="https://www.classicacademy.app/assets/og/classic-academy.jpg" name="twitter:image" />
+    <meta content="https://www.classicacademy.app/img/hero.png" name="twitter:image" />
     <!-- Structured data -->
-    <script nonce="<%= cspNonce %>" type="application/ld+json">
+    <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "Organization",
     "name": "Classic Academy",
     "url": "https://www.classicacademy.app/",
-    "logo": "https://www.classicacademy.app/img/academylogo.webp",
+    "logo": "https://www.classicacademy.app/img/academylogo.png",
     "contactPoint": [{
       "@type": "ContactPoint",
       "telephone": "+256781977217",
@@ -58,7 +57,7 @@
     }]
   }
   </script>
-    <script nonce="<%= cspNonce %>" type="application/ld+json">
+    <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "WebSite",
@@ -71,7 +70,7 @@
     }
   }
   </script>
-    <script nonce="<%= cspNonce %>" type="application/ld+json">
+    <script type="application/ld+json">
   {
     "@context":"https://schema.org",
     "@type":"SoftwareApplication",
@@ -87,7 +86,7 @@
     }
   }
   </script>
-    <script nonce="<%= cspNonce %>" type="application/ld+json">
+    <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "OfferCatalog",
@@ -104,19 +103,17 @@
   </script>
     <link href="https://fonts.googleapis.com" rel="preconnect" />
     <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
-    <link href="/vendor/swiper/swiper-bundle.min.css" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Outfit:wght@100..900&display=swap" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
-    <style nonce="<%= cspNonce %>">
+    <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
-        
+        @import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Outfit:wght@100..900&display=swap");
 
         :root {
             --primary: #4a90e2;
@@ -2152,13 +2149,12 @@
             }
         }
     </style>
-  <script src="/js/public-image-fallback.js"></script>
 </head>
 
 <body>
     <div id="loader">
         <div class="academylogo">
-            <img alt="Classic Academy logo" src="/img/academylogo.webp" decoding="async" width="396" height="415">
+            <img alt="Classic Academy logo" src="./img/academylogo.png" />
         </div>
         <div style="display:flex; gap:10px;">
             <div class="loader">
@@ -2186,7 +2182,7 @@
     <!-- Nav -->
     <header class="header" id="siteHeader">
         <a aria-label="Classic Academy Home" class="brand" href="/">
-            <img alt="Classic Academy logo" class="brand-mark" src="/img/academylogo.webp" decoding="async" width="396" height="415">
+            <img alt="Classic Academy logo" class="brand-mark" src="./img/academylogo.png" />
             <div class="brand-txt">
                 <span class="brand-name">Classic Academy</span>
                 <span class="brand-sub">School management + admissions</span>
@@ -2266,7 +2262,7 @@
             </div>
             <div class="hero-media">
                 <div class="hero-image">
-                    <img alt="Classic Academy — School Benefits" src="/img/hero.webp" decoding="async" width="1600" height="1379" fetchpriority="high">
+                    <img alt="Classic Academy — School Benefits" src="img/hero.png" />
                 </div>
                 <div aria-label="Quick note" class="hero-note">
                     <i class="fa-solid fa-shield-halved"></i>
@@ -2279,42 +2275,42 @@
     </section><!-- Benefit tiles -->
     <section aria-label="Benefit Highlights" class="features">
         <div class="feature">
-            <img alt="Online Presence" src="/vendor/marketing/feature-icon.svg" decoding="async" width="64" height="64" loading="lazy">
+            <img alt="Online Presence" src="https://img.icons8.com/ios-filled/50/4a90e2/internet.png" />
             <h3>Online Presence</h3>
             <p>A premium school profile, photos, programs, contacts, and a shareable link parents trust.</p>
         </div>
         <div class="feature">
-            <img alt="Online Admissions" src="/vendor/marketing/feature-icon.svg" decoding="async" width="64" height="64" loading="lazy">
+            <img alt="Online Admissions" src="https://img.icons8.com/ios-filled/50/4a90e2/resume.png" />
             <h3>Online Admissions</h3>
             <p>Applications, inquiries, document uploads, shortlisting and follow-ups — organized and trackable.</p>
         </div>
         <div class="feature">
-            <img alt="Fees &amp; Payments" src="/vendor/marketing/feature-icon.svg" decoding="async" width="64" height="64" loading="lazy">
+            <img alt="Fees &amp; Payments" src="https://img.icons8.com/ios-filled/50/4a90e2/money-transfer.png" />
             <h3>Fees &amp; Payments</h3>
             <p>Invoices, receipts, balances, reminders, and statements — reduce leakages and confusion.</p>
         </div>
         <div class="feature">
-            <img alt="Reports &amp; Analytics" src="/vendor/marketing/feature-icon.svg" decoding="async" width="64" height="64" loading="lazy">
+            <img alt="Reports &amp; Analytics" src="https://img.icons8.com/ios-filled/50/4a90e2/combo-chart.png" />
             <h3>Reports &amp; Analytics</h3>
             <p>Enrollment, fee collection, performance and attendance reports for better decisions.</p>
         </div>
         <div class="feature">
-            <img alt="Attendance" src="/vendor/marketing/feature-icon.svg" decoding="async" width="64" height="64" loading="lazy">
+            <img alt="Attendance" src="https://img.icons8.com/ios-filled/50/4a90e2/checked--v1.png" />
             <h3>Attendance</h3>
             <p>Daily registers, class attendance trends, and quick follow-up for absences.</p>
         </div>
         <div class="feature">
-            <img alt="Exams &amp; Results" src="/vendor/marketing/feature-icon.svg" decoding="async" width="64" height="64" loading="lazy">
+            <img alt="Exams &amp; Results" src="https://img.icons8.com/ios-filled/50/4a90e2/graduation-cap.png" />
             <h3>Exams &amp; Results</h3>
             <p>Marks capture, grading, report cards and results publishing — fast and consistent.</p>
         </div>
         <div class="feature">
-            <img alt="Parent Communication" src="/vendor/marketing/feature-icon.svg" decoding="async" width="64" height="64" loading="lazy">
+            <img alt="Parent Communication" src="https://img.icons8.com/ios-filled/50/4a90e2/sms.png" />
             <h3>Communication</h3>
             <p>SMS/WhatsApp updates, announcements, reminders, and secure portals for parents/students.</p>
         </div>
         <div class="feature">
-            <img alt="Security &amp; Roles" src="/vendor/marketing/feature-icon.svg" decoding="async" width="64" height="64" loading="lazy">
+            <img alt="Security &amp; Roles" src="https://img.icons8.com/ios-filled/50/4a90e2/lock.png" />
             <h3>Security &amp; Roles</h3>
             <p>Role-based access, audit trails, and privacy-first design to protect your school data.</p>
         </div>
@@ -2323,7 +2319,7 @@
         <div class="carousel-container">
             <div class="carousel-track" id="featuredTrack">
                 <div class="card">
-                    <img alt="Online Presence Bundle" src="/img/about.webp" decoding="async" width="1600" height="1032" loading="lazy">
+                    <img alt="Online Presence Bundle" src="https://picsum.photos/seed/onlinepresence/400/300" />
                     <div class="card-content">
                         <h3>Online Presence Bundle</h3>
                         <p>Premium profile, gallery, programs, contacts, map, and shareable link for marketing.</p>
@@ -2331,7 +2327,7 @@
                     </div>
                 </div>
                 <div class="card">
-                    <img alt="Admissions Bundle" src="/img/about.webp" decoding="async" width="1600" height="1032" loading="lazy">
+                    <img alt="Admissions Bundle" src="https://picsum.photos/seed/admissions/400/300" />
                     <div class="card-content">
                         <h3>Admissions Bundle</h3>
                         <p>Online application forms, inquiry capture, document uploads, and status tracking.</p>
@@ -2339,7 +2335,7 @@
                     </div>
                 </div>
                 <div class="card">
-                    <img alt="Finance Bundle" src="/img/feature.webp" decoding="async" width="879" height="853" loading="lazy">
+                    <img alt="Finance Bundle" src="https://picsum.photos/seed/fees/400/300" />
                     <div class="card-content">
                         <h3>Finance Bundle</h3>
                         <p>Invoices, receipts, balances, statements, and finance reports — reduce payment disputes.</p>
@@ -2347,7 +2343,7 @@
                     </div>
                 </div>
                 <div class="card">
-                    <img alt="Academics Bundle" src="/img/feature.webp" decoding="async" width="879" height="853" loading="lazy">
+                    <img alt="Academics Bundle" src="https://picsum.photos/seed/academics/400/300" />
                     <div class="card-content">
                         <h3>Academics Bundle</h3>
                         <p>Attendance, timetables, exams, report cards, and performance insights for every class.</p>
@@ -2355,7 +2351,7 @@
                     </div>
                 </div>
                 <div class="card">
-                    <img alt="Communication Bundle" src="/img/hero.webp" decoding="async" width="1600" height="1379" loading="lazy">
+                    <img alt="Communication Bundle" src="https://picsum.photos/seed/communication/400/300" />
                     <div class="card-content">
                         <h3>Communication Bundle</h3>
                         <p>SMS/WhatsApp alerts, announcements, reminders, and portals for parents &amp; students.</p>
@@ -2363,7 +2359,7 @@
                     </div>
                 </div>
                 <div class="card">
-                    <img alt="Onboarding &amp; Support Bundle" src="/img/hero.webp" decoding="async" width="1600" height="1379" loading="lazy">
+                    <img alt="Onboarding &amp; Support Bundle" src="https://picsum.photos/seed/support/400/300" />
                     <div class="card-content">
                         <h3>Onboarding &amp; Support</h3>
                         <p>Setup assistance, staff training, and priority support so you get value immediately.</p>
@@ -2384,21 +2380,21 @@
         </div>
         <div class="orbit-section">
             <div class="orbit-center">
-                <img alt="Classic Academy Modules" src="/img/feature.webp" decoding="async" width="879" height="853" loading="lazy">
+                <img alt="Classic Academy Modules" src="img/feature.png">
                 </img>
             </div>
             <div class="orbit-ring">
                 <div class="orbit-feature"
                     style="top: 0; left: 50%; transform: translate(-50%, -50%) rotate(0deg); --angle: 0deg;">
                     <div class="orbit-feature-content">
-                        <img alt="Online Presence" src="/vendor/marketing/feature-icon.svg" decoding="async" width="64" height="64" loading="lazy">
+                        <img alt="Online Presence" src="https://img.icons8.com/ios-filled/50/4a90e2/internet.png" />
                         <p>Online Presence</p>
                     </div>
                 </div>
                 <div class="orbit-feature"
                     style="top: 20%; left: 85%; transform: translate(-50%, -50%) rotate(45deg); --angle: 45deg;">
                     <div class="orbit-feature-content">
-                        <img alt="Admissions" src="/vendor/marketing/feature-icon.svg" decoding="async" width="64" height="64" loading="lazy">
+                        <img alt="Admissions" src="https://img.icons8.com/ios-filled/50/4a90e2/resume.png" />
                         <p>Admissions</p>
                     </div>
                 </div>
@@ -2406,14 +2402,14 @@
                     style="top: 50%; left: 100%; transform: translate(-50%, -50%) rotate(90deg); --angle: 90deg;">
                     <div class="orbit-feature-content">
                         <img alt="Fees &amp; Finance"
-                            src="/vendor/marketing/feature-icon.svg" decoding="async" width="64" height="64" loading="lazy">
+                            src="https://img.icons8.com/ios-filled/50/4a90e2/money-transfer.png" />
                         <p>Fees &amp; Finance</p>
                     </div>
                 </div>
                 <div class="orbit-feature"
                     style="top: 80%; left: 85%; transform: translate(-50%, -50%) rotate(135deg); --angle: 135deg;">
                     <div class="orbit-feature-content">
-                        <img alt="Attendance" src="/vendor/marketing/feature-icon.svg" decoding="async" width="64" height="64" loading="lazy">
+                        <img alt="Attendance" src="https://img.icons8.com/ios-filled/50/4a90e2/checked--v1.png" />
                         <p>Attendance</p>
                     </div>
                 </div>
@@ -2421,14 +2417,14 @@
                     style="top: 100%; left: 50%; transform: translate(-50%, -50%) rotate(180deg); --angle: 180deg;">
                     <div class="orbit-feature-content">
                         <img alt="Results &amp; Report Cards"
-                            src="/vendor/marketing/feature-icon.svg" decoding="async" width="64" height="64" loading="lazy">
+                            src="https://img.icons8.com/ios-filled/50/4a90e2/graduation-cap.png" />
                         <p>Results</p>
                     </div>
                 </div>
                 <div class="orbit-feature"
                     style="top: 80%; left: 15%; transform: translate(-50%, -50%) rotate(225deg); --angle: 225deg;">
                     <div class="orbit-feature-content">
-                        <img alt="Messaging" src="/vendor/marketing/feature-icon.svg" decoding="async" width="64" height="64" loading="lazy">
+                        <img alt="Messaging" src="https://img.icons8.com/ios-filled/50/4a90e2/sms.png" />
                         <p>Messaging</p>
                     </div>
                 </div>
@@ -2436,14 +2432,14 @@
                     style="top: 50%; left: 0%; transform: translate(-50%, -50%) rotate(270deg); --angle: 270deg;">
                     <div class="orbit-feature-content">
                         <img alt="Staff &amp; HR"
-                            src="/vendor/marketing/feature-icon.svg" decoding="async" width="64" height="64" loading="lazy">
+                            src="https://img.icons8.com/ios-filled/50/4a90e2/user-group-man-man.png" />
                         <p>Staff &amp; HR</p>
                     </div>
                 </div>
                 <div class="orbit-feature"
                     style="top: 20%; left: 15%; transform: translate(-50%, -50%) rotate(315deg); --angle: 315deg;">
                     <div class="orbit-feature-content">
-                        <img alt="Analytics" src="/vendor/marketing/feature-icon.svg" decoding="async" width="64" height="64" loading="lazy">
+                        <img alt="Analytics" src="https://img.icons8.com/ios-filled/50/4a90e2/combo-chart.png" />
                         <p>Analytics</p>
                     </div>
                 </div>
@@ -2473,80 +2469,80 @@
 
     <section aria-label="Student & Community Benefits" class="features">
         <div class="feature">
-            <img alt="Career guidance" src="/vendor/marketing/feature-icon.svg" decoding="async" width="64" height="64" loading="lazy">
+            <img alt="Career guidance" src="https://img.icons8.com/ios-filled/50/4a90e2/briefcase.png" />
             <h3>Career Guidance</h3>
             <p>Career talks, mentorship sessions, and practical guidance to help learners choose strong paths.</p>
         </div>
 
         <div class="feature">
-            <img alt="Scholarship mentorship" src="/vendor/marketing/feature-icon.svg" decoding="async" width="64" height="64" loading="lazy">
+            <img alt="Scholarship mentorship" src="https://img.icons8.com/ios-filled/50/4a90e2/graduation-cap.png" />
             <h3>Scholarship Mentorship</h3>
             <p>School scholarship mentorship: application readiness, essay support, and interview coaching.</p>
         </div>
 
         <div class="feature">
             <img alt="Talent show and cultural gala"
-                src="/vendor/marketing/feature-icon.svg" decoding="async" width="64" height="64" loading="lazy">
+                src="https://img.icons8.com/ios-filled/50/4a90e2/theatre-mask.png" />
             <h3>Talent Show / Cultural Gala</h3>
             <p>Inter-school talent showcases and cultural events that build pride, visibility, and student confidence.
             </p>
         </div>
 
         <div class="feature">
-            <img alt="Football tournaments" src="/vendor/marketing/feature-icon.svg" decoding="async" width="64" height="64" loading="lazy">
+            <img alt="Football tournaments" src="https://img.icons8.com/ios-filled/50/4a90e2/soccer-ball.png" />
             <h3>Football Tournaments</h3>
             <p>Competitive inter-school football tournaments with fixtures, tables, awards and recognition.</p>
         </div>
 
         <div class="feature">
-            <img alt="Chess tournament" src="/vendor/marketing/feature-icon.svg" decoding="async" width="64" height="64" loading="lazy">
+            <img alt="Chess tournament" src="https://img.icons8.com/ios-filled/50/4a90e2/chess.png" />
             <h3>Chess Tournament</h3>
             <p>Chess competitions that sharpen thinking, discipline, and academic confidence — with rankings and prizes.
             </p>
         </div>
 
         <div class="feature">
-            <img alt="Candidate seminars" src="/vendor/marketing/feature-icon.svg" decoding="async" width="64" height="64" loading="lazy">
+            <img alt="Candidate seminars" src="https://img.icons8.com/ios-filled/50/4a90e2/training.png" />
             <h3>Seminars for Candidates</h3>
             <p>Seminars for candidates (PLE/UCE/UACE) on study skills, exam techniques, and time management.</p>
         </div>
 
         <div class="feature">
-            <img alt="Starter equipment" src="/vendor/marketing/feature-icon.svg" decoding="async" width="64" height="64" loading="lazy">
+            <img alt="Starter equipment" src="https://img.icons8.com/ios-filled/50/4a90e2/desktop-computer.png" />
             <h3>2 Desktop Computers</h3>
             <p>Onboarding starter equipment support: 2 desktop computers for qualifying partner schools (terms apply).
             </p>
         </div>
 
         <div class="feature">
-            <img alt="Classic Mock" src="/vendor/marketing/feature-icon.svg" decoding="async" width="64" height="64" loading="lazy">
+            <img alt="Classic Mock" src="https://img.icons8.com/ios-filled/50/4a90e2/test.png" />
             <h3>Classic Mock</h3>
             <p>Partner schools join Classic Mock for benchmarking — papers, schedules, and results dashboards.</p>
         </div>
 
         <div class="feature">
-            <img alt="Classic Exams" src="/vendor/marketing/feature-icon.svg" decoding="async" width="64" height="64" loading="lazy">
+            <img alt="Classic Exams" src="https://img.icons8.com/ios-filled/50/4a90e2/exam.png" />
             <h3>Classic Exams</h3>
             <p>Structured exams support: grading setups, report templates, moderation checklists and analytics insights.
             </p>
         </div>
 
         <div class="feature">
-            <img alt="Marketing boost" src="/vendor/marketing/feature-icon.svg" decoding="async" width="64" height="64" loading="lazy">
+            <img alt="Marketing boost" src="https://img.icons8.com/ios-filled/50/4a90e2/megaphone.png" />
             <h3>Marketing Boost</h3>
             <p>Free profile optimization + shareable media kit (posters, WhatsApp banners, and admission promo
                 templates).</p>
         </div>
 
         <div class="feature">
-            <img alt="Staff training" src="/vendor/marketing/feature-icon.svg" decoding="async" width="64" height="64" loading="lazy">
+            <img alt="Staff training" src="https://img.icons8.com/ios-filled/50/4a90e2/classroom.png" />
             <h3>Staff Training & CPD</h3>
             <p>Training for staff + best-practice playbooks for admissions, finance, reporting, and parent engagement.
             </p>
         </div>
 
         <div class="feature">
-            <img alt="Awards and recognition" src="/vendor/marketing/feature-icon.svg" decoding="async" width="64" height="64" loading="lazy">
+            <img alt="Awards and recognition" src="https://img.icons8.com/ios-filled/50/4a90e2/medal.png" />
             <h3>Awards & Recognition</h3>
             <p>Certificates, trophies, and public recognition for top students, teams, and partner schools.</p>
         </div>
@@ -2809,16 +2805,16 @@
                     </div>
                     <div class="csocial">
                         <a aria-label="WhatsApp" class="icon-btn"
-                            href="https://api.whatsapp.com/send?phone=256781977217" target="_blank" rel="noopener noreferrer">
+                            href="https://api.whatsapp.com/send?phone=256781977217" target="_blank">
                             <i class="fa-brands fa-whatsapp"></i>
                         </a>
-                        <a aria-label="Facebook" class="icon-btn" href="#" target="_blank" rel="noopener noreferrer"><i
+                        <a aria-label="Facebook" class="icon-btn" href="#" target="_blank"><i
                                 class="fa-brands fa-facebook-f"></i></a>
-                        <a aria-label="Instagram" class="icon-btn" href="#" target="_blank" rel="noopener noreferrer"><i
+                        <a aria-label="Instagram" class="icon-btn" href="#" target="_blank"><i
                                 class="fa-brands fa-instagram"></i></a>
-                        <a aria-label="X" class="icon-btn" href="#" target="_blank" rel="noopener noreferrer"><i
+                        <a aria-label="X" class="icon-btn" href="#" target="_blank"><i
                                 class="fa-brands fa-x-twitter"></i></a>
-                        <a aria-label="LinkedIn" class="icon-btn" href="#" target="_blank" rel="noopener noreferrer"><i
+                        <a aria-label="LinkedIn" class="icon-btn" href="#" target="_blank"><i
                                 class="fa-brands fa-linkedin-in"></i></a>
                     </div>
                     <div class="ccta">
@@ -2831,7 +2827,7 @@
                         <p>We never share your contact details. Your data stays private.</p>
                     </div>
                 </aside>
-                <form class="cform reveal" data-prevent-submit="true">
+                <form class="cform reveal" onsubmit="return false;">
                     <h3>Send us a message</h3>
                     <div class="row">
                         <label>
@@ -2877,15 +2873,15 @@
         <div>
             <h4>About Us</h4>
             <p>We are excited to introduce our upcoming Classic Academy Plans, where schools will be categorized</p>
-            <a href="https://play.google.com/store" rel="noopener noreferrer" target="_blank">
+            <a href="https://play.google.com/store" rel="noopener" target="_blank">
                 <img alt="Google Play"
-                    src="/vendor/marketing/google-play-badge.svg"
-                    style="height: 50px; width: 150px" decoding="async" width="180" height="54" loading="lazy">
+                    src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg"
+                    style="height: 50px; width: 150px" />
             </a>
-            <a href="https://apps.apple.com/" rel="noopener noreferrer" target="_blank">
+            <a href="https://apps.apple.com/" rel="noopener" target="_blank">
                 <img alt="Download on the App Store"
-                    src="/vendor/marketing/app-store-badge.svg"
-                    style="height: 50px;" decoding="async" width="180" height="54" loading="lazy">
+                    src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg"
+                    style="height: 50px;" />
             </a>
         </div>
         <div>
@@ -2915,7 +2911,7 @@
                 <li><a href="/admissions">Admissions</a></li>
                 <li><a href="/search">Search</a></li>
                 <li><a href="/blog?slug=increase-admissions">Blog</a></li>
-                <li><a href="https://chat.whatsapp.com/HRGoS3fMZoZGgXbz1HDw6a?mode=gi_t" target="_blank" rel="noopener noreferrer">Join whatsapp group</a></li>
+                <li><a href="https://chat.whatsapp.com/HRGoS3fMZoZGgXbz1HDw6a?mode=gi_t" target="_blank" rel="noopener">Join whatsapp group</a></li>
             </ul>
         </div>
     </footer>
@@ -2931,7 +2927,7 @@
             <a href="tel:+256781977217"><span class="material-icons">phone</span></a>
         </div>
         <div class="sub-button shadow">
-            <a href="https://api.whatsapp.com/send?phone=256781977217" rel="noopener noreferrer" target="_blank">
+            <a href="https://api.whatsapp.com/send?phone=256781977217" rel="noopener" target="_blank">
                 <span class="material-icons">
                     <svg aria-label="WhatsApp Icon" class="whatsapp-icon" fill="#2e2e2e" height="35"
                         viewbox="0 0 448 512" width="35" xmlns="http://www.w3.org/2000/svg">
@@ -2943,14 +2939,13 @@
             </a>
         </div>
         <div class="sub-button shadow">
-            <a href="/share" rel="noopener noreferrer" target="_blank"><span class="material-icons">share</span></a>
+            <a href="/share" rel="noopener" target="_blank"><span class="material-icons">share</span></a>
         </div>
     </div>
     <!-- libs -->
-    <script defer src="/vendor/swiper/swiper-bundle.min.js"></script>
-    <script defer src="/pages/benefits.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script src="/pages/benefits.js"></script>
     
-  <script defer src="/js/csp-actions.js"></script>
 </body>
 
 </html>

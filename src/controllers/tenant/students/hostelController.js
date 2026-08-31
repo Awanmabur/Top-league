@@ -159,8 +159,7 @@ module.exports = {
         hostelFinance: data.hostelFinance,
       });
     } catch (err) {
-      console.error("Student hostel error:", err);
-      return res.status(500).send("Failed to load hostel.");
+      return res.status(500).send("Failed to load hostel: " + err.message);
     }
   },
 

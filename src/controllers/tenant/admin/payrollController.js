@@ -98,83 +98,46 @@ function computeKpis(runs = []) {
   };
 }
 
-async function loadFiltered(req, { paginate = true, includeItems = true } = {}) {
-  const { PayrollRun, PayrollItem, Department } = req.models;
+async function loadFiltered(req) {
+  const { PayrollRun, PayrollItem, Department, Staff } = req.models;
   const clean = buildPayrollFilters(req.query);
-  const runFilter = { isDeleted: { $ne: true } };
-  if (clean.department !== 'all' && isValidId(clean.department)) runFilter.departmentId = clean.department;
-  if (clean.status !== 'all') runFilter.status = clean.status;
-  if (clean.year !== 'all' && /^\d{4}$/.test(String(clean.year))) runFilter.year = Number(clean.year);
-
-  if (clean.q) {
-    const rx = new RegExp(escapeRegex(clean.q), 'i');
-    let departmentIds = [];
-    if (Department) {
-      departmentIds = await Department.find({
-        $or: [{ name: rx }, { title: rx }, { code: rx }],
-      }).select('_id').limit(100).lean().then((rows) => rows.map((row) => row._id)).catch(() => []);
-    }
-    runFilter.$or = [
-      { runNumber: rx }, { title: rx }, { periodLabel: rx }, { month: rx }, { status: rx },
-      ...(departmentIds.length ? [{ departmentId: { $in: departmentIds } }] : []),
-    ];
-  }
-
-  const pageSize = 20;
-  const page = Math.max(1, Math.min(100000, Number.parseInt(req.query.page, 10) || 1));
-  let runQuery = PayrollRun.find(runFilter).populate('departmentId', 'name title code').sort({ year: -1, createdAt: -1 });
-  if (paginate) runQuery = runQuery.skip((page - 1) * pageSize).limit(pageSize);
-
-  const [runDocs, total, kpiRows, departments, years] = await Promise.all([
-    runQuery.lean(),
-    PayrollRun.countDocuments(runFilter),
-    PayrollRun.aggregate([
-      { $match: runFilter },
-      { $group: {
-        _id: null,
-        total: { $sum: 1 },
-        draft: { $sum: { $cond: [{ $eq: ['$status', 'Draft'] }, 1, 0] } },
-        processed: { $sum: { $cond: [{ $eq: ['$status', 'Processed'] }, 1, 0] } },
-        approved: { $sum: { $cond: [{ $eq: ['$status', 'Approved'] }, 1, 0] } },
-        closed: { $sum: { $cond: [{ $eq: ['$status', 'Closed'] }, 1, 0] } },
-        netTotal: { $sum: { $ifNull: ['$netAmount', 0] } },
-      } },
-    ]).catch(() => []),
-    Department ? Department.find({}).select('name title code').sort({ name: 1 }).limit(500).lean() : [],
-    PayrollRun.distinct('year', { isDeleted: { $ne: true } }),
-  ]);
-
-  const runIds = runDocs.map((run) => run._id);
-  const itemDocs = includeItems && runIds.length
-    ? await PayrollItem.find({ payrollRunId: { $in: runIds }, isDeleted: { $ne: true } })
+  const [allRuns, allItems, departments, staff] = await Promise.all([
+    PayrollRun.find({ isDeleted: { $ne: true } }).populate('departmentId', 'name title code').sort({ year: -1, createdAt: -1 }).lean(),
+    PayrollItem.find({ isDeleted: { $ne: true } })
       .populate('staffId', 'firstName middleName lastName fullName employeeId payrollNumber')
       .populate('departmentId', 'name title code')
       .populate('payrollRunId', 'title status month year')
-      .sort({ createdAt: -1 }).lean()
-    : [];
+      .sort({ createdAt: -1 }).lean(),
+    Department ? Department.find({}).select('name title code').sort({ name: 1 }).lean() : [],
+    Staff ? Staff.find({ isDeleted: { $ne: true } }).select('firstName middleName lastName fullName employeeId payrollNumber departmentId salary status').sort({ createdAt: -1 }).lean() : [],
+  ]);
+
+  let runDocs = allRuns;
+  if (clean.department !== 'all' && isValidId(clean.department)) runDocs = runDocs.filter((r) => String(r.departmentId?._id || r.departmentId || '') === clean.department);
+  if (clean.status !== 'all') runDocs = runDocs.filter((r) => r.status === clean.status);
+  if (clean.year !== 'all') runDocs = runDocs.filter((r) => String(r.year) === clean.year);
+  if (clean.q) {
+    const re = new RegExp(escapeRegex(clean.q), 'i');
+    runDocs = runDocs.filter((r) => re.test([r.runNumber, r.title, r.periodLabel, r.month, r.year, getDepartmentName(r.departmentId), r.status].join(' ')));
+  }
+
+  const visibleRunIds = new Set(runDocs.map((r) => String(r._id)));
+  let itemDocs = allItems.filter((item) => visibleRunIds.has(String(item.payrollRunId?._id || item.payrollRunId || '')));
+  if (clean.q) {
+    const re = new RegExp(escapeRegex(clean.q), 'i');
+    itemDocs = itemDocs.filter((item) => re.test([item.staffName, getStaffName(item.staffId), item.employeeId, item.payrollNumber, item.departmentName, getDepartmentName(item.departmentId), item.status, item.notes].join(' ')));
+  }
 
   const itemsByRun = new Map();
-  for (const item of itemDocs) {
+  for (const item of allItems) {
     const id = String(item.payrollRunId?._id || item.payrollRunId || '');
     if (!itemsByRun.has(id)) itemsByRun.set(id, []);
     itemsByRun.get(id).push(item);
   }
-  const runs = runDocs.map((run) => serializeRun(run, includeItems
-    ? computeStats(itemsByRun.get(String(run._id)) || [])
-    : { staffCount: run.staffCount, grossAmount: run.grossAmount, deductionsAmount: run.deductionsAmount, netAmount: run.netAmount }));
-  let payrollItems = itemDocs.map(serializeItem);
-  if (clean.q && includeItems) {
-    const re = new RegExp(escapeRegex(clean.q), 'i');
-    payrollItems = payrollItems.filter((item) => re.test([item.staffName, item.employeeId, item.payrollNumber, item.departmentName, item.status, item.notes].join(' ')));
-  }
-  const pageCount = Math.max(1, Math.ceil(total / pageSize));
-  const makePageUrl = (target) => { const qs = new URLSearchParams(req.query || {}); qs.set('page', String(target)); return `/admin/payroll?${qs.toString()}`; };
-  return {
-    clean, runs, payrollItems, departments,
-    years: years.map(String).filter(Boolean).sort().reverse(),
-    kpis: kpiRows[0] || { total: 0, draft: 0, processed: 0, approved: 0, closed: 0, netTotal: 0 },
-    pagination: paginate ? { page, pageSize, total, pageCount, prevUrl: page > 1 ? makePageUrl(page - 1) : '', nextUrl: page < pageCount ? makePageUrl(page + 1) : '' } : null,
-  };
+  const runs = runDocs.map((run) => serializeRun(run, computeStats(itemsByRun.get(String(run._id)) || [])));
+  const payrollItems = itemDocs.map(serializeItem);
+  const years = Array.from(new Set(allRuns.map((r) => String(r.year || '')).filter(Boolean))).sort().reverse();
+  return { clean, runs, payrollItems, departments, staff, years, kpis: computeKpis(runs) };
 }
 
 function redirectWith(req, res, type, message) {
@@ -202,10 +165,10 @@ module.exports = {
       payrollItems: data.payrollItems,
       kpis: data.kpis,
       departments: data.departments.map((d) => ({ id: String(d._id), name: getDepartmentName(d) })),
+      staff: data.staff.map((s) => ({ id: String(s._id), name: getStaffName(s), salary: Number(s.salary || 0), status: s.status || '' })),
       years: data.years,
       query: data.clean,
       months: MONTHS,
-      pagination: data.pagination,
     });
   },
 
@@ -286,7 +249,7 @@ module.exports = {
   },
 
   exportCsv: async (req, res) => {
-    const data = await loadFiltered(req, { paginate: false, includeItems: false });
+    const data = await loadFiltered(req);
     const lines = [[
       'Run Number','Title','Period','Department','Pay Date','Status','Staff','Gross','Deductions','Net','Created/Processed/Approved/Closed'
     ].map(csvCell).join(',')];

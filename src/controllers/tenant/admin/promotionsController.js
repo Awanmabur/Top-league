@@ -123,7 +123,7 @@ module.exports = {
       const limit = Math.min(50, Math.max(10, toInt(req.query.limit, 24)));
       const skip = (page - 1) * limit;
 
-      const [total, students, classes, logs, studentStatusRows] = await Promise.all([
+      const [total, students, classes, logs, totalStudents, activeStudents, graduatedStudents] = await Promise.all([
         Student.countDocuments(filter),
         Student.find(filter)
           .select("regNo fullName email phone schoolUnitName campusName classId className classCode section stream schoolLevel classLevel term academicYear status")
@@ -141,17 +141,10 @@ module.exports = {
           .sort({ createdAt: -1, _id: -1 })
           .limit(10)
           .lean(),
-        Student.aggregate([
-          { $match: { isDeleted: { $ne: true } } },
-          { $group: { _id: "$status", count: { $sum: 1 } } },
-        ]),
+        Student.countDocuments({ isDeleted: { $ne: true } }),
+        Student.countDocuments({ isDeleted: { $ne: true }, status: "active" }),
+        Student.countDocuments({ isDeleted: { $ne: true }, status: "graduated" }),
       ]);
-      const studentStatusCounts = Object.fromEntries(
-        studentStatusRows.map((row) => [String(row._id || ""), Number(row.count || 0)])
-      );
-      const totalStudents = Object.values(studentStatusCounts).reduce((sum, value) => sum + Number(value || 0), 0);
-      const activeStudents = studentStatusCounts.active || 0;
-      const graduatedStudents = studentStatusCounts.graduated || 0;
 
       const totalPages = Math.max(1, Math.ceil(total / limit));
 

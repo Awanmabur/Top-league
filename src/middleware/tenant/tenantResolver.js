@@ -13,9 +13,8 @@ const Tenant = TenantFactory(platformConnection);
 const PlatformSubscription = SubscriptionFactory(platformConnection);
 
 function getHost(req) {
-  // Express only applies forwarded-host semantics according to the configured
-  // trust-proxy chain. Avoid trusting X-Forwarded-Host directly here.
-  return String(req.hostname || "").trim().toLowerCase();
+  const raw = req.headers["x-forwarded-host"] || req.headers.host || "";
+  return raw.split(",")[0].trim().split(":")[0].toLowerCase();
 }
 
 function isPlatformHost(host, baseDomain) {

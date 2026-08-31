@@ -10,7 +10,7 @@
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
         crossorigin="anonymous" referrerpolicy="no-referrer"/>
 
-  <style nonce="<%= cspNonce %>">
+  <style>
     @font-face{font-family:'PoppinsLocal';src:local('Poppins'),local('Inter'),local('Segoe UI')}
     :root{
       --blue:#0a3d62;
@@ -309,7 +309,6 @@
 
     <!-- IMPORTANT: POST to /admin/settings -->
     <form class="grid" id="schoolForm" method="POST" action="/admin/settings">
-      <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>" />
       <!-- Left: Identity -->
       <section class="card">
         <div class="card-h">
@@ -597,8 +596,8 @@
             <div style="display:flex;gap:10px;flex-wrap:wrap">
               <button type="button" class="btn btn-soft"
                       data-faqedit="<%= f._id %>"
-                      data-q="<%= safeStr(f.q) %>"
-                      data-a="<%= safeStr(f.a) %>">
+                      data-q="<%- safeStr(f.q).replace(/"/g,'&quot;') %>"
+                      data-a="<%- safeStr(f.a).replace(/"/g,'&quot;') %>">
                 <i class="fa fa-pen"></i> Edit
               </button>
               <button type="button" class="btn btn-ghost" data-faqdel="<%= f._id %>">
@@ -614,7 +613,7 @@
   </main>
 </div>
 
-<script nonce="<%= cspNonce %>">
+<script>
   window.__TENANT_CODE__ = "<%= tenantObj.code || '' %>";
 </script>
 <script src="/js/school-profile-settings.js"></script>

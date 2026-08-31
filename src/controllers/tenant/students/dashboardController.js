@@ -221,8 +221,7 @@ module.exports = {
         })),
       });
     } catch (err) {
-      console.error("Student dashboard error:", err);
-      return res.status(500).send("Failed to load dashboard.");
+      return res.status(500).send("Failed to load dashboard: " + err.message);
     }
   },
 };

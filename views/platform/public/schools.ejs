@@ -22,7 +22,7 @@
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
 
-  <style nonce="<%= cspNonce %>">
+  <style>
     * {
       margin: 0;
       padding: 0;
@@ -847,13 +847,12 @@
       }
     }
   </style>
-  <script src="/js/public-image-fallback.js"></script>
 </head>
 
 <body>
   <div id="loader">
     <div class="academylogo">
-      <img alt="Classic Academy logo" src="/img/academylogo.webp" decoding="async" width="396" height="415">
+      <img alt="Classic Academy logo" src="/img/academylogo.png" />
     </div>
     <div style="display:flex; gap:10px;">
       <div class="loader"><div class="face front"></div><div class="face back"></div></div>
@@ -866,7 +865,7 @@
 
   <header class="header" id="siteHeader">
     <a aria-label="Classic Academy Home" class="brand" href="/">
-      <img alt="Classic Academy logo" class="brand-mark" src="/img/academylogo.webp" decoding="async" width="396" height="415">
+      <img alt="Classic Academy logo" class="brand-mark" src="/img/academylogo.png" />
       <div class="brand-txt">
         <span class="brand-name">Classic Academy</span>
         <span class="brand-sub">School management + admissions</span>
@@ -1041,12 +1040,12 @@
 
               <div class="school-cover">
                 <% if (branding.coverUrl) { %>
-                  <img src="<%= branding.coverUrl %>" alt="<%= item.name %> cover" loading="lazy" decoding="async" />
+                  <img src="<%= branding.coverUrl %>" alt="<%= item.name %> cover" />
                 <% } %>
 
                 <div class="school-avatar">
                   <% if (branding.logoUrl) { %>
-                    <img src="<%= branding.logoUrl %>" alt="<%= item.name %> logo" loading="lazy" decoding="async" />
+                    <img src="<%= branding.logoUrl %>" alt="<%= item.name %> logo" />
                   <% } else { %>
                     <%= initials %>
                   <% } %>
@@ -1158,14 +1157,14 @@
     <div>
       <h4>About Us</h4>
       <p>We are excited to introduce our upcoming Classic Academy Plans, where schools will be categorized</p>
-      <a href="https://play.google.com/store" rel="noopener noreferrer" target="_blank">
-        <img alt="Google Play" src="/vendor/marketing/google-play-badge.svg"
-          style="height: 50px; width: 150px" decoding="async" width="180" height="54" loading="lazy">
+      <a href="https://play.google.com/store" rel="noopener" target="_blank">
+        <img alt="Google Play" src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg"
+          style="height: 50px; width: 150px" />
       </a>
-      <a href="https://apps.apple.com/" rel="noopener noreferrer" target="_blank">
+      <a href="https://apps.apple.com/" rel="noopener" target="_blank">
         <img alt="Download on the App Store"
-          src="/vendor/marketing/app-store-badge.svg"
-          style="height: 50px;" decoding="async" width="180" height="54" loading="lazy">
+          src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg"
+          style="height: 50px;" />
       </a>
     </div>
 
@@ -1198,7 +1197,7 @@
         <li><a href="/admissions">Admissions</a></li>
         <li><a href="/search">Search</a></li>
         <li><a href="/blog?slug=increase-admissions">Blog</a></li>
-        <li><a href="https://chat.whatsapp.com/HRGoS3fMZoZGgXbz1HDw6a?mode=gi_t" target="_blank" rel="noopener noreferrer">Join whatsapp group</a></li>
+        <li><a href="https://chat.whatsapp.com/HRGoS3fMZoZGgXbz1HDw6a?mode=gi_t" target="_blank" rel="noopener">Join whatsapp group</a></li>
       </ul>
     </div>
   </footer>

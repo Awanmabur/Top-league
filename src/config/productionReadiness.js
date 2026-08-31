@@ -49,23 +49,6 @@ function has32ByteBackupKey(value) {
   }
 }
 
-function isEmail(value) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
-}
-
-function hasServiceAccountPrivateKey(value) {
-  const raw = String(value || '').trim();
-  if (!raw || raw.length > 32768 || !/^[A-Za-z0-9+/=]+$/.test(raw)) return false;
-  try {
-    const pem = Buffer.from(raw, 'base64').toString('utf8').trim();
-    return pem.length >= 256
-      && pem.length <= 20000
-      && /^-----BEGIN (?:RSA )?PRIVATE KEY-----[\s\S]+-----END (?:RSA )?PRIVATE KEY-----$/.test(pem);
-  } catch (_) {
-    return false;
-  }
-}
-
 function validateProductionReadiness(env = process.env, options = {}) {
   const nodeVersion = String(options.nodeVersion || process.versions.node || '');
   const errors = [];
@@ -113,61 +96,16 @@ function validateProductionReadiness(env = process.env, options = {}) {
   }
 
   for (const name of [
+    'GOOGLE_OAUTH_CLIENT_ID',
+    'GOOGLE_OAUTH_CLIENT_SECRET',
+    'GOOGLE_OAUTH_REFRESH_TOKEN',
     'ZOOM_ACCOUNT_ID',
     'ZOOM_CLIENT_ID',
     'ZOOM_CLIENT_SECRET',
   ]) {
     check(name, String(env[name] || '').trim().length > 0, `${name} is required because public demo booking is enabled.`);
   }
-
-  const googleAuthMode = String(env.GOOGLE_CALENDAR_AUTH_MODE || '').trim().toLowerCase();
-  check(
-    'GOOGLE_CALENDAR_AUTH_MODE',
-    ['oauth', 'service_account'].includes(googleAuthMode),
-    'GOOGLE_CALENDAR_AUTH_MODE must be explicitly set to oauth or service_account in production.',
-  );
-
-  const legacyGoogleToken = String(env.GOOGLE_OAUTH_REFRESH_TOKEN || '').trim();
-  const legacyGoogleBootstrap = ['1', 'true', 'yes', 'on'].includes(String(env.GOOGLE_OAUTH_ALLOW_LEGACY_BOOTSTRAP || '').trim().toLowerCase());
-
-  if (googleAuthMode === 'oauth') {
-    for (const name of ['GOOGLE_OAUTH_CLIENT_ID', 'GOOGLE_OAUTH_CLIENT_SECRET']) {
-      check(name, String(env[name] || '').trim().length > 0, `${name} is required because Google Calendar OAuth booking is enabled.`);
-    }
-    const googleRedirectValid = isHttpsUrl(env.GOOGLE_OAUTH_REDIRECT_URI);
-    check('GOOGLE_OAUTH_REDIRECT_URI', googleRedirectValid, 'GOOGLE_OAUTH_REDIRECT_URI must be an absolute HTTPS URL.');
-    if (googleRedirectValid) {
-      let redirectPath = '';
-      try { redirectPath = new URL(env.GOOGLE_OAUTH_REDIRECT_URI).pathname.replace(/\/+$/, ''); } catch (_) {}
-      check(
-        'GOOGLE_OAUTH_REDIRECT_URI.path',
-        redirectPath === '/super-admin/settings/google-calendar/callback',
-        'GOOGLE_OAUTH_REDIRECT_URI must end exactly with /super-admin/settings/google-calendar/callback.',
-      );
-    }
-    const googleConsentStatus = String(env.GOOGLE_OAUTH_CONSENT_STATUS || '').trim().toLowerCase();
-    check(
-      'GOOGLE_OAUTH_CONSENT_STATUS',
-      ['production', 'internal'].includes(googleConsentStatus),
-      'GOOGLE_OAUTH_CONSENT_STATUS must be production or internal. Google Testing-mode refresh tokens expire and are not valid for durable public booking.',
-    );
-    check(
-      'GOOGLE_OAUTH_REFRESH_TOKEN.runtime',
-      !legacyGoogleToken || legacyGoogleBootstrap,
-      'GOOGLE_OAUTH_REFRESH_TOKEN is not a production runtime credential. Remove it after connecting Google Calendar, or explicitly enable GOOGLE_OAUTH_ALLOW_LEGACY_BOOTSTRAP only for a controlled one-time migration.',
-    );
-    if (legacyGoogleBootstrap) {
-      warnings.push('GOOGLE_OAUTH_ALLOW_LEGACY_BOOTSTRAP is enabled. Use it only for one controlled migration, reconnect Google Calendar from Super Admin settings, then remove both legacy Google token variables.');
-    }
-  } else if (googleAuthMode === 'service_account') {
-    check('GOOGLE_SERVICE_ACCOUNT_EMAIL', isEmail(env.GOOGLE_SERVICE_ACCOUNT_EMAIL), 'GOOGLE_SERVICE_ACCOUNT_EMAIL must be the Google Cloud service-account email.');
-    check('GOOGLE_SERVICE_ACCOUNT_SUBJECT', isEmail(env.GOOGLE_SERVICE_ACCOUNT_SUBJECT), 'GOOGLE_SERVICE_ACCOUNT_SUBJECT must be the Google Workspace organizer account to impersonate through domain-wide delegation.');
-    check('GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY_B64', hasServiceAccountPrivateKey(env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY_B64), 'GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY_B64 must be a base64-encoded PEM private key.');
-    check('GOOGLE_CALENDAR_ID', String(env.GOOGLE_CALENDAR_ID || '').trim().length > 0, 'GOOGLE_CALENDAR_ID is required for service-account Calendar booking.');
-    check('GOOGLE_OAUTH_REFRESH_TOKEN.runtime', !legacyGoogleToken, 'Remove GOOGLE_OAUTH_REFRESH_TOKEN when service-account Calendar authentication is enabled.');
-    check('GOOGLE_OAUTH_ALLOW_LEGACY_BOOTSTRAP.runtime', !legacyGoogleBootstrap, 'GOOGLE_OAUTH_ALLOW_LEGACY_BOOTSTRAP must be disabled when service-account Calendar authentication is enabled.');
-    warnings.push('Google Calendar service-account mode requires Google Workspace domain-wide delegation for calendar.events and calendar.events.freebusy, with GOOGLE_SERVICE_ACCOUNT_SUBJECT set to the intended organizer.');
-  }
+  check('GOOGLE_OAUTH_REDIRECT_URI', isHttpsUrl(env.GOOGLE_OAUTH_REDIRECT_URI), 'GOOGLE_OAUTH_REDIRECT_URI must be an absolute HTTPS URL.');
 
   for (const flag of ['DEBUG_AUTH_TOKENS', 'DEBUG_PERF', 'HTTP_LOGS', 'AUTO_CREATE_PARENT_PROFILE', 'ALLOW_INSECURE_INTEGRATION_HTTP', 'ALLOW_LOCALHOST_TENANTS']) {
     const enabled = ['1', 'true', 'yes', 'on'].includes(String(env[flag] || '').trim().toLowerCase());
@@ -175,16 +113,6 @@ function validateProductionReadiness(env = process.env, options = {}) {
   }
 
   check('TRUST_PROXY', String(env.TRUST_PROXY || '').trim().toLowerCase() !== 'true', 'TRUST_PROXY=true trusts every proxy hop; use an exact hop count or trusted proxy range.');
-
-  const schedulerMode = String(env.RUN_SCHEDULERS_IN_WEB || '').trim().toLowerCase();
-  check(
-    'RUN_SCHEDULERS_IN_WEB',
-    ['true', 'false'].includes(schedulerMode),
-    'RUN_SCHEDULERS_IN_WEB must be explicitly true or false in production. Use false only when the dedicated scheduler worker is deployed and running.',
-  );
-  if (schedulerMode === 'false') {
-    warnings.push('RUN_SCHEDULERS_IN_WEB=false requires the dedicated `node src/scheduler.js` worker to be provisioned and monitored in production.');
-  }
 
   return { ok: errors.length === 0, errors, warnings, checks, pinnedNodeVersion: PINNED_NODE_VERSION };
 }
@@ -208,8 +136,6 @@ module.exports = {
   isRedisUrl,
   isHostname,
   has32ByteBackupKey,
-  isEmail,
-  hasServiceAccountPrivateKey,
   validateProductionReadiness,
   assertProductionReadiness,
 };

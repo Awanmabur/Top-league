@@ -4,9 +4,6 @@ const router = express.Router();
 
 const admissionsCtrl = require("../../../controllers/tenant/public/admissionsController");
 const upload = require("../../../middleware/uploadMemory"); // your multer memory storage
-const { validateBufferedUploads } = require("../../../middleware/validateBufferedUploads");
-const validateDocs = validateBufferedUploads();
-const { publicUploadLimiter, publicStatusLimiter } = require("../../../middleware/tenant/rateLimiters");
 
 const applicantUploads = upload.fields([
   { name: "passportPhoto", maxCount: 1 },
@@ -17,11 +14,11 @@ const applicantUploads = upload.fields([
 
 router.get("/apply", admissionsCtrl.applyPage);
 router.get("/admissions/apply", admissionsCtrl.applyPage);
-router.post("/admissions/upload-draft", publicUploadLimiter, applicantUploads, validateDocs, admissionsCtrl.uploadDraftFiles);
-router.post("/apply", publicUploadLimiter, applicantUploads, validateDocs, admissionsCtrl.submitApplication);
-router.post("/admissions/apply", publicUploadLimiter, applicantUploads, validateDocs, admissionsCtrl.submitApplication);
+router.post("/admissions/upload-draft", applicantUploads, admissionsCtrl.uploadDraftFiles);
+router.post("/apply", applicantUploads, admissionsCtrl.submitApplication);
+router.post("/admissions/apply", applicantUploads, admissionsCtrl.submitApplication);
 
 router.get("/admissions/status", admissionsCtrl.statusPage);
-router.post("/admissions/status", publicStatusLimiter, admissionsCtrl.checkStatus);
+router.post("/admissions/status", admissionsCtrl.checkStatus);
 
 module.exports = router;

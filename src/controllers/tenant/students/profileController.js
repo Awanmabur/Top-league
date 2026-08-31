@@ -60,8 +60,7 @@ module.exports = {
         profile,
       });
     } catch (err) {
-      console.error("Student profile error:", err);
-      return res.status(500).send("Failed to load profile.");
+      return res.status(500).send("Failed to load profile: " + err.message);
     }
   },
 };

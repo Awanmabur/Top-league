@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="/css/navbar.css"/>
   <link rel="stylesheet" href="/css/parent-portal.css" />
 
-  <style nonce="<%= cspNonce %>">
+  <style>
     .toolbar{
       margin-top:16px;
       display:flex;
@@ -346,13 +346,13 @@
             <b><%= totalAnnouncements %></b>
           </div>
 
-          <a class="btn light" href="/parent/notifications">
+          <button class="btn light" type="button" onclick="window.location.href='/parent/notifications'">
             <i class="fa-solid fa-bell"></i> Notifications
-          </a>
+          </button>
 
-          <a class="btn primary" href="/parent/support">
+          <button class="btn primary" type="button" onclick="window.location.href='/parent/support'">
             <i class="fa-solid fa-headset"></i> Support
-          </a>
+          </button>
         </div>
       </div>
 

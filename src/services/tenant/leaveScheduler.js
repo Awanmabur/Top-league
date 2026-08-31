@@ -2,9 +2,7 @@ const { platformConnection, getTenantConnection } = require('../../config/db');
 const loadTenantModels = require('../../models/tenant/loadModels');
 const { processLeaveStatuses } = require('./leaveService');
 
-const { initialDelayMs } = require('../schedulerTiming');
 let timer = null;
-let startTimer = null;
 let running = false;
 
 function schedulerIntervalMs() {
@@ -37,14 +35,12 @@ async function processScheduledLeaveStatuses() {
 }
 
 function startLeaveScheduler() {
-  if (timer || startTimer || process.env.DISABLE_LEAVE_SCHEDULER === 'true') return timer || startTimer;
-  const interval = schedulerIntervalMs();
-  const run = () => { processScheduledLeaveStatuses().catch(() => {}); };
-  const delay = initialDelayMs('LEAVE_SCHEDULER_INITIAL_DELAY_MS', 23000, interval);
-  startTimer = setTimeout(() => { startTimer = null; run(); timer = setInterval(run, interval); timer.unref?.(); }, delay);
-  startTimer.unref?.();
-  return startTimer;
+  if (timer || process.env.DISABLE_LEAVE_SCHEDULER === 'true') return timer;
+  timer = setInterval(() => { processScheduledLeaveStatuses().catch(() => {}); }, schedulerIntervalMs());
+  timer.unref?.();
+  processScheduledLeaveStatuses().catch(() => {});
+  return timer;
 }
-function stopLeaveScheduler() { if (startTimer) clearTimeout(startTimer); if (timer) clearInterval(timer); startTimer = null; timer = null; }
+function stopLeaveScheduler() { if (timer) clearInterval(timer); timer = null; }
 
 module.exports = { schedulerIntervalMs, processScheduledLeaveStatuses, startLeaveScheduler, stopLeaveScheduler };

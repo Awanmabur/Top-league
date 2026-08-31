@@ -2,9 +2,7 @@ const { platformConnection, getTenantConnection } = require("../../config/db");
 const loadTenantModels = require("../../models/tenant/loadModels");
 const { processDueMessages } = require("./messageService");
 
-const { initialDelayMs } = require('../schedulerTiming');
 let timer = null;
-let startTimer = null;
 let running = false;
 
 function schedulerIntervalMs() {
@@ -45,24 +43,18 @@ async function processScheduledMessages() {
 }
 
 function startMessageScheduler() {
-  if (timer || startTimer || process.env.DISABLE_MESSAGE_SCHEDULER === "true") return timer || startTimer;
+  if (timer || process.env.DISABLE_MESSAGE_SCHEDULER === "true") return timer;
   const interval = schedulerIntervalMs();
-  const run = () => processScheduledMessages().catch(() => {});
-  const delay = initialDelayMs('MESSAGE_SCHEDULER_INITIAL_DELAY_MS', 11000, interval);
-  startTimer = setTimeout(() => {
-    startTimer = null;
-    run();
-    timer = setInterval(run, interval);
-    timer.unref?.();
-  }, delay);
-  startTimer.unref?.();
-  return startTimer;
+  timer = setInterval(() => {
+    processScheduledMessages().catch(() => {});
+  }, interval);
+  timer.unref?.();
+  return timer;
 }
 
 function stopMessageScheduler() {
-  if (startTimer) clearTimeout(startTimer);
-  if (timer) clearInterval(timer);
-  startTimer = null;
+  if (!timer) return;
+  clearInterval(timer);
   timer = null;
 }
 

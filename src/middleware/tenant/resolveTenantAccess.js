@@ -13,7 +13,9 @@ const {
 } = require("../../services/platformSubscriptionService");
 
 function getHostParts(req) {
-  const host = String(req.hostname || "").trim().toLowerCase();
+  const forwarded = req.headers["x-forwarded-host"];
+  const rawHost = forwarded || req.headers.host || "";
+  const host = String(rawHost).split(",")[0].trim().split(":")[0].toLowerCase();
   const parts = host.split(".").filter(Boolean);
   return { host, parts };
 }

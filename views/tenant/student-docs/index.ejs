@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 
-  <style nonce="<%= cspNonce %>">
+  <style>
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
@@ -797,7 +797,7 @@
     <input type="hidden" name="revision" id="rowDeleteRevision" value="0">
   </form>
 
-  <script nonce="<%= cspNonce %>" id="docsData" type="application/json"><%- JSON.stringify((docs || []).map(function(d){
+  <script id="docsData" type="application/json"><%- JSON.stringify((docs || []).map(function(d){
     return {
       id: String(d._id || ""),
       studentId: d.student?._id ? String(d.student._id) : "",
@@ -819,7 +819,7 @@
     };
   })).replace(/&/g,"\\u0026").replace(/</g,"\\u003c").replace(/>/g,"\\u003e") %></script>
 
-  <script nonce="<%= cspNonce %>" id="studentDocSummariesData" type="application/json"><%- JSON.stringify(studentDocSummaries || []).replace(/&/g,"\\u0026").replace(/</g,"\\u003c").replace(/>/g,"\\u003e") %></script>
+  <script id="studentDocSummariesData" type="application/json"><%- JSON.stringify(studentDocSummaries || []).replace(/&/g,"\\u0026").replace(/</g,"\\u003c").replace(/>/g,"\\u003e") %></script>
 
   <script src="/js/navbar.js"></script>
   <script src="/js/student-docs.js" defer></script>

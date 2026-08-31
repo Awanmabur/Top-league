@@ -907,13 +907,13 @@ module.exports = {
       const id = cleanStr(req.params.id, 80);
       if (!isObjId(id)) {
         req.flash?.("error", "Invalid student id.");
-        return res.redirect(STUDENT_BASE_PATH);
+        return res.redirect("back");
       }
 
       const student = await Student.findOne({ _id: id, isDeleted: { $ne: true } }).lean();
       if (!student) {
         req.flash?.("error", "Student not found.");
-        return res.redirect(STUDENT_BASE_PATH);
+        return res.redirect("back");
       }
 
       const studentUser = await findOrCreateStudentUser({ req, StudentDoc: student, User });
@@ -928,11 +928,11 @@ module.exports = {
       } else {
         req.flash?.("success", `Setup link sent to ${sent} account(s).`);
       }
-      return res.redirect(STUDENT_BASE_PATH);
+      return res.redirect("back");
     } catch (err) {
       console.error("RESEND STUDENT SETUP ERROR:", err);
       req.flash?.("error", err.message || "Failed to resend setup link.");
-      return res.redirect(STUDENT_BASE_PATH);
+      return res.redirect("back");
     }
   },
 
@@ -955,25 +955,7 @@ module.exports = {
       const perPage = 10;
       const filter = buildStudentFilter({ q, schoolLevel, classLevel, term, status, schoolUnitId, campusId, classId, section });
 
-      // Start independent catalog/KPI work while the filtered count resolves.
-      // The page query still waits for the count only because safePage depends on it.
-      const totalPromise = Student.countDocuments(filter);
-      const subjectsPromise = Subject
-        ? Subject.find({ status: { $ne: "archived" } })
-            .select("_id title code shortTitle schoolLevel classLevels term status")
-            .sort({ title: 1, code: 1 })
-            .lean()
-        : Promise.resolve([]);
-      const classesPromise = Class
-        ? Class.find({})
-            .select("_id name code schoolUnitId schoolUnitName schoolUnitCode campusId campusName campusCode levelType classLevel stream academicYear term status")
-            .sort({ name: 1, code: 1 })
-            .lean()
-        : Promise.resolve([]);
-      const kpisPromise = kpiAgg(Student, filter);
-      const placementPromise = loadAdmissionsPlacementData(req);
-
-      const total = await totalPromise;
+      const total = await Student.countDocuments(filter);
       const totalPages = Math.max(Math.ceil(total / perPage), 1);
       const safePage = Math.min(page, totalPages);
       const skip = (safePage - 1) * perPage;
@@ -1029,15 +1011,34 @@ module.exports = {
           .skip(skip)
           .limit(perPage)
           .lean(),
-        subjectsPromise,
-        classesPromise,
-        kpisPromise,
-        placementPromise,
+        Subject
+          ? Subject.find({ status: { $ne: "archived" } })
+              .select("_id title code shortTitle schoolLevel classLevels term status")
+              .sort({ title: 1, code: 1 })
+              .lean()
+          : [],
+        Class
+          ? Class.find({})
+              .select("_id name code schoolUnitId schoolUnitName schoolUnitCode campusId campusName campusCode levelType classLevel stream academicYear term status")
+              .sort({ name: 1, code: 1 })
+              .lean()
+          : [],
+        kpiAgg(Student, filter),
+        loadAdmissionsPlacementData(req),
       ]);
 
       const displayedStudentIds = students.map((student) => student._id);
-      // Admissions conversion already synchronizes applicant documents into
-      // StudentDoc. Never run migration/write work on this hot GET list path.
+      if (displayedStudentIds.length && StudentDoc) {
+        await ensureStudentDocsFromApplicants({
+          StudentDoc,
+          Applicant,
+          studentIds: displayedStudentIds,
+          uploadedBy: req.user?._id || null,
+        }).catch((err) => {
+          console.error("STUDENT DOC BACKFILL ERROR:", err);
+        });
+      }
+
       const studentDocRows = displayedStudentIds.length && StudentDoc
         ? await StudentDoc.find({
             student: { $in: displayedStudentIds },

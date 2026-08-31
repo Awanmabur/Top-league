@@ -12,7 +12,7 @@
   <link rel="canonical" href="/share" />
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
-  <style nonce="<%= cspNonce %>">
+  <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     :root { --primary: #4a90e2; --ink: #0f172a; --muted: #475569; --page-pad: clamp(1rem, 4vw, 6rem); --shadow2: 0 18px 50px rgba(15, 23, 42, .12); }
     a { text-decoration: none; }
@@ -57,12 +57,11 @@
     .copy-row input { flex: 1; padding: .7rem .9rem; border-radius: 12px; border: 1px solid rgba(15,23,42,.15); background: #fff; }
     #toTopBtn { display: none; }
   </style>
-  <script src="/js/public-image-fallback.js"></script>
 </head>
 
 <body>
   <div id="loader">
-    <div class="academylogo"><img src="/img/academylogo.webp" alt="Classic Academy logo" decoding="async" width="396" height="415"></div>
+    <div class="academylogo"><img src="./img/academylogo.png" alt="Classic Academy logo"></div>
     <div style="display:flex; gap:10px;">
       <div class="loader"><div class="face front"></div><div class="face back"></div></div>
       <div class="loader"><div class="face front"></div><div class="face back"></div></div>
@@ -74,7 +73,7 @@
 
   <header class="header" id="siteHeader">
     <a href="/" class="brand" aria-label="Classic Academy Home">
-      <img class="brand-mark" src="/img/academylogo.webp" alt="Classic Academy logo" decoding="async" width="396" height="415">
+      <img class="brand-mark" src="./img/academylogo.png" alt="Classic Academy logo">
       <div class="brand-txt"><span class="brand-name">Classic Academy</span><span class="brand-sub">School management + admissions</span></div>
     </a>
     <nav class="navbar" aria-label="Primary">
@@ -98,9 +97,9 @@
       <p>Share Classic Academy with a colleague or another school.</p>
 
       <div class="share-row">
-        <a class="sw" id="shareWhatsapp" href="#" aria-label="Share on WhatsApp" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-whatsapp"></i></a>
-        <a class="sf" id="shareFacebook" href="#" aria-label="Share on Facebook" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-facebook-f"></i></a>
-        <a class="sx" id="shareX" href="#" aria-label="Share on X" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-x-twitter"></i></a>
+        <a class="sw" id="shareWhatsapp" href="#" aria-label="Share on WhatsApp" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i></a>
+        <a class="sf" id="shareFacebook" href="#" aria-label="Share on Facebook" target="_blank" rel="noopener"><i class="fa-brands fa-facebook-f"></i></a>
+        <a class="sx" id="shareX" href="#" aria-label="Share on X" target="_blank" rel="noopener"><i class="fa-brands fa-x-twitter"></i></a>
         <a class="se" id="shareEmail" href="#" aria-label="Share by email"><i class="fa-solid fa-envelope"></i></a>
         <button class="sc" id="copyLinkBtn" type="button" aria-label="Copy link"><i class="fa-solid fa-link"></i></button>
       </div>
@@ -111,7 +110,7 @@
     </div>
   </section>
 
-  <script nonce="<%= cspNonce %>">
+  <script>
     (function () {
       const url = window.location.origin + "/";
       const text = "Classic Academy — school management + admissions";

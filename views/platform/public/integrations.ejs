@@ -5,8 +5,6 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Integrations — Classic Academy</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
   <meta name="description" content="Tools Classic Academy connects with: email delivery, media storage, Google Workspace, and QR-based verification." />
@@ -17,16 +15,16 @@
   <meta property="og:title" content="Integrations — Classic Academy" />
   <meta property="og:description" content="Tools Classic Academy connects with." />
   <meta property="og:url" content="/integrations" />
-  <meta property="og:image" content="/img/hero.webp" />
+  <meta property="og:image" content="img/hero.png" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Integrations — Classic Academy" />
   <meta name="twitter:description" content="Tools Classic Academy connects with." />
-  <meta name="twitter:image" content="/img/hero.webp" />
+  <meta name="twitter:image" content="img/hero.png" />
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Outfit:wght@100..900&display=swap" rel="stylesheet" />
-  <style nonce="<%= cspNonce %>">
-    * { margin: 0; padding: 0; box-sizing: border-box; }0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Outfit:wght@100..900&display=swap");
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    @import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Outfit:wght@100..900&display=swap");
     :root { --primary: #4a90e2; --accent: #d97800; --highlight: #009f8b; --ink: #0f172a; --muted: #475569; --page-pad: clamp(1rem, 4vw, 6rem); --shadow2: 0 18px 50px rgba(15, 23, 42, .12); }
     html { scroll-behavior: smooth; }
     a { text-decoration: none; }
@@ -102,12 +100,11 @@
     .fab-container .fab .fab-content .material-icons { color: #2e2e2e; font-size: 48px; }
     .fab-container .sub-button .material-icons { color: #2e2e2e; padding-top: 6px; }
   </style>
-  <script src="/js/public-image-fallback.js"></script>
 </head>
 
 <body>
   <div id="loader">
-    <div class="academylogo"><img src="/img/academylogo.webp" alt="Classic Academy logo" decoding="async" width="396" height="415"></div>
+    <div class="academylogo"><img src="./img/academylogo.png" alt="Classic Academy logo"></div>
     <div style="display:flex; gap:10px;">
       <div class="loader"><div class="face front"></div><div class="face back"></div></div>
       <div class="loader"><div class="face front"></div><div class="face back"></div></div>
@@ -119,7 +116,7 @@
 
   <header class="header" id="siteHeader">
     <a href="/" class="brand" aria-label="Classic Academy Home">
-      <img class="brand-mark" src="/img/academylogo.webp" alt="Classic Academy logo" decoding="async" width="396" height="415">
+      <img class="brand-mark" src="./img/academylogo.png" alt="Classic Academy logo">
       <div class="brand-txt"><span class="brand-name">Classic Academy</span><span class="brand-sub">School management + admissions</span></div>
     </a>
     <nav class="navbar" aria-label="Primary">
@@ -148,7 +145,7 @@
         <a class="btn ghost" href="/docs"><i class="fa-solid fa-book"></i> Documentation</a>
       </div>
     </div>
-    <div class="media"><img src="/img/hero.webp" alt="" decoding="async" width="1600" height="1379"></div>
+    <div class="media"><img src="img/hero.png" alt=""></div>
   </section>
 
   <section class="page-wrap">
@@ -200,8 +197,8 @@
     <div>
       <h4>About Us</h4>
       <p>We are excited to introduce our upcoming Classic Academy Plans, where schools will be categorized</p>
-      <a href="https://play.google.com/store" target="_blank" rel="noopener noreferrer"><img src="/vendor/marketing/google-play-badge.svg" style="height: 50px; width: 150px" alt="Google Play" decoding="async" width="180" height="54" loading="lazy"></a>
-      <a href="https://apps.apple.com/" target="_blank" rel="noopener noreferrer"><img src="/vendor/marketing/app-store-badge.svg" alt="Download on the App Store" style="height: 50px;" decoding="async" width="180" height="54" loading="lazy"></a>
+      <a href="https://play.google.com/store" target="_blank" rel="noopener"><img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" style="height: 50px; width: 150px" alt="Google Play"></a>
+      <a href="https://apps.apple.com/" target="_blank" rel="noopener"><img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store" style="height: 50px;"></a>
     </div>
     <div>
       <h4>Learn about our mission</h4>
@@ -230,7 +227,7 @@
         <li><a href="/admissions">Admissions</a></li>
         <li><a href="/search">Search</a></li>
         <li><a href="/blog?slug=increase-admissions">Blog</a></li>
-        <li><a href="https://chat.whatsapp.com/HRGoS3fMZoZGgXbz1HDw6a?mode=gi_t" target="_blank" rel="noopener noreferrer">Join whatsapp group</a></li>
+        <li><a href="https://chat.whatsapp.com/HRGoS3fMZoZGgXbz1HDw6a?mode=gi_t" target="_blank" rel="noopener">Join whatsapp group</a></li>
       </ul>
     </div>
   </footer>
@@ -240,8 +237,8 @@
   <div class="fab-container" aria-hidden="true">
     <div class="fab shadow"><div class="fab-content"><span class="material-icons">support_agent</span></div></div>
     <div class="sub-button shadow"><a href="tel:+256781977217"><span class="material-icons">phone</span></a></div>
-    <div class="sub-button shadow"><a href="https://api.whatsapp.com/send?phone=256781977217" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-whatsapp"></i></a></div>
-    <div class="sub-button shadow"><a href="/share" target="_blank" rel="noopener noreferrer"><span class="material-icons">share</span></a></div>
+    <div class="sub-button shadow"><a href="https://api.whatsapp.com/send?phone=256781977217" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i></a></div>
+    <div class="sub-button shadow"><a href="/share" target="_blank" rel="noopener"><span class="material-icons">share</span></a></div>
   </div>
 
   <script src="/pages/terms.js"></script>

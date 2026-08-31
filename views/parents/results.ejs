@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="/css/navbar.css"/>
   <link rel="stylesheet" href="/css/parent-portal.css" />
 
-  <style nonce="<%= cspNonce %>">
+  <style>
     .toolbar{
       margin-top:16px;
       display:flex;
@@ -413,13 +413,13 @@
             </a>
           <% } %>
 
-          <a class="btn light" href="/parent/attendance<%= student ? ('?student=' + student._id) : '' %>">
+          <button class="btn light" type="button" onclick="window.location.href='/parent/attendance<%= student ? ('?student=' + student._id) : '' %>'">
             <i class="fa-solid fa-user-check"></i> Attendance
-          </a>
+          </button>
 
-          <a class="btn primary" href="/parent/children">
+          <button class="btn primary" type="button" onclick="window.location.href='/parent/children'">
             <i class="fa-solid fa-children"></i> My Children
-          </a>
+          </button>
         </div>
       </div>
 
@@ -465,7 +465,7 @@
           <div class="toolbar-right">
             <div class="filter-box">
               <i class="fa-solid fa-calendar-days"></i>
-              <select name="academicYear" data-auto-submit="true">
+              <select name="academicYear" onchange="this.form.submit()">
                 <option value="">All academic years</option>
                 <% (opts.academicYears || []).forEach(function(y){ %>
                   <option value="<%= y %>" <%= String(filters?.academicYear || '') === String(y) ? 'selected' : '' %>><%= y %></option>
@@ -475,7 +475,7 @@
 
             <div class="filter-box">
               <i class="fa-solid fa-layer-group"></i>
-              <select name="term" data-auto-submit="true">
+              <select name="term" onchange="this.form.submit()">
                 <option value="">All terms</option>
                 <% (opts.terms || []).forEach(function(s){ %>
                   <option value="<%= s %>" <%= String(filters?.term || '') === String(s) ? 'selected' : '' %>>Term <%= s %></option>

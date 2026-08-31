@@ -76,35 +76,24 @@ module.exports = {
       const status = ["all", "new", "read", "resolved"].includes(requestedStatus) ? requestedStatus : "all";
       const filter = buildInquiryFilter({ q, status });
 
-      const pageSize = 100;
-      const page = Math.max(1, Math.min(100000, Number.parseInt(req.query.page, 10) || 1));
-      const [inquiries, total, kpiRows] = await Promise.all([
-        SchoolInquiry.find(filter).sort({ createdAt: -1, _id: -1 }).skip((page - 1) * pageSize).limit(pageSize).lean(),
-        SchoolInquiry.countDocuments(filter),
-        SchoolInquiry.aggregate([
-          { $match: { isDeleted: { $ne: true } } },
-          { $group: { _id: "$status", count: { $sum: 1 } } },
-        ]),
+      const [inquiries, allRows] = await Promise.all([
+        SchoolInquiry.find(filter).sort({ createdAt: -1, _id: -1 }).lean(),
+        SchoolInquiry.find({ isDeleted: { $ne: true } }).select("status isDeleted").lean(),
       ]);
 
-      const counts = Object.fromEntries(kpiRows.map((row) => [normalizeStatus(row._id), Number(row.count || 0)]));
-      const kpis = { total: Object.values(counts).reduce((sum, n) => sum + n, 0), newCount: counts.new || 0, readCount: counts.read || 0, resolvedCount: counts.resolved || 0 };
-      const pageCount = Math.max(1, Math.ceil(total / pageSize));
-      const makePageUrl = (target) => { const qs = new URLSearchParams(req.query || {}); qs.set("page", String(target)); return `/admin/inquiries?${qs.toString()}`; };
       const fallbackSchoolCode = req.tenant?.code || req.tenant?.subdomain || "";
       return res.render("tenant/inquiries/index", {
         title: "Inquiries",
         inquiries: inquiries.map((row) => normalizeRow(row, fallbackSchoolCode)),
-        kpis,
+        kpis: buildKpis(allRows),
         query: { q, status },
-        pagination: { page, pageSize, total, pageCount, prevUrl: page > 1 ? makePageUrl(page - 1) : "", nextUrl: page < pageCount ? makePageUrl(page + 1) : "" },
         success: req.query.success ? "Updated successfully ✅" : null,
         error: null,
         csrfToken: req.csrfToken ? req.csrfToken() : null,
       });
     } catch (err) {
       console.error("admin inquiries index error:", err);
-      return res.status(500).send("Failed to load inquiries.");
+      return res.status(500).send(err.message || "Failed to load inquiries.");
     }
   },
 
@@ -134,7 +123,7 @@ module.exports = {
       return res.send(`\uFEFF${lines.join("\r\n")}\r\n`);
     } catch (err) {
       console.error("admin inquiries export error:", err);
-      return res.status(500).send("Failed to export inquiries.");
+      return res.status(500).send(err.message || "Failed to export inquiries.");
     }
   },
 

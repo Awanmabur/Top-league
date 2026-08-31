@@ -1,11 +1,5 @@
 (function () {
   const $ = (id) => document.getElementById(id);
-  const escapeHtml = (value) => String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
 
   function readData() {
     const el = $("payrollData");
@@ -87,14 +81,14 @@
     $("tbody").innerHTML = DATA.map((x) => {
       const checked = state.selected.has(x.id) ? "checked" : "";
       return `
-        <tr data-id="${escapeHtml(x.id)}">
-          <td><input type="checkbox" class="rowCheck" data-id="${escapeHtml(x.id)}" ${checked}></td>
+        <tr data-id="${x.id}">
+          <td><input type="checkbox" class="rowCheck" data-id="${x.id}" ${checked}></td>
           <td>
-            <div class="strong">${escapeHtml(x.title || "—")}</div>
-            <div class="muted">${escapeHtml(x.createdAt || "—")}</div>
+            <div class="strong">${x.title || "—"}</div>
+            <div class="muted">${x.createdAt || "—"}</div>
           </td>
-          <td><span class="pill info"><i class="fa-solid fa-calendar-days"></i> ${escapeHtml(x.month)}/${escapeHtml(x.year)}</span></td>
-          <td>${escapeHtml(x.payDate || "—")}</td>
+          <td><span class="pill info"><i class="fa-solid fa-calendar-days"></i> ${x.month}/${x.year}</span></td>
+          <td>${x.payDate || "—"}</td>
           <td><span class="pill info"><i class="fa-solid fa-users"></i> ${x.staffCount || 0}</span></td>
           <td>${money(x.gross)}</td>
           <td>${money(x.deductions)}</td>
@@ -136,7 +130,7 @@
     }
 
     $("mTitle").textContent = "Edit Payroll Run";
-    $("payrollForm").action = `/admin/staff-payroll/${escapeHtml(x.id)}/update`;
+    $("payrollForm").action = `/admin/staff-payroll/${x.id}/update`;
     $("pTitle").value = x.title || "";
     $("pMonth").value = String(x.month || "");
     $("pYear").value = String(x.year || "");
@@ -194,12 +188,12 @@
 
     if (e.target.closest(".actView")) return openView(x);
     if (e.target.closest(".actEdit")) return openEditor(x);
-    if (e.target.closest(".actProcess")) return submitRowAction(`/admin/staff-payroll/${escapeHtml(x.id)}/process`);
-    if (e.target.closest(".actPaid")) return submitRowAction(`/admin/staff-payroll/${escapeHtml(x.id)}/paid`);
-    if (e.target.closest(".actCancel")) return submitRowAction(`/admin/staff-payroll/${escapeHtml(x.id)}/cancel`);
+    if (e.target.closest(".actProcess")) return submitRowAction(`/admin/staff-payroll/${x.id}/process`);
+    if (e.target.closest(".actPaid")) return submitRowAction(`/admin/staff-payroll/${x.id}/paid`);
+    if (e.target.closest(".actCancel")) return submitRowAction(`/admin/staff-payroll/${x.id}/cancel`);
     if (e.target.closest(".actDelete")) {
       if (window.confirm(`Delete payroll run "${x.title}"?`)) {
-        return submitRowAction(`/admin/staff-payroll/${escapeHtml(x.id)}/delete`);
+        return submitRowAction(`/admin/staff-payroll/${x.id}/delete`);
       }
     }
   });

@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="/css/admin-finance.css"/>
   <script src="/js/admin-scholarships.js" defer></script>
 
-  <style nonce="<%= cspNonce %>">
+  <style>
     .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
     @media(max-width:980px){.grid3{grid-template-columns:1fr}}
     .err{margin-top:6px;color:#b91c1c;font-size:12px;font-weight:800}
@@ -231,7 +231,7 @@
         <% if(_mode==="edit" && _sch){ %>
           <form method="POST" action="/admin/scholarships/<%= _sch._id %>/delete" style="margin-top:10px;display:flex;justify-content:flex-end">
             <% if(_csrf){ %><input type="hidden" name="_csrf" value="<%= _csrf %>"/><% } %>
-            <button class="btn light" type="submit" data-confirm-submit="Delete this scholarship?"><i class="fa-solid fa-trash"></i> Delete</button>
+            <button class="btn light" type="submit" onclick="return confirm('Delete this scholarship?')"><i class="fa-solid fa-trash"></i> Delete</button>
           </form>
         <% } %>
 

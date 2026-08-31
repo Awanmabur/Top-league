@@ -665,7 +665,7 @@ module.exports = {
       });
     } catch (err) {
       console.error("profile page error:", err);
-      return res.status(500).send("Failed to load profile.");
+      return res.status(500).send(err.message || "Failed to load profile.");
     }
   },
 

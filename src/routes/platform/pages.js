@@ -7,35 +7,14 @@ const { publicInquiryLimiter, publicReviewLimiter } = require("../../middleware/
 const ctrl = require("../../controllers/platform/schoolsPublicController");
 const publicSearchController = require("../../controllers/platform/publicSearchController");
 
-function cachePublicPage(req, res, next) {
-  res.setHeader("Cache-Control", "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400");
-  next();
-}
-
-function cachePublicMetadata(req, res, next) {
-  res.setHeader("Cache-Control", "public, max-age=300, s-maxage=3600");
-  next();
-}
-
 function getSiteUrl(req) {
   const configured = process.env.PUBLIC_SITE_URL || process.env.PLATFORM_SITE_URL || "";
   if (configured) return configured.replace(/\/+$/, "");
 
-  if (process.env.NODE_ENV === "production") {
-    throw new Error("PUBLIC_SITE_URL or PLATFORM_SITE_URL is required for public metadata in production.");
-  }
-  const hostname = String(req.hostname || "localhost").trim().toLowerCase();
-  if (!/^(?:localhost|127\.0\.0\.1|(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)$/.test(hostname)) return "http://localhost";
-  const localPort = Number(req.socket?.localPort || process.env.PORT || 0);
-  const port = localPort > 0 && localPort <= 65535 ? `:${localPort}` : "";
-  return `${req.protocol === "https" ? "https" : "http"}://${hostname}${port}`;
+  const proto = req.protocol || (req.secure ? "https" : "http");
+  const host = (req.get && req.get("host")) || req.headers.host || "localhost";
+  return `${proto}://${host}`;
 }
-
-router.use(
-  ["/about", "/features", "/services", "/contact", "/plan", "/blog", "/careers", "/faq", "/privacy", "/terms", "/admissions", "/share", "/security", "/integrations", "/resources", "/docs", "/status"],
-  cachePublicPage,
-);
-router.use(["/robots.txt", "/sitemap.xml"], cachePublicMetadata);
 
 router.get("/", ctrl.landing);
 router.get("/about", (req, res) => res.render("platform/public/about"));

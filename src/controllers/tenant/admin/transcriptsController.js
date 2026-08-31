@@ -494,29 +494,7 @@ module.exports = {
         filter.student = students.length ? { $in: students.map((s) => s._id) } : "__none__";
       }
 
-      const kpiFilter = { ...filter };
-      delete kpiFilter.status;
-
-      // Launch independent transcript/catalog reads together. These used to form a
-      // long serial waterfall on every Admin Transcripts page request.
-      const [total, statusRows, scopeLists, studentsList, classes] = await Promise.all([
-        Transcript.countDocuments(filter),
-        Transcript.aggregate([
-          { $match: kpiFilter },
-          { $group: { _id: "$status", count: { $sum: 1 } } },
-        ]),
-        loadAcademicScopeLists(req, { includeStudents: true }),
-        Student.find({ isDeleted: { $ne: true }, status: { $ne: "archived" } })
-          .select("fullName firstName middleName lastName regNo studentNo indexNumber name classId className sectionId section streamId stream")
-          .sort({ fullName: 1, firstName: 1, lastName: 1 })
-          .limit(4000)
-          .lean(),
-        Class.find({})
-          .select("name code")
-          .sort({ name: 1 })
-          .lean(),
-      ]);
-
+      const total = await Transcript.countDocuments(filter);
       const totalPages = Math.max(Math.ceil(total / perPage), 1);
       const safePage = Math.min(page, totalPages);
 
@@ -530,9 +508,18 @@ module.exports = {
         .limit(perPage)
         .lean();
 
-      const statusCounts = Object.fromEntries(
-        statusRows.map((row) => [String(row._id || ""), Number(row.count || 0)])
-      );
+      const scopeLists = await loadAcademicScopeLists(req, { includeStudents: true });
+
+      const studentsList = await Student.find({ isDeleted: { $ne: true }, status: { $ne: "archived" } })
+        .select("fullName firstName middleName lastName regNo studentNo indexNumber name classId className sectionId section streamId stream")
+        .sort({ fullName: 1, firstName: 1, lastName: 1 })
+        .limit(4000)
+        .lean();
+
+      const classes = await Class.find({})
+        .select("name code")
+        .sort({ name: 1 })
+        .lean();
 
       let preview = null;
       let previewId = null;
@@ -551,9 +538,9 @@ module.exports = {
 
       const kpis = {
         total,
-        draft: statusCounts.draft || 0,
-        issued: statusCounts.issued || 0,
-        revoked: statusCounts.revoked || 0,
+        draft: await Transcript.countDocuments({ ...filter, status: "draft" }),
+        issued: await Transcript.countDocuments({ ...filter, status: "issued" }),
+        revoked: await Transcript.countDocuments({ ...filter, status: "revoked" }),
       };
 
       return res.render("tenant/transcripts/index", {

@@ -23,7 +23,6 @@
     <section class="card">
       <% if (error) { %><div class="small-muted" style="color:#b91c1c;"><%= error %></div><% } %>
       <form method="post" action="/staff/profile" style="display:grid;gap:14px;margin-top:14px;">
-        <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>" />
         <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;">
           <div>
             <label>First Name</label>

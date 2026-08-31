@@ -709,7 +709,7 @@ function buildLandingFeaturedSchoolCard(tenantDoc, schoolUnit = null) {
     image:
       branding.coverUrl ||
       branding.logoUrl ||
-      "/img/hero.webp",
+      "https://images.unsplash.com/photo-1580582932707-520aed937b7b?q=80&w=900&auto=format&fit=crop",
     href: `/schools/${code}${unitQuery}`,
     applyHref: `/schools/${code}/apply${unitQuery}`,
     location: clean(
@@ -1084,16 +1084,16 @@ module.exports = {
         }
       }
 
-      const [counts, subjects, canonicalContent] = await Promise.all([
-        computeCounts(tenantModels),
-        loadSubjects(tenantModels, {
-          ...profile,
-          extraSubjects: tenantDoc.settings?.academics?.extraSubjects,
-        }),
-        tenantModels.SchoolFAQ && tenantModels.SchoolReview
-          ? publicCanonicalContent(tenantModels)
-          : Promise.resolve(null),
-      ]);
+      const counts = await computeCounts(tenantModels);
+
+      const subjects = await loadSubjects(tenantModels, {
+        ...profile,
+        extraSubjects: tenantDoc.settings?.academics?.extraSubjects,
+      });
+
+      const canonicalContent = tenantModels.SchoolFAQ && tenantModels.SchoolReview
+        ? await publicCanonicalContent(tenantModels)
+        : null;
       const faqs = canonicalContent ? canonicalContent.faqs : loadFaqFromProfile(profile);
       const announcements = loadNewsFromProfile(profile);
       const reviews = canonicalContent

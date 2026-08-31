@@ -49,9 +49,9 @@
             track.dataset.duplicated = "true";
         })();
 
-        // Swiper is progressive enhancement; do not let a CDN outage break the page.
+        // Swiper for testimonials
         const isMobile = window.matchMedia("(max-width: 700px)").matches;
-        if (window.Swiper && document.querySelector(".testimonial-wrapper")) new Swiper(".testimonial-wrapper", {
+        new Swiper(".testimonial-wrapper", {
             slidesPerView: 1,
             spaceBetween: 18,
             loop: true,

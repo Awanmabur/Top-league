@@ -4,12 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title><%= letter.type %> — <%= tenant?.name || 'Classic Academy' %></title>
-  <style nonce="<%= cspNonce %>">
+  <style>
     body{font-family:Arial,sans-serif;color:#111;margin:0;background:#fff}.page{max-width:820px;margin:0 auto;padding:44px}.head{text-align:center;border-bottom:2px solid #111;padding-bottom:16px}.school{font-size:24px;font-weight:800}.meta{font-size:13px;color:#444}.body{font-size:16px;line-height:1.7;margin-top:38px}.verify{margin-top:46px;border-top:1px solid #aaa;padding-top:18px;display:flex;gap:18px;align-items:center}.verify img{width:120px;height:120px}.mono{font-family:monospace;word-break:break-all;font-size:11px}.actions{max-width:820px;margin:16px auto;text-align:right}@media print{.actions{display:none}.page{padding:20px}}
   </style>
 </head>
 <body>
-<div class="actions"><button type="button" data-print>Print / Save PDF</button></div>
+<div class="actions"><button onclick="window.print()">Print / Save PDF</button></div>
 <main class="page">
   <header class="head">
     <div class="school"><%= tenant?.name || 'Classic Academy' %></div>
@@ -35,6 +35,5 @@
     <div><strong>Digitally verifiable document</strong><div class="meta">Scan the QR code or use the verification address below.</div><div class="mono"><%= verifyUrl %></div></div>
   </section>
 </main>
-<script defer src="/js/csp-actions.js"></script>
 </body>
 </html>

@@ -55,16 +55,6 @@ function enforceSameOrigin(req, res, next) {
     return next();
   }
 
-  // Fetch Metadata closes the gap where a cross-site browser mutation omits
-  // Origin/Referer. OAuth callbacks are safe GETs and bearer APIs are exempt.
-  const fetchSite = String(req.get("sec-fetch-site") || "").toLowerCase();
-  if (fetchSite === "cross-site") {
-    if (wantsJson(req)) {
-      return res.status(403).json({ ok: false, message: "Cross-site request blocked." });
-    }
-    return res.status(403).send("Cross-site request blocked.");
-  }
-
   const origin = parseHeaderUrl(req.get("origin"));
   const referer = parseHeaderUrl(req.get("referer"));
   const candidate = origin || referer;

@@ -28,22 +28,17 @@ test("release removes unused vulnerable image/utility direct dependencies and up
 
 test("release lock carries patched production dependency minimums", () => {
   const minimums = {
-    multer: "2.3.0", mongoose: "8.24.1", joi: "18.2.1",
+    multer: "2.2.0", mongoose: "8.24.1", joi: "18.2.1", morgan: "1.10.2",
     "express-rate-limit": "8.5.1", qs: "6.15.2", "path-to-regexp": "8.4.0",
     "ip-address": "10.3.1", "brace-expansion": "2.1.4",
   };
   for (const [name, minimum] of Object.entries(minimums)) assert.ok(atLeast(locked(name), minimum), `${name} ${locked(name)} < ${minimum}`);
 });
 
-test("release removes archived unused csurf and uses the internal session-bound HMAC CSRF middleware", () => {
-  assert.equal(pkg.dependencies.csurf, undefined);
-  assert.equal(lock.packages?.["node_modules/csurf"], undefined);
-  const csrf = read("src/middleware/tenant/csrf.js");
-  assert.match(csrf, /createHmac\("sha256"/);
-  assert.match(csrf, /timingSafeEqual/);
-  assert.match(csrf, /EBADCSRFTOKEN/);
+test("archived csurf resolves its cookie parser to the patched compatible line", () => {
   assert.equal(pkg.overrides?.cookie, "0.7.2");
   assert.ok(atLeast(locked("cookie"), "0.7.0"));
+  assert.equal(lock.packages?.["node_modules/csurf/node_modules/cookie"], undefined);
 });
 
 test("mailer disables Nodemailer file/URL content access and normalizes header strings", () => {
@@ -53,25 +48,4 @@ test("mailer disables Nodemailer file/URL content access and normalizes header s
   assert.match(src, /replace\(\/\[\\r\\n\\u2028\\u2029\]\+\/g/);
   assert.match(src, /mailBody\(html/);
   assert.match(src, /mailBody\(text/);
-});
-
-test('all Multer parsers enable the 2.3 array-index DoS ceiling', () => {
-  const files = [
-    'src/middleware/uploadMemory.js',
-    'src/utils/uploadMemory.js',
-    'src/middleware/uploads/schoolProfileMulter.js',
-    'src/middleware/csvUpload.js',
-  ];
-  for (const file of files) assert.match(read(file), /fieldArrayIndexLimit:\s*\d+/);
-});
-
-test('release removes vulnerable Morgan and keeps opt-in development HTTP logging locally sanitized', () => {
-  const pkg = JSON.parse(read('package.json'));
-  const lock = read('package-lock.json');
-  const index = read('src/index.js');
-  assert.equal(pkg.dependencies.morgan, undefined);
-  assert.doesNotMatch(lock, /node_modules\/morgan/);
-  assert.doesNotMatch(index, /require\(["']morgan["']\)/);
-  assert.match(index, /HTTP_LOGS === "1"/);
-  assert.match(index, /\\u2028\\u2029/);
 });

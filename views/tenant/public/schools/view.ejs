@@ -11,7 +11,7 @@
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
         crossorigin="anonymous" referrerpolicy="no-referrer"/>
 
-  <style nonce="<%= cspNonce %>">
+  <style>
     @font-face{font-family:'PoppinsLocal';src:local('Poppins'),local('Inter'),local('Segoe UI')}
     :root{
       --blue:#0a3d62;
@@ -392,7 +392,7 @@
 %>
 
 <!-- set CSS vars without changing UI -->
-<style nonce="<%= cspNonce %>">
+<style>
   :root{ --blue:<%= primary %>; --accent:<%= accent %>; }
 </style>
 
@@ -439,7 +439,7 @@
       <div class="logo-wrap">
         <div class="logo">
           <% if (b.logoUrl) { %>
-            <img src="<%= b.logoUrl %>" alt="logo" decoding="async" fetchpriority="high"/>
+            <img src="<%= b.logoUrl %>" alt="logo"/>
           <% } else { %>
             <%= (tenant.name || "S").slice(0,2).toUpperCase() %>
           <% } %>
@@ -715,8 +715,8 @@
              const img = gallery[i] ? gallery[i].url : "";
              const id = `g${i+1}`;
         %>
-          <button class="g-item" data-src="<%= img || '/img/feature.webp' %>" aria-label="Open photo">
-            <img alt="Gallery" id="<%= id %>" src="<%= img || '/img/feature.webp' %>" loading="lazy" decoding="async">
+          <button class="g-item" data-src="<%= img %>" aria-label="Open photo">
+            <img alt="Gallery" id="<%= id %>" src="<%= img %>">
           </button>
         <% } %>
       </div>
@@ -725,7 +725,7 @@
     <div class="lightbox" id="lightbox" aria-hidden="true">
       <button class="lb-close" id="lbClose" aria-label="Close"><i class="fa fa-xmark"></i></button>
       <button class="lb-nav lb-prev" id="lbPrev" aria-label="Previous"><i class="fa fa-chevron-left"></i></button>
-      <img id="lbImg" alt="Preview" decoding="async"/>
+      <img id="lbImg" alt="Preview"/>
       <button class="lb-nav lb-next" id="lbNext" aria-label="Next"><i class="fa fa-chevron-right"></i></button>
     </div>
   </section>
@@ -870,6 +870,5 @@
   </div>
 </footer>
 
-<script defer src="/js/public-image-fallback.js"></script>
 </body>
 </html>

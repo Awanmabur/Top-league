@@ -16,10 +16,9 @@
   <meta name="application-name" content="Classic Academy" />
   <meta name="format-detection" content="telephone=no" />
 
-  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <link rel="canonical" href="https://www.classicacademy.app/search" />
-  <link rel="icon" href="/img/academylogo.webp" />
-  <link rel="apple-touch-icon" href="/img/academylogo.webp" />
+  <link rel="icon" href="https://www.classicacademy.app/img/academylogo.png" />
+  <link rel="apple-touch-icon" href="https://www.classicacademy.app/img/academylogo.png" />
 
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Classic Academy" />
@@ -28,16 +27,16 @@
   <meta property="og:description"
     content="Search and filter schools: location, category, curriculum, fees, facilities." />
   <meta property="og:url" content="https://www.classicacademy.app/search" />
-  <meta property="og:image" content="https://www.classicacademy.app/assets/og/classic-academy.jpg" />
+  <meta property="og:image" content="https://www.classicacademy.app/img/hero.png" />
   <meta property="og:image:alt" content="Classic Academy School Search" />
 
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Classic Academy — Search Schools" />
   <meta name="twitter:description"
     content="Search and filter schools: location, category, curriculum, fees, facilities." />
-  <meta name="twitter:image" content="https://www.classicacademy.app/assets/og/classic-academy.jpg" />
+  <meta name="twitter:image" content="https://www.classicacademy.app/img/hero.png" />
 
-  <script nonce="<%= cspNonce %>" type="application/ld+json">
+  <script type="application/ld+json">
   {
     "@context":"https://schema.org",
     "@type":"WebPage",
@@ -56,13 +55,14 @@
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Outfit:wght@100..900&display=swap" rel="stylesheet" />
-  <style nonce="<%= cspNonce %>">
+  <style>
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-    }0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Outfit:wght@100..900&display=swap");
+    }
+
+    @import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Outfit:wght@100..900&display=swap");
 
     :root {
       --primary: #4a90e2;
@@ -1133,13 +1133,12 @@
       }
     }
   </style>
-  <script src="/js/public-image-fallback.js"></script>
 </head>
 
 <body>
   <div id="loader">
     <div class="academylogo">
-      <img src="/img/academylogo.webp" alt="Classic Academy logo" decoding="async" width="396" height="415">
+      <img src="/img/academylogo.png" alt="Classic Academy logo">
     </div>
     <div style="display:flex; gap:10px;">
       <div class="loader"><div class="face front"></div><div class="face back"></div></div>
@@ -1152,7 +1151,7 @@
 
   <header class="header" id="siteHeader">
     <a href="/" class="brand" aria-label="Classic Academy Home">
-      <img class="brand-mark" src="/img/academylogo.webp" alt="Classic Academy logo" decoding="async" width="396" height="415">
+      <img class="brand-mark" src="/img/academylogo.png" alt="Classic Academy logo">
       <div class="brand-txt">
         <span class="brand-name">Classic Academy</span>
         <span class="brand-sub">School management + admissions</span>
@@ -1380,7 +1379,7 @@
             <% results.forEach(function(s) { %>
               <article class="card">
                 <div class="thumb">
-                  <img src="<%= s.img %>" alt="<%= s.name %>" loading="lazy" decoding="async">
+                  <img src="<%= s.img %>" alt="<%= s.name %>">
                   <% if (s.badge) { %>
                     <span class="badge <%= ['Featured','Top Rated','Popular'].includes(s.badge) ? 'hot' : '' %>">
                       <i class="fa-solid fa-star"></i> <%= s.badge %>
@@ -1452,13 +1451,13 @@
     <div>
       <h4>About Us</h4>
       <p>We are excited to introduce our upcoming Classic Academy Plans, where schools will be categorized</p>
-      <a href="https://play.google.com/store" target="_blank" rel="noopener noreferrer">
-        <img src="/vendor/marketing/google-play-badge.svg"
-          style="height: 50px; width: 150px" alt="Google Play" decoding="async" width="180" height="54" loading="lazy">
+      <a href="https://play.google.com/store" target="_blank" rel="noopener">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg"
+          style="height: 50px; width: 150px" alt="Google Play">
       </a>
-      <a href="https://apps.apple.com/" target="_blank" rel="noopener noreferrer">
-        <img src="/vendor/marketing/app-store-badge.svg"
-          alt="Download on the App Store" style="height: 50px;" decoding="async" width="180" height="54" loading="lazy">
+      <a href="https://apps.apple.com/" target="_blank" rel="noopener">
+        <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg"
+          alt="Download on the App Store" style="height: 50px;">
       </a>
     </div>
 
@@ -1491,7 +1490,7 @@
         <li><a href="/admissions">Admissions</a></li>
         <li><a href="/search">Search</a></li>
         <li><a href="/blog?slug=increase-admissions">Blog</a></li>
-        <li><a href="https://chat.whatsapp.com/HRGoS3fMZoZGgXbz1HDw6a?mode=gi_t" target="_blank" rel="noopener noreferrer">Join whatsapp group</a></li>
+        <li><a href="https://chat.whatsapp.com/HRGoS3fMZoZGgXbz1HDw6a?mode=gi_t" target="_blank" rel="noopener">Join whatsapp group</a></li>
       </ul>
     </div>
   </footer>
@@ -1508,7 +1507,7 @@
       <a href="tel:+256781977217"><span class="material-icons">phone</span></a>
     </div>
     <div class="sub-button shadow">
-      <a href="https://api.whatsapp.com/send?phone=256781977217" target="_blank" rel="noopener noreferrer">
+      <a href="https://api.whatsapp.com/send?phone=256781977217" target="_blank" rel="noopener">
         <span class="material-icons">
           <svg xmlns="http://www.w3.org/2000/svg" class="whatsapp-icon" viewBox="0 0 448 512" width="35"
             height="35" fill="#2e2e2e" aria-label="WhatsApp Icon">
@@ -1519,7 +1518,7 @@
       </a>
     </div>
     <div class="sub-button shadow">
-      <a href="/share" target="_blank" rel="noopener noreferrer"><span class="material-icons">share</span></a>
+      <a href="/share" target="_blank" rel="noopener"><span class="material-icons">share</span></a>
     </div>
   </div>
 

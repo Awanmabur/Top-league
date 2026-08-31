@@ -99,24 +99,7 @@ module.exports = {
       if (schoolUnitId) filter.schoolUnitId = schoolUnitId;
       if (campusId) filter.campusId = campusId;
 
-      const kpiFilter = { ...filter };
-      delete kpiFilter.status;
-      const [total, statusRows, classes, streams, staffList] = await Promise.all([
-        Section.countDocuments(filter),
-        Section.aggregate([
-          { $match: kpiFilter },
-          { $group: { _id: "$status", count: { $sum: 1 } } },
-        ]),
-        Class
-          ? Class.find({}).select("name code schoolUnitId schoolUnitName campusId campusName levelType classLevel stream streamName academicYear term").sort({ createdAt: -1 }).lean()
-          : [],
-        Stream
-          ? Stream.find({}).select("name code schoolUnitId schoolUnitName campusId campusName levelType classId className classLevel classStream sectionId sectionName sectionCode status").sort({ name: 1, createdAt: -1 }).lean()
-          : [],
-        Staff
-          ? Staff.find({}).select("fullName name role email").sort({ fullName: 1, name: 1 }).lean()
-          : [],
-      ]);
+      const total = await Section.countDocuments(filter);
       const totalPages = Math.max(Math.ceil(total / perPage), 1);
       const safePage = Math.min(page, totalPages);
 
@@ -129,8 +112,33 @@ module.exports = {
         .limit(perPage)
         .lean();
 
-      const statusCounts = Object.fromEntries(statusRows.map((row) => [String(row._id || ""), Number(row.count || 0)]));
-      const kpis = { total, active: statusCounts.active || 0, inactive: statusCounts.inactive || 0, archived: statusCounts.archived || 0 };
+      const classes = Class
+        ? await Class.find({})
+            .select("name code schoolUnitId schoolUnitName campusId campusName levelType classLevel stream streamName academicYear term")
+            .sort({ createdAt: -1 })
+            .lean()
+        : [];
+
+      const streams = Stream
+        ? await Stream.find({})
+            .select("name code schoolUnitId schoolUnitName campusId campusName levelType classId className classLevel classStream sectionId sectionName sectionCode status")
+            .sort({ name: 1, createdAt: -1 })
+            .lean()
+        : [];
+
+      const staffList = Staff
+        ? await Staff.find({})
+            .select("fullName name role email")
+            .sort({ fullName: 1, name: 1 })
+            .lean()
+        : [];
+
+      const kpis = {
+        total,
+        active: await Section.countDocuments({ ...filter, status: "active" }),
+        inactive: await Section.countDocuments({ ...filter, status: "inactive" }),
+        archived: await Section.countDocuments({ ...filter, status: "archived" }),
+      };
 
       return res.render("tenant/sections/index", {
         tenant: req.tenant || null,

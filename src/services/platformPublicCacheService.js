@@ -1,10 +1,6 @@
-const { getRedisClient, isRedisRoleEnabled } = require("../config/redis");
+const { getRedisClient } = require("../config/redis");
 
 const FEATURED_KEY = "classic-academy:public:featured:v3";
-
-function cacheClient() {
-  return isRedisRoleEnabled("cache") ? getRedisClient("cache") : null;
-}
 
 function ttlSeconds() {
   const configured = Number(process.env.PUBLIC_DIRECTORY_CACHE_TTL_SECONDS || 30);
@@ -20,7 +16,7 @@ function cacheCommandTimeoutMs() {
 }
 
 async function getFeaturedSchoolsCache() {
-  const client = cacheClient();
+  const client = getRedisClient();
   if (!client || !client.isReady?.()) return null;
   try {
     const raw = await client.get(FEATURED_KEY, { timeoutMs: cacheCommandTimeoutMs() });
@@ -34,7 +30,7 @@ async function getFeaturedSchoolsCache() {
 }
 
 async function setFeaturedSchoolsCache(items) {
-  const client = cacheClient();
+  const client = getRedisClient();
   if (!client || !client.isReady?.() || !Array.isArray(items)) return false;
   try {
     await client.setEx(FEATURED_KEY, ttlSeconds(), JSON.stringify(items), { timeoutMs: cacheCommandTimeoutMs() });
@@ -46,7 +42,7 @@ async function setFeaturedSchoolsCache(items) {
 }
 
 async function invalidatePublicSchoolCache() {
-  const client = cacheClient();
+  const client = getRedisClient();
   if (!client) return 0;
   try {
     return Number(await client.del(FEATURED_KEY) || 0);

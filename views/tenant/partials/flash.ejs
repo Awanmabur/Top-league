@@ -1,20 +1,56 @@
-<link rel="stylesheet" href="/css/flash.css">
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flashing page</title>
+  <link rel="stylesheet" href="/css/flash.css">
+</head>
+
 <div id="flash-container">
   <% const FLASH = (typeof flash !== "undefined" && flash) ? flash : {success:[], error:[], info:[], welcome:[], logout:[], warning:[]}; %>
-  <%
-    const flashGroups = [
-      ["error", "flash-error"],
-      ["success", "flash-success"],
-      ["info", "flash-info"],
-      ["welcome", "flash-success"],
-      ["logout", "flash-success"],
-      ["warning", "flash-warning"],
-    ];
-  %>
-  <% flashGroups.forEach(function(entry) { const key = entry[0], cls = entry[1], messages = FLASH[key]; if (messages && messages.length) { %>
-    <div id="flash-<%= key %>" class="<%= cls %>">
-      <button class="flash-close" type="button" data-dismiss-parent aria-label="Dismiss message">&times;</button>
-      <%= messages.join(" • ") %>
+
+  <% if (FLASH.error && FLASH.error.length > 0) { %>
+    <div id="flash-error" class="flash-error">
+      <span class="flash-close" onclick="this.parentElement.style.display='none';">&times;</span>
+      <%= FLASH.error.join(" • ") %>
     </div>
-  <% } }); %>
+  <% } %>
+
+  <% if (FLASH.success && FLASH.success.length > 0) { %>
+    <div id="flash-success" class="flash-success">
+      <span class="flash-close" onclick="this.parentElement.style.display='none';">&times;</span>
+      <%= FLASH.success.join(" • ") %>
+    </div>
+  <% } %>
+
+  <% if (FLASH.info && FLASH.info.length > 0) { %>
+    <div id="flash-info" class="flash-info">
+      <span class="flash-close" onclick="this.parentElement.style.display='none';">&times;</span>
+      <%= FLASH.info.join(" • ") %>
+    </div>
+  <% } %>
+
+  <% if (FLASH.welcome && FLASH.welcome.length > 0) { %>
+    <div id="flash-welcome" class="flash-success">
+      <span class="flash-close" onclick="this.parentElement.style.display='none';">&times;</span>
+      <%= FLASH.welcome.join(" • ") %>
+    </div>
+  <% } %>
+
+  <% if (FLASH.logout && FLASH.logout.length > 0) { %>
+    <div id="flash-logout" class="flash-success">
+      <span class="flash-close" onclick="this.parentElement.style.display='none';">&times;</span>
+      <%= FLASH.logout.join(" • ") %>
+    </div>
+  <% } %>
+
+  <% if (FLASH.warning && FLASH.warning.length > 0) { %>
+    <div id="flash-warning" class="flash-warning">
+      <span class="flash-close" onclick="this.parentElement.style.display='none';">&times;</span>
+      <%= FLASH.warning.join(" • ") %>
+    </div>
+  <% } %>
 </div>
+
+</body>
+</html>

@@ -13,7 +13,7 @@
 
   <link rel="stylesheet" href="/css/parent-portal.css" />
 
-  <style nonce="<%= cspNonce %>">
+  <style>
     .toolbar{
       margin-top:16px;
       display:flex;
@@ -532,13 +532,13 @@
             <b><%= Number(pageStats.children || kids.length || 0) %></b>
           </div>
 
-          <a class="btn light" href="/parent/children">
+          <button class="btn light" type="button" onclick="window.location.href='/parent/children'">
             <i class="fa-solid fa-children"></i> Children
-          </a>
+          </button>
 
-          <a class="btn primary" href="/parent/results">
+          <button class="btn primary" type="button" onclick="window.location.href='/parent/results'">
             <i class="fa-solid fa-file-lines"></i> Results
-          </a>
+          </button>
         </div>
       </div>
 
@@ -571,9 +571,9 @@
             <div class="empty-text">
               Attendance records will appear here once a student is linked to your parent account.
             </div>
-            <a class="btn light" href="/parent/support">
+            <button class="btn light" type="button" onclick="window.location.href='/parent/support'">
               <i class="fa-solid fa-headset"></i> Contact Support
-            </a>
+            </button>
           </div>
         </section>
       <% } else { %>
@@ -845,7 +845,7 @@
     </main>
   </div>
 
-  <script nonce="<%= cspNonce %>">
+  <script>
     (function(){
       const tabs = Array.from(document.querySelectorAll("[data-student-tab]"));
       const panels = Array.from(document.querySelectorAll("[data-student-panel]"));

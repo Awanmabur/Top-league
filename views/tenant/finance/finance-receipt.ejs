@@ -9,7 +9,7 @@
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
         crossorigin="anonymous" referrerpolicy="no-referrer"/>
 
-  <style nonce="<%= cspNonce %>">
+  <style>
     :root{
       --blue:#0a3d62; --blue2:#083454; --accent:#0a6fbf;
       --bg:#f4f8ff; --card:#fff; --muted:#6b7280;
@@ -212,7 +212,7 @@
   </section>
 </div>
 
-<script nonce="<%= cspNonce %>">
+<script>
   const fmt = (n)=>{ try{return new Intl.NumberFormat('en-US').format(n);}catch(e){return String(n);} };
 
   // Demo data (later backend will fill this)

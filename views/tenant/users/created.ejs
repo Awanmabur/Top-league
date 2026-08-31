@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>User Invited — Classic Academy</title>
   <link rel="icon" href="data:,">
-  <style nonce="<%= cspNonce %>">
+  <style>
     :root{
       --blue:#0a3d62; --blue2:#083454; --bg:#f4f8ff; --card:#fff;
       --muted:#6b7280; --text:#0f172a; --accent:#0a6fbf;
@@ -65,7 +65,7 @@
           <div class="hint"><b>Invite link (valid for limited time)</b></div>
           <textarea id="link" readonly><%= inviteLink %></textarea>
           <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
-            <button class="btn" type="button" data-copy-target="link">Copy Link</button>
+            <button class="btn" onclick="copyLink()">Copy Link</button>
             <a class="btn secondary" href="<%= inviteLink %>" target="_blank" rel="noopener">Open Link</a>
           </div>
           <div class="hint" style="margin-top:8px">
@@ -76,7 +76,14 @@
     </div>
   </div>
 
-<script defer src="/js/csp-actions.js"></script>
+<script>
+  function copyLink(){
+    const el = document.getElementById('link');
+    el.select(); el.setSelectionRange(0, 999999);
+    document.execCommand('copy');
+    alert("Invite link copied.");
+  }
+</script>
 </body>
 </html>
 

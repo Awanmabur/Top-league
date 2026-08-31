@@ -6,10 +6,6 @@ const ctrlOffers = require("../../../controllers/tenant/admin/offerLettersContro
 const ctrlIntakes = require("../../../controllers/tenant/admin/intakeController");
 const ctrlRequirements = require("../../../controllers/tenant/admin/requirementsController");
 const upload = require("../../../middleware/uploadMemory");
-const { validateBufferedUploads } = require("../../../middleware/validateBufferedUploads");
-const validateDocs = validateBufferedUploads();
-const { createCsvUpload, validateCsvUpload } = require("../../../middleware/csvUpload");
-const csvUpload = createCsvUpload({ maxBytes: 5 * 1024 * 1024 });
 const requireTenantPermission = require("../../../middleware/tenant/requireTenantPermission");
 
 // NOTE: no router.use(auth) here (admin/index already protects)
@@ -22,7 +18,7 @@ router.get("/", ctrl.dashboard);
 
 router.get("/applicants", ctrl.listApplicants);
 router.get("/applicants/export", ctrl.exportApplicantsCsv);
-router.post("/applicants/import", csvUpload.single("file"), validateCsvUpload, ctrl.importApplicantsCsv);
+router.post("/applicants/import", upload.single("file"), ctrl.importApplicantsCsv);
 
 // View applicant: GET /admin/admissions/applicants/:id
 router.get("/applicants/:id", ctrl.viewApplicant);
@@ -39,7 +35,7 @@ router.post("/applicants/:id/schedule-interview", ctrl.scheduleInterview);
 router.post("/applicants/:id/cancel-interview", ctrl.cancelInterview);
 router.post("/applicants/:id/documents/verify-all", ctrl.verifyAllDocuments);
 router.post("/applicants/:id/documents/:key/verify", ctrl.verifyDocument);
-router.post("/applicants/:id/documents/upload", upload.single("file"), validateDocs, ctrl.uploadApplicantDocument);
+router.post("/applicants/:id/documents/upload", upload.single("file"), ctrl.uploadApplicantDocument);
 router.post("/applicants/:id/checklist", ctrl.saveChecklist);
 router.post("/applicants/:id/email", ctrl.emailApplicant);
 router.post("/applicants/:id/sms", ctrl.smsApplicant);
@@ -58,7 +54,7 @@ router.get("/intakes", ctrlIntakes.index);
 router.get("/intakes/new", ctrlIntakes.newPage);
 router.post("/intakes/", ctrlIntakes.create);
 router.post("/intakes/new", ctrlIntakes.create);
-router.post("/intakes/import", csvUpload.single("file"), validateCsvUpload, ctrlIntakes.importCsv);
+router.post("/intakes/import", upload.single("file"), ctrlIntakes.importCsv);
 router.post("/intakes/bulk-status", ctrlIntakes.bulkStatus);
 
 router.get("/intakes/:id/edit", ctrlIntakes.editPage);
@@ -71,7 +67,7 @@ router.post("/intakes/:id/delete", ctrlIntakes.remove);
 router.get("/requirements", ctrlRequirements.index);
 router.post("/requirements", ctrlRequirements.requirementRules, ctrlRequirements.create);
 router.post("/requirements/:id/update", ctrlRequirements.requirementRules, ctrlRequirements.update);
-router.post("/requirements/import", csvUpload.single("file"), validateCsvUpload, ctrlRequirements.importCsv);
+router.post("/requirements/import", upload.single("file"), ctrlRequirements.importCsv);
 router.post("/requirements/:id/delete", ctrlRequirements.remove);
 router.post("/requirements/bulk-action", ctrlRequirements.bulkAction);
 

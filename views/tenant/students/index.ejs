@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
-  <style nonce="<%= cspNonce %>">
+  <style>
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .input,.select,.textarea,.view-input{padding:10px 12px;border-radius:12px;border:1px solid rgba(13,64,96,.16);background:#fff;outline:none}
@@ -356,7 +356,7 @@
                 </div>
                 <div class="field">
                   <label>Academic Year <span class="req">*</span></label>
-                  <select class="select" id="mAcademicYear" name="academicYear" required data-default-options="<%= JSON.stringify(academicYears || []) %>">
+                  <select class="select" id="mAcademicYear" name="academicYear" required data-default-options="<%- JSON.stringify(academicYears || []) %>">
                     <option value="">Select</option>
                     <% (academicYears || []).forEach(function(year){ %>
                       <option value="<%= year %>"><%= year %></option>

@@ -171,11 +171,11 @@ async function applyBulkWithCompensation(req, ids, nextStatus) {
   const { Assignment, AssignmentSubmission }=requireTenantModels(req,["Assignment","AssignmentSubmission"]);
   const rows=await Assignment.find({_id:{$in:ids},isDeleted:{$ne:true},migrationQuarantinedAt:null}).lean();
   if(rows.length!==ids.length)throw new Error("One or more selected assignments no longer exist.");
-  const countMap=await submissionCounts(AssignmentSubmission,rows.map((row)=>row._id));
-  const prepared=rows.map((row)=>{
-    const count=Number(countMap.get(String(row._id))?.total||0);
-    return {row,update:assignmentStatusUpdate(row,nextStatus,actorId(req),count,new Date())};
-  });
+  const prepared=[];
+  for(const row of rows){
+    const count=await countAssignmentSubmissions(AssignmentSubmission,row._id);
+    prepared.push({row,update:assignmentStatusUpdate(row,nextStatus,actorId(req),count,new Date())});
+  }
   const changed=[];
   try{
     for(const item of prepared){

@@ -353,24 +353,21 @@ module.exports = {
       const page = Math.max(parseInt(req.query.page || "1", 10), 1);
       const perPage = 10;
       await attachSearchFilter(req.models, parsed.q, parsed.filter);
-      const kpiFilter = { ...parsed.filter };
-      delete kpiFilter.status;
-      const [total, exams, subjects, statusRows, aggregate, scopeLists] = await Promise.all([
-        Result.countDocuments(parsed.filter),
-        Exam.find({ status: { $in: ["scheduled", "completed"] }, archivedAt: null }).select("title status classGroup sectionId streamId subject academicYear term").sort({ examDate: -1, createdAt: -1 }).limit(300).lean(),
-        Subject.find({ status: { $ne: "archived" } }).select("title code classId sectionId streamId").sort({ title: 1 }).limit(500).lean(),
-        Result.aggregate([{ $match: kpiFilter }, { $group: { _id: "$status", count: { $sum: 1 } } }]),
-        Result.aggregate([{ $match: parsed.filter }, { $group: { _id: null, avg: { $avg: "$percentage" } } }]),
-        loadAcademicScopeLists(req),
-      ]);
+      const total = await Result.countDocuments(parsed.filter);
       const totalPages = Math.max(Math.ceil(total / perPage), 1);
       const safePage = Math.min(page, totalPages);
       let query = Result.find(parsed.filter);
       for (const pop of buildResultPopulate(req.models)) query = query.populate(pop);
       const results = await query.sort({ updatedAt: -1, _id: -1 }).skip((safePage - 1) * perPage).limit(perPage).lean();
-      const statusCounts = Object.fromEntries(statusRows.map((row) => [String(row._id || ""), Number(row.count || 0)]));
-      const published = statusCounts.published || 0;
-      const draft = statusCounts.draft || 0;
+      const scopeListsPromise = loadAcademicScopeLists(req);
+      const [exams, subjects, published, draft, aggregate, scopeLists] = await Promise.all([
+        Exam.find({ status: { $in: ["scheduled", "completed"] }, archivedAt: null }).select("title status classGroup sectionId streamId subject academicYear term").sort({ examDate: -1, createdAt: -1 }).limit(300).lean(),
+        Subject.find({ status: { $ne: "archived" } }).select("title code classId sectionId streamId").sort({ title: 1 }).limit(500).lean(),
+        Result.countDocuments({ ...parsed.filter, status: "published" }),
+        Result.countDocuments({ ...parsed.filter, status: "draft" }),
+        Result.aggregate([{ $match: parsed.filter }, { $group: { _id: null, avg: { $avg: "$percentage" } } }]),
+        scopeListsPromise,
+      ]);
       const avgScore = aggregate[0]?.avg == null ? 0 : Math.round(Number(aggregate[0].avg) * 100) / 100;
       const resultsData = results.map(normalizeResultCard);
       const exportParams = new URLSearchParams();

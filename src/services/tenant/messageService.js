@@ -1,4 +1,3 @@
-const mongoose = require("mongoose");
 const { sendMail } = require("../../utils/mailer");
 const {
   STAFF_ROLES,
@@ -87,28 +86,14 @@ async function syncMessageStats(req, messageId) {
   const { Message, MessageRecipient } = req.models || {};
   if (!Message || !MessageRecipient || !messageId) return null;
 
-  const aggregateMessageId = mongoose.Types.ObjectId.isValid(String(messageId))
-    ? new mongoose.Types.ObjectId(String(messageId))
-    : messageId;
-  const rows = await MessageRecipient.aggregate([
-    { $match: { messageId: aggregateMessageId } },
-    {
-      $group: {
-        _id: null,
-        recipients: { $sum: 1 },
-        delivered: { $sum: { $cond: [{ $in: ["$status", ["Delivered", "Opened"]] }, 1, 0] } },
-        opened: { $sum: { $cond: [{ $eq: ["$status", "Opened"] }, 1, 0] } },
-        failed: { $sum: { $cond: [{ $eq: ["$status", "Failed"] }, 1, 0] } },
-      },
-    },
+  const [recipients, delivered, opened, failed] = await Promise.all([
+    MessageRecipient.countDocuments({ messageId }),
+    MessageRecipient.countDocuments({ messageId, status: { $in: ["Delivered", "Opened"] } }),
+    MessageRecipient.countDocuments({ messageId, status: "Opened" }),
+    MessageRecipient.countDocuments({ messageId, status: "Failed" }),
   ]);
-  const row = rows[0] || {};
-  const stats = {
-    recipients: Number(row.recipients || 0),
-    delivered: Number(row.delivered || 0),
-    opened: Number(row.opened || 0),
-    failed: Number(row.failed || 0),
-  };
+
+  const stats = { recipients, delivered, opened, failed };
   await Message.updateOne({ _id: messageId }, { $set: { stats } });
   return stats;
 }
@@ -187,64 +172,58 @@ async function markRecipientFailedIfNoDelivery(req, messageId, userId) {
 async function deliverPortalChannel(req, message, recipients) {
   const { Notification, MessageRecipient } = req.models || {};
   if (!message?.channels?.portal || !Notification || !MessageRecipient) return { delivered: 0, failed: 0 };
-  const users = (recipients || []).filter((user) => user?._id);
-  if (!users.length) return { delivered: 0, failed: 0 };
-  const ids = users.map((user) => user._id);
+  let delivered = 0;
+  let failed = 0;
   const now = new Date();
 
-  await MessageRecipient.updateMany(
-    { messageId: message._id, userId: { $in: ids } },
-    { $set: { portalDeliveryStatus: "Pending" } },
-  );
-
-  try {
-    await Notification.bulkWrite(
-      users.map((user) => ({
-        updateOne: {
-          filter: {
+  for (const user of recipients || []) {
+    try {
+      await MessageRecipient.updateOne(
+        { messageId: message._id, userId: user._id },
+        { $set: { portalDeliveryStatus: "Pending" } }
+      );
+      await Notification.updateOne(
+        {
+          entityType: "Message",
+          entityId: message._id,
+          entityAction: "message_delivery",
+          userId: user._id,
+          isDeleted: { $ne: true },
+        },
+        {
+          $set: {
+            audience: notificationAudienceFor(user),
+            userId: user._id,
+            title: message.subject,
+            message: str(message.body).slice(0, 5000),
+            type: message.priority === "Important" ? "warning" : "info",
+            url: messageUrlFor(user),
             entityType: "Message",
             entityId: message._id,
             entityAction: "message_delivery",
-            userId: user._id,
-            isDeleted: { $ne: true },
           },
-          update: {
-            $set: {
-              audience: notificationAudienceFor(user),
-              userId: user._id,
-              title: message.subject,
-              message: str(message.body).slice(0, 5000),
-              type: message.priority === "Important" ? "warning" : "info",
-              url: messageUrlFor(user),
-              entityType: "Message",
-              entityId: message._id,
-              entityAction: "message_delivery",
-            },
-            $setOnInsert: { createdBy: req.user?.userId || req.user?._id || null },
+          $setOnInsert: {
+            createdBy: req.user?.userId || req.user?._id || null,
           },
-          upsert: true,
         },
-      })),
-      { ordered: false },
-    );
-    await MessageRecipient.updateMany(
-      { messageId: message._id, userId: { $in: ids } },
-      {
-        $set: { portalDeliveryStatus: "Delivered", portalDeliveredAt: now },
-      },
-    );
-    await MessageRecipient.updateMany(
-      { messageId: message._id, userId: { $in: ids }, status: { $ne: "Opened" } },
-      { $set: { status: "Delivered", deliveredAt: now } },
-    );
-    return { delivered: users.length, failed: 0 };
-  } catch (error) {
-    await MessageRecipient.updateMany(
-      { messageId: message._id, userId: { $in: ids } },
-      { $set: { portalDeliveryStatus: "Failed" } },
-    ).catch(() => {});
-    return { delivered: 0, failed: users.length };
+        { upsert: true }
+      );
+      await MessageRecipient.updateOne(
+        { messageId: message._id, userId: user._id },
+        { $set: { portalDeliveryStatus: "Delivered", portalDeliveredAt: now } }
+      );
+      await markRecipientDelivered(req, message._id, user._id, now);
+      delivered += 1;
+    } catch {
+      failed += 1;
+      await MessageRecipient.updateOne(
+        { messageId: message._id, userId: user._id },
+        { $set: { portalDeliveryStatus: "Failed" } }
+      ).catch(() => {});
+      await markRecipientFailedIfNoDelivery(req, message._id, user._id).catch(() => {});
+    }
   }
+  return { delivered, failed };
 }
 
 function escapeHtml(v) {
@@ -256,85 +235,51 @@ function escapeHtml(v) {
     .replace(/'/g, "&#39;");
 }
 
-async function runBounded(items, limit, worker) {
-  const list = Array.isArray(items) ? items : [];
-  if (!list.length) return [];
-  const out = new Array(list.length);
-  let next = 0;
-  const workers = Array.from({ length: Math.max(1, Math.min(Number(limit) || 1, list.length)) }, () => (async () => {
-    while (true) {
-      const index = next++;
-      if (index >= list.length) return;
-      out[index] = await worker(list[index], index);
-    }
-  })());
-  await Promise.all(workers);
-  return out;
-}
-
 async function deliverEmailChannel(req, message, recipients) {
   const { MessageRecipient } = req.models || {};
   if (!message?.channels?.email || !MessageRecipient) return { sent: 0, failed: 0 };
-  const users = (recipients || []).filter((user) => user?._id);
-  if (!users.length) return { sent: 0, failed: 0 };
-  const ids = users.map((user) => user._id);
-  const existing = await MessageRecipient.find({ messageId: message._id, userId: { $in: ids } })
-    .select("userId emailDeliveryStatus")
-    .lean();
-  const byUser = new Map(existing.map((row) => [String(row.userId), row]));
-  const pending = users.filter((user) => byUser.get(String(user._id))?.emailDeliveryStatus !== "Sent");
-  if (!pending.length) return { sent: 0, failed: 0 };
-
-  await MessageRecipient.updateMany(
-    { messageId: message._id, userId: { $in: pending.map((user) => user._id) } },
-    { $set: { emailDeliveryStatus: "Pending", emailError: "" } },
-  );
-
+  let sent = 0;
+  let failed = 0;
   const subject = message.subject;
   const text = str(message.body);
   const html = `<p>${escapeHtml(text).replace(/\n/g, "<br>")}</p>`;
-  const concurrency = Math.max(1, Math.min(Number(process.env.MESSAGE_EMAIL_CONCURRENCY || 5), 10));
-  const outcomes = await runBounded(pending, concurrency, async (user) => {
+
+  for (const user of recipients || []) {
     const email = str(user.email).toLowerCase();
-    if (!email) return { user, ok: false, error: "Recipient has no email address." };
-    try {
-      await sendMail({ to: email, subject, text, html, replyTo: str(message.replyTo) || undefined, fromName: str(message.senderName) || undefined });
-      return { user, ok: true, at: new Date() };
-    } catch (error) {
-      return { user, ok: false, error: str(error?.message).slice(0, 500) || "Email delivery failed." };
+    if (!email) {
+      await MessageRecipient.updateOne(
+        { messageId: message._id, userId: user._id },
+        { $set: { emailDeliveryStatus: "Failed", emailError: "Recipient has no email address." } }
+      ).catch(() => {});
+      await markRecipientFailedIfNoDelivery(req, message._id, user._id).catch(() => {});
+      failed += 1;
+      continue;
     }
-  });
-
-  const ops = outcomes.map(({ user, ok, at, error }) => ({
-    updateOne: {
-      filter: { messageId: message._id, userId: user._id },
-      update: ok
-        ? { $set: { emailDeliveryStatus: "Sent", emailDeliveredAt: at, emailError: "" } }
-        : { $set: { emailDeliveryStatus: "Failed", emailError: error } },
-    },
-  }));
-  if (ops.length) await MessageRecipient.bulkWrite(ops, { ordered: false });
-
-  const successfulIds = outcomes.filter((row) => row.ok).map((row) => row.user._id);
-  if (successfulIds.length) {
-    const now = new Date();
-    await MessageRecipient.updateMany(
-      { messageId: message._id, userId: { $in: successfulIds }, status: { $ne: "Opened" } },
-      { $set: { status: "Delivered", deliveredAt: now } },
-    );
+    try {
+      const row = await MessageRecipient.findOne({ messageId: message._id, userId: user._id }).select("emailDeliveryStatus").lean();
+      if (row?.emailDeliveryStatus === "Sent") continue;
+      await MessageRecipient.updateOne(
+        { messageId: message._id, userId: user._id },
+        { $set: { emailDeliveryStatus: "Pending", emailError: "" } }
+      );
+      await sendMail({ to: email, subject, text, html, replyTo: str(message.replyTo) || undefined, fromName: str(message.senderName) || undefined });
+      const now = new Date();
+      await MessageRecipient.updateOne(
+        { messageId: message._id, userId: user._id },
+        { $set: { emailDeliveryStatus: "Sent", emailDeliveredAt: now, emailError: "" } }
+      );
+      await markRecipientDelivered(req, message._id, user._id, now);
+      sent += 1;
+    } catch (err) {
+      failed += 1;
+      await MessageRecipient.updateOne(
+        { messageId: message._id, userId: user._id },
+        { $set: { emailDeliveryStatus: "Failed", emailError: str(err?.message).slice(0, 500) } }
+      ).catch(() => {});
+      await markRecipientFailedIfNoDelivery(req, message._id, user._id).catch(() => {});
+    }
   }
-  await MessageRecipient.updateMany(
-    {
-      messageId: message._id,
-      status: { $nin: ["Opened", "Delivered"] },
-      portalDeliveryStatus: { $in: ["Not Requested", "Failed"] },
-      emailDeliveryStatus: { $in: ["Not Requested", "Failed"] },
-    },
-    { $set: { status: "Failed" } },
-  );
-
-  const sent = outcomes.filter((row) => row.ok).length;
-  return { sent, failed: outcomes.length - sent };
+  return { sent, failed };
 }
 
 async function dispatchMessage(req, message, now = new Date(), options = {}) {

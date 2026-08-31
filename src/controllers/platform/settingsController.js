@@ -11,7 +11,6 @@ const {
   flattenConfig,
 } = require("../../services/platformConfigService");
 const { invalidatePlatformUser, invalidatePlatformSecurityConfig } = require("../../services/platformGuardCache");
-const { connectionStatus: googleCalendarConnectionStatus } = require("../../services/googleCalendarAuthService");
 
 function positiveRevision(value) {
   const revision = Number(value);
@@ -88,16 +87,12 @@ module.exports = {
   settingsPage: async (req, res) => {
     try {
       res.set("Cache-Control", "no-store");
-      const [config, googleCalendar] = await Promise.all([
-        getOrCreateConfig(),
-        googleCalendarConnectionStatus().catch(() => ({ configured: false, connected: false, status: "disconnected" })),
-      ]);
+      const config = await getOrCreateConfig();
       return res.render("platform/settings/index", {
         config: config.toObject ? config.toObject() : config,
         settings: snapshotList(config),
         values: flattenConfig(config),
         revision: Number(config.revision || 1),
-        googleCalendar,
         error: null,
       });
     } catch (err) {
@@ -107,7 +102,6 @@ module.exports = {
         settings: [],
         values: flattenConfig(DEFAULT_CONFIG),
         revision: 1,
-        googleCalendar: { configured: false, connected: false, status: "disconnected" },
         error: "Failed to load platform settings.",
       });
     }

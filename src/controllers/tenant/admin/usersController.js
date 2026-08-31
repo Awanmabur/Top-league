@@ -65,27 +65,14 @@ function buildUserFilter(req) {
 async function loadUsersPageData(req) {
   const { User, Parent } = req.models;
   const filter = buildUserFilter(req);
-  const [usersRaw, profiles, statsRows] = await Promise.all([
+  const [usersRaw, profiles, total, invited, active, suspended] = await Promise.all([
     User.find(filter).select("+passwordHash").sort({ createdAt: -1 }).limit(500).lean(),
     loadProfiles(req),
-    User.aggregate([
-      { $match: { deletedAt: null } },
-      {
-        $group: {
-          _id: null,
-          total: { $sum: 1 },
-          invited: { $sum: { $cond: [{ $eq: ["$status", USER_STATUS.INVITED] }, 1, 0] } },
-          active: { $sum: { $cond: [{ $eq: ["$status", USER_STATUS.ACTIVE] }, 1, 0] } },
-          suspended: { $sum: { $cond: [{ $eq: ["$status", USER_STATUS.SUSPENDED] }, 1, 0] } },
-        },
-      },
-    ]),
+    User.countDocuments({ deletedAt: null }),
+    User.countDocuments({ deletedAt: null, status: USER_STATUS.INVITED }),
+    User.countDocuments({ deletedAt: null, status: USER_STATUS.ACTIVE }),
+    User.countDocuments({ deletedAt: null, status: USER_STATUS.SUSPENDED }),
   ]);
-  const statusStats = statsRows[0] || {};
-  const total = Number(statusStats.total || 0);
-  const invited = Number(statusStats.invited || 0);
-  const active = Number(statusStats.active || 0);
-  const suspended = Number(statusStats.suspended || 0);
   const ids = usersRaw.map((u) => u._id);
   const linkedParents = Parent && ids.length ? await Parent.find({ userId: { $in: ids }, isDeleted: { $ne: true } }).select("userId").lean() : [];
   const parentUsers = new Set(linkedParents.map((p) => String(p.userId)));
