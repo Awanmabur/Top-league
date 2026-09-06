@@ -8,7 +8,7 @@
     crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar { display:flex; gap:10px; flex-wrap:wrap; justify-content:space-between; align-items:center }
     .toolbar .left, .toolbar .right { display:flex; gap:8px; flex-wrap:wrap; align-items:center }
     .input, .select, .textarea { padding:10px 12px; border-radius:12px; border:1px solid rgba(13,64,96,.16); background:#fff; outline:none }
@@ -84,6 +84,7 @@
       table { min-width:980px }
     }
   </style>
+  <link rel="stylesheet" href="/css/tenant-controls.css">
 </head>
 
 <body data-portal="tenant">
@@ -516,5 +517,6 @@
 
   <script src="/js/navbar.js"></script>
   <script src="/js/staff.js"></script>
+  <script src="/js/tenant-workspace-motion.js" defer></script>
 </body>
 </html>

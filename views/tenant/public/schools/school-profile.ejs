@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta name="robots" content="noindex,nofollow,noarchive" />
   <title><%= tenant.name %> — School Profile</title>
   <link rel="icon" href="data:,"/>
 
@@ -10,7 +11,9 @@
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
         crossorigin="anonymous" referrerpolicy="no-referrer"/>
 
-  <style>
+    <link rel="stylesheet" href="/css/tenant-public-polish.css">
+  <link rel="stylesheet" href="/css/classic-motion.css">
+<style nonce="<%= cspNonce %>">
     @font-face{font-family:'PoppinsLocal';src:local('Poppins'),local('Inter'),local('Segoe UI')}
 
     :root{
@@ -345,6 +348,7 @@
       .cta-row{justify-content:center}
     }
   </style>
+  <link rel="stylesheet" href="/css/tenant-controls.css">
 </head>
 
 <%
@@ -390,25 +394,8 @@
       ];
 %>
 
-<body data-school-code="<%= tenant.code %>">
-
-<header class="topbar">
-  <div class="container topbar-inner">
-    <a class="brand" href="#"><span class="brand-dot"></span> Classic Academy</a>
-
-    <nav class="topnav" id="topnav">
-      <a href="/schools">Schools</a>
-      <a href="#subjects" data-go-tab="subjects">Subjects</a>
-      <a href="#admissions" data-go-tab="admissions">Admissions</a>
-      <a href="/login" class="btn btn-soft"><i class="fa fa-right-to-bracket"></i> Login</a>
-    </nav>
-
-    <button class="hamburger" id="hamburger" aria-label="Open menu">
-      <span></span><span></span><span></span>
-    </button>
-  </div>
-</header>
-
+<body data-school-code="<%= tenant.code %>
+<%- include("../partials/site-nav") %>">
 <div class="mobile-menu" id="mobileMenu">
   <a href="/schools"><i class="fa fa-school"></i> Schools</a>
   <a href="#subjects" data-go-tab="subjects"><i class="fa fa-book"></i> Subjects</a>
@@ -426,7 +413,7 @@
       <div class="logo-wrap">
         <div class="logo">
           <% if (b.logoUrl) { %>
-            <img src="<%= b.logoUrl %>" alt="Logo" style="width:100%;height:100%;border-radius:14px;object-fit:cover"/>
+            <img src="<%= b.logoUrl %>" alt="Logo" decoding="async" fetchpriority="high" style="width:100%;height:100%;border-radius:14px;object-fit:cover"/>
           <% } else { %>
             <%= (tenant.name || 'S').split(' ').map(x=>x[0]).slice(0,2).join('').toUpperCase() %>
           <% } %>
@@ -453,7 +440,7 @@
         </div>
 
         <div class="cta-row">
-          <a class="btn btn-primary" href="/apply" target="_blank" rel="noopener">
+          <a class="btn btn-primary" href="/apply" target="_blank" rel="noopener noreferrer">
             <i class="fa fa-file-circle-plus"></i> Apply Now
           </a>
 
@@ -611,7 +598,7 @@
         </div>
 
         <div class="cta-row">
-          <a class="btn btn-primary" href="/apply" target="_blank" rel="noopener">
+          <a class="btn btn-primary" href="/apply" target="_blank" rel="noopener noreferrer">
             <i class="fa fa-file-circle-plus"></i> Start Application
           </a>
 
@@ -678,7 +665,7 @@
       <div class="gallery" id="galleryGrid">
         <% gallery.slice(0,12).forEach(img => { %>
           <button class="g-item" data-src="<%= img.url %>" aria-label="Open photo">
-            <img alt="Gallery" src="<%= img.url %>">
+            <img alt="Gallery" src="<%= img.url %>" loading="lazy" decoding="async">
           </button>
         <% }) %>
         <% if (!gallery.length) { %><div class="muted">No gallery images yet.</div><% } %>
@@ -688,7 +675,7 @@
     <div class="lightbox" id="lightbox" aria-hidden="true">
       <button class="lb-close" id="lbClose" aria-label="Close"><i class="fa fa-xmark"></i></button>
       <button class="lb-nav lb-prev" id="lbPrev" aria-label="Previous"><i class="fa fa-chevron-left"></i></button>
-      <img id="lbImg" alt="Preview"/>
+      <img id="lbImg" alt="Preview" decoding="async"/>
       <button class="lb-nav lb-next" id="lbNext" aria-label="Next"><i class="fa fa-chevron-right"></i></button>
     </div>
   </section>
@@ -894,14 +881,11 @@
     </div>
   </section>
 </main>
-
-<footer class="footer">
-  <div class="container footer-inner">
-    <span class="muted">© 2026 Classic Academy</span>
-    <span class="muted">Powered by <b>Classic Technologies</b></span>
-  </div>
-</footer>
-
 <script defer src="/js/school-profile-public.js?v=20260421subjects1"></script>
+
+<%- include("../partials/site-footer") %>
+  <script src="/js/tenant-public.js" defer></script>
+  <script src="/js/classic-motion.js" defer></script>
+  <script src="/js/tenant-workspace-motion.js" defer></script>
 </body>
 </html>

@@ -163,9 +163,7 @@ module.exports = {
 
       const [
         total,
-        activeCount,
-        inactiveCount,
-        archivedCount,
+        statusRows,
         staffList,
         sections,
         streams,
@@ -173,9 +171,7 @@ module.exports = {
         classLevelsRaw,
       ] = await Promise.all([
         Class.countDocuments(filter),
-        Class.countDocuments({ ...kpiFilter, status: "active" }),
-        Class.countDocuments({ ...kpiFilter, status: "inactive" }),
-        Class.countDocuments({ ...kpiFilter, status: "archived" }),
+        Class.aggregate([{ $match: kpiFilter }, { $group: { _id: "$status", count: { $sum: 1 } } }]),
         Staff
           ? Staff.find({})
               .select("fullName name email role")
@@ -214,12 +210,8 @@ module.exports = {
       const academicYears = academicYearsRaw.filter(Boolean).sort();
       const classLevels = classLevelsRaw.filter(Boolean).sort();
 
-      const kpis = {
-        total,
-        active: activeCount,
-        inactive: inactiveCount,
-        archived: archivedCount,
-      };
+      const statusCounts = Object.fromEntries(statusRows.map((row) => [String(row._id || ""), Number(row.count || 0)]));
+      const kpis = { total, active: statusCounts.active || 0, inactive: statusCounts.inactive || 0, archived: statusCounts.archived || 0 };
 
       return res.render("tenant/classes/index", {
         tenant: req.tenant || null,

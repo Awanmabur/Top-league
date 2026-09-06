@@ -1,7 +1,11 @@
 const crypto = require('crypto');
-const { getRedisClient } = require('../config/redis');
+const { getRedisClient, isRedisRoleEnabled } = require('../config/redis');
 
 const PREFIX = 'classic-academy:tenant-access:v2:';
+
+function cacheClient() {
+  return isRedisRoleEnabled("cache") ? getRedisClient("cache") : null;
+}
 
 function cacheCommandTimeoutMs() {
   const configured = Number(process.env.REDIS_CACHE_COMMAND_TIMEOUT_MS || 200);
@@ -45,7 +49,7 @@ function serializeBundle(tenant, subscription) {
 }
 
 async function getAccessBundle(kind, lookup) {
-  const client = getRedisClient();
+  const client = cacheClient();
   if (!client || !client.isReady?.()) return null;
   const key = keyForLookup(kind, lookup);
   try {
@@ -61,7 +65,7 @@ async function getAccessBundle(kind, lookup) {
 }
 
 async function setAccessBundle(kind, lookup, tenant, subscription) {
-  const client = getRedisClient();
+  const client = cacheClient();
   if (!client || !client.isReady?.() || !tenant) return false;
   const payload = serializeBundle(tenant, subscription || null);
   const keys = new Set([keyForLookup(kind, lookup), ...tenantLookupKeys(tenant)]);
@@ -75,7 +79,7 @@ async function setAccessBundle(kind, lookup, tenant, subscription) {
 }
 
 async function invalidateTenantAccess(tenant) {
-  const client = getRedisClient();
+  const client = cacheClient();
   if (!client || !tenant) return 0;
   const keys = tenantLookupKeys(tenant);
   if (!keys.length) return 0;

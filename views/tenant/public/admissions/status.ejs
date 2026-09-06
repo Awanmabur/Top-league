@@ -4,11 +4,14 @@
   <meta charset="utf-8"/>
   <title>Application Status — <%= (tenant && tenant.name) ? tenant.name : "Classic Academy" %></title>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta name="robots" content="noindex,nofollow,noarchive" />
   <link rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
         crossorigin="anonymous" referrerpolicy="no-referrer"/>
 
-  <style>
+    <link rel="stylesheet" href="/css/tenant-public-polish.css">
+  <link rel="stylesheet" href="/css/classic-motion.css">
+<style nonce="<%= cspNonce %>">
     :root{
       --blue:#0a3d62; --blue2:#083454; --accent:#0a6fbf;
       --bg:#f4f8ff; --card:#fff; --muted:#6b7280; --text:#0f172a;
@@ -124,9 +127,11 @@
       table{min-width:720px}
     }
   </style>
+  <link rel="stylesheet" href="/css/tenant-controls.css">
 </head>
 
 <body>
+<%- include("../partials/site-nav") %>
 <%
   const tenantName = (typeof tenant !== "undefined" && tenant && tenant.name) ? String(tenant.name) : "Classic Academy";
   const csrf = (typeof csrfToken !== "undefined" && csrfToken) ? csrfToken : null;
@@ -408,7 +413,7 @@
                         <td class="muted"><%= d.createdAt ? new Date(d.createdAt).toLocaleString() : "—" %></td>
                         <td style="text-align:right;">
                           <% if (d.url) { %>
-                            <a class="btn light small" href="<%= d.url %>" target="_blank" rel="noreferrer"><i class="fa-solid fa-eye"></i> View</a>
+                            <a class="btn light small" href="<%= d.url %>" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-eye"></i> View</a>
                           <% } else { %>
                             <button class="btn light small" type="button" disabled><i class="fa-solid fa-eye"></i> View</button>
                           <% } %>
@@ -524,5 +529,10 @@
 </div>
 
 <script src="/js/status.js" defer></script>
+
+<%- include("../partials/site-footer") %>
+  <script src="/js/tenant-public.js" defer></script>
+  <script src="/js/classic-motion.js" defer></script>
+  <script src="/js/tenant-workspace-motion.js" defer></script>
 </body>
 </html>

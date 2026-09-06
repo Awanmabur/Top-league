@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="stylesheet" href="/css/navbar.css"/>
   <link rel="stylesheet" href="/css/student-portal.css" />
-  <style>
+  <style nonce="<%= cspNonce %>">
     .detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.field-box{padding:12px;border:1px solid #e2e8f0;border-radius:12px;background:#fff}.field-box.full{grid-column:1/-1}.field-label{font-size:12px;color:#64748b;font-weight:800;margin-bottom:5px}.field-value{white-space:pre-wrap;overflow-wrap:anywhere}.textarea{width:100%;min-height:170px;padding:12px;border:1px solid #cbd5e1;border-radius:12px;resize:vertical}.input{width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:12px}.status{display:inline-flex;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:800;background:#eef2ff;color:#3730a3}.status.graded{background:#ecfdf3;color:#166534}.status.late{background:#fff7ed;color:#9a3412}.link-list{display:grid;gap:6px}.link-list a{overflow-wrap:anywhere}@media(max-width:700px){.detail-grid{grid-template-columns:1fr}.field-box.full{grid-column:auto}}
   </style>
 </head>
@@ -45,7 +45,7 @@
     <% } else { %><div style="margin-top:12px;" class="section-sub">This assignment is not currently accepting changes.<% if (assignment.submission?.status === 'graded') { %> The graded submission is locked unless an administrator reopens it.<% } %></div><% } %>
 
     <% if (assignment.submission?.status === 'submitted' && assignment.canSubmit) { %>
-      <form method="POST" action="/student/assignments/<%= assignment.id %>/withdraw" style="margin-top:12px;" onsubmit="return confirm('Withdraw this submission? You must resubmit before the deadline for it to count.');">
+      <form method="POST" action="/student/assignments/<%= assignment.id %>/withdraw" style="margin-top:12px;" data-confirm="Withdraw this submission? You must resubmit before the deadline for it to count.">
         <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %><button class="btn light" type="submit"><i class="fa-solid fa-rotate-left"></i> Withdraw submission</button>
       </form>
     <% } %>

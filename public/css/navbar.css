@@ -512,3 +512,27 @@ button{ font:inherit; }
     margin-top:0 !important;
   }
 }
+
+/* Floating tenant-admin navigation on desktop; mobile glass nav remains unchanged. */
+@media (min-width:1101px){
+  body[data-portal="tenant"] .sidebar{
+    position:sticky;
+    top:14px;
+    height:calc(100dvh - 28px);
+    margin:14px 0 14px 14px;
+    border-radius:28px;
+    box-shadow:0 22px 48px rgba(4,28,48,.20);
+  }
+  body[data-portal="tenant"] .sidebar.collapsed{border-radius:25px}
+}
+body[data-portal="tenant"] .navbutton{border-radius:999px!important}
+body[data-portal="tenant"] .sbToggle,
+body[data-portal="tenant"] .mglass-menu,
+body[data-portal="tenant"] .mglass-home{border-radius:50%!important}
+
+/* Universal tenant-page rounded controls for views that load navbar.css without student-portal.css. */
+body[data-portal="tenant"] :is(.btn,.btn-xs,button:not(.sbToggle):not(.mglass-menu),a.btn){border-radius:999px!important}
+body[data-portal="tenant"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),select,.input,.select){border-radius:18px!important}
+body[data-portal="tenant"] :is(textarea,.textarea){border-radius:20px!important}
+body[data-portal="tenant"] :is(.card,.kpi-card,.table-wrap,.panel,.modal-card,.filters-row){border-radius:22px!important}
+body[data-portal="tenant"] :is(input,select,textarea):focus{outline:none!important;border-color:rgba(10,111,191,.48)!important;box-shadow:0 0 0 4px rgba(10,111,191,.10)!important}

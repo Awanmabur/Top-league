@@ -4,26 +4,34 @@
 <%
   const seoProfile = tenant?.settings?.profile || {};
   const seoBranding = tenant?.settings?.branding || {};
-  const seoDescription = String(seoProfile.tagline || seoProfile.about || "")
+  const seoSettings = seoProfile.seo || {};
+  const seoTitle = String(seoSettings.metaTitle || `${tenant.name} — School Profile & Admissions`).trim().slice(0, 160);
+  const seoDescription = String(seoSettings.metaDescription || seoProfile.tagline || seoProfile.about || "")
     .replace(/\s+/g, " ")
     .trim()
-    .slice(0, 160) || `${tenant.name} — school profile on Classic Academy`;
-  const seoImage = String(seoBranding.coverUrl || seoBranding.logoUrl || "").trim();
-  const seoCanonical = `${String(tenant?.mainSiteUrl || "").replace(/\/+$/, "")}/schools/${tenant.code}`;
+    .slice(0, 160) || `${tenant.name} — school profile, programs and admissions on Classic Academy`;
+  const seoImage = String(seoSettings.ogImageUrl || seoBranding.coverUrl || seoBranding.logoUrl || "").trim();
+  const defaultCanonical = `${String(tenant?.mainSiteUrl || "").replace(/\/+$/, "")}/schools/${tenant.code}`;
+  // Directory profiles keep a Classic Academy canonical; a tenant custom canonical belongs to the tenant-hosted website.
+  const seoCanonical = defaultCanonical;
+  const seoIndexable = seoSettings.indexable !== false;
+  const seoSocials = seoProfile.socials || {};
+  const seoSameAs = [seoSocials.facebook,seoSocials.instagram,seoSocials.x,seoSocials.youtube,seoSocials.tiktok,seoSocials.linkedin,seoProfile.contact?.website].filter(Boolean);
 %>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title><%= tenant.name %> — School Profile</title>
+  <title><%= seoTitle %></title>
   <meta name="description" content="<%= seoDescription %>"/>
   <link rel="canonical" href="<%= seoCanonical %>"/>
-  <meta name="robots" content="index,follow"/>
+  <meta name="robots" content="<%= seoIndexable ? 'index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1' : 'noindex,nofollow' %>"/>
   <meta property="og:type" content="website"/>
-  <meta property="og:title" content="<%= tenant.name %> — School Profile"/>
+  <meta property="og:site_name" content="Classic Academy"/>
+  <meta property="og:title" content="<%= seoTitle %>"/>
   <meta property="og:description" content="<%= seoDescription %>"/>
   <meta property="og:url" content="<%= seoCanonical %>"/>
-  <% if (seoImage) { %><meta property="og:image" content="<%= seoImage %>"/><% } %>
+  <% if (seoImage) { %><meta property="og:image" content="<%= seoImage %>"/><meta property="og:image:alt" content="<%= tenant.name %>"/><% } %>
   <meta name="twitter:card" content="<%= seoImage ? 'summary_large_image' : 'summary' %>"/>
-  <meta name="twitter:title" content="<%= tenant.name %> — School Profile"/>
+  <meta name="twitter:title" content="<%= seoTitle %>"/>
   <meta name="twitter:description" content="<%= seoDescription %>"/>
   <% if (seoImage) { %><meta name="twitter:image" content="<%= seoImage %>"/><% } %>
   <% if (seoBranding.logoUrl) { %>
@@ -31,30 +39,47 @@
   <% } else { %>
   <link rel="icon" href="data:,"/>
   <% } %>
-  <script type="application/ld+json"><%- JSON.stringify({
+  <% if (seoSettings.structuredDataEnabled !== false) { %>
+  <script nonce="<%= cspNonce %>" type="application/ld+json"><%- JSON.stringify({
     "@context": "https://schema.org",
-    "@type": "EducationalOrganization",
-    "name": tenant.name,
-    "description": seoDescription,
-    "url": seoCanonical,
-    ...(seoImage ? { "logo": seoImage } : {}),
-    ...(seoProfile.contact?.phone ? { "telephone": seoProfile.contact.phone } : {}),
-    ...(seoProfile.contact?.email ? { "email": seoProfile.contact.email } : {}),
-    ...((seoProfile.location?.city || seoProfile.location?.addressLine1) ? {
-      "address": {
-        "@type": "PostalAddress",
-        ...(seoProfile.location?.addressLine1 ? { "streetAddress": seoProfile.location.addressLine1 } : {}),
-        ...(seoProfile.location?.city ? { "addressLocality": seoProfile.location.city } : {}),
-        ...(seoProfile.location?.country ? { "addressCountry": seoProfile.location.country } : {}),
+    "@graph": [
+      {
+        "@type": "EducationalOrganization",
+        "@id": `${seoCanonical}#school`,
+        "name": tenant.name,
+        "description": seoDescription,
+        "url": seoCanonical,
+        ...(seoBranding.logoUrl ? { "logo": seoBranding.logoUrl } : {}),
+        ...(seoImage ? { "image": seoImage } : {}),
+        ...(seoProfile.contact?.phone ? { "telephone": seoProfile.contact.phone } : {}),
+        ...(seoProfile.contact?.email ? { "email": seoProfile.contact.email } : {}),
+        ...(seoSameAs.length ? { "sameAs": seoSameAs } : {}),
+        ...((seoProfile.location?.city || seoProfile.location?.addressLine1) ? {
+          "address": {
+            "@type": "PostalAddress",
+            ...(seoProfile.location?.addressLine1 ? { "streetAddress": seoProfile.location.addressLine1 } : {}),
+            ...(seoProfile.location?.city ? { "addressLocality": seoProfile.location.city } : {}),
+            ...(seoProfile.location?.country ? { "addressCountry": seoProfile.location.country } : {}),
+          },
+        } : {}),
       },
-    } : {}),
+      {
+        "@type":"BreadcrumbList",
+        "itemListElement":[
+          {"@type":"ListItem","position":1,"name":"Classic Academy","item":String(tenant?.mainSiteUrl || "") || seoCanonical},
+          {"@type":"ListItem","position":2,"name":"Schools","item":`${String(tenant?.mainSiteUrl || "").replace(/\/+$/, "")}/schools`},
+          {"@type":"ListItem","position":3,"name":tenant.name,"item":seoCanonical}
+        ]
+      }
+    ]
   }).replace(/</g, "\\u003c") %></script>
+  <% } %>
 
   <link rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
         crossorigin="anonymous" referrerpolicy="no-referrer"/>
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     @font-face{font-family:'PoppinsLocal';src:local('Poppins'),local('Inter'),local('Segoe UI')}
 
     :root{
@@ -649,6 +674,7 @@
       .cta-row{justify-content:center}
     }
   </style>
+  <link rel="stylesheet" href="/css/classic-motion.css">
 </head>
 
 <%
@@ -724,7 +750,7 @@
 
 <header class="header" id="siteHeader">
   <a href="<%= mainUrl("/") %>" class="brand" aria-label="Classic Academy Home">
-    <img class="brand-mark" src="<%= mainUrl("/img/academylogo.png") %>" alt="Classic Academy logo">
+    <img class="brand-mark" src="<%= mainUrl("/img/academylogo.png") %>" decoding="async" fetchpriority="high" width="396" height="415" alt="Classic Academy logo">
     <div class="brand-txt">
       <span class="brand-name">Classic Academy</span>
       <span class="brand-sub">School management + admissions</span>
@@ -759,7 +785,7 @@
       <div class="logo-wrap">
         <div class="logo">
           <% if (b.logoUrl) { %>
-            <img src="<%= b.logoUrl %>" alt="Logo" style="width:100%;height:100%;border-radius:14px;object-fit:cover"/>
+            <img src="<%= b.logoUrl %>" alt="Logo" decoding="async" fetchpriority="high" style="width:100%;height:100%;border-radius:14px;object-fit:cover"/>
           <% } else { %>
             <%= (tenant.name || 'S').split(' ').map(x=>x[0]).slice(0,2).join('').toUpperCase() %>
           <% } %>
@@ -1011,7 +1037,7 @@
       <div class="gallery" id="galleryGrid">
         <% gallery.slice(0,12).forEach(img => { %>
           <button class="g-item" data-src="<%= img.url %>" aria-label="Open photo">
-            <img alt="Gallery" src="<%= img.url %>">
+            <img alt="Gallery" src="<%= img.url %>" loading="lazy" decoding="async">
           </button>
         <% }) %>
         <% if (!gallery.length) { %><div class="muted">No gallery images yet.</div><% } %>
@@ -1228,56 +1254,11 @@
   </section>
 </main>
 
-<footer class="footer">
-  <div>
-    <h4>About Us</h4>
-    <p>We are excited to introduce our upcoming Classic Academy Plans, where schools will be categorized</p>
-    <a href="https://play.google.com/store" target="_blank" rel="noopener">
-      <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg"
-        style="height: 50px; width: 150px" alt="Google Play">
-    </a>
-    <a href="https://apps.apple.com/" target="_blank" rel="noopener">
-      <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg"
-        alt="Download on the App Store" style="height: 50px;">
-    </a>
-  </div>
-
-  <div>
-    <h4>Learn about our mission</h4>
-    <ul>
-      <li><a href="<%= mainUrl("/about") %>">Our Story</a></li>
-      <li><a href="<%= mainUrl("/features") %>">What We Offer</a></li>
-      <li><a href="<%= mainUrl("/plan?plan=standard") %>">Plans &amp; Pricing</a></li>
-      <li><a href="<%= mainUrl("/blog?slug=increase-admissions") %>">Press resources</a></li>
-      <li><a href="<%= mainUrl("/careers") %>">Careers</a></li>
-    </ul>
-  </div>
-
-  <div>
-    <h4>Get help with your account</h4>
-    <ul>
-      <li><a href="<%= mainUrl("/contact") %>">Customer Support</a></li>
-      <li><a href="<%= mainUrl("/schedule") %>">Book a Demo</a></li>
-      <li><a href="<%= mainUrl("/faq") %>">FAQ</a></li>
-      <li><a href="<%= mainUrl("/privacy") %>">Privacy Policy</a></li>
-      <li><a href="<%= mainUrl("/terms") %>">Terms</a></li>
-    </ul>
-  </div>
-
-  <div>
-    <h4>Join our school community</h4>
-    <ul>
-      <li><a href="<%= mainUrl("/schools") %>">Find Schools</a></li>
-      <li><a href="<%= mainUrl("/admissions") %>">Admissions</a></li>
-      <li><a href="<%= mainUrl("/search") %>">Search</a></li>
-      <li><a href="<%= mainUrl("/blog?slug=increase-admissions") %>">Blog</a></li>
-      <li><a href="https://chat.whatsapp.com/HRGoS3fMZoZGgXbz1HDw6a?mode=gi_t" target="_blank" rel="noopener">Join whatsapp group</a></li>
-    </ul>
-  </div>
-</footer>
+  <%- include("../partials/footer") %>
 
 <button id="toTopBtn" aria-label="Scroll to top" type="button">&uarr;</button>
 
 <script defer src="/js/school-profile-public.js?v=20260421profileNav1"></script>
+  <script src="/js/classic-motion.js" defer></script>
 </body>
 </html>

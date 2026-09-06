@@ -9,7 +9,7 @@
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
         crossorigin="anonymous" referrerpolicy="no-referrer"/>
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     :root{
       --blue:#0a3d62; --blue2:#083454; --accent:#0a6fbf;
       --bg:#f4f8ff; --card:#fff; --muted:#6b7280;
@@ -77,6 +77,7 @@
       table{min-width:680px}
     }
   </style>
+  <link rel="stylesheet" href="/css/tenant-controls.css">
 </head>
 <body data-portal="tenant">
 
@@ -212,7 +213,7 @@
   </section>
 </div>
 
-<script>
+<script nonce="<%= cspNonce %>">
   const fmt = (n)=>{ try{return new Intl.NumberFormat('en-US').format(n);}catch(e){return String(n);} };
 
   // Demo data (later backend will fill this)
@@ -301,6 +302,7 @@
   render();
 </script>
 
+  <script src="/js/tenant-workspace-motion.js" defer></script>
 </body>
 </html>
 

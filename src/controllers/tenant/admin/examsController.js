@@ -10,6 +10,7 @@ const {
   assertEditAllowed,
   assertHardDeleteAllowed,
   countExamResults,
+  countExamResultsMany,
   assertSubjectMatchesScope,
   publishedScheduleChanged,
   notifyTargetStudents,
@@ -316,7 +317,17 @@ module.exports = {
         ];
       }
 
-      const total = await Exam.countDocuments(filter);
+      // Catalog/KPI reads are independent of pagination and can run while the
+      // count needed to clamp the page is in flight. This removes the previous
+      // seven-query serial waterfall from the Exams screen.
+      const [total, classes, subjects, staffList, kpis, scopeLists] = await Promise.all([
+        Exam.countDocuments(filter),
+        Class.find({}).sort({ name: 1 }).select("name code classLevel academicYear term").lean(),
+        Subject.find({}).sort({ title: 1, code: 1 }).select("title code shortTitle classId className sectionId sectionName streamId streamName academicYear term").lean(),
+        Staff.find({}).sort({ fullName: 1, name: 1 }).select("fullName name email role").lean(),
+        buildKpis(Exam, filter),
+        loadAcademicScopeLists(req),
+      ]);
       const totalPages = Math.max(Math.ceil(total / perPage), 1);
       const safePage = Math.min(page, totalPages);
 
@@ -330,24 +341,6 @@ module.exports = {
         .skip((safePage - 1) * perPage)
         .limit(perPage)
         .lean();
-
-      const classes = await Class.find({})
-        .sort({ name: 1 })
-        .select("name code classLevel academicYear term")
-        .lean();
-
-      const subjects = await Subject.find({})
-        .sort({ title: 1, code: 1 })
-        .select("title code shortTitle classId className sectionId sectionName streamId streamName academicYear term")
-        .lean();
-
-      const staffList = await Staff.find({})
-        .sort({ fullName: 1, name: 1 })
-        .select("fullName name email role")
-        .lean();
-
-      const kpis = await buildKpis(Exam, filter);
-      const scopeLists = await loadAcademicScopeLists(req);
 
       return res.render("tenant/exams/index", {
         tenant: req.tenant || null,
@@ -562,8 +555,7 @@ module.exports = {
       const exams = await Exam.find({ _id: { $in: ids } }).lean();
       if (exams.length !== ids.length) throw new Error("One or more selected exams no longer exist.");
 
-      const counts = new Map();
-      for (const exam of exams) counts.set(String(exam._id), await countExamResults(req.models, exam._id));
+      const counts = await countExamResultsMany(req.models, exams);
 
       for (const exam of exams) {
         const resultCount = counts.get(String(exam._id)) || 0;

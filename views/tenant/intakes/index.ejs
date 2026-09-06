@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
@@ -408,6 +408,7 @@
       }
     }
   </style>
+  <link rel="stylesheet" href="/css/tenant-controls.css">
 </head>
 <body data-portal="tenant">
 <%
@@ -932,6 +933,7 @@
 
   <script src="/js/navbar.js"></script>
   <script src="/js/intakes-index.js"></script>
+  <script src="/js/tenant-workspace-motion.js" defer></script>
 </body>
 </html>
 

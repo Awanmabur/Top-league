@@ -4,12 +4,15 @@
   <meta charset="utf-8" />
   <title>Apply Now — <%= (tenant && tenant.name) ? tenant.name : "Classic Academy" %></title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="robots" content="noindex,nofollow,noarchive" />
 
   <link rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
         crossorigin="anonymous" referrerpolicy="no-referrer"/>
 
-  <style>
+    <link rel="stylesheet" href="/css/tenant-public-polish.css">
+  <link rel="stylesheet" href="/css/classic-motion.css">
+<style nonce="<%= cspNonce %>">
     :root{
       --blue:#0a3d62; --blue2:#083454; --accent:#0a6fbf;
       --bg:#f4f8ff; --card:#fff; --muted:#6b7280; --text:#0f172a;
@@ -157,9 +160,11 @@
     .hidden{display:none !important;}
     .section-select{min-height:44px}
   </style>
+  <link rel="stylesheet" href="/css/tenant-controls.css">
 </head>
 
 <body>
+<%- include("../partials/site-nav") %>
 <%
   const _tenant = (typeof tenant !== "undefined" && tenant) ? tenant : null;
   const _errors = (typeof errors !== "undefined" && errors) ? errors : null;
@@ -217,26 +222,7 @@
 %>
 
 <div class="wrap">
-
-  <header class="top">
-    <div class="top-inner">
-      <a class="brand" href="/">
-        <div class="logo">CA</div>
-        <div>
-          <h1><%= (_tenant && _tenant.name) ? _tenant.name : "Classic Academy" %></h1>
-          <div class="sub">Student Application Portal</div>
-        </div>
-      </a>
-
-      <div class="top-actions">
-        <a class="btn ghost small" href="/login"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
-        <a class="btn light small" href="/admissions/status"><i class="fa-solid fa-magnifying-glass"></i> Check Status</a>
-        <a class="btn primary small" href="/"><i class="fa-solid fa-house"></i> Back to Main Site</a>
-      </div>
-    </div>
-  </header>
-
-  <main class="container">
+<main class="container">
 
     <section class="card">
       <div class="card-head">
@@ -656,5 +642,10 @@
 <input type="hidden" id="applyActionUrl" value="<%= applyActionValue %>">
 <input type="hidden" id="uploadDraftUrl" value="/admissions/upload-draft">
 <script src="/js/apply.js" defer></script>
+
+<%- include("../partials/site-footer") %>
+  <script src="/js/tenant-public.js" defer></script>
+  <script src="/js/classic-motion.js" defer></script>
+  <script src="/js/tenant-workspace-motion.js" defer></script>
 </body>
 </html>

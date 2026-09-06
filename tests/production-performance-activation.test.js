@@ -135,11 +135,15 @@ test('production application uses distinct Redis stores for platform and tenant 
   assert.match(src, /redisClient\?\.isReady/);
 });
 
-test('global, tenant-auth, inquiry, review and booking limits use shared Redis stores when configured', () => {
-  assert.match(read('src/index.js'), /RedisRateLimitStore/);
+test('abuse-sensitive tenant auth inquiry review and booking limits use shared Redis while broad shaping stays local', () => {
+  const index = read('src/index.js');
+  assert.match(index, /app\.use\(\s*rateLimit\(\{/);
+  assert.doesNotMatch(index, /classic-academy:rl:global/);
   const tenant = read('src/middleware/tenant/rateLimiters.js');
+  assert.match(tenant, /redisRateLimitOptions/);
   for (const marker of ['public-inquiry','public-review','tenant-auth']) assert.ok(tenant.includes(marker));
   const booking = read('src/controllers/platform/bookingController.js');
+  assert.match(booking, /redisRateLimitOptions/);
   for (const marker of ['booking-api','booking-submit']) assert.ok(booking.includes(marker));
 });
 

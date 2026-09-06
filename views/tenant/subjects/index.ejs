@@ -8,7 +8,7 @@
         crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .input,.select,.textarea,.view-input{padding:10px 12px;border-radius:12px;border:1px solid rgba(13,64,96,.16);background:#fff;outline:none}
@@ -54,6 +54,7 @@
     @media (max-width:520px){.toolbar .left,.toolbar .right{width:100%}.toolbar .left>*,.toolbar .right>*{max-width:100%}table{min-width:1780px}}
     @media print{body *{visibility:hidden !important}#printArea, #printArea *{visibility:visible !important}#printArea{position:absolute;inset:0;background:#fff;padding:20px}}
   </style>
+  <link rel="stylesheet" href="/css/tenant-controls.css">
 </head>
 <body data-portal="tenant">
   <div class="app">
@@ -325,6 +326,7 @@
   <script src="/js/navbar.js"></script>
   <script src="/js/academic-selector.js"></script>
   <script src="/js/subjects.js"></script>
+  <script src="/js/tenant-workspace-motion.js" defer></script>
 </body>
 </html>
 

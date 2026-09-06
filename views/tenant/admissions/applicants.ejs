@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
@@ -389,6 +389,7 @@
       table{min-width:unset}
     }
   </style>
+  <link rel="stylesheet" href="/css/tenant-controls.css">
 </head>
 <body data-portal="tenant">
   <div class="app">
@@ -699,6 +700,7 @@
 
   <script src="/js/navbar.js" defer></script>
   <script src="/js/admin-admissions-applicants.js" defer></script>
+  <script src="/js/tenant-workspace-motion.js" defer></script>
 </body>
 </html>
 

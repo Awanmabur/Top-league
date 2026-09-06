@@ -238,7 +238,15 @@ module.exports = {
         filter.status = status;
       }
 
-      const total = await Parent.countDocuments(filter);
+      const kpiFilter = { ...filter };
+      delete kpiFilter.status;
+      const [total, statusRows] = await Promise.all([
+        Parent.countDocuments(filter),
+        Parent.aggregate([
+          { $match: kpiFilter },
+          { $group: { _id: "$status", count: { $sum: 1 } } },
+        ]),
+      ]);
       const totalPages = Math.max(Math.ceil(total / perPage), 1);
       const safePage = Math.min(page, totalPages);
 
@@ -249,12 +257,8 @@ module.exports = {
         .limit(perPage)
         .lean();
 
-      const kpis = {
-        total,
-        active: await Parent.countDocuments({ ...filter, status: "active" }),
-        onHold: await Parent.countDocuments({ ...filter, status: "on_hold" }),
-        archived: await Parent.countDocuments({ ...filter, status: "archived" }),
-      };
+      const statusCounts = Object.fromEntries(statusRows.map((row) => [String(row._id || ""), Number(row.count || 0)]));
+      const kpis = { total, active: statusCounts.active || 0, onHold: statusCounts.on_hold || 0, archived: statusCounts.archived || 0 };
 
       return res.render("tenant/parents/index", {
         tenant: req.tenant || null,
@@ -495,25 +499,25 @@ module.exports = {
       const { Parent, User, InviteToken } = req.models || {};
       if (!Parent || !User || !InviteToken) {
         req.flash?.("error", "Tenant models missing.");
-        return res.redirect("back");
+        return res.redirect("/admin/parents");
       }
 
       const id = cleanStr(req.params.id, 80);
       if (!isObjId(id)) {
         req.flash?.("error", "Invalid parent id.");
-        return res.redirect("back");
+        return res.redirect("/admin/parents");
       }
 
       const parent = await Parent.findOne({ _id: id, isDeleted: { $ne: true }, status: { $in: ['active', 'on_hold'] } }).lean();
       if (!parent) {
         req.flash?.("error", "Parent not found.");
-        return res.redirect("back");
+        return res.redirect("/admin/parents");
       }
 
       const user = await findOrCreateParentUser({ req, ParentDoc: parent, User });
       if (!user) {
         req.flash?.("error", "Parent user not found and cannot be created (missing email).");
-        return res.redirect("back");
+        return res.redirect("/admin/parents");
       }
 
       const force = String(req.query.force || req.body.force || "") === "1";
@@ -524,7 +528,7 @@ module.exports = {
           "error",
           "Parent already set a password. Use forgot password or resend with force.",
         );
-        return res.redirect("back");
+        return res.redirect("/admin/parents");
       }
 
       const kids = new Set((user.childrenStudentIds || []).map(String));
@@ -565,11 +569,11 @@ module.exports = {
       });
 
       req.flash?.("success", `Setup link sent to parent: ${user.email}`);
-      return res.redirect("back");
+      return res.redirect("/admin/parents");
     } catch (err) {
       console.error("RESEND PARENT SETUP ERROR:", err);
       req.flash?.("error", err.message || "Failed to resend setup link.");
-      return res.redirect("back");
+      return res.redirect("/admin/parents");
     }
   },
 

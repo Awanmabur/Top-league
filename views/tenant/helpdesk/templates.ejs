@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
-  <style>
+  <style nonce="<%= cspNonce %>">
     .grid{display:grid;grid-template-columns:minmax(320px,.8fr) minmax(0,1.2fr);gap:12px}
     .form-grid{display:grid;gap:12px}.field label{display:block;font-size:12px;color:#6b7280;margin-bottom:6px}
     .input,.select,.textarea{width:100%;padding:10px 12px;border-radius:12px;border:1px solid rgba(13,64,96,.16);background:#fff;outline:none}
@@ -16,6 +16,7 @@
     .flash{padding:12px 14px;border-radius:12px;font-weight:700;margin-bottom:10px}.ok{background:#ecfdf3;color:#166534;border:1px solid #bbf7d0}.bad{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
     @media(max-width:900px){.grid{grid-template-columns:1fr}}
   </style>
+  <link rel="stylesheet" href="/css/tenant-controls.css">
 </head>
 <body data-portal="tenant">
   <div class="app">
@@ -63,7 +64,7 @@
                     <div class="section-title" style="font-size:15px;"><%= t.name %></div>
                     <div class="meta"><%= t.category %> • <%= t.priority %><% if (t.subject) { %> • <%= t.subject %><% } %></div>
                   </div>
-                  <form method="POST" action="/admin/helpdesk/templates/<%= t._id %>/delete" onsubmit="return confirm('Remove this helpdesk template?');">
+                  <form method="POST" action="/admin/helpdesk/templates/<%= t._id %>/delete" data-confirm="Remove this helpdesk template?">
                     <% if (csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% } %>
                     <button class="btn light" type="submit"><i class="fa-solid fa-trash"></i></button>
                   </form>
@@ -77,5 +78,6 @@
     </main>
   </div>
   <script src="/js/navbar.js"></script>
+  <script src="/js/tenant-workspace-motion.js" defer></script>
 </body>
 </html>

@@ -88,12 +88,21 @@ test('index reconciler never drops an old index when duplicate data would make t
   assert.deepEqual(calls, []);
 });
 
-test('development request state avoids unstable Redis while production remains Redis-backed', () => {
+test('development request state avoids unstable Redis while production sessions and abuse limits remain Redis-backed', () => {
   const index = read('src/index.js');
   const factory = read('src/services/rateLimitStoreFactory.js');
+  const redis = read('src/config/redis.js');
   assert.match(index, /useRedisSessions = Boolean\(redisClient\) && \(isProd \|\| process\.env\.USE_REDIS_SESSIONS === "1"\)/);
-  assert.match(index, /useRedisRateLimits = Boolean\(redisClient\) && \(isProd \|\| process\.env\.USE_REDIS_RATE_LIMITS === "1"\)/);
+  assert.doesNotMatch(index, /useRedisRateLimits\s*=/);
+  assert.match(index, /High-risk auth\/booking\/inquiry\/review limiters stay/);
   assert.match(factory, /process\.env\.NODE_ENV === "production" \|\| process\.env\.USE_REDIS_RATE_LIMITS === "1"/);
+  assert.match(redis, /if \(String\(env\.NODE_ENV \|\| ""\).*=== "production"\) return true/);
+  assert.match(redis, /env\.USE_REDIS_SESSIONS/);
+  assert.match(redis, /env\.USE_REDIS_RATE_LIMITS/);
+  assert.match(redis, /env\.USE_REDIS_CACHE/);
+  assert.match(redis, /roles = \["session", "rate", "cache"\]\.filter\(\(role\) => isRedisRoleEnabled\(role\)\)/);
+  assert.match(index, /disabled in development/);
+  assert.match(index, /degraded \(\$\{readyRoles\.length\}\/\$\{enabledRoles\.length\} roles connected\)/);
 });
 
 test('tenant cache misses do not wait for best-effort Redis population and reads skip unhealthy Redis', () => {
@@ -109,6 +118,69 @@ test('Redis client schedules bounded background reconnects after socket closure'
   assert.match(redis, /reconnectMaxDelayMs/);
   assert.match(redis, /this\._scheduleReconnect\(\);/);
   assert.match(redis, /message === lastMessage && now - lastLoggedAt < 5000/);
+});
+
+
+test('Redis roles are off by default in development and mandatory in production', () => {
+  const { isRedisRoleEnabled } = require('../src/config/redis');
+  const base = { REDIS_URL: 'rediss://example.test:6380/0', NODE_ENV: 'development' };
+  assert.equal(isRedisRoleEnabled('session', base), false);
+  assert.equal(isRedisRoleEnabled('rate', base), false);
+  assert.equal(isRedisRoleEnabled('cache', base), false);
+  assert.equal(isRedisRoleEnabled('session', { ...base, USE_REDIS_SESSIONS: '1' }), true);
+  assert.equal(isRedisRoleEnabled('rate', { ...base, USE_REDIS_RATE_LIMITS: '1' }), true);
+  assert.equal(isRedisRoleEnabled('cache', { ...base, USE_REDIS_CACHE: '1' }), true);
+  assert.equal(isRedisRoleEnabled('session', { ...base, NODE_ENV: 'production' }), true);
+  assert.equal(isRedisRoleEnabled('rate', { ...base, NODE_ENV: 'production' }), true);
+  assert.equal(isRedisRoleEnabled('cache', { ...base, NODE_ENV: 'production' }), true);
+  assert.equal(isRedisRoleEnabled('cache', { NODE_ENV: 'production' }), false);
+});
+
+
+test('development Redis bootstrap performs no network work unless a role is explicitly enabled', async () => {
+  const redisModule = require('../src/config/redis');
+  const keys = ['REDIS_URL','NODE_ENV','USE_REDIS_SESSIONS','USE_REDIS_RATE_LIMITS','USE_REDIS_CACHE'];
+  const before = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
+  try {
+    process.env.REDIS_URL = 'redis://127.0.0.1:1/0';
+    process.env.NODE_ENV = 'development';
+    delete process.env.USE_REDIS_SESSIONS;
+    delete process.env.USE_REDIS_RATE_LIMITS;
+    delete process.env.USE_REDIS_CACHE;
+    redisModule.resetRedisClientForTests();
+    assert.equal(await redisModule.connectRedis(), null);
+  } finally {
+    for (const [key, value] of Object.entries(before)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+    redisModule.resetRedisClientForTests();
+  }
+});
+
+test('cache services cannot reconnect Redis when the cache role is disabled', () => {
+  for (const file of [
+    'src/services/platformGuardCache.js',
+    'src/services/platformPublicCacheService.js',
+    'src/services/platformTenantAccessCache.js',
+  ]) {
+    const src = read(file);
+    assert.match(src, /isRedisRoleEnabled\("cache"\) \? getRedisClient\("cache"\) : null/);
+    assert.doesNotMatch(src, /const client = getRedisClient\("cache"\)/);
+  }
+});
+
+test('Redis heartbeat is bounded and cleaned up on close', () => {
+  const redis = read('src/config/redis.js');
+  assert.match(redis, /REDIS_HEARTBEAT_INTERVAL_MS \|\| 30000/);
+  assert.match(redis, /this\._startHeartbeat\(\)/);
+  assert.match(redis, /this\._stopHeartbeat\(\)/);
+  assert.match(redis, /if \(!this\.isReady\(\) \|\| this\.pending\.length\) return/);
+});
+
+test('production readiness compatibility command is packaged', () => {
+  const pkg = JSON.parse(read('package.json'));
+  assert.equal(pkg.scripts['check:production-readiness'], 'node scripts/release-readiness.js');
 });
 
 test('dashboard launches detail analytics before waiting for KPI batch', () => {

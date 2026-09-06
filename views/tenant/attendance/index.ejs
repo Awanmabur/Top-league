@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .input,.select,.textarea,.view-input{padding:10px 12px;border-radius:12px;border:1px solid rgba(13,64,96,.16);background:#fff;outline:none}
@@ -93,6 +93,7 @@
     @media (max-width: 520px){.toolbar .left,.toolbar .right{width:100%}.toolbar .left > *,.toolbar .right > *{max-width:100%}table{min-width:1500px}}
     @media print{body *{visibility:hidden !important}#printArea, #printArea *{visibility:visible !important}#printArea{position:absolute;inset:0;background:#fff;padding:20px}}
   </style>
+  <link rel="stylesheet" href="/css/tenant-controls.css">
 </head>
 <body data-portal="tenant">
   <div class="app">
@@ -339,7 +340,7 @@
                 <div class="strong">Import CSV</div>
                 <div class="muted">Bulk upload attendance</div>
               </div>
-              <button class="btn-xs" id="btnImportSide" type="button" onclick="document.getElementById('btnImport').click()"><i class="fa-solid fa-file-import"></i></button>
+              <button class="btn-xs" id="btnImportSide" type="button" data-click-target="btnImport"><i class="fa-solid fa-file-import"></i></button>
             </div>
           </div>
 
@@ -643,5 +644,6 @@
   <textarea id="studentsData" class="json-data" aria-hidden="true"><%- JSON.stringify(studentOptions || students || []).replace(/&/g, "\\u0026").replace(/</g, "\\u003c").replace(/>/g, "\\u003e") %></textarea>
   <script src="/js/academic-selector.js"></script>
   <script src="/js/attendance.js"></script>
+  <script src="/js/tenant-workspace-motion.js" defer></script>
 </body>
 </html>

@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
@@ -479,6 +479,7 @@
       }
     }
   </style>
+  <link rel="stylesheet" href="/css/tenant-controls.css">
 </head>
 <body data-portal="tenant">
   <div class="app">
@@ -771,7 +772,7 @@
                   <div class="strong">Add Result</div>
                   <div class="muted">Open manual result entry</div>
                 </div>
-                <button class="btn-xs" type="button" onclick="document.getElementById('btnCreate').click()">
+                <button class="btn-xs" type="button" data-click-target="btnCreate">
                   <i class="fa-solid fa-plus"></i>
                 </button>
               </div>
@@ -781,7 +782,7 @@
                   <div class="strong">Import CSV</div>
                   <div class="muted">Bulk upload student scores</div>
                 </div>
-                <button class="btn-xs" type="button" onclick="document.getElementById('btnImport').click()">
+                <button class="btn-xs" type="button" data-click-target="btnImport">
                   <i class="fa-solid fa-file-import"></i>
                 </button>
               </div>
@@ -1098,6 +1099,7 @@
   <script src="/js/navbar.js"></script>
   <script src="/js/academic-selector.js"></script>
   <script src="/js/results.js"></script>
+  <script src="/js/tenant-workspace-motion.js" defer></script>
 </body>
 </html>
 

@@ -95,7 +95,8 @@ module.exports = {
         meta, totals, breakdown, recentInvoices, paymentHistory, recentReceipts, filters, periodOptions,
       });
     } catch (err) {
-      return res.status(500).send("Failed to load finance: " + err.message);
+      console.error("Student finance load error:", err);
+      return res.status(500).send("Failed to load finance.");
     }
   },
 

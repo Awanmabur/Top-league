@@ -10,7 +10,7 @@
   <!-- Shared CSS (your project) -->
   <link rel="stylesheet" href="./public/css/student-portal.css"/>
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     /* helpers only */
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
@@ -89,6 +89,7 @@
     }
     @media(max-width:560px){ .grid-4{grid-template-columns:1fr} }
   </style>
+  <link rel="stylesheet" href="/css/tenant-controls.css">
 </head>
 <body data-portal="tenant">
 
@@ -306,7 +307,7 @@
   <div class="modal">
     <div class="modal-header">
       <div class="modal-title" id="mJobTitle">Create Job</div>
-      <button class="btn-xs" onclick="closeModal('mJob')"><i class="fa-solid fa-xmark"></i></button>
+      <button class="btn-xs" data-close-target="mJob"><i class="fa-solid fa-xmark"></i></button>
     </div>
     <div class="modal-body">
       <div class="form-grid">
@@ -360,7 +361,7 @@
       <input type="hidden" id="jId">
     </div>
     <div class="modal-footer">
-      <button class="btn light" onclick="closeModal('mJob')">Cancel</button>
+      <button class="btn light" data-close-target="mJob">Cancel</button>
       <button class="btn primary" id="saveJobBtn"><i class="fa-solid fa-floppy-disk"></i> Save</button>
     </div>
   </div>
@@ -371,7 +372,7 @@
   <div class="modal" style="width:min(900px,100%)">
     <div class="modal-header">
       <div class="modal-title" id="mAppTitle">Applicant Detail</div>
-      <button class="btn-xs" onclick="closeModal('mApp')"><i class="fa-solid fa-xmark"></i></button>
+      <button class="btn-xs" data-close-target="mApp"><i class="fa-solid fa-xmark"></i></button>
     </div>
     <div class="modal-body">
       <div class="form-grid" style="grid-template-columns:repeat(2,1fr);">
@@ -409,7 +410,7 @@
       <input type="hidden" id="aId">
     </div>
     <div class="modal-footer">
-      <button class="btn light" onclick="closeModal('mApp')">Cancel</button>
+      <button class="btn light" data-close-target="mApp">Cancel</button>
       <button class="btn primary" id="saveAppBtn"><i class="fa-solid fa-check"></i> Save Changes</button>
     </div>
   </div>
@@ -420,7 +421,7 @@
   <div class="modal" style="width:min(760px,100%)">
     <div class="modal-header">
       <div class="modal-title">Bulk Job Action</div>
-      <button class="btn-xs" onclick="closeModal('mBulk')"><i class="fa-solid fa-xmark"></i></button>
+      <button class="btn-xs" data-close-target="mBulk"><i class="fa-solid fa-xmark"></i></button>
     </div>
     <div class="modal-body">
       <div class="note">Apply changes to selected jobs.</div>
@@ -442,13 +443,13 @@
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn light" onclick="closeModal('mBulk')">Cancel</button>
+      <button class="btn light" data-close-target="mBulk">Cancel</button>
       <button class="btn primary" id="applyBulk"><i class="fa-solid fa-check"></i> Apply</button>
     </div>
   </div>
 </div>
 
-<script>
+<script nonce="<%= cspNonce %>">
   const $ = (id)=>document.getElementById(id);
   function openModal(id){ $(id).classList.add('show'); }
   function closeModal(id){ $(id).classList.remove('show'); }
@@ -847,6 +848,8 @@
   render();
 </script>
 
+<script defer src="/js/csp-actions.js"></script>
+  <script src="/js/tenant-workspace-motion.js" defer></script>
 </body>
 </html>
 

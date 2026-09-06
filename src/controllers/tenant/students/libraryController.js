@@ -84,7 +84,8 @@ exports.library = async (req, res) => {
       holds, policy,
     });
   } catch (err) {
-    return res.status(500).send("Failed to load library: " + err.message);
+    console.error("Student library error:", err);
+    return res.status(500).send("Failed to load library.");
   }
 };
 

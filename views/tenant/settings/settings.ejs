@@ -4,7 +4,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Admissions Settings — Classic Academy</title>
-<style>
+<style nonce="<%= cspNonce %>">
   /* Simple Poppins-like fallback */
   @font-face{font-family:PoppinsLocal;src:local('Poppins'), local('Segoe UI');}
   :root{
@@ -79,6 +79,7 @@
     .header{flex-direction:column;align-items:flex-start;gap:8px}
   }
 </style>
+  <link rel="stylesheet" href="/css/tenant-controls.css">
 </head>
 <body data-portal="tenant">
 
@@ -91,8 +92,8 @@
     </div>
 
     <div style="display:flex;gap:8px;align-items:center">
-      <button class="btn light" onclick="previewPortal()">Preview Portal</button>
-      <button class="btn" onclick="saveAll()">Save Settings</button>
+      <button class="btn light" data-settings-action="previewPortal">Preview Portal</button>
+      <button class="btn" data-settings-action="saveAll">Save Settings</button>
     </div>
   </div>
 
@@ -155,8 +156,8 @@
             </div>
 
             <div style="display:flex;gap:8px">
-              <button class="btn" onclick="addIntake()">Add Intake</button>
-              <button class="muted-btn" onclick="resetIntakeForm()">Reset</button>
+              <button class="btn" data-settings-action="addIntake">Add Intake</button>
+              <button class="muted-btn" data-settings-action="resetIntakeForm">Reset</button>
             </div>
 
             <div class="note">Tip: set intake to <strong>Open</strong> to make application form visible to applicants.</div>
@@ -185,7 +186,7 @@
           <div class="repeat-row">
             <input type="text" id="docName" placeholder="e.g. High School Certificate"/>
             <select id="docRequired"><option value="required">Required</option><option value="optional">Optional</option></select>
-            <button class="btn light" onclick="addDocument()">Add</button>
+            <button class="btn light" data-settings-action="addDocument">Add</button>
           </div>
           <div class="note">You can later map documents to specific programs and set custom instructions.</div>
         </div>
@@ -226,8 +227,8 @@
           </div>
 
           <div style="display:flex;gap:8px">
-            <button class="btn" onclick="saveEligibility()">Save</button>
-            <button class="muted-btn" onclick="resetEligibility()">Reset</button>
+            <button class="btn" data-settings-action="saveEligibility">Save</button>
+            <button class="muted-btn" data-settings-action="resetEligibility">Reset</button>
           </div>
         </div>
 
@@ -263,7 +264,7 @@
           <input type="number" id="scoreWeight" placeholder="Weight" style="width:100px"/>
           <input type="number" id="scoreMin" placeholder="Min" style="width:90px"/>
           <input type="number" id="scoreMax" placeholder="Max" style="width:90px"/>
-          <button class="btn light" onclick="addScoring()">Add</button>
+          <button class="btn light" data-settings-action="addScoring">Add</button>
         </div>
 
         <div class="note" id="weightNote">Total weight must sum to <strong>100%</strong>. Current total: <strong id="weightTotal">0</strong>%</div>
@@ -294,8 +295,8 @@
         </div>
 
         <div style="display:flex;gap:8px">
-          <button class="btn" onclick="saveDeadlines()">Save Deadlines</button>
-          <button class="muted-btn" onclick="clearDeadlines()">Clear</button>
+          <button class="btn" data-settings-action="saveDeadlines">Save Deadlines</button>
+          <button class="muted-btn" data-settings-action="clearDeadlines">Clear</button>
         </div>
 
         <div class="note">You can enable automatic closure of intake once the close date passes (settings in Intake Management).</div>
@@ -340,8 +341,8 @@
           </div>
 
           <div style="display:flex;gap:8px">
-            <button class="btn" onclick="saveFees()">Save Fees</button>
-            <button class="muted-btn" onclick="resetFees()">Reset</button>
+            <button class="btn" data-settings-action="saveFees">Save Fees</button>
+            <button class="muted-btn" data-settings-action="resetFees">Reset</button>
           </div>
         </div>
 
@@ -367,7 +368,7 @@
       <div style="margin-top:12px" class="grid-2">
         <div>
           <label>Choose Template</label>
-          <select id="templateSelect" onchange="loadTemplate()">
+          <select id="templateSelect" data-settings-change="loadTemplate">
             <option value="confirmation">Application Confirmation</option>
             <option value="acceptance">Acceptance Letter</option>
             <option value="rejection">Rejection Letter</option>
@@ -386,8 +387,8 @@
           </div>
 
           <div style="display:flex;gap:8px">
-            <button class="btn" onclick="saveTemplate()">Save Template</button>
-            <button class="muted-btn" onclick="resetTemplate()">Reset</button>
+            <button class="btn" data-settings-action="saveTemplate">Save Template</button>
+            <button class="muted-btn" data-settings-action="resetTemplate">Reset</button>
           </div>
         </div>
 
@@ -417,8 +418,8 @@
         </div>
 
         <div style="display:flex;gap:8px">
-          <button class="btn" onclick="savePortalContent()">Save Content</button>
-          <button class="muted-btn" onclick="resetPortalContent()">Reset</button>
+          <button class="btn" data-settings-action="savePortalContent">Save Content</button>
+          <button class="muted-btn" data-settings-action="resetPortalContent">Reset</button>
         </div>
       </div>
     </section>
@@ -449,7 +450,7 @@
               <option>Senior Reviewer</option>
               <option>Head of Admissions</option>
             </select>
-            <button class="btn light" onclick="addReviewer()">Add</button>
+            <button class="btn light" data-settings-action="addReviewer">Add</button>
           </div>
           <div class="note">Invite will be sent to the reviewer email once saved.</div>
         </div>
@@ -481,7 +482,7 @@
               <option value="checkbox">Checkbox</option>
             </select>
             <select id="cfRequired"><option value="required">Required</option><option value="optional">Optional</option></select>
-            <button class="btn light" onclick="addCustomField()">Add</button>
+            <button class="btn light" data-settings-action="addCustomField">Add</button>
           </div>
           <div class="note">After adding, map this field to a program if needed.</div>
         </div>
@@ -492,13 +493,13 @@
 
   <!-- bottom actions -->
   <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:8px">
-    <button class="muted-btn" onclick="resetAll()">Reset Changes</button>
-    <button class="btn" onclick="saveAll()">Save All Settings</button>
+    <button class="muted-btn" data-settings-action="resetAll">Reset Changes</button>
+    <button class="btn" data-settings-action="saveAll">Save All Settings</button>
   </div>
 
 </div>
 
-<script>
+<script nonce="<%= cspNonce %>">
 /* Minimal JS: tabs + repeatable lists + weight validation + simple storage (in-memory) */
 
 /* TAB LOGIC */
@@ -540,41 +541,45 @@ const MOCK = {
 };
 
 /* UTIL: render functions */
+function escapeHtml(value){
+  return String(value ?? '').replace(/[&<>"']/g, (ch) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+function escapeAttr(value){ return escapeHtml(value); }
 function renderIntakes(){
   const tbody = document.getElementById('intakeList'); tbody.innerHTML='';
   MOCK.intakes.forEach(i=>{
     tbody.insertAdjacentHTML('beforeend',`<tr>
-      <td><strong>${i.name}</strong></td>
-      <td>${i.start}</td>
-      <td>${i.end}</td>
-      <td><span class="badge">${i.status}</span></td>
-      <td><button class="muted-btn" onclick="editIntake(${i.id})">Edit</button> <button class="muted-btn" onclick="deleteIntake(${i.id})">Delete</button></td>
+      <td><strong>${escapeHtml(i.name)}</strong></td>
+      <td>${escapeHtml(i.start)}</td>
+      <td>${escapeHtml(i.end)}</td>
+      <td><span class="badge">${escapeHtml(i.status)}</span></td>
+      <td><button class="muted-btn" data-settings-action="editIntake" data-id="${i.id}">Edit</button> <button class="muted-btn" data-settings-action="deleteIntake" data-id="${i.id}">Delete</button></td>
     </tr>`);
   });
 }
 function renderDocs(){
   const list = document.getElementById('docList'); list.innerHTML='';
   MOCK.documents.forEach(d=>{
-    list.insertAdjacentHTML('beforeend',`<div class="repeat-row"><input type="text" value="${d.name}" readonly><select disabled><option>${d.required?'Required':'Optional'}</option></select><button class="muted-btn" onclick="removeDoc(${d.id})">Remove</button></div>`);
+    list.insertAdjacentHTML('beforeend',`<div class="repeat-row"><input type="text" value="${escapeAttr(d.name)}" readonly><select disabled><option>${d.required?'Required':'Optional'}</option></select><button class="muted-btn" data-settings-action="removeDoc" data-id="${d.id}">Remove</button></div>`);
   });
 }
 function renderScoring(){
   const body = document.getElementById('scoringBody'); body.innerHTML='';
   MOCK.scoring.forEach(s=>{
-    body.insertAdjacentHTML('beforeend',`<tr id="scrow-${s.id}"><td>${s.name}</td><td><input type="number" min="0" max="100" value="${s.weight}" onchange="updateWeight(${s.id},this.value)"/></td><td><input type="number" min="0" max="10" value="${s.min}"/></td><td><input type="number" min="0" max="10" value="${s.max}"/></td><td><button class="muted-btn" onclick="removeScoring(${s.id})">Remove</button></td></tr>`);
+    body.insertAdjacentHTML('beforeend',`<tr id="scrow-${s.id}"><td>${escapeHtml(s.name)}</td><td><input type="number" min="0" max="100" value="${s.weight}" data-settings-change="updateWeight" data-id="${s.id}"/></td><td><input type="number" min="0" max="10" value="${s.min}"/></td><td><input type="number" min="0" max="10" value="${s.max}"/></td><td><button class="muted-btn" data-settings-action="removeScoring" data-id="${s.id}">Remove</button></td></tr>`);
   });
   updateWeightTotal();
 }
 function renderReviewers(){
   const tbody = document.getElementById('reviewerList'); tbody.innerHTML='';
   MOCK.reviewers.forEach(r=>{
-    tbody.insertAdjacentHTML('beforeend',`<tr><td>${r.name}</td><td>${r.email}</td><td>${r.role}</td><td><button class="muted-btn" onclick="removeReviewer('${r.email}')">Remove</button></td></tr>`);
+    tbody.insertAdjacentHTML('beforeend',`<tr><td>${escapeHtml(r.name)}</td><td>${escapeHtml(r.email)}</td><td>${escapeHtml(r.role)}</td><td><button class="muted-btn" data-settings-action="removeReviewer" data-email="${escapeAttr(r.email)}">Remove</button></td></tr>`);
   });
 }
 function renderCustom(){
   const list = document.getElementById('customList'); list.innerHTML='';
   MOCK.custom.forEach(c=>{
-    list.insertAdjacentHTML('beforeend',`<div class="repeat-row"><input type="text" value="${c.label}" readonly><input type="text" value="${c.type}" readonly style="width:120px"><input type="text" value="${c.options||''}" readonly><button class="muted-btn" onclick="removeCustom(${c.id})">Remove</button></div>`);
+    list.insertAdjacentHTML('beforeend',`<div class="repeat-row"><input type="text" value="${escapeAttr(c.label)}" readonly><input type="text" value="${escapeAttr(c.type)}" readonly style="width:120px"><input type="text" value="${escapeAttr(c.options||'')}" readonly><button class="muted-btn" data-settings-action="removeCustom" data-id="${c.id}">Remove</button></div>`);
   });
 }
 
@@ -678,7 +683,14 @@ function resetTemplate(){ loadTemplate(); }
 function updatePreview(){
   const sub = document.getElementById('templateSubject').value;
   const body = document.getElementById('templateBody').value;
-  document.getElementById('templatePreview').innerHTML = `<strong>${sub}</strong><p style="white-space:pre-line;margin-top:8px">${body}</p>`;
+  const preview = document.getElementById('templatePreview');
+  const strong = document.createElement('strong');
+  const paragraph = document.createElement('p');
+  strong.textContent = sub;
+  paragraph.textContent = body;
+  paragraph.style.whiteSpace = 'pre-line';
+  paragraph.style.marginTop = '8px';
+  preview.replaceChildren(strong, paragraph);
 }
 
 /* Portal content */
@@ -717,6 +729,51 @@ function resetAll(){ if(confirm('Reset all unsaved changes?')) location.reload()
 function resetIntakes(){ MOCK.intakes=[]; renderIntakes(); }
 function previewPortal(){ alert('Open admissions portal preview (placeholder)'); }
 
+/* CSP-safe action wiring: preserves the existing UI without inline event attributes. */
+const clickActions = {
+  previewPortal: () => previewPortal(),
+  saveAll: () => saveAll(),
+  addIntake: () => addIntake(),
+  resetIntakeForm: () => resetIntakeForm(),
+  addDocument: () => addDocument(),
+  saveEligibility: () => saveEligibility(),
+  resetEligibility: () => resetEligibility(),
+  addScoring: () => addScoring(),
+  saveDeadlines: () => saveDeadlines(),
+  clearDeadlines: () => clearDeadlines(),
+  saveFees: () => saveFees(),
+  resetFees: () => resetFees(),
+  saveTemplate: () => saveTemplate(),
+  resetTemplate: () => resetTemplate(),
+  savePortalContent: () => savePortalContent(),
+  resetPortalContent: () => resetPortalContent(),
+  addReviewer: () => addReviewer(),
+  addCustomField: () => addCustomField(),
+  resetAll: () => resetAll(),
+  editIntake: (el) => editIntake(Number(el.dataset.id)),
+  deleteIntake: (el) => deleteIntake(Number(el.dataset.id)),
+  removeDoc: (el) => removeDoc(Number(el.dataset.id)),
+  removeScoring: (el) => removeScoring(Number(el.dataset.id)),
+  removeReviewer: (el) => removeReviewer(String(el.dataset.email || '')),
+  removeCustom: (el) => removeCustom(Number(el.dataset.id))
+};
+
+document.addEventListener('click', (event) => {
+  const trigger = event.target.closest('[data-settings-action]');
+  if (!trigger) return;
+  const action = clickActions[trigger.dataset.settingsAction];
+  if (!action) return;
+  event.preventDefault();
+  action(trigger);
+});
+
+document.addEventListener('change', (event) => {
+  const trigger = event.target.closest('[data-settings-change]');
+  if (!trigger) return;
+  if (trigger.dataset.settingsChange === 'loadTemplate') loadTemplate();
+  if (trigger.dataset.settingsChange === 'updateWeight') updateWeight(Number(trigger.dataset.id), trigger.value);
+});
+
 /* INIT */
 (function init(){
   renderIntakes();
@@ -728,6 +785,7 @@ function previewPortal(){ alert('Open admissions portal preview (placeholder)');
 })();
 </script>
 
+  <script src="/js/tenant-workspace-motion.js" defer></script>
 </body>
 </html>
 

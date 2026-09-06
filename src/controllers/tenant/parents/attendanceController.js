@@ -33,11 +33,23 @@ module.exports = {
         : [];
       const timezone = req.tenant?.timezone || "UTC";
       const attendanceByStudent = {};
+      let attendanceQuery = childIds.length
+        ? Attendance.find({ student: { $in: childIds }, isDeleted: { $ne: true }, migrationQuarantinedAt: null })
+            .populate({ path: "subject", model: Subject, select: "code title shortTitle" })
+        : null;
+      if (attendanceQuery && Staff) attendanceQuery = attendanceQuery.populate({ path: "teacher", model: Staff, select: "fullName name" });
+      const allAttendance = attendanceQuery
+        ? await attendanceQuery.sort({ sessionAt: -1, createdAt: -1 }).limit(Math.min(2500, Math.max(500, childIds.length * 500))).lean()
+        : [];
+      const groupedAttendance = new Map();
+      for (const row of allAttendance) {
+        const key = idText(row.student);
+        if (!groupedAttendance.has(key)) groupedAttendance.set(key, []);
+        const bucket = groupedAttendance.get(key);
+        if (bucket.length < 500) bucket.push(row);
+      }
       for (const child of children) {
-        let q = Attendance.find(studentAttendanceFilter(child._id));
-        q = q.populate({ path: "subject", model: Subject, select: "code title shortTitle" });
-        if (Staff) q = q.populate({ path: "teacher", model: Staff, select: "fullName name" });
-        const raw = await q.sort({ sessionAt: -1, createdAt: -1 }).limit(500).lean();
+        const raw = groupedAttendance.get(String(child._id)) || [];
         const base = attendanceSummary(raw);
         const entries = raw.map((r) => ({
           ...r,

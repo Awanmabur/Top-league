@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="/css/navbar.css"/>
   <link rel="stylesheet" href="/css/parent-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .student-tabs{
       margin-top:14px;
       display:flex;
@@ -357,13 +357,13 @@
             <b>UGX <%= money(sum.balance || 0) %></b>
           </div>
 
-          <button class="btn light" type="button" onclick="window.location.href='/parent/results<%= student ? ('?student=' + student._id) : '' %>'">
+          <a class="btn light" href="/parent/results<%= student ? ('?student=' + student._id) : '' %>">
             <i class="fa-solid fa-file-lines"></i> Results
-          </button>
+          </a>
 
-          <button class="btn primary" type="button" onclick="window.location.href='/parent/children'">
+          <a class="btn primary" href="/parent/children">
             <i class="fa-solid fa-children"></i> My Children
-          </button>
+          </a>
         </div>
       </div>
 

@@ -8,28 +8,29 @@
     <!-- ✅ SEO -->
     <title>Schedule a Demo or Support Call | Classic Academy</title>
     <meta name="description"
-        content="Schedule a meeting with the Classic team for a demo, onboarding, or support for Classic Academy and Classic Academy. Pick a date, choose a time, and join via Zoom — with Google Calendar invite." />
-    <meta name="keywords"
-        content="Classic Academy, schedule demo, onboarding meeting, support call, booking, Zoom meeting, Google Calendar invite, school ERP, LMS, admissions" />
+        content="Schedule a meeting with the Classic team for a demo, onboarding, or support for Classic Academy. Pick a date, choose a time, and join via Zoom — with Google Calendar invite." />
     <meta name="robots" content="index,follow" />
 
     <meta name="theme-color" content="#4a90e2" />
     <link rel="icon" href="/img/academylogo.png" />
     <link rel="apple-touch-icon" href="/img/academylogo.png" />
-    <link rel="canonical" href="/schedule" />
+    <link rel="canonical" href="https://www.classicacademy.app/schedule" />
 
     <!-- Open Graph -->
     <meta property="og:title" content="Schedule a Demo or Support Call | Classic Academy" />
     <meta property="og:description"
         content="Book a meeting with the Classic team. Choose a date and time, receive a Zoom + Google Calendar invite, and join the meeting when it’s time." />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="/schedule" />
+    <meta property="og:url" content="https://www.classicacademy.app/schedule" />
+    <meta property="og:image" content="https://www.classicacademy.app/assets/og/classic-academy.jpg" />
+    <meta property="og:image:alt" content="Schedule a Classic Academy demo or support call" />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Schedule a Demo or Support Call | Classic Academy" />
     <meta name="twitter:description"
         content="Book a meeting with the Classic team for demo, onboarding, or support. Zoom + Google Calendar invite included." />
+    <meta name="twitter:image" content="https://www.classicacademy.app/assets/og/classic-academy.jpg" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -37,7 +38,7 @@
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-    <style>
+    <style nonce="<%= cspNonce %>">
         * {
             margin: 0;
             padding: 0;
@@ -1269,6 +1270,7 @@
     }
   }
   </script>
+  <link rel="stylesheet" href="/css/classic-motion.css">
 </head>
 
 <body>
@@ -1541,8 +1543,8 @@
                             <h3>Booked ✅</h3>
                             <div id="successText" style="font-size:13px;opacity:.9"></div>
                             <div class="actions">
-                                <a id="zoomJoin" class="btnOutline" target="_blank" rel="noreferrer">Join Zoom</a>
-                                <a id="gcalLink" class="btnOutline" target="_blank" rel="noreferrer">Open Calendar</a>
+                                <a id="zoomJoin" class="btnOutline" target="_blank" rel="noreferrer noopener">Join Zoom</a>
+                                <a id="gcalLink" class="btnOutline" target="_blank" rel="noreferrer noopener">Open Calendar</a>
                             </div>
                             <span class="bookAnother" id="bookAnother">Book another time</span>
                         </div>
@@ -1552,59 +1554,13 @@
         </section>
     </main>
 
-    <footer class="footer">
-        <div>
-            <h4>About Us</h4>
-            <p>Classic Academy help schools automate admissions, manage learners &
-                staff, track fees, run exams, and communicate smoothly — all in one secure system.</p>
-            <a href="https://play.google.com/store" target="_blank" rel="noopener">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg"
-                    style="height: 50px; width: 150px" alt="Google Play">
-            </a>
-            <a href="https://apps.apple.com/" target="_blank" rel="noopener">
-                <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg"
-                    alt="Download on the App Store" style="height: 50px;">
-            </a>
-        </div>
-
-        <div>
-            <h4>Learn about our mission</h4>
-            <ul>
-                <li><a href="/about">Our Story</a></li>
-                <li><a href="/services">What We Offer</a></li>
-                <li><a href="/#pricing">Plans & Pricing</a></li>
-                <li><a href="/blog?slug=increase-admissions">Press resources</a></li>
-                <li><a href="/careers">Careers</a></li>
-            </ul>
-        </div>
-
-        <div>
-            <h4>Get help with your account</h4>
-            <ul>
-                <li><a href="/contact">Customer Support</a></li>
-                <li><a href="/schedule">Book a Demo</a></li>
-                <li><a href="/faq">FAQ</a></li>
-                <li><a href="/privacy">Privacy Policy</a></li>
-                <li><a href="/terms">Terms</a></li>
-            </ul>
-        </div>
-
-        <div>
-            <h4>Join our school community</h4>
-            <ul>
-                <li><a href="/schools">Find Schools</a></li>
-                <li><a href="/admissions">Admissions</a></li>
-                <li><a href="/search">Search</a></li>
-                <li><a href="/blog?slug=increase-admissions">Blog</a></li>
-                <li><a href="https://chat.whatsapp.com/HRGoS3fMZoZGgXbz1HDw6a?mode=gi_t" target="_blank" rel="noopener">Join whatsapp group</a></li>
-            </ul>
-        </div>
-    </footer>
+  <%- include("../partials/footer") %>
 
     <button id="toTopBtn" aria-label="Scroll to top">↑</button>
     <script src="/pages/schedule.js"></script>
 
     
+  <script src="/js/classic-motion.js" defer></script>
 </body>
 
 </html>

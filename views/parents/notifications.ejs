@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="/css/navbar.css"/>
   <link rel="stylesheet" href="/css/parent-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{
       margin-top:16px;
       display:flex;
@@ -503,6 +503,7 @@
                   <div class="notification-footer">
                     <% if (!item.read) { %>
                       <form method="POST" action="/parent/notifications/<%= item._id %>/read" class="inline-form">
+                        <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>" />
                         <button class="btn-xs" type="submit">
                           <i class="fa-solid fa-check"></i> Mark as read
                         </button>

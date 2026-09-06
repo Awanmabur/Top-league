@@ -445,6 +445,6 @@
   </section>
 </main>
 
-<script id="dashboard-json" type="application/json"><%- JSON.stringify(dashboardData || {}).replace(/</g, "\\u003c") %></script>
+<script nonce="<%= cspNonce %>" id="dashboard-json" type="application/json"><%- JSON.stringify(dashboardData || {}).replace(/</g, "\\u003c") %></script>
 
 <%- include("../partials/footer") %>

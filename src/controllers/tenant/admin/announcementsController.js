@@ -229,22 +229,42 @@ module.exports = {
     await publishDueAnnouncements(req).catch((err) => console.error("ANNOUNCEMENT SCHEDULER ERROR:", err));
 
     const { mongo, clean } = buildAnnouncementFilters(req.query);
-    const announcements = await Announcement.find(mongo)
-      .sort({ priority: -1, publishedAt: -1, createdAt: -1 })
-      .lean();
+    const pageSize = 100;
+    const page = Math.max(1, Math.min(100000, Number.parseInt(req.query.page, 10) || 1));
+    const [announcements, total, kpiRows, templates] = await Promise.all([
+      Announcement.find(mongo)
+        .sort({ priority: -1, publishedAt: -1, createdAt: -1 })
+        .skip((page - 1) * pageSize)
+        .limit(pageSize)
+        .lean(),
+      Announcement.countDocuments(mongo),
+      Announcement.aggregate([
+        { $match: mongo },
+        { $group: {
+          _id: null,
+          published: { $sum: { $cond: [{ $eq: ["$status", "Published"] }, 1, 0] } },
+          scheduled: { $sum: { $cond: [{ $eq: ["$status", "Scheduled"] }, 1, 0] } },
+          drafts: { $sum: { $cond: [{ $eq: ["$status", "Draft"] }, 1, 0] } },
+          ackRequired: { $sum: { $cond: ["$requiresAcknowledgement", 1, 0] } },
+        } },
+      ]).catch(() => []),
+      AnnouncementTemplate
+        ? AnnouncementTemplate.find({ isDeleted: { $ne: true }, isActive: true }).sort({ name: 1 }).limit(200).lean().catch(() => [])
+        : Promise.resolve([]),
+    ]);
     const receiptsByAnnouncement = await getReceipts(req, announcements.map((x) => x._id));
     const data = announcements.map((doc) => serializeAnnouncement(doc, receiptsByAnnouncement.get(String(doc._id)) || []));
-    const templates = AnnouncementTemplate
-      ? await AnnouncementTemplate.find({ isDeleted: { $ne: true }, isActive: true }).sort({ name: 1 }).lean().catch(() => [])
-      : [];
+    const pageCount = Math.max(1, Math.ceil(total / pageSize));
+    const makePageUrl = (target) => { const qs = new URLSearchParams(req.query || {}); qs.set("page", String(target)); return `/admin/announcements?${qs.toString()}`; };
 
     return res.render("tenant/announcements/index", {
       tenant: req.tenant,
       csrfToken: req.csrfToken?.(),
       announcements: data,
       templates: templates.map(serializeTemplate),
-      kpis: computeKpis(data),
+      kpis: kpiRows[0] || { published: 0, scheduled: 0, drafts: 0, ackRequired: 0 },
       query: clean,
+      pagination: { page, pageSize, total, pageCount, prevUrl: page > 1 ? makePageUrl(page - 1) : "", nextUrl: page < pageCount ? makePageUrl(page + 1) : "" },
     });
   },
 

@@ -93,6 +93,8 @@ class RedisClient extends EventEmitter {
     this.reconnectDelayMs = Math.min(Math.max(Number(options.reconnectMinDelayMs || process.env.REDIS_RECONNECT_MIN_DELAY_MS || 250), 100), 5000);
     this.reconnectMaxDelayMs = Math.min(Math.max(Number(options.reconnectMaxDelayMs || process.env.REDIS_RECONNECT_MAX_DELAY_MS || 5000), this.reconnectDelayMs), 30000);
     this.currentReconnectDelayMs = this.reconnectDelayMs;
+    this.heartbeatIntervalMs = Math.min(Math.max(Number(options.heartbeatIntervalMs || process.env.REDIS_HEARTBEAT_INTERVAL_MS || 30000), 5000), 120000);
+    this.heartbeatTimer = null;
   }
 
   isReady() { return this.ready && Boolean(this.socket && !this.socket.destroyed); }
@@ -141,6 +143,7 @@ class RedisClient extends EventEmitter {
           this.ready = true;
           this.currentReconnectDelayMs = this.reconnectDelayMs;
           this.connecting = null;
+          this._startHeartbeat();
           resolve(this);
         } catch (err) {
           this.ready = false;
@@ -151,6 +154,24 @@ class RedisClient extends EventEmitter {
       });
     });
     return this.connecting;
+  }
+
+  _stopHeartbeat() {
+    if (!this.heartbeatTimer) return;
+    clearInterval(this.heartbeatTimer);
+    this.heartbeatTimer = null;
+  }
+
+  _startHeartbeat() {
+    if (this.heartbeatTimer || this.closing) return;
+    this.heartbeatTimer = setInterval(() => {
+      if (!this.isReady() || this.pending.length) return;
+      this.sendCommand(["PING"], { skipConnect: true, timeoutMs: Math.min(this.commandTimeoutMs, 1000) })
+        .catch((err) => {
+          if (!this.closing) this.emit("error", err);
+        });
+    }, this.heartbeatIntervalMs);
+    this.heartbeatTimer.unref?.();
   }
 
   _scheduleReconnect() {
@@ -178,6 +199,7 @@ class RedisClient extends EventEmitter {
     socket.on("close", () => {
       if (this.socket === socket) this.socket = null;
       this.ready = false;
+      this._stopHeartbeat();
       const err = new Error("Redis connection closed.");
       err.code = "REDIS_CONNECTION_CLOSED";
       while (this.pending.length) this.pending.shift().reject(err);
@@ -259,6 +281,7 @@ class RedisClient extends EventEmitter {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
     }
+    this._stopHeartbeat();
     const socket = this.socket;
     this.socket = null;
     this.connecting = null;
@@ -271,44 +294,109 @@ class RedisClient extends EventEmitter {
   }
 }
 
-let singleton;
-function getRedisClient() {
-  if (singleton !== undefined) return singleton;
-  const raw = String(process.env.REDIS_URL || "").trim();
-  singleton = raw ? new RedisClient(raw) : null;
-  if (singleton) {
-    let lastMessage = "";
-    let lastLoggedAt = 0;
-    singleton.on("error", (err) => {
-      const message = String(err?.message || err);
-      const now = Date.now();
-      if (message === lastMessage && now - lastLoggedAt < 5000) return;
-      lastMessage = message;
-      lastLoggedAt = now;
-      console.error("Redis error:", message);
-    });
-  }
-  return singleton;
+function envEnabled(value) {
+  return String(value || "").trim() === "1";
 }
 
-async function connectRedis() {
-  const client = getRedisClient();
-  if (!client) return null;
-  await client.connect();
+function isRedisRoleEnabled(role = "session", env = process.env) {
+  if (!String(env.REDIS_URL || "").trim()) return false;
+  if (String(env.NODE_ENV || "").trim().toLowerCase() === "production") return true;
+  const normalizedRole = normalizeClientRole(role);
+  if (normalizedRole === "session") return envEnabled(env.USE_REDIS_SESSIONS);
+  if (normalizedRole === "rate") return envEnabled(env.USE_REDIS_RATE_LIMITS);
+  if (normalizedRole === "cache") return envEnabled(env.USE_REDIS_CACHE);
+  return false;
+}
+
+const clients = new Map();
+
+function normalizeClientRole(role) {
+  const value = String(role || "session").trim().toLowerCase();
+  return ["session", "rate", "cache"].includes(value) ? value : "session";
+}
+
+function roleOptions(role) {
+  if (role === "cache") {
+    return {
+      connectTimeoutMs: Number(process.env.REDIS_CACHE_CONNECT_TIMEOUT_MS || 1500),
+      commandTimeoutMs: Number(process.env.REDIS_CACHE_SOCKET_COMMAND_TIMEOUT_MS || 500),
+    };
+  }
+  if (role === "rate") {
+    return {
+      connectTimeoutMs: Number(process.env.REDIS_RATE_CONNECT_TIMEOUT_MS || 2500),
+      commandTimeoutMs: Number(process.env.REDIS_RATE_COMMAND_TIMEOUT_MS || 750),
+    };
+  }
+  return {
+    connectTimeoutMs: Number(process.env.REDIS_SESSION_CONNECT_TIMEOUT_MS || process.env.REDIS_CONNECT_TIMEOUT_MS || 3000),
+    commandTimeoutMs: Number(process.env.REDIS_SESSION_COMMAND_TIMEOUT_MS || process.env.REDIS_COMMAND_TIMEOUT_MS || 1000),
+  };
+}
+
+function attachErrorLogger(client, role) {
+  let lastMessage = "";
+  let lastLoggedAt = 0;
+  client.on("error", (err) => {
+    const message = String(err?.message || err);
+    const now = Date.now();
+    if (message === lastMessage && now - lastLoggedAt < 5000) return;
+    lastMessage = message;
+    lastLoggedAt = now;
+    console.error(`Redis ${role} error:`, message);
+  });
+}
+
+function getRedisClient(role = "session") {
+  const normalizedRole = normalizeClientRole(role);
+  if (clients.has(normalizedRole)) return clients.get(normalizedRole);
+
+  const raw = String(process.env.REDIS_URL || "").trim();
+  const client = raw ? new RedisClient(raw, roleOptions(normalizedRole)) : null;
+  clients.set(normalizedRole, client);
+  if (client) attachErrorLogger(client, normalizedRole);
   return client;
 }
 
-async function closeRedis() {
-  if (singleton) await singleton.close();
+async function connectRedis() {
+  const roles = ["session", "rate", "cache"].filter((role) => isRedisRoleEnabled(role));
+  if (!roles.length) return null;
+
+  // Production enables all three isolated roles. Development is opt-in per
+  // role so merely having REDIS_URL in .env cannot put a flaky remote Redis
+  // connection into the critical path of local page loads.
+  const roleClients = roles.map((role) => [role, getRedisClient(role)]).filter(([, client]) => Boolean(client));
+  if (!roleClients.length) return null;
+
+  const sessionEntry = roleClients.find(([role]) => role === "session");
+  if (sessionEntry) await sessionEntry[1].connect();
+
+  await Promise.all(
+    roleClients
+      .filter(([role]) => role !== "session")
+      .map(([, client]) => client.connect()),
+  );
+
+  return sessionEntry?.[1] || roleClients[0][1];
 }
 
-function resetRedisClientForTests() { singleton = undefined; }
+async function closeRedis() {
+  const uniqueClients = [...new Set([...clients.values()].filter(Boolean))];
+  await Promise.allSettled(uniqueClients.map((client) => client.close()));
+}
+
+function resetRedisClientForTests() {
+  clients.clear();
+}
 
 module.exports = {
   parseRedisUrl,
   encodeCommand,
   parseReply,
   RedisClient,
+  normalizeClientRole,
+  roleOptions,
+  isRedisRoleEnabled,
   getRedisClient,
   connectRedis,
   closeRedis,

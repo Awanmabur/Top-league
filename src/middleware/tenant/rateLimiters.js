@@ -21,6 +21,25 @@ const publicReviewLimiter = rateLimit({
   ...redisRateLimitOptions("public-review"),
 });
 
+
+const publicUploadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: jsonMsg("Too many upload attempts. Try again in a few minutes."),
+  ...redisRateLimitOptions("public-upload"),
+});
+
+const publicStatusLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: jsonMsg("Too many status checks. Try again in a few minutes."),
+  ...redisRateLimitOptions("public-status"),
+});
+
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
@@ -40,4 +59,4 @@ const authLimiter = rateLimit({
   },
 });
 
-module.exports = { publicInquiryLimiter, publicReviewLimiter, authLimiter };
+module.exports = { publicInquiryLimiter, publicReviewLimiter, publicUploadLimiter, publicStatusLimiter, authLimiter };

@@ -326,10 +326,14 @@ exports.bulkAction = async (req, res) => {
     const status = str(req.body.status, 40);
     const note = str(req.body.note, 1000);
     let changed = 0;
-    for (const id of ids) {
-      const book = await req.models.LibraryBook.findOne({ _id: id, isDeleted: { $ne: true } });
-      if (!book) continue;
-      const activeLoans = await req.models.LibraryLoan.countDocuments({ book: id, status: { $in: ["issued", "overdue"] }, isDeleted: { $ne: true } });
+    const books = await req.models.LibraryBook.find({ _id: { $in: ids }, isDeleted: { $ne: true } });
+    const activeLoanRows = await req.models.LibraryLoan.aggregate([
+      { $match: { book: { $in: books.map((book) => book._id) }, status: { $in: ["issued", "overdue"] }, isDeleted: { $ne: true } } },
+      { $group: { _id: "$book", count: { $sum: 1 } } },
+    ]);
+    const activeLoanCounts = new Map(activeLoanRows.map((row) => [String(row._id), Number(row.count || 0)]));
+    for (const book of books) {
+      const activeLoans = activeLoanCounts.get(String(book._id)) || 0;
       if (action === "archive") {
         if (activeLoans) continue;
         book.isDeleted = true; book.deletedAt = new Date(); book.archivedAt = new Date();

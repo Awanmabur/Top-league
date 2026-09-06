@@ -17,9 +17,9 @@
   <meta name="application-name" content="Classic Academy" />
   <meta name="format-detection" content="telephone=no" />
 
-  <link rel="canonical" href="/plan" />
-  <link rel="icon" href="https://www.classicacademy.app/img/academylogo.png" />
-  <link rel="apple-touch-icon" href="https://www.classicacademy.app/img/academylogo.png" />
+  <link rel="canonical" href="https://www.classicacademy.app/plan" />
+  <link rel="icon" href="/img/academylogo.png" />
+  <link rel="apple-touch-icon" href="/img/academylogo.png" />
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
@@ -28,8 +28,8 @@
   <meta property="og:title" content="Plan Details — Classic Academy" />
   <meta property="og:description"
     content="Explore Classic Academy plans: School Profile, Starter, Standard, Growth, and Premium. Compare features and book a demo." />
-  <meta property="og:url" content="/plan" />
-  <meta property="og:image" content="https://www.classicacademy.app/img/hero.png" />
+  <meta property="og:url" content="https://www.classicacademy.app/plan" />
+  <meta property="og:image" content="https://www.classicacademy.app/assets/og/classic-academy.jpg" />
   <meta property="og:image:alt" content="Classic Academy — School Management Platform" />
 
   <!-- Twitter -->
@@ -37,10 +37,10 @@
   <meta name="twitter:title" content="Plan Details — Classic Academy" />
   <meta name="twitter:description"
     content="Explore Classic Academy plans: School Profile, Starter, Standard, Growth, and Premium. Compare features and book a demo." />
-  <meta name="twitter:image" content="https://www.classicacademy.app/img/hero.png" />
+  <meta name="twitter:image" content="https://www.classicacademy.app/assets/og/classic-academy.jpg" />
 
   <!-- Structured data -->
-  <script type="application/ld+json">
+  <script nonce="<%= cspNonce %>" type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "Organization",
@@ -57,7 +57,7 @@
   }
   </script>
 
-  <script type="application/ld+json">
+  <script nonce="<%= cspNonce %>" type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "WebSite",
@@ -71,7 +71,7 @@
   }
   </script>
 
-  <script type="application/ld+json">
+  <script nonce="<%= cspNonce %>" type="application/ld+json">
   {
     "@context":"https://schema.org",
     "@type":"SoftwareApplication",
@@ -88,7 +88,7 @@
   }
   </script>
 
-  <script type="application/ld+json">
+  <script nonce="<%= cspNonce %>" type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "OfferCatalog",
@@ -106,18 +106,20 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <link rel="stylesheet" href="/vendor/swiper/swiper-bundle.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Outfit:wght@100..900&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
 
-    @import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Outfit:wght@100..900&display=swap");
+    
 
     :root {
       --primary: #4a90e2;
@@ -2154,7 +2156,7 @@
     }
   </style>
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     /* Plan details: namespaced so we don't touch the main navbar/footer */
     .plan-details .p4-head {
       position: relative;
@@ -2355,6 +2357,7 @@
       }
     }
   </style>
+  <link rel="stylesheet" href="/css/classic-motion.css">
 </head>
 
 <body>
@@ -2489,53 +2492,7 @@
     </div>
   </section>
 
-  <footer class="footer">
-    <div>
-      <h4>About Us</h4>
-      <p>We are excited to introduce our upcoming Classic Academy Plans, where schools will be categorized</p>
-      <a href="https://play.google.com/store" target="_blank" rel="noopener">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg"
-          style="height: 50px; width: 150px" alt="Google Play">
-      </a>
-      <a href="https://apps.apple.com/" target="_blank" rel="noopener">
-        <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg"
-          alt="Download on the App Store" style="height: 50px;">
-      </a>
-    </div>
-
-    <div>
-      <h4>Learn about our mission</h4>
-      <ul>
-        <li><a href="/about">Our Story</a></li>
-        <li><a href="/services">What We Offer</a></li>
-        <li><a href="/plan?plan=standard">Plans & Pricing</a></li>
-        <li><a href="/blog?slug=increase-admissions">Press resources</a></li>
-        <li><a href="/careers">Careers</a></li>
-      </ul>
-    </div>
-
-    <div>
-      <h4>Get help with your account</h4>
-      <ul>
-        <li><a href="/contact">Customer Support</a></li>
-        <li><a href="/schedule">Book a Demo</a></li>
-        <li><a href="/faq">FAQ</a></li>
-        <li><a href="/privacy">Privacy Policy</a></li>
-        <li><a href="/terms">Terms</a></li>
-      </ul>
-    </div>
-
-    <div>
-      <h4>Join our school community</h4>
-      <ul>
-        <li><a href="/schools">Find Schools</a></li>
-        <li><a href="/admissions">Admissions</a></li>
-        <li><a href="/search">Search</a></li>
-        <li><a href="/blog?slug=increase-admissions">Blog</a></li>
-        <li><a href="https://chat.whatsapp.com/HRGoS3fMZoZGgXbz1HDw6a?mode=gi_t" target="_blank" rel="noopener">Join whatsapp group</a></li>
-      </ul>
-    </div>
-  </footer>
+  <%- include("../partials/footer") %>
 
   <button id="toTopBtn" aria-label="Scroll to top">↑</button>
 
@@ -2550,7 +2507,7 @@
       <a href="tel:+256781977217"><span class="material-icons">phone</span></a>
     </div>
     <div class="sub-button shadow">
-      <a href="https://api.whatsapp.com/send?phone=256781977217" target="_blank" rel="noopener" aria-label="WhatsApp">
+      <a href="https://api.whatsapp.com/send?phone=256781977217" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
         <span class="material-icons">
           <svg xmlns="http://www.w3.org/2000/svg" class="whatsapp-icon" viewBox="0 0 448 512" width="35" height="35"
             fill="#2e2e2e">
@@ -2566,11 +2523,12 @@
   </div>
 
   <!-- libs -->
-  <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
-  <script src="/pages/plan.js"></script>
+  <script defer src="/vendor/swiper/swiper-bundle.min.js"></script>
+  <script defer src="/pages/plan.js"></script>
 
   
 
+  <script src="/js/classic-motion.js" defer></script>
 </body>
 
 </html>

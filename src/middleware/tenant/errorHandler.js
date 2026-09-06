@@ -3,13 +3,23 @@ module.exports = function errorHandler(err, req, res, next) {
     return next(err);
   }
 
-  const status = err.code === "EBADCSRFTOKEN" ? 403 : err.status || 500;
+  const uploadTooLarge = ["LIMIT_FILE_SIZE", "LIMIT_TOTAL_FILE_SIZE", "LIMIT_PART_COUNT", "LIMIT_FILE_COUNT", "LIMIT_FIELD_COUNT"].includes(err.code);
+  const malformedRequest = ["entity.parse.failed", "parameters.too.many"].includes(err.type);
+  const status = err.code === "EBADCSRFTOKEN"
+    ? 403
+    : uploadTooLarge
+      ? 413
+      : malformedRequest
+        ? 400
+        : err.status || err.statusCode || 500;
   const message =
     err.code === "EBADCSRFTOKEN"
       ? "Your session security token expired. Refresh the page and try again."
-      : status >= 500
-        ? "Server error"
-        : err.message || "Request failed";
+      : uploadTooLarge
+        ? "The upload is too large or contains too many parts."
+        : status >= 500
+          ? "Server error"
+          : err.message || "Request failed";
 
   if (status >= 500) {
     console.error(err);

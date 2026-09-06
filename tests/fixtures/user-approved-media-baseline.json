@@ -1,0 +1,235 @@
+{
+  "source": "User-uploaded classic-academy-main.zip approved visual baseline",
+  "public_page_image_sources_excluding_shared_footer": {
+    "404.ejs": [
+      "/img/academylogo.png",
+      "/img/academylogo.png",
+      "/img/hero.png"
+    ],
+    "500.ejs": [
+      "/img/academylogo.png",
+      "/img/academylogo.png",
+      "/img/hero.png"
+    ],
+    "about.ejs": [
+      "./img/academylogo.png",
+      "./img/academylogo.png",
+      "img/hero.png",
+      "https://picsum.photos/seed/admissions/1200/700",
+      "https://picsum.photos/seed/finance/1200/700",
+      "https://picsum.photos/seed/exams/1200/700"
+    ],
+    "admissions.ejs": [
+      "./img/academylogo.png",
+      "./img/academylogo.png",
+      "img/hero.png",
+      "https://picsum.photos/seed/admissions/1200/700",
+      "https://picsum.photos/seed/finance/1200/700",
+      "https://picsum.photos/seed/exams/1200/700"
+    ],
+    "benefits.ejs": [
+      "./img/academylogo.png",
+      "./img/academylogo.png",
+      "img/hero.png",
+      "https://img.icons8.com/ios-filled/50/4a90e2/internet.png",
+      "https://img.icons8.com/ios-filled/50/4a90e2/resume.png",
+      "https://img.icons8.com/ios-filled/50/4a90e2/money-transfer.png",
+      "https://img.icons8.com/ios-filled/50/4a90e2/combo-chart.png",
+      "https://img.icons8.com/ios-filled/50/4a90e2/checked--v1.png",
+      "https://img.icons8.com/ios-filled/50/4a90e2/graduation-cap.png",
+      "https://img.icons8.com/ios-filled/50/4a90e2/sms.png",
+      "https://img.icons8.com/ios-filled/50/4a90e2/lock.png",
+      "https://picsum.photos/seed/onlinepresence/400/300",
+      "https://picsum.photos/seed/admissions/400/300",
+      "https://picsum.photos/seed/fees/400/300",
+      "https://picsum.photos/seed/academics/400/300",
+      "https://picsum.photos/seed/communication/400/300",
+      "https://picsum.photos/seed/support/400/300",
+      "img/feature.png",
+      "https://img.icons8.com/ios-filled/50/4a90e2/internet.png",
+      "https://img.icons8.com/ios-filled/50/4a90e2/resume.png",
+      "https://img.icons8.com/ios-filled/50/4a90e2/money-transfer.png",
+      "https://img.icons8.com/ios-filled/50/4a90e2/checked--v1.png",
+      "https://img.icons8.com/ios-filled/50/4a90e2/graduation-cap.png",
+      "https://img.icons8.com/ios-filled/50/4a90e2/sms.png",
+      "https://img.icons8.com/ios-filled/50/4a90e2/user-group-man-man.png",
+      "https://img.icons8.com/ios-filled/50/4a90e2/combo-chart.png",
+      "https://img.icons8.com/ios-filled/50/4a90e2/briefcase.png",
+      "https://img.icons8.com/ios-filled/50/4a90e2/graduation-cap.png",
+      "https://img.icons8.com/ios-filled/50/4a90e2/theatre-mask.png",
+      "https://img.icons8.com/ios-filled/50/4a90e2/soccer-ball.png",
+      "https://img.icons8.com/ios-filled/50/4a90e2/chess.png",
+      "https://img.icons8.com/ios-filled/50/4a90e2/training.png",
+      "https://img.icons8.com/ios-filled/50/4a90e2/desktop-computer.png",
+      "https://img.icons8.com/ios-filled/50/4a90e2/test.png",
+      "https://img.icons8.com/ios-filled/50/4a90e2/exam.png",
+      "https://img.icons8.com/ios-filled/50/4a90e2/megaphone.png",
+      "https://img.icons8.com/ios-filled/50/4a90e2/classroom.png",
+      "https://img.icons8.com/ios-filled/50/4a90e2/medal.png"
+    ],
+    "blog.ejs": [
+      "./img/academylogo.png",
+      "./img/academylogo.png",
+      "https://picsum.photos/seed/classicacademy/1200/700"
+    ],
+    "careers.ejs": [
+      "./img/academylogo.png",
+      "./img/academylogo.png"
+    ],
+    "contact.ejs": [
+      "./img/academylogo.png",
+      "./img/academylogo.png"
+    ],
+    "docs.ejs": [
+      "./img/academylogo.png",
+      "./img/academylogo.png",
+      "img/hero.png"
+    ],
+    "faq.ejs": [
+      "./img/academylogo.png",
+      "./img/academylogo.png",
+      "img/hero.png"
+    ],
+    "features.ejs": [
+      "./img/academylogo.png",
+      "./img/academylogo.png",
+      "img/hero.png"
+    ],
+    "index.ejs": [
+      "./img/academylogo.png",
+      "./img/academylogo.png",
+      "./img/hero.png",
+      "https://img.icons8.com/ios-filled/50/4a90e2/document.png",
+      "https://img.icons8.com/ios-filled/50/4a90e2/star.png",
+      "https://img.icons8.com/ios-filled/50/4a90e2/combo-chart.png",
+      "https://img.icons8.com/ios-filled/50/4a90e2/resume.png",
+      "<%= school.image %>",
+      "img/feature.png",
+      "https://img.icons8.com/ios-filled/50/4a90e2/combo-chart.png",
+      "https://img.icons8.com/ios-filled/50/4a90e2/document.png",
+      "https://img.icons8.com/ios-filled/50/4a90e2/star.png",
+      "https://img.icons8.com/ios-filled/50/4a90e2/calendar.png",
+      "https://img.icons8.com/fluency/48/group-background-selected.png",
+      "https://img.icons8.com/ios-filled/50/4a90e2/money.png",
+      "https://img.icons8.com/ios-filled/50/4a90e2/chat.png",
+      "https://img.icons8.com/ios-filled/50/4a90e2/cloud.png",
+      "https://picsum.photos/seed/admissions/1200/700",
+      "https://picsum.photos/seed/finance/1200/700",
+      "https://picsum.photos/seed/exams/1200/700"
+    ],
+    "integrations.ejs": [
+      "./img/academylogo.png",
+      "./img/academylogo.png",
+      "img/hero.png"
+    ],
+    "plan.ejs": [
+      "./img/academylogo.png",
+      "./img/academylogo.png"
+    ],
+    "privacy.ejs": [
+      "/img/academylogo.png",
+      "/img/academylogo.png"
+    ],
+    "resources.ejs": [
+      "./img/academylogo.png",
+      "./img/academylogo.png",
+      "img/hero.png"
+    ],
+    "schedule.ejs": [
+      "/img/academylogo.png"
+    ],
+    "school-profile.ejs": [
+      "<%= mainUrl(",
+      "<%= b.logoUrl %>",
+      "<%= img.url %>"
+    ],
+    "schools.ejs": [
+      "/img/academylogo.png",
+      "/img/academylogo.png",
+      "<%= branding.coverUrl %>",
+      "<%= branding.logoUrl %>"
+    ],
+    "search.ejs": [
+      "/img/academylogo.png",
+      "/img/academylogo.png",
+      "<%= s.img %>"
+    ],
+    "security.ejs": [
+      "./img/academylogo.png",
+      "./img/academylogo.png",
+      "img/hero.png"
+    ],
+    "services.ejs": [
+      "./img/academylogo.png",
+      "./img/academylogo.png"
+    ],
+    "share.ejs": [
+      "./img/academylogo.png",
+      "./img/academylogo.png"
+    ],
+    "status.ejs": [
+      "./img/academylogo.png",
+      "./img/academylogo.png"
+    ],
+    "terms.ejs": [
+      "./img/academylogo.png",
+      "./img/academylogo.png",
+      "img/hero.png"
+    ]
+  },
+  "footer": {
+    "google_src": "https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg",
+    "google_style": "height: 50px; width: 150px",
+    "apple_src": "https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg",
+    "apple_style": "height: 50px;",
+    "order": [
+      "google",
+      "apple"
+    ]
+  },
+  "dynamic": {
+    "features": [
+      "img/hero.png",
+      "https://picsum.photos/seed/finance-ca/1200/700",
+      "https://picsum.photos/seed/exams-ca/1200/700",
+      "https://picsum.photos/seed/attendance-ca/1200/700",
+      "https://picsum.photos/seed/communication-ca/1200/700",
+      "https://picsum.photos/seed/portal-ca/1200/700",
+      "https://picsum.photos/seed/reports-ca/1200/700",
+      "https://picsum.photos/seed/security-ca/1200/700",
+      "https://picsum.photos/seed/core-ca/1200/700"
+    ],
+    "blog": [
+      "https://picsum.photos/seed/admissions/1200/700",
+      "https://picsum.photos/seed/finance/1200/700",
+      "https://picsum.photos/seed/exams/1200/700"
+    ]
+  },
+  "public_page_image_markup_sha256_excluding_shared_footer": {
+    "404.ejs": "f13df6eee01b0d79682d01cdc9ce07721bda993bc44618c46f1363b2c26bf35a",
+    "500.ejs": "f13df6eee01b0d79682d01cdc9ce07721bda993bc44618c46f1363b2c26bf35a",
+    "about.ejs": "384ecbf389ae901376fc473907fe1ef26c7dd9d72628652f9dcc3ccfce62e572",
+    "admissions.ejs": "9918c276b31b4a7a5fe33bc6a9a127f31f66b54130e14dcb6da83e76eaa22c86",
+    "benefits.ejs": "2d4909533a5bf7775d48bb101ca960e66fc2e0a5fe82ecdcdc9c72ba5ab6edb2",
+    "blog.ejs": "f6f785a60bc70495d5332d6cb432abb2386a3223eef4832b2d319d27ce2d4139",
+    "careers.ejs": "2b33c30d2897e9729a0e93864af9793c6d9cd16534872eab3ee303fc1964699c",
+    "contact.ejs": "2b33c30d2897e9729a0e93864af9793c6d9cd16534872eab3ee303fc1964699c",
+    "docs.ejs": "ee6f494f40628980897ee5765aaea121874625b30d69221b03cf55e149e901eb",
+    "faq.ejs": "71878bdc197eb6a405b9e8e28e666e9889e7c583c3b4e263492576fa0b2176ad",
+    "features.ejs": "81549caf5cd54a648dd18cd1f90f7b789e3a3ecf4b06b0e003a2b32aca8aba75",
+    "index.ejs": "16abf9ee6f04044ae60eb44815a8ba34878e6b8bcfb68a25a781b0059ad2b14c",
+    "integrations.ejs": "ee6f494f40628980897ee5765aaea121874625b30d69221b03cf55e149e901eb",
+    "plan.ejs": "2b33c30d2897e9729a0e93864af9793c6d9cd16534872eab3ee303fc1964699c",
+    "privacy.ejs": "23c1e7fc99ea9736fd18233131d450fc836f839fd9f159925bfd2e3b12cc1832",
+    "resources.ejs": "ee6f494f40628980897ee5765aaea121874625b30d69221b03cf55e149e901eb",
+    "schedule.ejs": "534ed64e114ebd310a1e6d94e4ce6c850f72e410eaa921005a28035d0e18c54c",
+    "school-profile.ejs": "07dc8ec316104c77939a1dfe21f2d60ef72d6ea493b4553224a46323122f3f41",
+    "schools.ejs": "f9f798e236853a55b717473b5b2fe1b66311fc1feada354550c12ad92aab5de7",
+    "search.ejs": "e7a79621fb387e4987fea717fa22a184bcd98aa37ebf1cbb4da5b4e94fa214e4",
+    "security.ejs": "ee6f494f40628980897ee5765aaea121874625b30d69221b03cf55e149e901eb",
+    "services.ejs": "2b33c30d2897e9729a0e93864af9793c6d9cd16534872eab3ee303fc1964699c",
+    "share.ejs": "2b33c30d2897e9729a0e93864af9793c6d9cd16534872eab3ee303fc1964699c",
+    "status.ejs": "2b33c30d2897e9729a0e93864af9793c6d9cd16534872eab3ee303fc1964699c",
+    "terms.ejs": "ee6f494f40628980897ee5765aaea121874625b30d69221b03cf55e149e901eb"
+  }
+}

@@ -3,8 +3,11 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta name="robots" content="noindex,nofollow,noarchive" />
   <title>Scholarship Status — <%= (tenant && tenant.name) ? tenant.name : "Classic Academy" %></title>
-  <style>
+    <link rel="stylesheet" href="/css/tenant-public-polish.css">
+  <link rel="stylesheet" href="/css/classic-motion.css">
+<style nonce="<%= cspNonce %>">
     body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial;background:#f4f8ff;color:#0f172a}
     .wrap{max-width:800px;margin:0 auto;padding:18px}
     .card{background:#fff;border:1px solid rgba(13,64,96,.12);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.08);padding:16px}
@@ -14,8 +17,11 @@
     .bad{margin-top:10px;background:#fee2e2;color:#991b1b;border:1px solid rgba(153,27,27,.2);padding:10px 12px;border-radius:12px;font-weight:900}
     .ok{margin-top:10px;background:#ecfdf3;color:#15803d;border:1px solid rgba(21,128,61,.2);padding:10px 12px;border-radius:12px;font-weight:900}
   </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="/css/tenant-controls.css">
 </head>
 <body>
+<%- include("../partials/site-nav") %>
 <%
   const safe=(v)=> (v===null||v===undefined) ? "" : String(v);
   const r = (typeof result!=="undefined" && result) ? result : null;
@@ -50,5 +56,10 @@
     <% } %>
   </div>
 </div>
+
+<%- include("../partials/site-footer") %>
+  <script src="/js/tenant-public.js" defer></script>
+  <script src="/js/classic-motion.js" defer></script>
+  <script src="/js/tenant-workspace-motion.js" defer></script>
 </body>
 </html>

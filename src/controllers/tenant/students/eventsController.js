@@ -101,7 +101,8 @@ module.exports = {
         })),
       });
     } catch (err) {
-      return res.status(500).send("Failed to load events: " + err.message);
+      console.error("Student events load error:", err);
+      return res.status(500).send("Failed to load events.");
     }
   },
 
@@ -152,7 +153,8 @@ module.exports = {
       res.setHeader("Content-Disposition", 'attachment; filename="classic-academy-events.ics"');
       return res.send(ics);
     } catch (err) {
-      return res.status(500).send("Failed to export calendar: " + err.message);
+      console.error("Student events calendar export error:", err);
+      return res.status(500).send("Failed to export calendar.");
     }
   },
 };

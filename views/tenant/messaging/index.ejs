@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="/css/navbar.css" />
   <link rel="stylesheet" href="/css/student-portal.css" />
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .input,.select,.textarea{padding:10px 12px;border-radius:12px;border:1px solid rgba(13,64,96,.16);background:#fff;outline:none}
@@ -121,6 +121,7 @@
       .modal-header,.modal-body,.modal-footer{padding-left:14px;padding-right:14px}
     }
   </style>
+  <link rel="stylesheet" href="/css/tenant-controls.css">
 </head>
 <body data-portal="tenant">
   <div class="app">
@@ -261,6 +262,15 @@
               </table>
             </div>
           </div>
+          <% if (pagination && pagination.pageCount > 1) { %>
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;">
+              <div class="muted">Page <strong><%= pagination.page %></strong> of <strong><%= pagination.pageCount %></strong> · <%= pagination.total %> records</div>
+              <div style="display:flex;gap:8px;">
+                <% if (pagination.prevUrl) { %><a class="btn-xs" href="<%= pagination.prevUrl %>"><i class="fa-solid fa-chevron-left"></i> Previous</a><% } %>
+                <% if (pagination.nextUrl) { %><a class="btn-xs" href="<%= pagination.nextUrl %>">Next <i class="fa-solid fa-chevron-right"></i></a><% } %>
+              </div>
+            </div>
+          <% } %>
 
           <div id="view-delivery" style="display:none;margin-top:10px;">
             <div class="note">Delivery data is shown from DB stats fields.</div>
@@ -570,5 +580,6 @@
 
   <script src="/js/navbar.js"></script>
   <script src="/js/messaging.js"></script>
+  <script src="/js/tenant-workspace-motion.js" defer></script>
 </body>
 </html>

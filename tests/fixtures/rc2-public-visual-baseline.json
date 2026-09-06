@@ -1,0 +1,105 @@
+{
+  "baseline": "Classic Academy RC2 public visual structure",
+  "pages": {
+    "404.ejs": {
+      "bodyStructureSha256": "8118bedeee93754167b9e0be197d51cf00a5ef17c16b7ea0cc7d15f4951fc0c1",
+      "primaryStyleSha256": "13fecd4807bcd803c621334e5e2229302ad331216f0cf875f1a97f7f3aa8847e"
+    },
+    "500.ejs": {
+      "bodyStructureSha256": "e8b1d79cac45359ab06bbbba0d7af6c2884db4b20ee53e9a26372dc9b4e611f8",
+      "primaryStyleSha256": "37d3c3cfda216bc9ae85eeceed5d618b3378edf64f6cbd0a72e964aa11cd82fa"
+    },
+    "about.ejs": {
+      "bodyStructureSha256": "416cdab2ac2def36cb559cdfc00e8dd7a26270c4175ab76267e6ddafd265642a",
+      "primaryStyleSha256": "6b415391b99f9aec7cf7b98971ec7a44c3ed97b5b35ef6964590b38930972160"
+    },
+    "admissions.ejs": {
+      "bodyStructureSha256": "743a32e730f106f35dd94085638315ac905d10d1949e502524c734e89c9b1a5b",
+      "primaryStyleSha256": "227ebd7278e964691430eb7f127510b10765c0fa078e8f4e4b1402f1da5c5432"
+    },
+    "benefits.ejs": {
+      "bodyStructureSha256": "b40dab5ef3e70a933916fb67fae1003c8b08955e1cc5b84e39171909f21e063b",
+      "primaryStyleSha256": "227ebd7278e964691430eb7f127510b10765c0fa078e8f4e4b1402f1da5c5432"
+    },
+    "blog.ejs": {
+      "bodyStructureSha256": "cd8726f85e41b628b34b91fee352947c8692c17545b1474a6644c3a4c54a7452",
+      "primaryStyleSha256": "6b415391b99f9aec7cf7b98971ec7a44c3ed97b5b35ef6964590b38930972160"
+    },
+    "careers.ejs": {
+      "bodyStructureSha256": "d4c13cbc1f6747582d3f24cdb98477c81d4897f1e1bd32359c9eb4b8b755215b",
+      "primaryStyleSha256": "e2487f198836ca59b4c9853685f61d5130764235e5a73bda7fe9579668c1f98e"
+    },
+    "contact.ejs": {
+      "bodyStructureSha256": "4f20fd4a093e52d4fb33c4f241e71fe9a549c9a56b187ed0806cef64309a762d",
+      "primaryStyleSha256": "e6c160aed838a52be67489438b2ea754e72de0c1b6106a3d19453e6e8456862f"
+    },
+    "docs.ejs": {
+      "bodyStructureSha256": "ea42a623f55b95b39f55104e9311a8a4a6490f7e587c75ca48db60cebd8cdb40",
+      "primaryStyleSha256": "5c09973d4bbbbb113b3597420f70cb2da1549131634f5f2def18f0c128b07b54"
+    },
+    "faq.ejs": {
+      "bodyStructureSha256": "9d373ee5492f9540413192158e09beb6456ee2a875b93b09818938fd6310a404",
+      "primaryStyleSha256": "04819065dd2c89c28f1f887a69b483f4f297c5b0ccff2d56bfb1a5657df57aef"
+    },
+    "features.ejs": {
+      "bodyStructureSha256": "e0ab8c491074c9e4391b308ce0f9f44c8a7f1512ca459405cdc3b35944229862",
+      "primaryStyleSha256": "48086ad69154581404663d07d1187abcd848024fa7563404c43b7b13f7e2ccbf"
+    },
+    "index.ejs": {
+      "bodyStructureSha256": "64083f22de24f75ef31364441c701994b39ce1069ed991fc2eaebd1d813ac061",
+      "primaryStyleSha256": "3105a43b16223240963ea050ac6318964b6a6bec8ff1e8387b0ef30c31368bad"
+    },
+    "integrations.ejs": {
+      "bodyStructureSha256": "22af3e2963c13912e4afab4024d9072a35ed22a2f4d2712c72c3ff388b19e984",
+      "primaryStyleSha256": "5b9037f43dd3a5fe106af4d9f19a52dbe4b3afd34a85bf2d4162dd2162847833"
+    },
+    "plan.ejs": {
+      "bodyStructureSha256": "f6ff16ad74ee6825e0656efce8f6eb6e4f25a5a8d06251bea242503199197920",
+      "primaryStyleSha256": "6b415391b99f9aec7cf7b98971ec7a44c3ed97b5b35ef6964590b38930972160"
+    },
+    "privacy.ejs": {
+      "bodyStructureSha256": "7b16abeefa0d82147f0682a9518e89c458557ea7b2fc870085fc6d00e717cebd",
+      "primaryStyleSha256": "5e4d86a7966a877244f08f844402aeef55144bef338d15221aac5535bf9c435d"
+    },
+    "resources.ejs": {
+      "bodyStructureSha256": "fe412942e9a1af656a1c5b4877bae3d13446d06c23b8a105da5c37cc41b73cea",
+      "primaryStyleSha256": "3a470f2c26d93501837d1e70c2dbf3c1fc90978b1416af808f39a06a2b2ada3a"
+    },
+    "schedule.ejs": {
+      "bodyStructureSha256": "c4474dd970029aa26e67c1b3174478c6ef694c75c4913a3cbfa6f1e8962646cd",
+      "primaryStyleSha256": "f534361eca3bafe09d2093411eade82589434d8e28c7a5dd394eeb50e221e2e7"
+    },
+    "school-profile.ejs": {
+      "bodyStructureSha256": "2d89f86444ba0b499b9dd755cc89bba495e1dbb4fa8df2b4ab99678a0dc3017e",
+      "primaryStyleSha256": "44a76f1c43031f398b434bb5b89eb7a0cbd0942bff4d7667c00a1af9126ca2ab"
+    },
+    "schools.ejs": {
+      "bodyStructureSha256": "94f1e94a15313d3a4e4636f5c1d0d977896d3c81080fd4cb78b6897a2fc63830",
+      "primaryStyleSha256": "617ed04b02d52159477d0c13a40c64a8212fe1d4e46a1050648f8fc8b1c7394c"
+    },
+    "search.ejs": {
+      "bodyStructureSha256": "5ffa97cfbb0c07f97c515520fc365811bf74c02abbd2a1f879659c480cc62684",
+      "primaryStyleSha256": "8dda0e11502565bc539d3de66de1c0e9f6b442d1f6d4a1f8636037decdbb06b8"
+    },
+    "security.ejs": {
+      "bodyStructureSha256": "ee483bb92b3cbc62afa34d3c10ec1473f6a79a268f89a409b64cca725dfb33a5",
+      "primaryStyleSha256": "0ecd7d0e08c5db63328e77fa3bb35275087ceca60484251ce8c03cf53569ac3c"
+    },
+    "services.ejs": {
+      "bodyStructureSha256": "04a8ad830956a3d5a1ba0fbb658de50e48d3b0e985c77572c8546d810bbfd792",
+      "primaryStyleSha256": "a66b3b23a3f12d21abd6c39249b726ce24021ecfe7326cf2106ae0959328b0c7"
+    },
+    "share.ejs": {
+      "bodyStructureSha256": "a3312ba3dafb4d6df66530d8013fbc956060805fea969f69402372edf61ad5e7",
+      "primaryStyleSha256": "a5215b7647a03fc14d6744cca727843b8173e511af631b936824f3d8879c9d43"
+    },
+    "status.ejs": {
+      "bodyStructureSha256": "9a1d3b6ce9076f2a3057a3679734204599ddef65130f7b47a2559a7f74cd0a5a",
+      "primaryStyleSha256": "2d7e1ed57582d77dac10176a00c21b6b7d2d2a58b01176979c4204dc9aa043db"
+    },
+    "terms.ejs": {
+      "bodyStructureSha256": "7ee01a0f7aa56fbf0b2e7449fcfbd19183ab71ce844719c6536d1a8fdf5b3955",
+      "primaryStyleSha256": "9652e2c1dc0ffe8c5c7b432d5545736933c2641f523433ddd2fa1164b39d6927"
+    }
+  }
+}

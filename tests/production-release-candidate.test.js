@@ -20,8 +20,9 @@ function validEnv() {
     PLATFORM_SITE_URL: 'https://admin.classicacademy.example', APP_PUBLIC_URL: 'https://classicacademy.example',
     SMTP_HOST: 'smtp.example.com', SMTP_PORT: '587', SMTP_USER: 'mailer@example.com', SMTP_PASS: 'secret', SMTP_FROM: 'mailer@example.com',
     CLOUDINARY_CLOUD_NAME: 'cloud', CLOUDINARY_API_KEY: 'key', CLOUDINARY_API_SECRET: 'secret',
-    GOOGLE_OAUTH_CLIENT_ID: 'google-client', GOOGLE_OAUTH_CLIENT_SECRET: 'google-secret',
-    GOOGLE_OAUTH_REDIRECT_URI: 'https://classicacademy.example/oauth/callback', GOOGLE_OAUTH_REFRESH_TOKEN: 'refresh',
+    GOOGLE_CALENDAR_AUTH_MODE: 'oauth', GOOGLE_OAUTH_CLIENT_ID: 'google-client', GOOGLE_OAUTH_CLIENT_SECRET: 'google-secret',
+    GOOGLE_OAUTH_REDIRECT_URI: 'https://classicacademy.example/super-admin/settings/google-calendar/callback',
+    GOOGLE_OAUTH_CONSENT_STATUS: 'production', RUN_SCHEDULERS_IN_WEB: 'false',
     ZOOM_ACCOUNT_ID: 'zoom-account', ZOOM_CLIENT_ID: 'zoom-client', ZOOM_CLIENT_SECRET: 'zoom-secret',
   };
 }
@@ -31,10 +32,58 @@ test('production readiness accepts a complete production contract on the pinned 
   assert.equal(result.ok, true, result.errors.join('\n'));
 });
 
+
+test('production readiness accepts service-account Calendar mode without user refresh tokens', () => {
+  const env = validEnv();
+  env.GOOGLE_CALENDAR_AUTH_MODE = 'service_account';
+  delete env.GOOGLE_OAUTH_CLIENT_ID;
+  delete env.GOOGLE_OAUTH_CLIENT_SECRET;
+  delete env.GOOGLE_OAUTH_REDIRECT_URI;
+  delete env.GOOGLE_OAUTH_CONSENT_STATUS;
+  env.GOOGLE_SERVICE_ACCOUNT_EMAIL = 'classic-booking@classic-project.iam.gserviceaccount.com';
+  env.GOOGLE_SERVICE_ACCOUNT_SUBJECT = 'calendar-owner@classicacademy.example';
+  env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY_B64 = Buffer.from(['-----BEGIN ', 'PRIVATE KEY-----\n', 'A'.repeat(300), '\n-----END ', 'PRIVATE KEY-----'].join('')).toString('base64');
+  env.GOOGLE_CALENDAR_ID = 'primary';
+  const result = readiness.validateProductionReadiness(env, { nodeVersion: readiness.PINNED_NODE_VERSION });
+  assert.equal(result.ok, true, result.errors.join('\n'));
+  assert.match(result.warnings.join('\n'), /domain-wide delegation/i);
+});
+
+test('service-account Calendar readiness rejects missing delegation subject and malformed private key', () => {
+  const env = validEnv();
+  env.GOOGLE_CALENDAR_AUTH_MODE = 'service_account';
+  delete env.GOOGLE_OAUTH_CLIENT_ID;
+  delete env.GOOGLE_OAUTH_CLIENT_SECRET;
+  delete env.GOOGLE_OAUTH_REDIRECT_URI;
+  delete env.GOOGLE_OAUTH_CONSENT_STATUS;
+  env.GOOGLE_SERVICE_ACCOUNT_EMAIL = 'classic-booking@classic-project.iam.gserviceaccount.com';
+  env.GOOGLE_SERVICE_ACCOUNT_SUBJECT = '';
+  env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY_B64 = Buffer.from('not-a-pem').toString('base64');
+  env.GOOGLE_CALENDAR_ID = 'primary';
+  const result = readiness.validateProductionReadiness(env, { nodeVersion: readiness.PINNED_NODE_VERSION });
+  assert.equal(result.ok, false);
+  assert.match(result.errors.join('\n'), /GOOGLE_SERVICE_ACCOUNT_SUBJECT/);
+  assert.match(result.errors.join('\n'), /GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY_B64/);
+});
+
+test('production readiness does not require a static Google refresh token and gates legacy bootstrap explicitly', () => {
+  const env = validEnv();
+  const clean = readiness.validateProductionReadiness(env, { nodeVersion: readiness.PINNED_NODE_VERSION });
+  assert.equal(clean.ok, true, clean.errors.join('\n'));
+  env.GOOGLE_OAUTH_REFRESH_TOKEN = 'legacy-refresh-token';
+  const unsafeLegacy = readiness.validateProductionReadiness(env, { nodeVersion: readiness.PINNED_NODE_VERSION });
+  assert.equal(unsafeLegacy.ok, false);
+  assert.match(unsafeLegacy.errors.join('\n'), /not a production runtime credential/i);
+  env.GOOGLE_OAUTH_ALLOW_LEGACY_BOOTSTRAP = 'true';
+  const migration = readiness.validateProductionReadiness(env, { nodeVersion: readiness.PINNED_NODE_VERSION });
+  assert.equal(migration.ok, true, migration.errors.join('\n'));
+  assert.match(migration.warnings.join('\n'), /controlled migration|one controlled migration/i);
+});
+
 test('production readiness fails closed on runtime, backup-key, dedicated privacy secret and booking gaps', () => {
   const env = validEnv();
   delete env.PLATFORM_AUDIT_PRIVACY_SECRET;
-  delete env.GOOGLE_OAUTH_REFRESH_TOKEN;
+  delete env.GOOGLE_OAUTH_CLIENT_SECRET;
   env.TENANT_BACKUP_KEY = 'short';
   const result = readiness.validateProductionReadiness(env, { nodeVersion: '22.16.0' });
   assert.equal(result.ok, false);
@@ -42,7 +91,7 @@ test('production readiness fails closed on runtime, backup-key, dedicated privac
   assert.match(joined, /Node 24\.11\.1 is required/);
   assert.match(joined, /TENANT_BACKUP_KEY/);
   assert.match(joined, /PLATFORM_AUDIT_PRIVACY_SECRET/);
-  assert.match(joined, /GOOGLE_OAUTH_REFRESH_TOKEN/);
+  assert.match(joined, /GOOGLE_OAUTH_CLIENT_SECRET/);
 });
 
 test('production readiness rejects insecure URLs, localhost base domains and unsafe debug flags', () => {
@@ -165,9 +214,15 @@ test('unsafe production proxy/local-tenant modes are release blockers', () => {
 
 test('release package includes a deterministic production runbook and preflight command', () => {
   const pkg = JSON.parse(read('package.json'));
-  assert.equal(pkg.scripts['release:preflight'], 'npm run release:readiness && npm test && npm run check');
+  assert.equal(pkg.scripts['release:preflight'], 'npm run release:readiness && npm run check:hygiene && npm run check:syntax && npm run check:views && npm run check:media && npm run check:seo && npm run check:csrf && npm test');
+  assert.equal(pkg.scripts['check:syntax'], 'node scripts/check-js-syntax.js');
+  assert.equal(pkg.scripts['check:views'], 'node scripts/check-ejs-views.js');
+  assert.equal(pkg.scripts['check:media'], 'node scripts/check-static-media.js');
+  assert.equal(pkg.scripts['check:seo'], 'node scripts/check-seo-discovery.js');
+  assert.equal(pkg.scripts['check:hygiene'], 'node scripts/check-release-hygiene.js');
+  assert.equal(pkg.scripts['check:csrf'], 'node scripts/check-authenticated-form-csrf.js');
   const doc = read('docs/PRODUCTION_RELEASE_CANDIDATE.md');
-  for (const marker of ['Node 24.11.1','npm ci','npm audit --omit=dev --audit-level=low','npm run release:readiness','npm run indexes','GET /healthz','GET /readyz','Multi-tenant isolation','Backup and restore rehearsal']) {
+  for (const marker of ['Node 24.11.1','npm ci','npm audit --omit=dev --audit-level=high','npm run release:readiness','npm run indexes','GET /healthz','GET /readyz','Multi-tenant isolation','Backup and restore rehearsal']) {
     assert.ok(doc.includes(marker), marker);
   }
   assert.doesNotMatch(doc, /BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY/);

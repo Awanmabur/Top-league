@@ -10,7 +10,7 @@
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
         crossorigin="anonymous" referrerpolicy="no-referrer"/>
 <link rel="stylesheet" href="/css/navbar.css" />
-  <style>
+  <style nonce="<%= cspNonce %>">
     :root{
       --blue:#0a3d62; --blue2:#083454; --accent:#0a6fbf;
       --bg:#f4f8ff; --card:#fff; --muted:#6b7280;
@@ -137,6 +137,7 @@
       table{min-width:760px}
     }
   </style>
+  <link rel="stylesheet" href="/css/tenant-controls.css">
 </head>
 
 <body data-portal="tenant">
@@ -474,7 +475,7 @@
 
                         <div class="no-print" style="display:flex;gap:8px;flex-wrap:wrap">
                           <% if (uploaded) { %>
-                            <a class="btn light small" href="<%= url %>" target="_blank" rel="noreferrer">
+                            <a class="btn light small" href="<%= url %>" target="_blank" rel="noopener noreferrer">
                               <i class="fa-solid fa-eye"></i> View
                             </a>
                           <% } else { %>
@@ -504,7 +505,7 @@
                           <span class="pill ok"><i class="fa-solid fa-image"></i> Image</span>
                         </div>
                         <div class="divider"></div>
-                        <a href="<%= passUrl %>" target="_blank" rel="noreferrer" class="muted doc-preview-link" style="text-decoration:none">
+                        <a href="<%= passUrl %>" target="_blank" rel="noopener noreferrer" class="muted doc-preview-link" style="text-decoration:none">
                           <img src="<%= passUrl %>" alt="passport" class="doc-preview-img">
                         </a>
                       </div>
@@ -1020,6 +1021,7 @@
 
 <script src="/js/admin-applicant-detail.js" defer></script>
 <script src="/js/navbar.js" defer></script>
+  <script src="/js/tenant-workspace-motion.js" defer></script>
 </body>
 </html>
 

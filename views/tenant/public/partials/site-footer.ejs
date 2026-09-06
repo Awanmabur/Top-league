@@ -1,0 +1,35 @@
+<%
+  const _ft = (typeof tenant !== "undefined" && tenant) ? tenant : {};
+  const _fs = _ft.settings || {};
+  const _fp = _fs.profile || {};
+  const _fb = _fs.branding || {};
+  const _fname = _fp.shortName || _ft.name || "Classic Academy";
+  const _ftag = _fp.tagline || _fp.motto || "Learning, growth and opportunity.";
+  const _flogo = _fb.logoUrl || "/img/academylogo.png";
+  const _finit = String(_fname).split(/\s+/).filter(Boolean).slice(0,2).map((x)=>x[0]).join("").toUpperCase() || "CA";
+  const _fc = _fp.contact || {};
+  const _fl = _fp.location || {};
+  const _fa = _fp.admissions || {};
+  const _social = _fp.socials || {};
+  const _safeHttp = (value) => { try { const u = new URL(String(value || "")); return (u.protocol === "https:" || u.protocol === "http:") ? u.toString() : ""; } catch { return ""; } };
+  const _address = _fc.addressFull || [_fl.city,_fl.country].filter(Boolean).join(", ") || "";
+  const _socialItems = [
+    ["facebook","fa-facebook",_safeHttp(_social.facebook)], ["instagram","fa-instagram",_safeHttp(_social.instagram)],
+    ["x-twitter","fa-x-twitter",_safeHttp(_social.x || _social.twitter)], ["youtube","fa-youtube",_safeHttp(_social.youtube)],
+    ["tiktok","fa-tiktok",_safeHttp(_social.tiktok)], ["linkedin","fa-linkedin-in",_safeHttp(_social.linkedin)]
+  ].filter((x)=>x[2]);
+%>
+<footer class="tenant-site-footer">
+  <div class="tenant-footer-shell">
+    <div class="tenant-footer-grid">
+      <section class="tenant-footer-col">
+        <div class="tenant-footer-brand"><span class="tenant-footer-logo"><% if (_flogo) { %><img src="<%= _flogo %>" alt="<%= _fname %> logo"><% } else { %><%= _finit %><% } %></span><div><div class="tenant-footer-name"><%= _fname %></div><div class="tenant-footer-tagline"><%= _ftag %></div></div></div>
+        <% if (_address) { %><div class="tenant-footer-note"><i class="fa-solid fa-location-dot"></i> <%= _address %></div><% } %>
+      </section>
+      <section class="tenant-footer-col"><h3>Explore</h3><div class="tenant-footer-links"><a href="/">Home</a><a href="/#about">About the school</a><a href="/#programs">Programs</a><a href="/#gallery">Gallery</a><a href="/#contact">Contact</a></div></section>
+      <section class="tenant-footer-col"><h3>Admissions & Portal</h3><div class="tenant-footer-links"><a href="/login">Portal login</a><% if (_fa.isOpen !== false) { %><a href="<%= _fa.applyUrl || '/apply' %>">Apply for admission</a><% } %><a href="/admissions/status">Application status</a><a href="/scholarships">Scholarships</a><a href="/scholarships/status">Scholarship status</a></div></section>
+      <section class="tenant-footer-col"><h3>Connect</h3><div class="tenant-footer-links"><% if (_fc.phone) { %><a href="tel:<%= _fc.phone %>"><i class="fa-solid fa-phone"></i> <%= _fc.phone %></a><% } %><% if (_fc.email) { %><a href="mailto:<%= _fc.email %>"><i class="fa-solid fa-envelope"></i> <%= _fc.email %></a><% } %><% if (_safeHttp(_fc.website)) { %><a href="<%= _safeHttp(_fc.website) %>" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-globe"></i> Website</a><% } %></div><div class="tenant-socials" aria-label="Social media"><% _socialItems.forEach(function(item){ %><a href="<%= item[2] %>" target="_blank" rel="noopener noreferrer" aria-label="<%= item[0] %>"><i class="fa-brands <%= item[1] %>"></i></a><% }) %><% if (!_socialItems.length && _fc.email) { %><a href="mailto:<%= _fc.email %>" aria-label="Email"><i class="fa-solid fa-envelope"></i></a><% } %></div></section>
+    </div>
+    <div class="tenant-footer-bottom"><span>© <%= new Date().getFullYear() %> <%= _fname %>. All rights reserved.</span><span>Powered securely by <a href="https://www.classicacademy.app" target="_blank" rel="noopener noreferrer">Classic Academy</a></span></div>
+  </div>
+</footer>

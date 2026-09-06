@@ -42,16 +42,28 @@ function attachPlatformUser(req, res, user) {
   const access = getPlatformAccess(platformUser.role);
 
   if (req.session) {
-    req.session.platformUserId = platformUser.id;
-    req.session.platformRole = platformUser.role;
-    req.session.platformEmail = platformUser.email;
-    req.session.platformName = platformUser.name;
-    req.session.platformTokenVersion = platformUser.tokenVersion;
-    req.session.platformLastActivityAt = Date.now();
+    if (String(req.session.platformUserId || "") !== platformUser.id) req.session.platformUserId = platformUser.id;
+    if (String(req.session.platformRole || "") !== platformUser.role) req.session.platformRole = platformUser.role;
+    if (String(req.session.platformEmail || "") !== platformUser.email) req.session.platformEmail = platformUser.email;
+    if (String(req.session.platformName || "") !== platformUser.name) req.session.platformName = platformUser.name;
+    if (Number(req.session.platformTokenVersion ?? -1) !== platformUser.tokenVersion) {
+      req.session.platformTokenVersion = platformUser.tokenVersion;
+    }
+
+    const now = Date.now();
+    const lastPersisted = Number(req.session.platformLastActivityAt || 0);
+    const activityWriteIntervalMs = Math.min(
+      5 * 60 * 1000,
+      Math.max(15 * 1000, Number(process.env.PLATFORM_ACTIVITY_WRITE_INTERVAL_MS || 60 * 1000)),
+    );
+    if (!lastPersisted || now - lastPersisted >= activityWriteIntervalMs) {
+      req.session.platformLastActivityAt = now;
+    }
   }
 
   req.user = platformUser;
   req.platformAccess = access;
+  req._platformAuthorityLoaded = true;
   res.locals.user = platformUser;
   res.locals.platformUser = platformUser;
   res.locals.platformAccess = access;
@@ -153,24 +165,33 @@ function platformOnly(req, res, next) {
 }
 
 function platformAdminOnly(req, res, next) {
-  return withPlatformUser(req, res, next, () => {
+  const authorize = () => {
     if (req.user.role !== "SuperAdmin") {
       return rejectForbidden(req, res);
     }
-
     return next();
-  });
+  };
+
+  // Platform routes are commonly protected first by platformOnly and then by a
+  // route-specific permission guard. Reuse the authority loaded earlier in the
+  // same request instead of performing a second Redis/Mongo/session-timeout
+  // lookup. Only this private request marker can enable reuse; request/user
+  // input alone cannot bypass live authority validation.
+  if (req._platformAuthorityLoaded && req.user && req.platformAccess) return authorize();
+  return withPlatformUser(req, res, next, authorize);
 }
 
 function platformRequire(permission) {
   return function (req, res, next) {
-    return withPlatformUser(req, res, next, () => {
+    const authorize = () => {
       if (platformCan(req.user.role, permission)) {
         return next();
       }
-
       return rejectForbidden(req, res);
-    });
+    };
+
+    if (req._platformAuthorityLoaded && req.user && req.platformAccess) return authorize();
+    return withPlatformUser(req, res, next, authorize);
   };
 }
 

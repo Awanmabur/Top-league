@@ -270,20 +270,38 @@ module.exports = {
     const { Message, MessageTemplate } = req.models;
     await processDueMessages(req).catch((err) => console.error("MESSAGE SCHEDULER ERROR:", err));
     const { mongo, clean } = buildFilters(req.query);
-    const messages = await Message.find(mongo).sort({ createdAt: -1 }).lean();
+    const pageSize = 100;
+    const page = Math.max(1, Math.min(100000, Number.parseInt(req.query.page, 10) || 1));
+    const [messages, total, kpiRows, templates] = await Promise.all([
+      Message.find(mongo).sort({ createdAt: -1 }).skip((page - 1) * pageSize).limit(pageSize).lean(),
+      Message.countDocuments(mongo),
+      Message.aggregate([
+        { $match: mongo },
+        { $group: {
+          _id: null,
+          sent: { $sum: { $cond: [{ $eq: ["$status", "Sent"] }, 1, 0] } },
+          scheduled: { $sum: { $cond: [{ $eq: ["$status", "Scheduled"] }, 1, 0] } },
+          drafts: { $sum: { $cond: [{ $eq: ["$status", "Draft"] }, 1, 0] } },
+          failed: { $sum: { $cond: [{ $eq: ["$status", "Failed"] }, 1, 0] } },
+        } },
+      ]).catch(() => []),
+      MessageTemplate
+        ? MessageTemplate.find({ isDeleted: { $ne: true }, isActive: true }).sort({ name: 1 }).limit(200).lean().catch(() => [])
+        : Promise.resolve([]),
+    ]);
     const recipientsByMessage = await getMessageRecipients(req, messages.map((x) => x._id));
     const data = messages.map((doc) => serializeMessage(doc, recipientsByMessage.get(String(doc._id)) || []));
-    const templates = MessageTemplate
-      ? await MessageTemplate.find({ isDeleted: { $ne: true }, isActive: true }).sort({ name: 1 }).lean().catch(() => [])
-      : [];
+    const pageCount = Math.max(1, Math.ceil(total / pageSize));
+    const makePageUrl = (target) => { const qs = new URLSearchParams(req.query || {}); qs.set("page", String(target)); return `/admin/messaging?${qs.toString()}`; };
 
     return res.render("tenant/messaging/index", {
       tenant: req.tenant,
       csrfToken: req.csrfToken?.(),
       messages: data,
       templates: templates.map(serializeTemplate),
-      kpis: computeKpis(data),
+      kpis: kpiRows[0] || { sent: 0, scheduled: 0, drafts: 0, failed: 0 },
       query: clean,
+      pagination: { page, pageSize, total, pageCount, prevUrl: page > 1 ? makePageUrl(page - 1) : "", nextUrl: page < pageCount ? makePageUrl(page + 1) : "" },
     });
   },
 

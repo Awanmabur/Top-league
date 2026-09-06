@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Transcript — <%= data.student.name %></title>
 <link rel="icon" href="data:," />
-<style>
+<style nonce="<%= cspNonce %>">
   body{font-family:system-ui,Segoe UI,Arial;margin:24px;color:#0b1020}
   .page{position:relative}
   .watermark{
@@ -26,6 +26,7 @@
   .qr img{width:130px;height:130px;border:1px solid #e2e8f0;border-radius:8px;padding:6px}
   @media print{ #printBtn{display:none} body{margin:10mm} }
 </style>
+  <link rel="stylesheet" href="/css/tenant-controls.css">
 </head>
 <body data-portal="tenant">
 <div class="page">
@@ -147,5 +148,6 @@
 </div>
 
 <script src="/js/transcript-print.js" defer></script>
+  <script src="/js/tenant-workspace-motion.js" defer></script>
 </body>
 </html>

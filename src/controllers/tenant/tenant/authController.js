@@ -195,8 +195,10 @@ module.exports = {
       req.flash?.("success", "Welcome back!");
       return res.redirect(redirectTo);
     } catch (err) {
-      req.flash?.("error", err?.message || "Login failed");
-      return renderLogin(req, res, 500, { error: err?.message || "Login failed" });
+      console.error("Tenant login error:", err);
+      const message = "Unable to sign in right now. Please try again.";
+      req.flash?.("error", message);
+      return renderLogin(req, res, 500, { error: message });
     }
   },
 

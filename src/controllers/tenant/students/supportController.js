@@ -86,7 +86,8 @@ module.exports = {
       });
     } catch (err) {
       console.error("STUDENT SUPPORT INDEX ERROR:", err);
-      return res.status(500).send("Failed to load support: " + err.message);
+      console.error("Student support error:", err);
+      return res.status(500).send("Failed to load support.");
     }
   },
 

@@ -1,5 +1,11 @@
 (function () {
   const $ = (id) => document.getElementById(id);
+  const escapeHtml = (value) => String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 
   function readData() {
     const el = $("usersData");
@@ -79,7 +85,7 @@
   function roleBadges(roles) {
     const arr = Array.isArray(roles) ? roles : [];
     if (!arr.length) return '<span class="pill info">—</span>';
-    return arr.map((r) => `<span class="pill info"><i class="fa-solid fa-user-shield"></i> ${r}</span>`).join(" ");
+    return arr.map((r) => `<span class="pill info"><i class="fa-solid fa-user-shield"></i> ${escapeHtml(r)}</span>`).join(" ");
   }
 
   function syncBulkbar() {
@@ -94,20 +100,20 @@
     $("tbody").innerHTML = USERS.map((u) => {
       const checked = state.selected.has(u.id) ? "checked" : "";
       return `
-        <tr data-id="${u.id}">
-          <td><input type="checkbox" class="rowCheck" data-id="${u.id}" ${checked}></td>
+        <tr data-id="${escapeHtml(u.id)}">
+          <td><input type="checkbox" class="rowCheck" data-id="${escapeHtml(u.id)}" ${checked}></td>
           <td>
-            <div class="strong">${u.fullName || "—"}</div>
+            <div class="strong">${escapeHtml(u.fullName || "—")}</div>
           </td>
           <td>
-            <div>${u.email || "—"}</div>
-            <div class="muted">${u.phone || "—"}</div>
+            <div>${escapeHtml(u.email || "—")}</div>
+            <div class="muted">${escapeHtml(u.phone || "—")}</div>
           </td>
           <td><div class="role-badges">${roleBadges(u.roles)}</div></td>
           <td>${passwordPill(u)}</td>
           <td>${statusPill(u)}</td>
           <td>${linkedProfile(u)}</td>
-          <td class="muted">${u.createdAt || "—"}</td>
+          <td class="muted">${escapeHtml(u.createdAt || "—")}</td>
           <td>
             <div class="actions">
               <button class="btn-xs actView" type="button" title="View"><i class="fa-solid fa-eye"></i></button>
@@ -199,12 +205,12 @@
     if (!u) return;
 
     if (e.target.closest(".actView")) return openView(u);
-    if (e.target.closest(".actResend")) return submitRowAction(`/admin/staff-users/${u.id}/resend-invite`);
-    if (e.target.closest(".actActivate")) return submitRowAction(`/admin/staff-users/${u.id}/status`, { status: "active" });
-    if (e.target.closest(".actSuspend")) return submitRowAction(`/admin/staff-users/${u.id}/status`, { status: "suspended" });
+    if (e.target.closest(".actResend")) return submitRowAction(`/admin/staff-users/${escapeHtml(u.id)}/resend-invite`);
+    if (e.target.closest(".actActivate")) return submitRowAction(`/admin/staff-users/${escapeHtml(u.id)}/status`, { status: "active" });
+    if (e.target.closest(".actSuspend")) return submitRowAction(`/admin/staff-users/${escapeHtml(u.id)}/status`, { status: "suspended" });
     if (e.target.closest(".actDelete")) {
       if (window.confirm(`Delete "${u.fullName}"?`)) {
-        return submitRowAction(`/admin/staff-users/${u.id}/delete`);
+        return submitRowAction(`/admin/staff-users/${escapeHtml(u.id)}/delete`);
       }
     }
   });

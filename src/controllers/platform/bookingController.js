@@ -1,7 +1,6 @@
 const crypto = require("crypto");
 const { z } = require("zod");
 const { DateTime, Interval } = require("luxon");
-const { google } = require("googleapis");
 const rateLimit = require("express-rate-limit");
 const helmet = require("helmet");
 const { redisRateLimitOptions } = require("../../services/rateLimitStoreFactory");
@@ -9,6 +8,7 @@ const { redisRateLimitOptions } = require("../../services/rateLimitStoreFactory"
 const { platformConnection } = require("../../config/db");
 const PlatformBooking = require("../../models/platform/PlatformBooking")(platformConnection);
 const { privacyHmac } = require("../../services/platformAuditService");
+const googleCalendar = require("../../services/googleCalendarAuthService");
 
 const ALLOWED_DURATIONS = [30, 45, 60];
 const SLOT_SEGMENT_MINUTES = 15;
@@ -32,7 +32,6 @@ const bookingEnv = {
   GOOGLE_OAUTH_CLIENT_ID: process.env.GOOGLE_OAUTH_CLIENT_ID,
   GOOGLE_OAUTH_CLIENT_SECRET: process.env.GOOGLE_OAUTH_CLIENT_SECRET,
   GOOGLE_OAUTH_REDIRECT_URI: process.env.GOOGLE_OAUTH_REDIRECT_URI,
-  GOOGLE_OAUTH_REFRESH_TOKEN: process.env.GOOGLE_OAUTH_REFRESH_TOKEN,
 
   HOST_EMAILS: process.env.HOST_EMAILS || "",
 
@@ -66,17 +65,14 @@ bookingEnv.MAX_ADVANCE_DAYS = Math.min(Math.max(bookingEnv.MAX_ADVANCE_DAYS, 1),
 bookingEnv.CLAIM_TTL_MINUTES = Math.min(Math.max(bookingEnv.CLAIM_TTL_MINUTES, 2), 30);
 
 const bookingEnabled =
-  !!bookingEnv.GOOGLE_OAUTH_CLIENT_ID &&
-  !!bookingEnv.GOOGLE_OAUTH_CLIENT_SECRET &&
-  !!bookingEnv.GOOGLE_OAUTH_REDIRECT_URI &&
-  !!bookingEnv.GOOGLE_OAUTH_REFRESH_TOKEN &&
+  googleCalendar.configured() &&
   !!bookingEnv.ZOOM_ACCOUNT_ID &&
   !!bookingEnv.ZOOM_CLIENT_ID &&
   !!bookingEnv.ZOOM_CLIENT_SECRET;
 
 if (!bookingEnabled) {
   console.warn(
-    "Booking is not fully configured. /schedule remains available, but booking APIs require Google OAuth refresh-token and Zoom credentials.",
+    "Booking is not fully configured. /schedule remains available, but booking APIs require Google Calendar authentication and Zoom credentials.",
   );
 }
 
@@ -102,7 +98,7 @@ const bookingCsp = helmet.contentSecurityPolicy({
       "https://cdnjs.cloudflare.com",
       "https://fonts.gstatic.com",
     ],
-    "img-src": ["'self'", "data:", "https://res.cloudinary.com"],
+    "img-src": ["'self'", "data:", "https://res.cloudinary.com", "https://upload.wikimedia.org", "https://developer.apple.com"],
     "connect-src": ["'self'"],
   },
 });
@@ -123,28 +119,20 @@ const bookingSubmitLimiter = rateLimit({
   ...redisRateLimitOptions("booking-submit"),
 });
 
-const oauth2Client = new google.auth.OAuth2(
-  bookingEnv.GOOGLE_OAUTH_CLIENT_ID,
-  bookingEnv.GOOGLE_OAUTH_CLIENT_SECRET,
-  bookingEnv.GOOGLE_OAUTH_REDIRECT_URI,
-);
-
-function ensureGoogleAuth() {
+async function ensureGoogleAuth() {
   if (!bookingEnabled) {
     const err = new Error("Booking service is not configured.");
     err.code = "BOOKING_NOT_CONFIGURED";
     throw err;
   }
-
-  oauth2Client.setCredentials({ refresh_token: bookingEnv.GOOGLE_OAUTH_REFRESH_TOKEN });
-  return google.calendar({ version: "v3", auth: oauth2Client });
+  return googleCalendar.getCalendarClient();
 }
 
 const pad = (n) => String(n).padStart(2, "0");
 const isoKey = (dt) => `${dt.year}-${pad(dt.month)}-${pad(dt.day)}`;
 
 function publicBookingError(res, error, fallback = "Booking service is temporarily unavailable.") {
-  if (error?.code === "BOOKING_NOT_CONFIGURED") {
+  if (["BOOKING_NOT_CONFIGURED", "GOOGLE_CALENDAR_RECONNECT_REQUIRED", "GOOGLE_CALENDAR_SERVICE_ACCOUNT_ERROR", "GOOGLE_SERVICE_ACCOUNT_NOT_CONFIGURED"].includes(error?.code)) {
     return res.status(503).json({ ok: false, message: fallback });
   }
   console.error("platform booking:", error?.message || error);
@@ -160,16 +148,22 @@ function overlapsAny(slotInterval, busyIntervals) {
   return busyIntervals.some((busyInterval) => slotInterval.overlaps(busyInterval));
 }
 
-async function freeBusyBetween(calendarApi, timeMinISO, timeMaxISO) {
-  const fb = await calendarApi.freebusy.query({
-    requestBody: {
-      timeMin: timeMinISO,
-      timeMax: timeMaxISO,
-      items: [{ id: bookingEnv.GOOGLE_CALENDAR_ID }],
-    },
-  });
+async function freeBusyBetween(googleClient, timeMinISO, timeMaxISO) {
+  let fb;
+  try {
+    fb = await googleClient.calendar.freebusy.query({
+      requestBody: {
+        timeMin: timeMinISO,
+        timeMax: timeMaxISO,
+        items: [{ id: googleClient.calendarId }],
+      },
+    });
+    await googleCalendar.markSuccess(googleClient.credentialId).catch(() => {});
+  } catch (error) {
+    throw await googleCalendar.normalizeCalendarError(error, googleClient.credentialId);
+  }
 
-  const busy = fb.data.calendars?.[bookingEnv.GOOGLE_CALENDAR_ID]?.busy || [];
+  const busy = fb.data.calendars?.[googleClient.calendarId]?.busy || [];
   return busy
     .map((item) =>
       Interval.fromDateTimes(DateTime.fromISO(item.start), DateTime.fromISO(item.end)),
@@ -340,11 +334,11 @@ async function deleteZoomMeeting(meetingId) {
   }
 }
 
-async function deleteCalendarEvent(calendarApi, eventId) {
-  if (!eventId) return;
+async function deleteCalendarEvent(googleClient, eventId) {
+  if (!eventId || !googleClient?.calendar) return;
   try {
-    await calendarApi.events.delete({
-      calendarId: bookingEnv.GOOGLE_CALENDAR_ID,
+    await googleClient.calendar.events.delete({
+      calendarId: googleClient.calendarId,
       eventId,
       sendUpdates: "all",
     });
@@ -377,9 +371,16 @@ function configuredPublicOrigin(req) {
       }
     } catch (_) {}
   }
-  const forwardedProto = String(req.headers["x-forwarded-proto"] || "").split(",")[0].trim();
-  const proto = forwardedProto || req.protocol;
-  return `${proto}://${req.get("host")}`;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("PUBLIC_SITE_URL or PLATFORM_SITE_URL is required for booking URLs in production.");
+  }
+  const hostname = String(req.hostname || "localhost").trim().toLowerCase();
+  if (!/^(?:localhost|127\.0\.0\.1|(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)$/.test(hostname)) {
+    throw new Error("Request hostname is invalid.");
+  }
+  const localPort = Number(req.socket?.localPort || process.env.PORT || 0);
+  const port = localPort > 0 && localPort <= 65535 ? `:${localPort}` : "";
+  return `${req.protocol === "https" ? "https" : "http"}://${hostname}${port}`;
 }
 
 function renderSchedule(req, res) {
@@ -473,9 +474,9 @@ async function failClaim(claimId, reason) {
   );
 }
 
-async function combinedBusy(calendarApi, start, end) {
+async function combinedBusy(googleClient, start, end) {
   const [googleBusy, localBusy] = await Promise.all([
-    freeBusyBetween(calendarApi, start.toUTC().toISO(), end.toUTC().toISO()),
+    freeBusyBetween(googleClient, start.toUTC().toISO(), end.toUTC().toISO()),
     localBusyBetween(start.toUTC(), end.toUTC()),
   ]);
   return [...googleBusy, ...localBusy];
@@ -483,7 +484,7 @@ async function combinedBusy(calendarApi, start, end) {
 
 async function monthAvailability(req, res) {
   try {
-    const calendarApi = ensureGoogleAuth();
+    const googleClient = await ensureGoogleAuth();
     const year = Number(req.query.year);
     const month = Number(req.query.month);
     const durationMin = normalizeDuration(req.query.duration);
@@ -496,7 +497,7 @@ async function monthAvailability(req, res) {
     if (!monthStart.isValid) return res.status(400).json({ ok: false, message: "Invalid month" });
     const monthEnd = monthStart.plus({ months: 1 }).set({ hour: bookingEnv.BOOKING_END_HOUR, minute: 0, second: 0, millisecond: 0 });
     const [googleBusy, localBusy] = await Promise.all([
-      freeBusyBetween(calendarApi, monthStart.toUTC().toISO(), monthEnd.toUTC().toISO()),
+      freeBusyBetween(googleClient, monthStart.toUTC().toISO(), monthEnd.toUTC().toISO()),
       localBusyBetween(monthStart.toUTC(), monthEnd.toUTC()),
     ]);
     const busyUTC = [...googleBusy, ...localBusy];
@@ -538,7 +539,7 @@ async function monthAvailability(req, res) {
 
 async function dayAvailability(req, res) {
   try {
-    const calendarApi = ensureGoogleAuth();
+    const googleClient = await ensureGoogleAuth();
     const dateStr = String(req.query.date || "");
     const durationMin = normalizeDuration(req.query.duration);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return res.status(400).json({ ok: false, message: "Invalid date format" });
@@ -554,7 +555,7 @@ async function dayAvailability(req, res) {
       return res.json({ ok: true, timezone: zone, date: dateStr, durationMin, slots: [] });
     }
 
-    const busyUTC = await combinedBusy(calendarApi, dayStart, dayEnd);
+    const busyUTC = await combinedBusy(googleClient, dayStart, dayEnd);
     const slots = computeSlotsForDay({
       dayStart,
       dayEnd,
@@ -573,11 +574,13 @@ async function dayAvailability(req, res) {
 
 async function book(req, res) {
   let claim = null;
+  let googleClient = null;
   let calendarApi = null;
   let zoom = null;
   let calendarEvent = null;
   try {
-    calendarApi = ensureGoogleAuth();
+    googleClient = await ensureGoogleAuth();
+    calendarApi = googleClient.calendar;
     const parsed = BookingSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ ok: false, message: "Invalid booking details." });
@@ -597,7 +600,7 @@ async function book(req, res) {
       return res.status(409).json({ ok: false, message: "That slot was just taken. Choose another." });
     }
 
-    const googleBusy = await freeBusyBetween(calendarApi, start.toUTC().toISO(), end.toUTC().toISO());
+    const googleBusy = await freeBusyBetween(googleClient, start.toUTC().toISO(), end.toUTC().toISO());
     if (googleBusy.length) {
       await failClaim(claim._id, "Calendar reported the slot as busy after claim.");
       return res.status(409).json({ ok: false, message: "That slot was just taken. Choose another." });
@@ -621,19 +624,24 @@ async function book(req, res) {
       booking.notes || "-",
     ].filter(Boolean).join("\n");
 
-    calendarEvent = await calendarApi.events.insert({
-      calendarId: bookingEnv.GOOGLE_CALENDAR_ID,
-      sendUpdates: "all",
-      requestBody: {
-        summary: `${booking.product} — ${booking.purpose}`,
-        description,
-        location: zoom.join_url,
-        start: { dateTime: start.toISO(), timeZone: zone },
-        end: { dateTime: end.toISO(), timeZone: zone },
-        attendees,
-        reminders: { useDefault: true },
-      },
-    });
+    try {
+      calendarEvent = await calendarApi.events.insert({
+        calendarId: googleClient.calendarId,
+        sendUpdates: "all",
+        requestBody: {
+          summary: `${booking.product} — ${booking.purpose}`,
+          description,
+          location: zoom.join_url,
+          start: { dateTime: start.toISO(), timeZone: zone },
+          end: { dateTime: end.toISO(), timeZone: zone },
+          attendees,
+          reminders: { useDefault: true },
+        },
+      });
+      await googleCalendar.markSuccess(googleClient.credentialId).catch(() => {});
+    } catch (error) {
+      throw await googleCalendar.normalizeCalendarError(error, googleClient.credentialId);
+    }
 
     const eventId = String(calendarEvent?.data?.id || "");
     if (!eventId) throw new Error("Calendar booking response was incomplete.");
@@ -656,7 +664,7 @@ async function book(req, res) {
     ).lean();
 
     if (!confirmed) {
-      await deleteCalendarEvent(calendarApi, eventId);
+      await deleteCalendarEvent(googleClient, eventId);
       await deleteZoomMeeting(zoom.id);
       await failClaim(claim._id, "Booking confirmation lost a revision race.");
       return res.status(503).json({ ok: false, message: "Booking could not be confirmed. Please choose the slot again." });
@@ -670,7 +678,7 @@ async function book(req, res) {
       calendar: { htmlLink: confirmed.calendarHtmlLink || "" },
     });
   } catch (error) {
-    if (calendarEvent?.data?.id && calendarApi) await deleteCalendarEvent(calendarApi, calendarEvent.data.id);
+    if (calendarEvent?.data?.id && googleClient) await deleteCalendarEvent(googleClient, calendarEvent.data.id);
     if (zoom?.id) await deleteZoomMeeting(zoom.id);
     if (claim?._id) {
       try { await failClaim(claim._id, "External booking operation failed."); } catch (_) {}

@@ -4,7 +4,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Roles — <%= (tenant && tenant.name) ? tenant.name : "Classic Academy" %></title>
-<style>
+<style nonce="<%= cspNonce %>">
   :root{--accent:#0a6fbf;--bg:#f4f8ff;--line:rgba(13,64,96,.12);--muted:#6b7280}
   *{box-sizing:border-box}
   body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial;background:var(--bg);color:#0f172a}
@@ -24,6 +24,7 @@
   .ferr{padding:10px 12px;border-radius:12px;border:1px solid rgba(239,68,68,.25);background:#fee2e2;color:#991b1b;font-weight:900;font-size:13px}
   .fok{padding:10px 12px;border-radius:12px;border:1px solid rgba(22,163,74,.25);background:#dcfce7;color:#166534;font-weight:900;font-size:13px}
 </style>
+  <link rel="stylesheet" href="/css/tenant-controls.css">
 </head>
 <body data-portal="tenant">
 <%
@@ -104,7 +105,7 @@
 
 <script nonce="<%= cspNonce %>">
 (function(){
-  const ALL = <%- JSON.stringify(roles || []) %>;
+  const ALL = <%- JSON.stringify(roles || []).replace(/&/g,"\u0026").replace(/</g,"\u003c").replace(/>/g,"\u003e") %>;
   function pickRoles(current){
     const cur = Array.isArray(current)? current : [];
     const raw = prompt("Enter roles comma-separated:\n"+ALL.join(", "), cur.join(", "));
@@ -148,6 +149,7 @@
   });
 })();
 </script>
+  <script src="/js/tenant-workspace-motion.js" defer></script>
 </body>
 </html>
 

@@ -99,7 +99,24 @@ module.exports = {
       if (schoolUnitId) filter.schoolUnitId = schoolUnitId;
       if (campusId) filter.campusId = campusId;
 
-      const total = await Stream.countDocuments(filter);
+      const kpiFilter = { ...filter };
+      delete kpiFilter.status;
+      const [total, statusRows, classes, sections, staffList] = await Promise.all([
+        Stream.countDocuments(filter),
+        Stream.aggregate([
+          { $match: kpiFilter },
+          { $group: { _id: "$status", count: { $sum: 1 } } },
+        ]),
+        Class
+          ? Class.find({}).select("name code schoolUnitId schoolUnitName campusId campusName levelType classLevel stream sectionName academicYear term").sort({ createdAt: -1 }).lean()
+          : [],
+        Section
+          ? Section.find({}).select("name code schoolUnitId schoolUnitName campusId campusName levelType classId className classLevel classStream streamId streamName streamCode status").sort({ name: 1, createdAt: -1 }).lean()
+          : [],
+        Staff
+          ? Staff.find({}).select("fullName name role email").sort({ fullName: 1, name: 1 }).lean()
+          : [],
+      ]);
       const totalPages = Math.max(Math.ceil(total / perPage), 1);
       const safePage = Math.min(page, totalPages);
 
@@ -112,33 +129,8 @@ module.exports = {
         .limit(perPage)
         .lean();
 
-      const classes = Class
-        ? await Class.find({})
-            .select("name code schoolUnitId schoolUnitName campusId campusName levelType classLevel stream sectionName academicYear term")
-            .sort({ createdAt: -1 })
-            .lean()
-        : [];
-
-      const sections = Section
-        ? await Section.find({})
-            .select("name code schoolUnitId schoolUnitName campusId campusName levelType classId className classLevel classStream streamId streamName streamCode status")
-            .sort({ name: 1, createdAt: -1 })
-            .lean()
-        : [];
-
-      const staffList = Staff
-        ? await Staff.find({})
-            .select("fullName name role email")
-            .sort({ fullName: 1, name: 1 })
-            .lean()
-        : [];
-
-      const kpis = {
-        total,
-        active: await Stream.countDocuments({ ...filter, status: "active" }),
-        inactive: await Stream.countDocuments({ ...filter, status: "inactive" }),
-        archived: await Stream.countDocuments({ ...filter, status: "archived" }),
-      };
+      const statusCounts = Object.fromEntries(statusRows.map((row) => [String(row._id || ""), Number(row.count || 0)]));
+      const kpis = { total, active: statusCounts.active || 0, inactive: statusCounts.inactive || 0, archived: statusCounts.archived || 0 };
 
       return res.render("tenant/streams/index", {
         tenant: req.tenant || null,

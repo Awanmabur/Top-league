@@ -1,0 +1,139 @@
+/*
+ * Classic Academy scroll motion layer, tuned from the approved Chariot motion reference.
+ * Progressive enhancement only. Layout/business logic never depends on motion.
+ * Circular orbit geometry is protected in public/js/classic-motion.js.
+ */
+:root{
+  --ca-motion-ease:cubic-bezier(.2,.78,.24,1);
+  --ca-motion-ease-soft:cubic-bezier(.22,.61,.36,1);
+  --ca-motion-fast:260ms;
+  --ca-motion-med:620ms;
+  --ca-motion-slow:880ms;
+  --ca-motion-blue:#4a90e2;
+  --ca-motion-shadow:0 18px 45px rgba(2,6,23,.14);
+}
+
+/* Scroll and route progress. Native scroll timelines drive the scroll line when available. */
+.ca-scroll-progress,.ca-route-progress{
+  position:fixed;z-index:999999;left:0;top:0;width:100%;height:3px;
+  pointer-events:none;transform-origin:0 50%;background:var(--ca-motion-blue);
+}
+.ca-scroll-progress{transform:scaleX(0);opacity:.94;will-change:transform}
+.ca-route-progress{opacity:0;transform:scaleX(.08);transition:opacity .18s ease,transform .55s var(--ca-motion-ease-soft)}
+body.ca-routing .ca-route-progress{opacity:1;transform:scaleX(.84)}
+body.ca-page-ready .ca-route-progress{opacity:0;transform:scaleX(1)}
+body.ca-routing .ca-scroll-progress{opacity:.16}
+@supports (animation-timeline:scroll()){
+  .ca-scroll-progress{animation:ca-native-scroll-progress linear both;animation-timeline:scroll(root block)}
+  @keyframes ca-native-scroll-progress{to{transform:scaleX(1)}}
+}
+
+/* Chariot-style scroll reveal: modest travel, strong depth, smooth blur-to-sharp. */
+html.ca-motion-ready .ca-motion-reveal{
+  opacity:0;
+  transform:translate3d(0,30px,0) scale(.988);
+  filter:blur(5px);
+  transition:
+    opacity var(--ca-motion-med) var(--ca-motion-ease),
+    transform var(--ca-motion-slow) var(--ca-motion-ease),
+    filter var(--ca-motion-med) ease;
+  transition-delay:var(--ca-motion-delay,0ms);
+  will-change:opacity,transform,filter;
+  backface-visibility:hidden;
+}
+html.ca-motion-ready .ca-motion-reveal.ca-motion-from-left{transform:translate3d(-38px,12px,0) scale(.99)}
+html.ca-motion-ready .ca-motion-reveal.ca-motion-from-right{transform:translate3d(38px,12px,0) scale(.99)}
+html.ca-motion-ready .ca-motion-reveal.ca-motion-scale{transform:translate3d(0,18px,0) scale(.955)}
+html.ca-motion-ready .ca-motion-reveal.ca-motion-visible{opacity:1;transform:translate3d(0,0,0) scale(1);filter:blur(0)}
+.ca-motion-delay-1{--ca-motion-delay:60ms}.ca-motion-delay-2{--ca-motion-delay:120ms}
+.ca-motion-delay-3{--ca-motion-delay:180ms}.ca-motion-delay-4{--ca-motion-delay:240ms}
+.ca-motion-delay-5{--ca-motion-delay:300ms}.ca-motion-delay-6{--ca-motion-delay:360ms}
+.ca-motion-delay-7{--ca-motion-delay:420ms}.ca-motion-delay-8{--ca-motion-delay:480ms}
+
+/* First-view hero entrance mirrors the Chariot cadence without changing hero geometry. */
+html.ca-motion-ready body:not(.ca-page-ready) :is(.hero-content,.hero-copy,.page-hero-grid > :first-child,.login-copy){
+  opacity:0;transform:translate3d(0,22px,0);filter:blur(4px)
+}
+html.ca-motion-ready body.ca-page-ready :is(.hero-content,.hero-copy,.page-hero-grid > :first-child,.login-copy){
+  animation:ca-hero-copy-in .82s var(--ca-motion-ease) both
+}
+html.ca-motion-ready body:not(.ca-page-ready) :is(.hero-media,.hero-image,.hero-panel,.login-card){
+  opacity:0;transform:translate3d(28px,12px,0) scale(.94);filter:blur(7px)
+}
+html.ca-motion-ready body.ca-page-ready :is(.hero-media,.hero-image,.hero-panel,.login-card){
+  animation:ca-hero-media-in 1s var(--ca-motion-ease) .12s both
+}
+@keyframes ca-hero-copy-in{from{opacity:0;transform:translate3d(0,22px,0);filter:blur(4px)}to{opacity:1;transform:translate3d(0,0,0);filter:blur(0)}}
+@keyframes ca-hero-media-in{from{opacity:0;transform:translate3d(28px,12px,0) scale(.94);filter:blur(7px)}to{opacity:1;transform:translate3d(0,0,0) scale(1);filter:blur(0)}}
+
+/* Restrained image depth, plus Chariot-style view-linked vertical float where supported. */
+.ca-motion-image{
+  --ca-scroll-float-y:0px;
+  backface-visibility:hidden;
+  transform-origin:center;
+  transition:transform .7s var(--ca-motion-ease),filter .55s ease,box-shadow .55s ease;
+}
+.ca-motion-image:hover{filter:saturate(1.04) contrast(1.02)}
+@supports (animation-timeline:view()){
+  .ca-motion-scroll-float{
+    animation:ca-image-scroll linear both;
+    animation-timeline:view();
+    animation-range:entry -8% exit 108%;
+  }
+  @keyframes ca-image-scroll{from{translate:0 -13px}50%{translate:0 0}to{translate:0 13px}}
+}
+@supports not (animation-timeline:view()){
+  .ca-motion-scroll-float{transform:translate3d(0,var(--ca-scroll-float-y),0);will-change:transform;transition:transform .08s linear}
+}
+
+/* Chariot-style card depth: alternating 3D direction on precise pointers only. */
+.ca-motion-tilt{
+  transform-style:preserve-3d;
+  transition:transform .42s var(--ca-motion-ease),box-shadow .42s ease,border-color .35s ease,background-color .35s ease,filter .35s ease!important;
+}
+@media (hover:hover) and (pointer:fine){
+  .ca-motion-tilt:nth-child(odd):hover{transform:perspective(950px) translateY(-8px) rotateX(1.4deg) rotateY(-1.4deg);box-shadow:var(--ca-motion-shadow)}
+  .ca-motion-tilt:nth-child(even):hover{transform:perspective(950px) translateY(-8px) rotateX(1.4deg) rotateY(1.4deg);box-shadow:var(--ca-motion-shadow)}
+}
+
+/* Buttons and form controls feel responsive without constant pulsing. */
+body :is(.btn,a.btn,button,.btn-primary,.conversion-link){transition:transform .24s var(--ca-motion-ease),box-shadow .24s ease,filter .24s ease,border-color .24s ease!important}
+@media (hover:hover) and (pointer:fine){
+  body :is(.btn,a.btn,.btn-primary,.conversion-link):hover{transform:translateY(-3px);box-shadow:0 11px 26px rgba(2,6,23,.13)}
+}
+body :is(.btn,a.btn,button,.btn-primary,.conversion-link):active{transform:translateY(0) scale(.98)!important}
+body :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea):focus{transition:border-color .25s ease,box-shadow .25s ease,background-color .25s ease,transform .25s ease;transform:translateY(-1px)}
+
+/* Floating/sticky headers gain depth only after the visitor starts moving. */
+header,.site-header,.tenant-site-nav{transition:box-shadow .3s ease,background-color .3s ease,backdrop-filter .3s ease}
+header.ca-header-scrolled,.site-header.ca-header-scrolled,.tenant-site-nav.ca-header-scrolled{box-shadow:0 12px 30px rgba(2,6,23,.12);backdrop-filter:blur(12px)}
+
+/* FAQ interaction follows the same motion language. */
+.faq-item{transition:transform .28s var(--ca-motion-ease),box-shadow .28s ease,border-color .28s ease,background-color .28s ease}
+.faq-item.faq-open{transform:translateY(-2px)}
+.faq-marker,.muted-faq{transition:transform .34s var(--ca-motion-ease),color .28s ease}
+.faq-open .faq-marker,.faq-open .muted-faq{transform:rotate(45deg) scale(1.06)}
+
+@media(max-width:780px){
+  .ca-scroll-progress{height:2px}
+  html.ca-motion-ready .ca-motion-reveal{filter:none;transform:translate3d(0,20px,0);transition-duration:520ms}
+  html.ca-motion-ready .ca-motion-reveal.ca-motion-from-left,
+  html.ca-motion-ready .ca-motion-reveal.ca-motion-from-right{transform:translate3d(0,20px,0)}
+  html.ca-motion-ready body:not(.ca-page-ready) :is(.hero-content,.hero-copy,.page-hero-grid > :first-child,.login-copy),
+  html.ca-motion-ready body:not(.ca-page-ready) :is(.hero-media,.hero-image,.hero-panel,.login-card){filter:none}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .ca-scroll-progress,.ca-route-progress{display:none!important}
+  html.ca-motion-ready .ca-motion-reveal,
+  html.ca-motion-ready .ca-motion-reveal.ca-motion-from-left,
+  html.ca-motion-ready .ca-motion-reveal.ca-motion-from-right,
+  html.ca-motion-ready .ca-motion-reveal.ca-motion-scale{
+    opacity:1!important;transform:none!important;filter:none!important;transition:none!important
+  }
+  html.ca-motion-ready body :is(.hero-content,.hero-copy,.page-hero-grid > :first-child,.login-copy,.hero-media,.hero-image,.hero-panel,.login-card){
+    animation:none!important;opacity:1!important;transform:none!important;filter:none!important
+  }
+  .ca-motion-image,.ca-motion-scroll-float,.ca-motion-tilt{animation:none!important;translate:none!important;transform:none!important;transition:none!important}
+  .ca-motion-tilt:hover{transform:none!important;box-shadow:inherit}
+}

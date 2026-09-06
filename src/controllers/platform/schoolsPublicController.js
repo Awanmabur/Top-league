@@ -719,6 +719,7 @@ function buildLandingFeaturedSchoolCard(tenantDoc, schoolUnit = null) {
     students: safeInt(stats.students, 0),
     subjects: safeInt(stats.subjects ?? stats.programs, 0),
     rating: Number(rating.avg || 0),
+    verified: profile.verified === true,
     badge: profile.verified
       ? "Verified"
       : awards.length
@@ -1084,16 +1085,16 @@ module.exports = {
         }
       }
 
-      const counts = await computeCounts(tenantModels);
-
-      const subjects = await loadSubjects(tenantModels, {
-        ...profile,
-        extraSubjects: tenantDoc.settings?.academics?.extraSubjects,
-      });
-
-      const canonicalContent = tenantModels.SchoolFAQ && tenantModels.SchoolReview
-        ? await publicCanonicalContent(tenantModels)
-        : null;
+      const [counts, subjects, canonicalContent] = await Promise.all([
+        computeCounts(tenantModels),
+        loadSubjects(tenantModels, {
+          ...profile,
+          extraSubjects: tenantDoc.settings?.academics?.extraSubjects,
+        }),
+        tenantModels.SchoolFAQ && tenantModels.SchoolReview
+          ? publicCanonicalContent(tenantModels)
+          : Promise.resolve(null),
+      ]);
       const faqs = canonicalContent ? canonicalContent.faqs : loadFaqFromProfile(profile);
       const announcements = loadNewsFromProfile(profile);
       const reviews = canonicalContent

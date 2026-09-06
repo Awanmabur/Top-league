@@ -10,7 +10,7 @@
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
         crossorigin="anonymous" referrerpolicy="no-referrer"/>
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     @font-face{font-family:'PoppinsLocal';src:local('Poppins'),local('Inter'),local('Segoe UI')}
     :root{
       --blue:#0a3d62;
@@ -186,6 +186,7 @@
       .thumbs{grid-template-columns:repeat(4,1fr)}
     }
   </style>
+  <link rel="stylesheet" href="/css/tenant-controls.css">
 </head>
 
 <body data-portal="tenant">
@@ -272,7 +273,7 @@
     </div>
 
     <div class="aside-bottom">
-      <a class="alink" href="/schools/<%= tenantObj.code || "" %>" target="_blank"><i class="fa fa-arrow-left"></i> Back to school</a>
+      <a class="alink" href="/schools/<%= tenantObj.code || "" %>" target="_blank" rel="noopener noreferrer"><i class="fa fa-arrow-left"></i> Back to school</a>
     </div>
   </aside>
 
@@ -309,6 +310,7 @@
 
     <!-- IMPORTANT: POST to /admin/settings -->
     <form class="grid" id="schoolForm" method="POST" action="/admin/settings">
+      <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>" />
       <!-- Left: Identity -->
       <section class="card">
         <div class="card-h">
@@ -596,8 +598,8 @@
             <div style="display:flex;gap:10px;flex-wrap:wrap">
               <button type="button" class="btn btn-soft"
                       data-faqedit="<%= f._id %>"
-                      data-q="<%- safeStr(f.q).replace(/"/g,'&quot;') %>"
-                      data-a="<%- safeStr(f.a).replace(/"/g,'&quot;') %>">
+                      data-q="<%= safeStr(f.q) %>"
+                      data-a="<%= safeStr(f.a) %>">
                 <i class="fa fa-pen"></i> Edit
               </button>
               <button type="button" class="btn btn-ghost" data-faqdel="<%= f._id %>">
@@ -613,10 +615,11 @@
   </main>
 </div>
 
-<script>
+<script nonce="<%= cspNonce %>">
   window.__TENANT_CODE__ = "<%= tenantObj.code || '' %>";
 </script>
 <script src="/js/school-profile-settings.js"></script>
+  <script src="/js/tenant-workspace-motion.js" defer></script>
 </body>
 </html>
 

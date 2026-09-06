@@ -1,18 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<%
+  const seoScholarship = (typeof scholarship !== "undefined" && scholarship) ? scholarship : null;
+  const seoScholarshipTitle = seoScholarship?.title || "Scholarship";
+  const seoScholarshipDescription = String(seoScholarship?.description || `Scholarship information from ${(tenant && tenant.name) ? tenant.name : "the school"}.`).replace(/\s+/g," ").trim().slice(0,160);
+  const seoScholarshipCanonical = tenantPublicSiteUrl && seoScholarship?._id ? `${tenantPublicSiteUrl}/scholarships/${seoScholarship._id}` : "";
+%>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Scholarship — <%= (tenant && tenant.name) ? tenant.name : "Classic Academy" %></title>
-  <style>
+  <title><%= seoScholarshipTitle %> — <%= (tenant && tenant.name) ? tenant.name : "Classic Academy" %></title>
+  <meta name="description" content="<%= seoScholarshipDescription %>" />
+  <meta name="robots" content="<%= seoScholarship ? 'index,follow,max-snippet:-1,max-image-preview:large' : 'noindex,nofollow' %>" />
+  <% if (seoScholarshipCanonical) { %><link rel="canonical" href="<%= seoScholarshipCanonical %>" /><% } %>
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="<%= seoScholarshipTitle %> — <%= (tenant && tenant.name) ? tenant.name : 'Classic Academy' %>" />
+  <meta property="og:description" content="<%= seoScholarshipDescription %>" />
+  <% if (seoScholarshipCanonical) { %><meta property="og:url" content="<%= seoScholarshipCanonical %>" /><% } %>
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="<%= seoScholarshipTitle %>" />
+  <meta name="twitter:description" content="<%= seoScholarshipDescription %>" />
+    <link rel="stylesheet" href="/css/tenant-public-polish.css">
+  <link rel="stylesheet" href="/css/classic-motion.css">
+<style nonce="<%= cspNonce %>">
     body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial;background:#f4f8ff;color:#0f172a}
     .wrap{max-width:900px;margin:0 auto;padding:18px}
     .card{background:#fff;border:1px solid rgba(13,64,96,.12);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.08);padding:16px}
     .muted{color:#6b7280;font-size:12px}
     a.btn{display:inline-flex;gap:8px;align-items:center;text-decoration:none;background:#0a6fbf;color:#fff;padding:10px 14px;border-radius:12px;font-weight:900}
   </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="/css/tenant-controls.css">
 </head>
 <body>
+<%- include("../partials/site-nav") %>
 <%
   const safe=(v)=> (v===null||v===undefined) ? "" : String(v);
   const s = (typeof scholarship!=="undefined" && scholarship) ? scholarship : null;
@@ -52,5 +73,10 @@
     <% } %>
   </div>
 </div>
+
+<%- include("../partials/site-footer") %>
+  <script src="/js/tenant-public.js" defer></script>
+  <script src="/js/classic-motion.js" defer></script>
+  <script src="/js/tenant-workspace-motion.js" defer></script>
 </body>
 </html>

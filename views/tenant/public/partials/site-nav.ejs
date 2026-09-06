@@ -1,0 +1,34 @@
+<%
+  const _tn = (typeof tenant !== "undefined" && tenant) ? tenant : {};
+  const _ts = _tn.settings || {};
+  const _tp = _ts.profile || {};
+  const _tb = _ts.branding || {};
+  const _schoolName = _tp.shortName || _tn.name || "Classic Academy";
+  const _tagline = _tp.tagline || _tp.motto || "Official school website";
+  const _logo = _tb.logoUrl || "/img/academylogo.png";
+  const _initials = String(_schoolName).split(/\s+/).filter(Boolean).slice(0,2).map((x)=>x[0]).join("").toUpperCase() || "CA";
+  const _admissions = _tp.admissions || {};
+%>
+<header class="tenant-site-nav topbar" id="tenantSiteNav">
+  <div class="tenant-nav-shell">
+    <a class="tenant-brand" href="/" aria-label="<%= _schoolName %> home">
+      <span class="tenant-brand-mark"><% if (_logo) { %><img src="<%= _logo %>" alt="<%= _schoolName %> logo"><% } else { %><%= _initials %><% } %></span>
+      <span class="tenant-brand-copy"><strong><%= _schoolName %></strong><span><%= _tagline %></span></span>
+    </a>
+    <nav class="tenant-nav-links" aria-label="School navigation">
+      <a href="/#about">About</a>
+      <a href="/#programs">Programs</a>
+      <a href="/#admissions">Admissions</a>
+      <a href="/#gallery">Gallery</a>
+      <a href="/#contact">Contact</a>
+    </nav>
+    <div class="tenant-nav-actions">
+      <a class="btn" href="/login"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
+      <% if (_admissions.isOpen !== false) { %><a class="btn primary" href="<%= _admissions.applyUrl || '/apply' %>"><i class="fa-solid fa-file-pen"></i> Apply</a><% } %>
+    </div>
+    <button class="tenant-nav-menu" id="tenantMenuBtn" type="button" aria-label="Open school menu" aria-expanded="false"><i class="fa-solid fa-bars"></i></button>
+  </div>
+  <nav class="tenant-mobile-nav" id="tenantMobileNav" aria-label="Mobile school navigation">
+    <a href="/"><i class="fa-solid fa-house"></i> Home</a><a href="/#about"><i class="fa-solid fa-circle-info"></i> About</a><a href="/#programs"><i class="fa-solid fa-book-open"></i> Programs</a><a href="/#admissions"><i class="fa-solid fa-user-graduate"></i> Admissions</a><a href="/#gallery"><i class="fa-solid fa-images"></i> Gallery</a><a href="/#contact"><i class="fa-solid fa-address-card"></i> Contact</a><a href="/login"><i class="fa-solid fa-right-to-bracket"></i> Portal Login</a><a href="/admissions/status"><i class="fa-solid fa-magnifying-glass"></i> Application Status</a>
+  </nav>
+</header>

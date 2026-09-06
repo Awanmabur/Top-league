@@ -64,15 +64,22 @@ module.exports = async function adminBellNotifications(req, res, next) {
       ],
     };
 
-    const [unread, items] = await Promise.all([
-      Notification.countDocuments({ ...visible, isRead: false }),
-      Notification.find(visible)
-        .select("title message type url isRead createdAt")
-        .sort({ createdAt: -1 })
-        .limit(6)
-        .lean(),
+    const [snapshot] = await Notification.aggregate([
+      { $match: visible },
+      {
+        $facet: {
+          unread: [{ $match: { isRead: false } }, { $count: "count" }],
+          items: [
+            { $sort: { createdAt: -1, _id: -1 } },
+            { $limit: 6 },
+            { $project: { title: 1, message: 1, type: 1, url: 1, isRead: 1, createdAt: 1 } },
+          ],
+        },
+      },
     ]);
 
+    const unread = Number(snapshot?.unread?.[0]?.count || 0);
+    const items = Array.isArray(snapshot?.items) ? snapshot.items : [];
     res.locals.notifBell = { unread, items };
     setCachedBell(req, res.locals.notifBell);
     return next();

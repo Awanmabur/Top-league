@@ -1,0 +1,124 @@
+<style nonce="<%= cspNonce %>">
+    /* Canonical footer contract: computed visual behavior of the approved main page. */
+    .footer {
+      background-color: #f9f9f9;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: #333;
+      background: rgba(255, 255, 255, 0.3);
+      backdrop-filter: blur(10px);
+      border-radius: 25px;
+      margin: 2rem var(--page-pad);
+      padding: 0;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      gap: 0;
+    }
+
+    .footer div {
+      margin: 1rem;
+      padding: 0;
+      flex: 1 1 220px;
+      min-width: 220px;
+    }
+
+    .footer h4 {
+      font-size: 1rem;
+      line-height: 1.6;
+      margin: 0 0 1rem;
+      padding: 0;
+      color: inherit;
+    }
+
+    .footer p {
+      margin: 0;
+      padding: 0;
+      color: inherit;
+    }
+
+    .footer ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .footer ul li {
+      margin: 0 0 0.5rem;
+      padding: 0;
+    }
+
+    .footer a {
+      text-decoration: none;
+    }
+
+    .footer ul li a {
+      color: #333;
+    }
+
+    .footer ul li a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 600px) {
+      .footer {
+        backdrop-filter: none !important;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .footer h4 {
+        font-size: 1.15rem;
+      }
+    }
+</style>
+
+<footer class="footer">
+    <div>
+      <h4>About Us</h4>
+      <p>We are excited to introduce our upcoming Classic Academy Plans, where schools will be categorized</p>
+      <a href="https://play.google.com/store" target="_blank" rel="noopener">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg"
+          style="height: 50px; width: 150px" alt="Google Play">
+      </a>
+      <a href="https://apps.apple.com/" target="_blank" rel="noopener">
+        <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg"
+          alt="Download on the App Store" style="height: 50px;">
+      </a>
+    </div>
+
+    <div>
+      <h4>Learn about our mission</h4>
+      <ul>
+        <li><a href="/about">Our Story</a></li>
+        <li><a href="/features">What We Offer</a></li>
+        <li><a href="/plan?plan=standard">Plans & Pricing</a></li>
+        <li><a href="/blog?slug=increase-admissions">Press resources</a></li>
+        <li><a href="/careers">Careers</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <h4>Get help with your account</h4>
+      <ul>
+        <li><a href="/contact">Customer Support</a></li>
+        <li><a href="/schedule">Book a Demo</a></li>
+        <li><a href="/faq">FAQ</a></li>
+        <li><a href="/privacy">Privacy Policy</a></li>
+        <li><a href="/terms">Terms</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <h4>Join our school community</h4>
+      <ul>
+        <li><a href="/schools">Find Schools</a></li>
+        <li><a href="/admissions">Admissions</a></li>
+        <li><a href="/search">Search</a></li>
+        <li><a href="/blog?slug=increase-admissions">Blog</a></li>
+        <li><a href="https://chat.whatsapp.com/HRGoS3fMZoZGgXbz1HDw6a?mode=gi_t" target="_blank" rel="noopener">Join whatsapp group</a></li>
+      </ul>
+    </div>
+  </footer>

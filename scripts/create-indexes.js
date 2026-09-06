@@ -69,6 +69,7 @@ const platformModelNames = [
   "PlatformSetting",
   "PlatformConfig",
   "PlatformBooking",
+  "PlatformIntegrationCredential",
 ];
 
 function loadPlatformModels() {

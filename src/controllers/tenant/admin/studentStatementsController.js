@@ -164,7 +164,7 @@ module.exports = {
       });
     } catch (error) {
       console.error("studentStatementsController.index error:", error);
-      return res.status(500).render("platform/public/500", { tenant: req.tenant || null, message: error.message || "Failed to load student statements." });
+      return res.status(500).render("platform/public/500", { tenant: req.tenant || null, message: "Failed to load student statements." });
     }
   },
 

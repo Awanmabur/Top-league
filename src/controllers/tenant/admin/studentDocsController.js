@@ -1,12 +1,87 @@
 const mongoose=require("mongoose");
 const {uploadBuffer,safeDestroy}=require("../../../utils/cloudinaryUpload");
-const {REQUIRED_STUDENT_DOC_TYPES,normalizeStudentDocType,titleForStudentDocType,ensureStudentDocsFromApplicants,buildStudentDocSummaries}=require("../../../utils/studentDocs");
+const {REQUIRED_STUDENT_DOC_TYPES,normalizeStudentDocType,titleForStudentDocType,buildStudentDocSummaries}=require("../../../utils/studentDocs");
 const {safeDocumentFile,safeStoredUrl,effectiveDocumentStatus,buildDocumentLifecycleValues,canDestroyStoredAsset,csvCell}=require("../../../services/tenant/studentDocumentService");
 const safeStr=(v,max=800)=>String(v==null?"":v).trim().replace(/\s+/g," ").slice(0,max);const isOid=(id)=>mongoose.Types.ObjectId.isValid(String(id||""));const escapeRegex=(s)=>String(s||"").replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
 async function loadStudent(Student,id){if(!isOid(id))throw new Error("Valid student is required.");const s=await Student.findOne({_id:id,isDeleted:{$ne:true},status:{$ne:"archived"}}).select("_id regNo fullName email userId guardianUserId").lean();if(!s)throw new Error("Student not found.");return s;}
 async function notifyStatus(models,row,student,actorId=null){const {Notification}=models||{};if(!Notification||!row?._id||!student)return;await Notification.updateMany({entityType:"student_document",entityId:row._id,isDeleted:{$ne:true}},{ $set:{isDeleted:true,deletedAt:new Date(),updatedBy:actorId} });const status=effectiveDocumentStatus(row);const targets=[];if(row.studentVisible&&student.userId)targets.push({audience:"student",userId:student.userId,url:"/student/documents"});if(row.parentVisible&&student.guardianUserId)targets.push({audience:"parent",userId:student.guardianUserId,url:`/parent/documents?student=${encodeURIComponent(String(student._id))}`});for(const t of targets)await Notification.create({audience:t.audience,userId:t.userId,title:`Document ${status}: ${row.title}`,message:`${row.title} is ${status}.`,type:status==="verified"?"success":status==="rejected"||status==="expired"?"warning":"info",url:t.url,entityType:"student_document",entityId:row._id,entityAction:"status",createdBy:actorId});}
 module.exports={
-async index(req,res){try{const {StudentDoc,Student,Applicant}=req.models;const q=safeStr(req.query.q,120),rawType=safeStr(req.query.type,40),type=rawType?normalizeStudentDocType(rawType):"",student=safeStr(req.query.student,80),status=safeStr(req.query.status,30),page=Math.max(parseInt(req.query.page||"1",10),1),perPage=10,filter={isDeleted:{$ne:true},migrationQuarantinedAt:null};if(type)filter.type=type;if(status)filter.status=status;if(student&&isOid(student))filter.student=student;if(q){const rx=new RegExp(escapeRegex(q),"i"),matches=await Student.find({isDeleted:{$ne:true},$or:[{regNo:rx},{fullName:rx},{email:rx},{phone:rx}]}).select("_id").limit(1000).lean();filter.$or=[{title:rx},{"doc.originalName":rx},...(matches.length?[{student:{$in:matches.map(x=>x._id)}}]:[])];}const students=await Student.find({isDeleted:{$ne:true},status:{$ne:"archived"}}).select("_id regNo fullName email").sort({regNo:1,fullName:1}).limit(2000).lean();const studentIds=students.map(s=>s._id);if(studentIds.length)await ensureStudentDocsFromApplicants({StudentDoc,Applicant,studentIds,uploadedBy:req.user?._id||req.user?.userId||null}).catch(err=>console.error("STUDENT DOC BACKFILL ERROR:",err));const total=await StudentDoc.countDocuments(filter),totalPages=Math.max(Math.ceil(total/perPage),1),safePage=Math.min(page,totalPages);const docs=await StudentDoc.find(filter).populate({path:"student",select:"regNo fullName email",model:Student}).sort({createdAt:-1}).skip((safePage-1)*perPage).limit(perPage).lean();const allDocs=studentIds.length?await StudentDoc.find({isDeleted:{$ne:true},migrationQuarantinedAt:null,student:{$in:studentIds}}).select("_id student type title doc status issueDate expiryDate verifiedAt rejectionReason studentVisible parentVisible revision createdAt updatedAt").sort({createdAt:-1}).lean():[];const summaries=buildStudentDocSummaries(students,allDocs).map((summary)=>({...summary,docs:(summary.docs||[]).map((d)=>({...d,url:d.id?`/admin/student-docs/${d.id}/file`:""})),docState:{passportPhoto:summary.docState?.passportPhoto?{...summary.docState.passportPhoto,url:`/admin/student-docs/${summary.docState.passportPhoto.id}/file`}:null,idDocument:summary.docState?.idDocument?{...summary.docState.idDocument,url:`/admin/student-docs/${summary.docState.idDocument.id}/file`}:null,transcript:summary.docState?.transcript?{...summary.docState.transcript,url:`/admin/student-docs/${summary.docState.transcript.id}/file`}:null,otherDocs:(summary.docState?.otherDocs||[]).map((d)=>({...d,url:d.id?`/admin/student-docs/${d.id}/file`:""}))}})),missingRequired=summaries.reduce((n,r)=>n+Number(r.missingCount||0),0),completeStudents=summaries.filter(r=>r.complete).length;const base={isDeleted:{$ne:true},migrationQuarantinedAt:null};const kpis={students:students.length,uploaded:await StudentDoc.countDocuments(base),missingRequired,completeStudents,incompleteStudents:Math.max(summaries.length-completeStudents,0),total,passport:await StudentDoc.countDocuments({...base,type:"passport"}),transcript:await StudentDoc.countDocuments({...base,type:"transcript"}),certificate:await StudentDoc.countDocuments({...base,type:"certificate"}),verified:await StudentDoc.countDocuments({...base,status:"verified"}),pending:await StudentDoc.countDocuments({...base,status:"pending"})};return res.render("tenant/student-docs/index",{tenant:req.tenant||null,docs:docs.map(r=>({...r,type:normalizeStudentDocType(r.type,r.title),title:safeStr(r.title)||titleForStudentDocType(r.type),effectiveStatus:effectiveDocumentStatus(r),downloadUrl:`/admin/student-docs/${r._id}/file`})),students,studentDocSummaries:summaries,requiredTypes:REQUIRED_STUDENT_DOC_TYPES,types:["passport","id","transcript","certificate","other"],statuses:["pending","verified","rejected","expired"],csrfToken:typeof req.csrfToken==="function"?req.csrfToken():"",kpis,query:{q,type,student,status,page:safePage,total,totalPages,perPage},messages:{success:req.flash?.("success")||[],error:req.flash?.("error")||[]}});}catch(err){console.error("STUDENT DOCS INDEX ERROR:",err);return res.status(500).send("Failed to load student documents.");}},
+async index(req,res){
+  try{
+    const {StudentDoc,Student}=req.models;
+    const q=safeStr(req.query.q,120),rawType=safeStr(req.query.type,40),type=rawType?normalizeStudentDocType(rawType):"",student=safeStr(req.query.student,80),status=safeStr(req.query.status,30),page=Math.max(parseInt(req.query.page||"1",10),1),perPage=10;
+    const filter={isDeleted:{$ne:true},migrationQuarantinedAt:null};
+    if(type)filter.type=type;
+    if(status)filter.status=status;
+    if(student&&isOid(student))filter.student=student;
+    if(q){
+      const rx=new RegExp(escapeRegex(q),"i");
+      const matches=await Student.find({isDeleted:{$ne:true},$or:[{regNo:rx},{fullName:rx},{email:rx},{phone:rx}]}).select("_id").limit(1000).lean();
+      filter.$or=[{title:rx},{"doc.originalName":rx},...(matches.length?[{student:{$in:matches.map(x=>x._id)}}]:[])];
+    }
+
+    // Applicant->StudentDoc repair belongs to migrate:student-documents / npm run indexes,
+    // never to a GET request. The page is now read-only with respect to legacy repair.
+    const students=await Student.find({isDeleted:{$ne:true},status:{$ne:"archived"}})
+      .select("_id regNo fullName email").sort({regNo:1,fullName:1}).limit(2000).lean();
+    const studentIds=students.map(s=>s._id);
+    const total=await StudentDoc.countDocuments(filter);
+    const totalPages=Math.max(Math.ceil(total/perPage),1),safePage=Math.min(page,totalPages);
+    const base={isDeleted:{$ne:true},migrationQuarantinedAt:null};
+
+    const [docs,allDocs,statsRows]=await Promise.all([
+      StudentDoc.find(filter).populate({path:"student",select:"regNo fullName email",model:Student})
+        .sort({createdAt:-1}).skip((safePage-1)*perPage).limit(perPage).lean(),
+      studentIds.length
+        ? StudentDoc.find({...base,student:{$in:studentIds}})
+            .select("_id student type title doc status issueDate expiryDate verifiedAt rejectionReason studentVisible parentVisible revision createdAt updatedAt")
+            .sort({createdAt:-1}).lean()
+        : [],
+      StudentDoc.aggregate([
+        {$match:base},
+        {$group:{
+          _id:null,
+          uploaded:{$sum:1},
+          passport:{$sum:{$cond:[{$eq:["$type","passport"]},1,0]}},
+          transcript:{$sum:{$cond:[{$eq:["$type","transcript"]},1,0]}},
+          certificate:{$sum:{$cond:[{$eq:["$type","certificate"]},1,0]}},
+          verified:{$sum:{$cond:[{$eq:["$status","verified"]},1,0]}},
+          pending:{$sum:{$cond:[{$eq:["$status","pending"]},1,0]}},
+        }},
+      ]),
+    ]);
+
+    const summaries=buildStudentDocSummaries(students,allDocs).map((summary)=>({...summary,docs:(summary.docs||[]).map((d)=>({...d,url:d.id?`/admin/student-docs/${d.id}/file`:""})),docState:{passportPhoto:summary.docState?.passportPhoto?{...summary.docState.passportPhoto,url:`/admin/student-docs/${summary.docState.passportPhoto.id}/file`}:null,idDocument:summary.docState?.idDocument?{...summary.docState.idDocument,url:`/admin/student-docs/${summary.docState.idDocument.id}/file`}:null,transcript:summary.docState?.transcript?{...summary.docState.transcript,url:`/admin/student-docs/${summary.docState.transcript.id}/file`}:null,otherDocs:(summary.docState?.otherDocs||[]).map((d)=>({...d,url:d.id?`/admin/student-docs/${d.id}/file`:""}))}}));
+    const missingRequired=summaries.reduce((n,r)=>n+Number(r.missingCount||0),0),completeStudents=summaries.filter(r=>r.complete).length;
+    const stats=statsRows[0]||{};
+    const kpis={
+      students:students.length,
+      uploaded:Number(stats.uploaded||0),
+      missingRequired,
+      completeStudents,
+      incompleteStudents:Math.max(summaries.length-completeStudents,0),
+      total,
+      passport:Number(stats.passport||0),
+      transcript:Number(stats.transcript||0),
+      certificate:Number(stats.certificate||0),
+      verified:Number(stats.verified||0),
+      pending:Number(stats.pending||0),
+    };
+
+    return res.render("tenant/student-docs/index",{
+      tenant:req.tenant||null,
+      docs:docs.map(r=>({...r,type:normalizeStudentDocType(r.type,r.title),title:safeStr(r.title)||titleForStudentDocType(r.type),effectiveStatus:effectiveDocumentStatus(r),downloadUrl:`/admin/student-docs/${r._id}/file`})),
+      students,studentDocSummaries:summaries,requiredTypes:REQUIRED_STUDENT_DOC_TYPES,
+      types:["passport","id","transcript","certificate","other"],statuses:["pending","verified","rejected","expired"],
+      csrfToken:typeof req.csrfToken==="function"?req.csrfToken():"",
+      kpis,query:{q,type,student,status,page:safePage,total,totalPages,perPage},
+      messages:{success:req.flash?.("success")||[],error:req.flash?.("error")||[]},
+    });
+  }catch(err){
+    console.error("STUDENT DOCS INDEX ERROR:",err);
+    return res.status(500).send("Failed to load student documents.");
+  }
+},
 async create(req,res){try{const {StudentDoc,Student}=req.models,student=await loadStudent(Student,safeStr(req.body.student,80));safeDocumentFile(req.file);const type=normalizeStudentDocType(req.body.type),title=(safeStr(req.body.title,180)||titleForStudentDocType(type)).slice(0,180),up=await uploadBuffer(req.file,`classic-academy/${req.tenant?.slug||"tenant"}/student-docs`,{resource_type:"auto"});let row;try{const lifecycle=buildDocumentLifecycleValues({current:{},input:{...req.body,status:req.body.status||"pending"},actorId:req.user?._id||req.user?.userId||null,fileReplaced:true});row=await StudentDoc.create({student:student._id,type,title,doc:{url:up.secure_url,publicId:up.public_id,resourceType:up.resource_type||"auto",originalName:req.file.originalname||"",bytes:req.file.size||0,mimeType:req.file.mimetype||"",source:"admin_upload",sharedAsset:false,uploadedAt:new Date()},uploadedBy:req.user?._id||req.user?.userId||null,...lifecycle});}catch(err){await safeDestroy(up.public_id,up.resource_type||"auto");throw err;}await notifyStatus(req.models,row,student,req.user?._id||req.user?.userId||null);req.flash?.("success","Student document uploaded.");return res.redirect(`/admin/student-docs?student=${encodeURIComponent(String(student._id))}`);}catch(err){req.flash?.("error",err.message||"Failed to upload document.");return res.redirect("/admin/student-docs");}},
 async update(req,res){let newUpload=null;try{const {StudentDoc,Student}=req.models;if(!isOid(req.params.id))throw new Error("Invalid document.");const row=await StudentDoc.findOne({_id:req.params.id,isDeleted:{$ne:true},migrationQuarantinedAt:null});if(!row)throw new Error("Document not found.");const expected=Number(req.body.revision);if(!Number.isFinite(expected)||expected!==Number(row.revision||0))throw new Error("This document changed in another session. Refresh and try again.");const student=await loadStudent(Student,safeStr(req.body.student,80)),type=normalizeStudentDocType(req.body.type||row.type),title=(safeStr(req.body.title,180)||titleForStudentDocType(type)).slice(0,180),fileReplaced=!!req.file?.buffer;if(fileReplaced){safeDocumentFile(req.file);newUpload=await uploadBuffer(req.file,`classic-academy/${req.tenant?.slug||"tenant"}/student-docs`,{resource_type:"auto"});}const lifecycle=buildDocumentLifecycleValues({current:row,input:req.body,actorId:req.user?._id||req.user?.userId||null,fileReplaced}),oldDoc=row.doc?.toObject?row.doc.toObject():row.doc,setValues={student:student._id,type,title,...lifecycle};if(newUpload)setValues.doc={url:newUpload.secure_url,publicId:newUpload.public_id,resourceType:newUpload.resource_type||"auto",originalName:req.file.originalname||"",bytes:req.file.size||0,mimeType:req.file.mimetype||"",source:"admin_upload",sharedAsset:false,uploadedAt:new Date()};const result=await StudentDoc.updateOne({_id:row._id,revision:expected,isDeleted:{$ne:true},migrationQuarantinedAt:null},{$set:setValues},{runValidators:true});if(Number(result.modifiedCount||0)!==1)throw new Error("This document changed in another session. Refresh and try again.");const updated=await StudentDoc.findById(row._id);if(newUpload&&canDestroyStoredAsset({doc:oldDoc}))await safeDestroy(oldDoc.publicId,oldDoc.resourceType||"auto");newUpload=null;await notifyStatus(req.models,updated,student,req.user?._id||req.user?.userId||null);req.flash?.("success","Student document updated.");return res.redirect(`/admin/student-docs?student=${encodeURIComponent(String(student._id))}`);}catch(err){if(newUpload?.public_id)await safeDestroy(newUpload.public_id,newUpload.resource_type||"auto");req.flash?.("error",err.message||"Failed to update document.");return res.redirect("/admin/student-docs");}},
 async file(req,res){try{const {StudentDoc}=req.models;if(!isOid(req.params.id))return res.status(404).send("Document not found.");const row=await StudentDoc.findOne({_id:req.params.id,isDeleted:{$ne:true},migrationQuarantinedAt:null}).lean();const url=safeStoredUrl(row?.doc?.url);if(!url)return res.status(404).send("Document not found.");return res.redirect(url);}catch{return res.status(404).send("Document not found.");}},

@@ -69,13 +69,18 @@ async function loadBillingChoices() {
 module.exports = {
   billingSubscriptionsPage: async (req, res) => {
     try {
-      const [subscriptionsRaw, recentPayments] = await Promise.all([
+      const page = Math.max(1, Number.parseInt(String(req.query?.page || "1"), 10) || 1);
+      const pageSize = 100;
+      const [subscriptionsRaw, totalSubscriptions, recentPayments] = await Promise.all([
         PlatformSubscription.find({ isDeleted: { $ne: true } })
           .populate("tenantId")
           .populate("planId")
           .populate("lastPaymentId")
           .sort({ updatedAt: -1 })
+          .skip((page - 1) * pageSize)
+          .limit(pageSize)
           .lean(),
+        PlatformSubscription.countDocuments({ isDeleted: { $ne: true } }),
         PlatformPayment.find({})
           .populate("tenantId")
           .populate("planId")
@@ -88,9 +93,11 @@ module.exports = {
         .filter((row) => row.tenantId)
         .map((row) => ({ ...row, effectiveStatus: subscriptionEffectiveStatus(row) }));
 
+      const pages = Math.max(1, Math.ceil(totalSubscriptions / pageSize));
       return res.render("platform/billing/index", {
         subscriptions,
         recentPayments,
+        pagination: { page: Math.min(page, pages), pages, total: totalSubscriptions },
         error: null,
       });
     } catch (err) {
@@ -98,6 +105,7 @@ module.exports = {
       return res.status(500).render("platform/billing/index", {
         subscriptions: [],
         recentPayments: [],
+        pagination: { page: 1, pages: 1, total: 0 },
         error: "Failed to load billing page.",
       });
     }

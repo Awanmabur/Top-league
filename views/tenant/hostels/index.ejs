@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="/css/student-portal.css"/>
   <link rel="stylesheet" href="/css/navbar.css"/>
 
-  <style>
+  <style nonce="<%= cspNonce %>">
     *{box-sizing:border-box}
     html,body{max-width:100%;overflow-x:hidden}
     body{overflow-x:hidden}
@@ -207,6 +207,7 @@
       }
     }
   </style>
+  <link rel="stylesheet" href="/css/tenant-controls.css">
 </head>
 <body data-portal="tenant">
   <%- include("../partials/flash") %>
@@ -845,5 +846,6 @@
 
   <script src="/js/tenant-admin-hostels.js"></script>
   <script src="/js/navbar.js"></script>
+  <script src="/js/tenant-workspace-motion.js" defer></script>
 </body>
 </html>

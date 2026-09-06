@@ -1,6 +1,7 @@
 const {
   normalizeDepartmentInput,
   departmentReferenceCounts,
+  departmentReferenceCountsMany,
   updateDepartment,
   setDepartmentStatus,
   deleteDepartment,
@@ -11,7 +12,7 @@ const str = (v, max = 500) => String(v ?? "").trim().slice(0, max);
 const escapeRegex = (v) => String(v ?? "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const csv = (v) => { let s = String(v ?? ""); if (/^[=+\-@]/.test(s)) s = `'${s}`; return `"${s.replace(/"/g, '""')}"`; };
 function filters(query = {}) { const q=str(query.q,160); const status=["active","inactive","archived"].includes(str(query.status).toLowerCase())?str(query.status).toLowerCase():"all"; const mongo={isDeleted:{$ne:true}}; if(status!=="all")mongo.status=status; if(q){const rx=new RegExp(escapeRegex(q),"i");mongo.$or=[{name:rx},{code:rx},{costCenter:rx},{description:rx}];} return {mongo,clean:{q,status}}; }
-async function rowsWithRefs(req, docs) { return Promise.all(docs.map(async d=>({ id:String(d._id), name:d.name||"", code:d.code||"", costCenter:d.costCenter||"", description:d.description||"", status:d.status||"inactive", revision:Number(d.revision||1), refs:await departmentReferenceCounts(req.models,d._id), quarantined:Boolean(d.migrationQuarantinedAt) }))); }
+async function rowsWithRefs(req, docs) { const refsById=await departmentReferenceCountsMany(req.models,docs.map(d=>d._id)); return docs.map(d=>({ id:String(d._id), name:d.name||"", code:d.code||"", costCenter:d.costCenter||"", description:d.description||"", status:d.status||"inactive", revision:Number(d.revision||1), refs:refsById.get(String(d._id))||{staff:0,payrollRuns:0,payrollItems:0,total:0}, quarantined:Boolean(d.migrationQuarantinedAt) })); }
 module.exports={
  async index(req,res){const {mongo,clean}=filters(req.query);const docs=await req.models.Department.find(mongo).sort({status:1,name:1}).limit(1000).lean();const departments=await rowsWithRefs(req,docs);return res.render("tenant/departments/index",{tenant:req.tenant,csrfToken:req.csrfToken?.(),departments,query:clean,kpis:{total:departments.length,active:departments.filter(x=>x.status==="active").length,referenced:departments.filter(x=>x.refs.total>0).length,quarantined:departments.filter(x=>x.quarantined).length},messages:{success:req.flash?.("success")||[],error:req.flash?.("error")||[]}});},
  async create(req,res){try{const data=normalizeDepartmentInput(req.body);await req.models.Department.create({...data,createdBy:actorUserId(req),updatedBy:actorUserId(req)});req.flash?.("success","Department created.");}catch(err){req.flash?.("error",err?.code===11000?"Department code already exists.":err.message);}return res.redirect("/admin/departments");},

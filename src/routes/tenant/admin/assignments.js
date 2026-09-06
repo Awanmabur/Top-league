@@ -1,22 +1,14 @@
 const express = require("express");
-const multer = require("multer");
 const router = express.Router();
 const ctrl = require("../../../controllers/tenant/admin/assignmentController");
+const { createCsvUpload, validateCsvUpload } = require("../../../middleware/csvUpload");
 
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 2 * 1024 * 1024, files: 1 },
-  fileFilter: (req, file, cb) => {
-    const ok = /csv|plain/.test(String(file.mimetype || "").toLowerCase()) || /\.csv$/i.test(String(file.originalname || ""));
-    if (!ok) return cb(new Error("Only CSV files are allowed."));
-    return cb(null, true);
-  },
-});
+const upload = createCsvUpload({ maxBytes: 2 * 1024 * 1024 });
 
 router.get("/", ctrl.list);
 router.get("/export.csv", ctrl.exportCsv);
 router.post("/", ctrl.assignmentRules, ctrl.create);
-router.post("/import", upload.single("file"), ctrl.importCsv);
+router.post("/import", upload.single("file"), validateCsvUpload, ctrl.importCsv);
 router.post("/bulk", ctrl.bulk);
 
 router.get("/:id/submissions", ctrl.submissions);

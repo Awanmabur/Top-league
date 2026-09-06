@@ -1,5 +1,8 @@
 const express = require("express");
 const router = express.Router();
+const noIndex = require("../../../middleware/noIndex");
+
+router.use(["/login", "/set-password", "/apply", "/admissions/apply", "/admissions/status", "/scholarships/status"], noIndex);
 
 // 1) Public invite/set-password FIRST (no auth)
 router.use("/", require("./invitation")); // /set-password, /invite, etc.

@@ -26,6 +26,78 @@ async function writeAudit(req, payload) {
   }
 }
 
+
+async function reportSummaryAggregates(now = new Date()) {
+  const [subscriptionRows, paymentRows] = await Promise.all([
+    PlatformSubscription.aggregate([
+      { $match: { isDeleted: { $ne: true } } },
+      {
+        $project: {
+          effectiveStatus: {
+            $switch: {
+              branches: [
+                {
+                  case: {
+                    $and: [
+                      { $eq: ["$status", "trial"] },
+                      { $ne: ["$trialEndsAt", null] },
+                      { $lte: ["$trialEndsAt", now] },
+                    ],
+                  },
+                  then: "expired",
+                },
+                {
+                  case: {
+                    $and: [
+                      { $eq: ["$status", "active"] },
+                      { $ne: ["$currentPeriodEnd", null] },
+                      { $lte: ["$currentPeriodEnd", now] },
+                    ],
+                  },
+                  then: "past_due",
+                },
+              ],
+              default: "$status",
+            },
+          },
+        },
+      },
+      { $group: { _id: "$effectiveStatus", count: { $sum: 1 } } },
+    ]),
+    PlatformPayment.aggregate([
+      { $match: { status: "completed" } },
+      {
+        $group: {
+          _id: null,
+          paymentCount: { $sum: 1 },
+          totalRevenue: {
+            $sum: {
+              $switch: {
+                branches: [
+                  { case: { $eq: ["$type", "refund"] }, then: { $multiply: [-1, { $abs: "$amount" }] } },
+                  { case: { $in: ["$type", [...reports.CASH_INFLOW_TYPES]] }, then: "$amount" },
+                ],
+                default: 0,
+              },
+            },
+          },
+        },
+      },
+    ]),
+  ]);
+
+  const statuses = { active: 0, trial: 0, past_due: 0, suspended: 0, cancelled: 0, expired: 0 };
+  for (const row of subscriptionRows) {
+    if (Object.prototype.hasOwnProperty.call(statuses, row?._id)) statuses[row._id] = Number(row.count || 0);
+  }
+  const payment = paymentRows[0] || {};
+  return {
+    statuses,
+    paymentCount: Number(payment.paymentCount || 0),
+    totalRevenue: Number(payment.totalRevenue || 0),
+  };
+}
+
 async function loadSubscriptions() {
   return PlatformSubscription.find({ isDeleted: { $ne: true } })
     .select("tenantId planId planSnapshot status trialEndsAt currentPeriodStart currentPeriodEnd lastBilledAt revision")
@@ -93,13 +165,12 @@ module.exports = {
   reportsHome: async (req, res) => {
     try {
       res.set("Cache-Control", "no-store");
-      const [tenantCount, planCount, subscriptions, payments] = await Promise.all([
+      const [tenantCount, planCount, aggregates] = await Promise.all([
         Tenant.countDocuments({ isDeleted: { $ne: true } }),
         Plan.countDocuments({ isDeleted: { $ne: true } }),
-        loadSubscriptions(),
-        PlatformPayment.find({ status: "completed" }).select("type amount status").lean(),
+        reportSummaryAggregates(),
       ]);
-      const statuses = reports.summarizeSubscriptions(subscriptions);
+      const statuses = aggregates.statuses;
       return res.render("platform/reports/index", {
         summary: {
           tenantCount,
@@ -107,8 +178,8 @@ module.exports = {
           trialCount: statuses.trial,
           suspendedCount: statuses.suspended + statuses.past_due + statuses.expired,
           planCount,
-          paymentCount: payments.length,
-          totalRevenue: reports.netRevenue(payments),
+          paymentCount: aggregates.paymentCount,
+          totalRevenue: aggregates.totalRevenue,
         },
         user: req.user || null,
         error: null,

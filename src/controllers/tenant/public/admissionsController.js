@@ -417,7 +417,7 @@ module.exports = {
       } catch (err) {
         for (const u of uploaded) await safeDestroy(u.publicId, u.resourceType || "auto");
         console.error("Application submit error:", err);
-        return res.status(500).render("tenant/public/admissions/apply", buildViewData(req, placement, req.body, { general: err.message || "Failed to submit application" }, null));
+        return res.status(500).render("tenant/public/admissions/apply", buildViewData(req, placement, req.body, { general: "Failed to submit application. Please try again." }, null));
       }
     } catch (err) {
       console.error("Application submit bootstrap error:", err);
@@ -471,7 +471,7 @@ module.exports = {
       req.session.save(() => res.json({ ok: true, saved, uploads: getStoredDocs(req) }));
     } catch (err) {
       console.error("Draft upload error:", err);
-      return res.status(500).json({ ok: false, message: err.message || "Upload failed" });
+      return res.status(500).json({ ok: false, message: "Upload failed" });
     }
   },
   statusPage: async (req, res) => {

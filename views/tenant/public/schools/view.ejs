@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta name="robots" content="noindex,nofollow,noarchive" />
   <title><%= tenant.name %> — School Profile</title>
   <link rel="icon" href="data:,"/>
 
@@ -11,7 +12,9 @@
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
         crossorigin="anonymous" referrerpolicy="no-referrer"/>
 
-  <style>
+    <link rel="stylesheet" href="/css/tenant-public-polish.css">
+  <link rel="stylesheet" href="/css/classic-motion.css">
+<style nonce="<%= cspNonce %>">
     @font-face{font-family:'PoppinsLocal';src:local('Poppins'),local('Inter'),local('Segoe UI')}
     :root{
       --blue:#0a3d62;
@@ -349,9 +352,11 @@
 
   <!-- ✅ external JS (same behavior, CSP-friendly) -->
   <script defer src="/js/admin-school-view.js"></script>
+  <link rel="stylesheet" href="/css/tenant-controls.css">
 </head>
 
 <body>
+<%- include("../partials/site-nav") %>
 <%
   const p = tenant.settings?.profile || {};
   const b = tenant.settings?.branding || {};
@@ -392,27 +397,9 @@
 %>
 
 <!-- set CSS vars without changing UI -->
-<style>
+<style nonce="<%= cspNonce %>">
   :root{ --blue:<%= primary %>; --accent:<%= accent %>; }
 </style>
-
-<header class="topbar">
-  <div class="container topbar-inner">
-    <a class="brand" href="/"><span class="brand-dot"></span> Classic Academy</a>
-
-    <nav class="topnav" id="topnav">
-      <a href="/schools">Schools</a>
-      <a href="#subjects" data-go-tab="subjects">Subjects</a>
-      <a href="/admissions">Admissions</a>
-      <a href="/login" class="btn btn-soft"><i class="fa fa-right-to-bracket"></i> Login</a>
-    </nav>
-
-    <button class="hamburger" id="hamburger" aria-label="Open menu">
-      <span></span><span></span><span></span>
-    </button>
-  </div>
-</header>
-
 <div class="mobile-menu" id="mobileMenu">
   <a href="/schools"><i class="fa fa-school"></i> Schools</a>
   <a href="#subjects" data-go-tab="subjects"><i class="fa fa-book"></i> Subjects</a>
@@ -439,7 +426,7 @@
       <div class="logo-wrap">
         <div class="logo">
           <% if (b.logoUrl) { %>
-            <img src="<%= b.logoUrl %>" alt="logo"/>
+            <img src="<%= b.logoUrl %>" alt="logo" decoding="async" fetchpriority="high"/>
           <% } else { %>
             <%= (tenant.name || "S").slice(0,2).toUpperCase() %>
           <% } %>
@@ -725,7 +712,7 @@
     <div class="lightbox" id="lightbox" aria-hidden="true">
       <button class="lb-close" id="lbClose" aria-label="Close"><i class="fa fa-xmark"></i></button>
       <button class="lb-nav lb-prev" id="lbPrev" aria-label="Previous"><i class="fa fa-chevron-left"></i></button>
-      <img id="lbImg" alt="Preview"/>
+      <img id="lbImg" alt="Preview" decoding="async"/>
       <button class="lb-nav lb-next" id="lbNext" aria-label="Next"><i class="fa fa-chevron-right"></i></button>
     </div>
   </section>
@@ -863,12 +850,9 @@
 
 </main>
 
-<footer class="footer">
-  <div class="container footer-inner">
-    <span class="muted">© <%= new Date().getFullYear() %> Classic Academy</span>
-    <span class="muted">Powered by <b>Classic Technologies</b></span>
-  </div>
-</footer>
-
+<%- include("../partials/site-footer") %>
+  <script src="/js/tenant-public.js" defer></script>
+  <script src="/js/classic-motion.js" defer></script>
+  <script src="/js/tenant-workspace-motion.js" defer></script>
 </body>
 </html>

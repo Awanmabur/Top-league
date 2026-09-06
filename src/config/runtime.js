@@ -116,7 +116,8 @@ function validateRuntimeConfig() {
 }
 
 function isPoisonKey(key) {
-  return POISON_KEYS.has(String(key || ""));
+  const raw = String(key || "");
+  return POISON_KEYS.has(raw) || raw.startsWith("$") || raw.includes(".") || raw.includes("\0");
 }
 
 module.exports = {

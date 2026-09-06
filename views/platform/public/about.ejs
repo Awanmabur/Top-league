@@ -18,8 +18,9 @@
   <meta content="Classic Academy" name="application-name" />
   <meta content="telephone=no" name="format-detection" />
   <link href="https://www.classicacademy.app/about" rel="canonical" />
-  <link href="https://www.classicacademy.app/img/academylogo.png" rel="icon" />
-  <link href="https://www.classicacademy.app/img/academylogo.png" rel="apple-touch-icon" />
+  <link href="/img/academylogo.png" rel="icon" />
+  <link href="/img/academylogo.png" rel="apple-touch-icon" />
+  <link rel="preload" as="image" href="/img/hero.png" fetchpriority="high" />
   <!-- Open Graph -->
   <meta content="website" property="og:type" />
   <meta content="Classic Academy" property="og:site_name" />
@@ -29,7 +30,7 @@
     content="All-in-one school management + admissions. Faster enrollment, cleaner finance tracking, better communication."
     property="og:description" />
   <meta content="https://www.classicacademy.app/about" property="og:url" />
-  <meta content="https://www.classicacademy.app/img/hero.png" property="og:image" />
+  <meta content="https://www.classicacademy.app/assets/og/classic-academy.jpg" property="og:image" />
   <meta content="Classic Academy — School Management Platform" property="og:image:alt" />
   <!-- Twitter -->
   <meta content="summary_large_image" name="twitter:card" />
@@ -37,9 +38,9 @@
   <meta
     content="All-in-one school management + admissions. Faster enrollment, cleaner finance tracking, better communication."
     name="twitter:description" />
-  <meta content="https://www.classicacademy.app/img/hero.png" name="twitter:image" />
+  <meta content="https://www.classicacademy.app/assets/og/classic-academy.jpg" name="twitter:image" />
   <!-- Structured data -->
-  <script type="application/ld+json">
+  <script nonce="<%= cspNonce %>" type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "Organization",
@@ -55,7 +56,7 @@
     }]
   }
   </script>
-  <script type="application/ld+json">
+  <script nonce="<%= cspNonce %>" type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "WebSite",
@@ -68,7 +69,7 @@
     }
   }
   </script>
-  <script type="application/ld+json">
+  <script nonce="<%= cspNonce %>" type="application/ld+json">
   {
     "@context":"https://schema.org",
     "@type":"SoftwareApplication",
@@ -84,7 +85,7 @@
     }
   }
   </script>
-  <script type="application/ld+json">
+  <script nonce="<%= cspNonce %>" type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "OfferCatalog",
@@ -101,17 +102,19 @@
   </script>
   <link href="https://fonts.googleapis.com" rel="preconnect" />
   <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
-  <link href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" rel="stylesheet" />
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <link href="/vendor/swiper/swiper-bundle.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Outfit:wght@100..900&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
-  <style>
+  <style nonce="<%= cspNonce %>">
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
 
-    @import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Outfit:wght@100..900&display=swap");
+    
 
     :root {
       --primary: #4a90e2;
@@ -2147,6 +2150,7 @@
       }
     }
   </style>
+  <link rel="stylesheet" href="/css/classic-motion.css">
 </head>
 
 <body>
@@ -2949,15 +2953,15 @@
           </div>
           <div class="csocial">
             <a aria-label="WhatsApp" class="icon-btn" href="https://api.whatsapp.com/send?phone=256781977217"
-              target="_blank">
+              target="_blank" rel="noopener noreferrer">
               <i class="fa-brands fa-whatsapp"></i>
             </a>
-            <a aria-label="Facebook" class="icon-btn" href="#" target="_blank"><i
+            <a aria-label="Facebook" class="icon-btn" href="#" target="_blank" rel="noopener noreferrer"><i
                 class="fa-brands fa-facebook-f"></i></a>
-            <a aria-label="Instagram" class="icon-btn" href="#" target="_blank"><i
+            <a aria-label="Instagram" class="icon-btn" href="#" target="_blank" rel="noopener noreferrer"><i
                 class="fa-brands fa-instagram"></i></a>
-            <a aria-label="X" class="icon-btn" href="#" target="_blank"><i class="fa-brands fa-x-twitter"></i></a>
-            <a aria-label="LinkedIn" class="icon-btn" href="#" target="_blank"><i
+            <a aria-label="X" class="icon-btn" href="#" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-x-twitter"></i></a>
+            <a aria-label="LinkedIn" class="icon-btn" href="#" target="_blank" rel="noopener noreferrer"><i
                 class="fa-brands fa-linkedin-in"></i></a>
           </div>
           <div class="ccta">
@@ -2969,7 +2973,7 @@
             <p>We never share your contact details. Your data stays private.</p>
           </div>
         </aside>
-        <form class="cform reveal" onsubmit="return false;">
+        <form class="cform reveal" data-prevent-submit="true">
           <h3>Send us a message</h3>
           <div class="row">
             <label>
@@ -3009,53 +3013,8 @@
       </div>
     </div>
   </section>
-  <!-- Footer -->
-  <footer class="footer">
-    <div>
-      <h4>About Us</h4>
-      <p>We are excited to introduce our upcoming Classic Academy Plans, where schools will be categorized</p>
-      <a href="https://play.google.com/store" rel="noopener" target="_blank">
-        <img alt="Google Play" src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg"
-          style="height: 50px; width: 150px" />
-      </a>
-      <a href="https://apps.apple.com/" rel="noopener" target="_blank">
-        <img alt="Download on the App Store"
-          src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg"
-          style="height: 50px;" />
-      </a>
-    </div>
-    <div>
-      <h4>Learn about our mission</h4>
-      <ul>
-        <li><a href="/about">Our Story</a></li>
-        <li><a href="/services">What We Offer</a></li>
-        <li><a href="/plan?plan=standard">Plans &amp; Pricing</a></li>
-        <li><a href="/blog?slug=increase-admissions">Press resources</a></li>
-        <li><a href="/careers">Careers</a></li>
-      </ul>
-    </div>
-    <div>
-      <h4>Get help with your account</h4>
-      <ul>
-        <li><a href="/contact">Customer Support</a></li>
-        <li><a href="/schedule">Book a Demo</a></li>
-        <li><a href="/faq">FAQ</a></li>
-        <li><a href="/privacy">Privacy Policy</a></li>
-        <li><a href="/terms">Terms</a></li>
-      </ul>
-    </div>
-    <div>
-      <h4>Join our school community</h4>
-      <ul>
-        <li><a href="/schools">Find Schools</a></li>
-        <li><a href="/admissions">Admissions</a></li>
-        <li><a href="/search">Search</a></li>
-        <li><a href="/blog?slug=increase-admissions">Blog</a></li>
-        <li><a href="https://chat.whatsapp.com/HRGoS3fMZoZGgXbz1HDw6a?mode=gi_t" target="_blank" rel="noopener">Join whatsapp
-           group</a></li>
-      </ul>
-    </div>
-  </footer>
+
+  <%- include("../partials/footer") %>
   <button aria-label="Scroll to top" id="toTopBtn">↑</button>
   <!-- Floating support button -->
   <div aria-hidden="true" class="fab-container">
@@ -3068,7 +3027,7 @@
       <a href="tel:+256781977217"><span class="material-icons">phone</span></a>
     </div>
     <div class="sub-button shadow">
-      <a href="https://api.whatsapp.com/send?phone=256781977217" rel="noopener" target="_blank">
+      <a href="https://api.whatsapp.com/send?phone=256781977217" rel="noopener noreferrer" target="_blank">
         <span class="material-icons">
           <svg aria-label="WhatsApp Icon" class="whatsapp-icon" fill="#2e2e2e" height="35" viewbox="0 0 448 512"
             width="35" xmlns="http://www.w3.org/2000/svg">
@@ -3080,13 +3039,15 @@
       </a>
     </div>
     <div class="sub-button shadow">
-      <a href="/share" rel="noopener" target="_blank"><span class="material-icons">share</span></a>
+      <a href="/share" rel="noopener noreferrer" target="_blank"><span class="material-icons">share</span></a>
     </div>
   </div>
   <!-- libs -->
-  <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+  <script defer src="/vendor/swiper/swiper-bundle.min.js"></script>
 
-  <script src="/pages/about.js"></script>
+  <script defer src="/pages/about.js"></script>
+  <script defer src="/js/csp-actions.js"></script>
+  <script src="/js/classic-motion.js" defer></script>
 </body>
 
 </html>

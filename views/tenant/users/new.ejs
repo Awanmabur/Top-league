@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>New User — Classic Academy</title>
   <link rel="icon" href="data:,">
-  <style>
+  <style nonce="<%= cspNonce %>">
     :root{
       --blue:#0a3d62; --blue2:#083454; --bg:#f4f8ff; --card:#fff;
       --muted:#6b7280; --text:#0f172a; --accent:#0a6fbf;
@@ -47,6 +47,7 @@
       .grid{grid-template-columns:1fr}
     }
   </style>
+  <link rel="stylesheet" href="/css/tenant-controls.css">
 </head>
 <body data-portal="tenant">
 <div class="app">
@@ -89,6 +90,7 @@
           <% } %>
 
           <form method="POST" action="/admin/users" autocomplete="off">
+            <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>" />
             <div class="row">
               <div>
                 <label>First Name <span class="req">*</span></label>
@@ -212,6 +214,7 @@
 </div>
 
 <script src="/js/create.js" defer></script>
+  <script src="/js/tenant-workspace-motion.js" defer></script>
 </body>
 </html>
 

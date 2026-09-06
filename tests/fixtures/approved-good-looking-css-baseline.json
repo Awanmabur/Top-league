@@ -1,0 +1,14 @@
+{
+  "baseline": "User-approved classic-academy-main.zip CSS, with explicitly approved 2026-09-05 tenant rounded-controls and floating-navigation update",
+  "files": {
+    "public/css/admin-finance.css": "6772c1d2e71f7c1ef1f64b95c97350a1b620bcd149706c6e84f9828e3a8e7291",
+    "public/css/dashboard.css": "39ea400536ee496f6dd16f3268c53b70136bd6de937c4948db939da963c85740",
+    "public/css/flash.css": "4bc917264105072bc9916b8c54749f8e609ec788ada48b417f04730f4ee68e5c",
+    "public/css/layout.css": "567204d02e1e3bef952571d0a89e6950523fc1a6a4201c91826b17ccf05ef4dd",
+    "public/css/main.css": "941a1cb72d4579675b62918f379e02539c8c1992b3a7ddd99dd2463ff425d5ad",
+    "public/css/navbar.css": "479796b7203bf7a7a04fbd312fcbf6ac49a41b47fd4a427bf7420aadd52b877d",
+    "public/css/parent-portal.css": "1fc496f60df5228a5c0ee242713c018e9d99165cd2649126504a6f287199f8b5",
+    "public/css/school-dashboard.css": "33cd97e895fb4464222a81ef7eab6d68352ea240fc402438c7a23e64775d0c84",
+    "public/css/student-portal.css": "416dfd7caad879fb624f4fed45c37e8955ef52373264b8f6b6485f308e3a9f73"
+  }
+}

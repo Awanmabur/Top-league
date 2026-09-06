@@ -6,8 +6,10 @@ const {
 } = require('./platformSubscriptionService');
 const { invalidateTenantAccess } = require('./platformTenantAccessCache');
 const { invalidatePublicSchoolCache } = require('./platformPublicCacheService');
+const { initialDelayMs } = require('./schedulerTiming');
 
 let timer = null;
+let startTimer = null;
 let running = false;
 
 function schedulerIntervalMs() {
@@ -150,15 +152,24 @@ async function scheduledSweep() {
 }
 
 function startPlatformSubscriptionScheduler() {
-  if (timer || process.env.DISABLE_PLATFORM_SUBSCRIPTION_SCHEDULER === 'true') return timer;
-  timer = setInterval(() => { scheduledSweep().catch(() => {}); }, schedulerIntervalMs());
-  timer.unref?.();
-  scheduledSweep().catch(() => {});
-  return timer;
+  if (timer || startTimer || process.env.DISABLE_PLATFORM_SUBSCRIPTION_SCHEDULER === 'true') return timer || startTimer;
+  const interval = schedulerIntervalMs();
+  const run = () => { scheduledSweep().catch(() => {}); };
+  const delay = initialDelayMs('PLATFORM_SUBSCRIPTION_SCHEDULER_INITIAL_DELAY_MS', 35_000, interval);
+  startTimer = setTimeout(() => {
+    startTimer = null;
+    run();
+    timer = setInterval(run, interval);
+    timer.unref?.();
+  }, delay);
+  startTimer.unref?.();
+  return startTimer;
 }
 
 function stopPlatformSubscriptionScheduler() {
+  if (startTimer) clearTimeout(startTimer);
   if (timer) clearInterval(timer);
+  startTimer = null;
   timer = null;
 }
 

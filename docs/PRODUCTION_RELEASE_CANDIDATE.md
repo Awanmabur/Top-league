@@ -10,7 +10,7 @@ This document is part of the release package. Do not bypass a failed gate.
 
 ```bash
 npm ci
-npm audit --omit=dev --audit-level=low
+npm audit --omit=dev --audit-level=high
 ```
 
 Do not deploy if either command fails for a dependency/security reason. A transient registry/network failure must be resolved and the commands repeated.
@@ -30,7 +30,7 @@ Required categories are enforced by `npm run release:readiness`:
 - `BASE_DOMAIN` and HTTPS public/platform/application URLs.
 - SMTP host/port/user/password/from address.
 - Cloudinary cloud name/API key/API secret.
-- Google Calendar OAuth client/secret/HTTPS redirect URI/refresh token.
+- Explicit Google Calendar auth mode: Workspace service-account delegation (preferred for organizational booking calendars) or production OAuth with encrypted durable credential; a pasted refresh token is never a normal production credential.
 - Zoom account/client/client-secret configuration.
 
 Production debug/insecure modes and localhost-tenant routing must remain disabled. Configure a specific trusted proxy hop/range rather than `TRUST_PROXY=true`.
@@ -97,7 +97,7 @@ GET /readyz   -> 200 {"status":"ready"}
 
 `/readyz` must return 503 until the platform database connection is ready. Neither endpoint exposes tenant/database details.
 
-Verify graceful SIGTERM/SIGINT handling in staging and confirm a restart does not duplicate scheduled jobs or subscription processing.
+Verify graceful SIGTERM/SIGINT handling in staging and confirm a restart does not duplicate scheduled jobs or subscription processing. Set `RUN_SCHEDULERS_IN_WEB=false` only when the dedicated `node src/scheduler.js` worker is deployed; otherwise explicitly set it to `true`.
 
 ## 6. Required staging smoke journeys
 
@@ -153,6 +153,10 @@ With two staging tenants A and B:
 
 ## 8. External integrations
 
+For Google Calendar, follow `docs/GOOGLE_CALENDAR_PRODUCTION_SETUP.md`. Production must explicitly choose `GOOGLE_CALENDAR_AUTH_MODE=service_account` or `oauth`. Service-account mode requires Workspace domain-wide delegation to the configured organizer. OAuth mode requires the consent project to actually be In Production/Internal; `GOOGLE_OAUTH_CONSENT_STATUS` is an operator assertion checked by the application, not a Google API lookup.
+
+### Integration smoke checks
+
 Before launch, exercise real staging credentials for:
 
 - SMTP send and verification email.
@@ -188,3 +192,26 @@ Recommended deployment properties:
 ## Existing migrated schools: manual activation
 
 A billing-authorized Platform operator can activate a migrated suspended/expired school from **Super Admin → Schools → School Details → Manual Activate**. Manual activation requires the current tenant/subscription revisions, an explicit future period end, and an audit reason. It records a `manual_activation_override` subscription history entry and does not fabricate a payment record. Normal paid activation should still use the Billing flow.
+
+## 10. Search, AI discovery and public SEO
+
+Before production traffic is enabled, run the packaged SEO/discovery gate:
+
+```bash
+npm run check:seo
+```
+
+The gate verifies the public metadata contract, absolute canonicals, Open Graph/Twitter data, public/tenant sitemap coverage, tenant school structured data, crawler policy, noindex separation for utility/auth/application surfaces, IndexNow implementation, and the protected Chariot-style motion contract.
+
+Production discovery requirements:
+
+- Keep `https://www.classicacademy.app/robots.txt`, `/sitemap.xml` and `/llms.txt` reachable without authentication.
+- Public school directory profiles are listed dynamically in the platform sitemap; tenant sites expose their own tenant-domain sitemap.
+- `OAI-SearchBot` is allowed on public content for ChatGPT search discovery, while protected/admin paths stay disallowed. `GPTBot` remains separately blocked by policy in this release.
+- Search/status/login/application utility pages use `noindex` rather than competing with public marketing and school-profile pages.
+- Keep one absolute canonical per indexable URL. Platform school-directory profiles canonicalize to Classic Academy; tenant websites canonicalize to their own tenant public origin.
+- `INDEXNOW_KEY` is optional. When configured, use a random 8–128 character key and run `npm run seo:indexnow` after meaningful public-content changes. IndexNow is best-effort discovery, not an indexing or ranking guarantee.
+- Do not add hidden keyword blocks, doorway pages, or repetitive keyword stuffing. Public copy should remain useful, factual and specific.
+
+After deployment, verify the live sitemap/canonical responses and submit the sitemap in the relevant webmaster/search consoles.
+

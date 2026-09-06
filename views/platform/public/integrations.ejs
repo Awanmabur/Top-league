@@ -5,26 +5,28 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Integrations — Classic Academy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
   <meta name="description" content="Tools Classic Academy connects with: email delivery, media storage, Google Workspace, and QR-based verification." />
   <meta name="robots" content="index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1" />
   <meta name="theme-color" content="#4a90e2" />
-  <link rel="canonical" href="/integrations" />
+  <link rel="canonical" href="https://www.classicacademy.app/integrations" />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Integrations — Classic Academy" />
   <meta property="og:description" content="Tools Classic Academy connects with." />
-  <meta property="og:url" content="/integrations" />
-  <meta property="og:image" content="img/hero.png" />
+  <meta property="og:url" content="https://www.classicacademy.app/integrations" />
+  <meta property="og:image" content="https://www.classicacademy.app/img/hero.png" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Integrations — Classic Academy" />
   <meta name="twitter:description" content="Tools Classic Academy connects with." />
-  <meta name="twitter:image" content="img/hero.png" />
+  <meta name="twitter:image" content="https://www.classicacademy.app/img/hero.png" />
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
-  <style>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Outfit:wght@100..900&display=swap" rel="stylesheet" />
+  <style nonce="<%= cspNonce %>">
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    @import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Outfit:wght@100..900&display=swap");
     :root { --primary: #4a90e2; --accent: #d97800; --highlight: #009f8b; --ink: #0f172a; --muted: #475569; --page-pad: clamp(1rem, 4vw, 6rem); --shadow2: 0 18px 50px rgba(15, 23, 42, .12); }
     html { scroll-behavior: smooth; }
     a { text-decoration: none; }
@@ -100,6 +102,7 @@
     .fab-container .fab .fab-content .material-icons { color: #2e2e2e; font-size: 48px; }
     .fab-container .sub-button .material-icons { color: #2e2e2e; padding-top: 6px; }
   </style>
+  <link rel="stylesheet" href="/css/classic-motion.css">
 </head>
 
 <body>
@@ -193,55 +196,19 @@
     </div>
   </section>
 
-  <footer class="footer">
-    <div>
-      <h4>About Us</h4>
-      <p>We are excited to introduce our upcoming Classic Academy Plans, where schools will be categorized</p>
-      <a href="https://play.google.com/store" target="_blank" rel="noopener"><img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" style="height: 50px; width: 150px" alt="Google Play"></a>
-      <a href="https://apps.apple.com/" target="_blank" rel="noopener"><img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store" style="height: 50px;"></a>
-    </div>
-    <div>
-      <h4>Learn about our mission</h4>
-      <ul>
-        <li><a href="/about">Our Story</a></li>
-        <li><a href="/services">What We Offer</a></li>
-        <li><a href="/plan?plan=standard">Plans & Pricing</a></li>
-        <li><a href="/blog?slug=increase-admissions">Press resources</a></li>
-        <li><a href="/careers">Careers</a></li>
-      </ul>
-    </div>
-    <div>
-      <h4>Get help with your account</h4>
-      <ul>
-        <li><a href="/contact">Customer Support</a></li>
-        <li><a href="/schedule">Book a Demo</a></li>
-        <li><a href="/faq">FAQ</a></li>
-        <li><a href="/privacy">Privacy Policy</a></li>
-        <li><a href="/terms">Terms</a></li>
-      </ul>
-    </div>
-    <div>
-      <h4>Join our school community</h4>
-      <ul>
-        <li><a href="/schools">Find Schools</a></li>
-        <li><a href="/admissions">Admissions</a></li>
-        <li><a href="/search">Search</a></li>
-        <li><a href="/blog?slug=increase-admissions">Blog</a></li>
-        <li><a href="https://chat.whatsapp.com/HRGoS3fMZoZGgXbz1HDw6a?mode=gi_t" target="_blank" rel="noopener">Join whatsapp group</a></li>
-      </ul>
-    </div>
-  </footer>
+  <%- include("../partials/footer") %>
 
   <button id="toTopBtn" aria-label="Scroll to top">↑</button>
 
   <div class="fab-container" aria-hidden="true">
     <div class="fab shadow"><div class="fab-content"><span class="material-icons">support_agent</span></div></div>
     <div class="sub-button shadow"><a href="tel:+256781977217"><span class="material-icons">phone</span></a></div>
-    <div class="sub-button shadow"><a href="https://api.whatsapp.com/send?phone=256781977217" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i></a></div>
-    <div class="sub-button shadow"><a href="/share" target="_blank" rel="noopener"><span class="material-icons">share</span></a></div>
+    <div class="sub-button shadow"><a href="https://api.whatsapp.com/send?phone=256781977217" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-whatsapp"></i></a></div>
+    <div class="sub-button shadow"><a href="/share" target="_blank" rel="noopener noreferrer"><span class="material-icons">share</span></a></div>
   </div>
 
   <script src="/pages/terms.js"></script>
+  <script src="/js/classic-motion.js" defer></script>
 </body>
 
 </html>

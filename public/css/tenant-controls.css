@@ -1,0 +1,56 @@
+/* Universal tenant-admin surface contract. Applies only to authenticated tenant pages. */
+body[data-portal="tenant"] :is(.btn,.btn-xs,.tab,button:not(.sbToggle):not(.mglass-menu),a.btn){border-radius:999px!important}
+body[data-portal="tenant"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),select,.input,.select,.search){border-radius:18px!important}
+body[data-portal="tenant"] :is(textarea,.textarea){border-radius:20px!important}
+body[data-portal="tenant"] :is(.card,.kpi-card,.table-wrap,.panel,.modal,.modal-card,.filters-row,.section,header:not(.mglass-nav)){border-radius:22px!important}
+body[data-portal="tenant"] :is(input,select,textarea):focus{outline:none!important;border-color:rgba(10,111,191,.48)!important;box-shadow:0 0 0 4px rgba(10,111,191,.10)!important;transform:translateY(-1px)}
+body[data-portal="tenant"] :is(.btn,.btn-xs,.tab,button,a.btn){transition:transform .24s cubic-bezier(.2,.78,.24,1),box-shadow .24s ease,filter .24s ease}
+body[data-portal="tenant"] :is(.btn,.btn-xs,.tab,button,a.btn):active{transform:translateY(0) scale(.98)!important}
+
+/* Chariot-tuned tenant workspace motion. */
+.ca-tenant-progress,.ca-tenant-scroll-progress{position:fixed;z-index:999999;left:0;top:0;width:100%;height:3px;background:#0a6fbf;transform-origin:0 50%;pointer-events:none}
+.ca-tenant-scroll-progress{z-index:999998;transform:scaleX(0);opacity:.92;will-change:transform}
+.ca-tenant-progress{opacity:0;transform:scaleX(.08);transition:opacity .18s ease,transform .55s cubic-bezier(.22,.61,.36,1)}
+body.ca-tenant-routing .ca-tenant-progress{opacity:1;transform:scaleX(.84)}
+@supports (animation-timeline:scroll()){
+  .ca-tenant-scroll-progress{animation:ca-tenant-native-progress linear both;animation-timeline:scroll(root block)}
+  @keyframes ca-tenant-native-progress{to{transform:scaleX(1)}}
+}
+
+html.ca-tenant-motion body[data-portal="tenant"] .ca-tenant-reveal{
+  opacity:0;
+  transform:translate3d(0,30px,0) scale(.988);
+  filter:blur(5px);
+  transition:opacity .62s cubic-bezier(.2,.78,.24,1),transform .88s cubic-bezier(.2,.78,.24,1),filter .62s ease;
+  transition-delay:var(--cat-delay,0ms);
+  will-change:opacity,transform,filter;
+  backface-visibility:hidden;
+}
+html.ca-tenant-motion body[data-portal="tenant"] .ca-tenant-reveal.ca-tenant-left{transform:translate3d(-38px,12px,0) scale(.99)}
+html.ca-tenant-motion body[data-portal="tenant"] .ca-tenant-reveal.ca-tenant-right{transform:translate3d(38px,12px,0) scale(.99)}
+html.ca-tenant-motion body[data-portal="tenant"] .ca-tenant-reveal.ca-tenant-scale{transform:translate3d(0,18px,0) scale(.955)}
+html.ca-tenant-motion body[data-portal="tenant"] .ca-tenant-reveal.ca-tenant-in{opacity:1;filter:blur(0);transform:translate3d(0,0,0) scale(1)}
+.ca-tenant-delay-1{--cat-delay:60ms}.ca-tenant-delay-2{--cat-delay:120ms}.ca-tenant-delay-3{--cat-delay:180ms}.ca-tenant-delay-4{--cat-delay:240ms}.ca-tenant-delay-5{--cat-delay:300ms}.ca-tenant-delay-6{--cat-delay:360ms}.ca-tenant-delay-7{--cat-delay:420ms}.ca-tenant-delay-8{--cat-delay:480ms}
+
+body[data-portal="tenant"] .ca-tenant-hover{transform-style:preserve-3d;transition:transform .42s cubic-bezier(.2,.78,.24,1),box-shadow .42s ease,border-color .35s ease!important}
+@media (hover:hover) and (pointer:fine){
+  body[data-portal="tenant"] .ca-tenant-hover:nth-child(odd):hover{transform:perspective(950px) translateY(-8px) rotateX(1.4deg) rotateY(-1.4deg);box-shadow:0 18px 45px rgba(2,6,23,.14)}
+  body[data-portal="tenant"] .ca-tenant-hover:nth-child(even):hover{transform:perspective(950px) translateY(-8px) rotateX(1.4deg) rotateY(1.4deg);box-shadow:0 18px 45px rgba(2,6,23,.14)}
+  body[data-portal="tenant"] :is(.btn,.btn-xs,.tab,button,a.btn):hover{transform:translateY(-3px);box-shadow:0 11px 26px rgba(2,6,23,.13)}
+}
+
+@media(max-width:780px){
+  .ca-tenant-scroll-progress{height:2px}
+  html.ca-tenant-motion body[data-portal="tenant"] .ca-tenant-reveal,
+  html.ca-tenant-motion body[data-portal="tenant"] .ca-tenant-reveal.ca-tenant-left,
+  html.ca-tenant-motion body[data-portal="tenant"] .ca-tenant-reveal.ca-tenant-right{filter:none;transform:translate3d(0,20px,0);transition-duration:520ms}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .ca-tenant-progress,.ca-tenant-scroll-progress{display:none!important}
+  html.ca-tenant-motion body[data-portal="tenant"] .ca-tenant-reveal,
+  html.ca-tenant-motion body[data-portal="tenant"] .ca-tenant-reveal.ca-tenant-left,
+  html.ca-tenant-motion body[data-portal="tenant"] .ca-tenant-reveal.ca-tenant-right,
+  html.ca-tenant-motion body[data-portal="tenant"] .ca-tenant-reveal.ca-tenant-scale{opacity:1!important;filter:none!important;transform:none!important;transition:none!important}
+  body[data-portal="tenant"] .ca-tenant-hover,body[data-portal="tenant"] .ca-tenant-hover:hover{transition:none!important;transform:none!important}
+}

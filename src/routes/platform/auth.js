@@ -1,9 +1,12 @@
 const express = require("express");
 const router = express.Router();
+const noIndex = require("../../middleware/noIndex");
 const authController = require("../../controllers/platform/authController");
 const { csrfProtection, attachCsrfToken } = require("../../middleware/tenant/csrf");
 const { authLimiter } = require("../../middleware/tenant/rateLimiters");
 const { platformAdminOnly, platformOnly } = require("../../middleware/platform/guards");
+
+router.use(["/login", "/super-admin/login", "/forgot-password", "/super-admin/forgot-password", "/reset-password", "/super-admin/reset-password", "/super-admin/verify-login"], noIndex);
 
 router.get(["/login", "/super-admin/login"], csrfProtection, attachCsrfToken, authController.loginForm);
 router.post(["/login", "/super-admin/login"], authLimiter, csrfProtection, attachCsrfToken, authController.login);

@@ -15,7 +15,7 @@
 <%-include("../partials/header") %>
   <!-- Shared CSS (keep your existing file) -->
    
-  <style>
+  <style nonce="<%= cspNonce %>">
     .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}
     .toolbar .left,.toolbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .input,.select,.textarea{padding:10px 12px;border-radius:12px;border:1px solid rgba(13,64,96,.16);background:#fff;outline:none}
@@ -164,6 +164,7 @@
       return pairs.length ? `?${pairs.join("&")}` : "";
     };
   %>
+  <link rel="stylesheet" href="/css/tenant-controls.css">
 </head>
 <body data-portal="tenant">
 
@@ -177,7 +178,7 @@
       </div>
       <div class="top-actions">
         <button class="btn light" id="btnExport"><i class="fa-solid fa-file-arrow-down"></i> Export</button>
-        <a class="btn light" href="/apply" target="_blank" rel="noopener"><i class="fa-solid fa-link"></i> Public Apply</a>
+        <a class="btn light" href="/apply" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-link"></i> Public Apply</a>
         <a class="btn primary" href="/admin/admissions" title="Refresh"><i class="fa-solid fa-rotate"></i> Refresh</a>
       </div>
     </div>
@@ -477,7 +478,7 @@
         <div class="mini-list">
           <div class="mini-item">
             <div class="left"><div class="strong">Open Public Apply Form</div><div class="muted">Test applicant submission</div></div>
-            <a class="btn-xs" href="/admissions/apply" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+            <a class="btn-xs" href="/admissions/apply" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
           </div>
           <div class="mini-item">
             <div class="left"><div class="strong">Admissions Reports</div><div class="muted">School reports & exports</div></div>
@@ -524,6 +525,7 @@
 
 <script src="/js/navbar.js"></script>
 <script src="/js/admission.js"></script>
+  <script src="/js/tenant-workspace-motion.js" defer></script>
 </body>
 </html>
 
