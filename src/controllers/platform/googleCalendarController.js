@@ -27,9 +27,17 @@ function clearPending(req) {
   delete req.session.googleCalendarOauthExpiresAt;
 }
 
+function saveSession(req) {
+  return new Promise((resolve, reject) => {
+    if (!req.session || typeof req.session.save !== "function") return resolve();
+    req.session.save((error) => (error ? reject(error) : resolve()));
+  });
+}
+
 module.exports = {
   connect: async (req, res) => {
     try {
+      res.set("Cache-Control", "no-store");
       if (googleCalendar.authMode() !== "oauth") {
         req.flash?.("error", "Google Calendar uses service-account authentication in this deployment. Test the configured connection instead of starting OAuth.");
         return res.redirect("/super-admin/settings");
@@ -42,7 +50,8 @@ module.exports = {
       req.session.googleCalendarOauthState = pending.state;
       req.session.googleCalendarOauthVerifier = pending.verifier;
       req.session.googleCalendarOauthExpiresAt = pending.expiresAt;
-      return res.redirect(googleCalendar.authorizationUrl(pending));
+      await saveSession(req);
+      return res.redirect(302, googleCalendar.authorizationUrl(pending));
     } catch (error) {
       clearPending(req);
       req.flash?.("error", error?.message || "Google Calendar connection could not start.");
@@ -52,6 +61,7 @@ module.exports = {
 
   callback: async (req, res) => {
     try {
+      res.set("Cache-Control", "no-store");
       if (googleCalendar.authMode() !== "oauth") throw new Error("OAuth callback is disabled while Google Calendar uses service-account authentication.");
       if (req.query.error) throw new Error("Google authorization was denied or cancelled.");
       const expected = req.session?.googleCalendarOauthState;

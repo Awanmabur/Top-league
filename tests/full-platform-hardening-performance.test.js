@@ -223,8 +223,9 @@ test('Super Admin has real Google Calendar connect callback test and disconnect 
     assert.match(routes, new RegExp(endpoint.replace('/', '\\/')));
   }
   assert.match(routes, /platformRequire\("settings\.manage"\)/);
-  assert.match(routes, /router\.post\("\/super-admin\/settings\/google-calendar\/connect"/);
+  assert.match(routes, /router\.get\("\/super-admin\/settings\/google-calendar\/connect"/);
   assert.match(view, /Google Calendar Booking/);
+  assert.match(view, /href="\/super-admin\/settings\/google-calendar\/connect"/);
   assert.match(view, /name="_csrf"/);
 });
 

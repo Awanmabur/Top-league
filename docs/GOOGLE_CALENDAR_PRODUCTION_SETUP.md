@@ -129,3 +129,8 @@ Default health interval is six hours. Optional tuning:
 - `GOOGLE_CALENDAR_HEALTH_INITIAL_DELAY_MS` — stagger the first worker check.
 
 Use the default unless monitoring demonstrates a reason to change it.
+
+
+## OAuth initiation and Content Security Policy
+
+Classic Academy keeps the global browser policy `form-action 'self'`. The Google Calendar connect control therefore starts OAuth through an authenticated GET navigation at `/super-admin/settings/google-calendar/connect` instead of a POST form that redirects cross-origin. This preserves the strict form-submission policy while allowing the browser to navigate to Google authorization. The controller persists the OAuth state and PKCE verifier to the server-side session before redirecting to Google.
