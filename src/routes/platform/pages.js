@@ -41,6 +41,16 @@ router.use(
 );
 router.use(["/robots.txt", "/sitemap.xml", "/llms.txt", "/indexnow-key.txt"], cachePublicMetadata);
 
+// Privacy-policy verification must always receive the current policy. Do not let
+// browsers, reverse proxies, CDNs, or verification crawlers serve a stale copy.
+router.use("/privacy", (req, res, next) => {
+  res.setHeader("Cache-Control", "no-store, max-age=0, must-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+  res.setHeader("Surrogate-Control", "no-store");
+  next();
+});
+
 router.get("/", ctrl.landing);
 router.get("/about", (req, res) => res.render("platform/public/about"));
 router.get("/features", (req, res) => res.render("platform/public/features"));

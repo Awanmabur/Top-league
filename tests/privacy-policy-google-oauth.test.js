@@ -44,3 +44,29 @@ test('download-wrapper scripts are not copied into production privacy page', () 
   assert.doesNotMatch(privacy, /cdn-cgi\/scripts/i);
   assert.doesNotMatch(privacy, /data-cfemail/i);
 });
+
+test('privacy policy comprehensively identifies Classic Academy data categories', () => {
+  for (const required of [
+    'Identity and contact data',
+    'Account and access data',
+    'Student and guardian data',
+    'Admissions, scholarship and application data',
+    'Academic and learning data',
+    'Fees, finance and transaction data',
+    'Staff and employment-related data',
+    'Communications and support data',
+    'Files and documents',
+    'Booking and integration data',
+    'Usage, device and security data',
+    'Participating schools and authorized users',
+    'Infrastructure and service providers',
+    'Payment services',
+  ]) assert.ok(privacy.includes(required), `missing comprehensive privacy disclosure: ${required}`);
+});
+
+test('privacy route prevents stale policy copies during external verification', () => {
+  const routes = fs.readFileSync(path.join(ROOT, 'src/routes/platform/pages.js'), 'utf8');
+  assert.match(routes, /router\.use\("\/privacy"/);
+  assert.match(routes, /no-store, max-age=0, must-revalidate/);
+  assert.match(routes, /Surrogate-Control", "no-store/);
+});
