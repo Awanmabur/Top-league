@@ -11,15 +11,19 @@ test('privacy policy keeps production page shell and current date', () => {
   assert.match(privacy, /<%- include\("\.\.\/partials\/footer"\) %>/);
   assert.match(privacy, /September 06, 2026/);
   assert.doesNotMatch(privacy, /Template text/i);
+  assert.doesNotMatch(privacy, /Privacy Policy Generator/i);
 });
 
 test('privacy policy contains Google Calendar OAuth disclosures required for production', () => {
   for (const required of [
-    'Google Calendar and Google API Data',
+    'Google User Data — Access, Use, Storage, Sharing and Deletion',
+    'https://www.googleapis.com/auth/calendar.events.owned',
+    'https://www.googleapis.com/auth/calendar.events.freebusy',
     'free/busy availability',
     'encrypted form',
-    'We do not sell Google user data',
-    'revoke Classic Academy access',
+    'does not sell Google user data',
+    'generalized or non-personalized artificial-intelligence or machine-learning models',
+    "revoke Classic Academy's access",
     'Google API Services User Data Policy',
     'Limited Use requirements',
   ]) assert.ok(privacy.includes(required), `missing privacy disclosure: ${required}`);

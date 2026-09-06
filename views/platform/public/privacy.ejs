@@ -755,8 +755,9 @@
       <section class="hero reveal">
         <div class="kicker"><i class="fa-solid fa-shield-halved"></i> Privacy • Data handling • Security</div>
         <h1>Privacy Policy</h1>
-        <p>This Privacy Policy describes Our policies and procedures on the collection, use and disclosure of Your information when You use the Service and tells You about Your privacy rights and how the law protects You.</p>
-        <p>We use Your Personal Data to provide and improve the Service. We collect, use, and disclose Your information as described in this Privacy Policy and, where required by applicable law, only where We have a valid legal basis to do so, including Your consent where consent is required.</p>
+        <p>This Privacy Policy explains how Classic Academy collects, uses, stores, protects, retains, deletes, and discloses Personal Data when You use the Classic Academy school-management platform, public website, demo-booking service, and related services.</p>
+        <p>Classic Academy is a product operated by Mabur Technologies, trading as Classic Technologies. This policy applies specifically to Classic Academy at <strong>https://www.classicacademy.app</strong> and includes a dedicated disclosure explaining Classic Academy's use of Google Calendar and Google API data for optional booking functionality.</p>
+        <p>We use Personal Data only for the purposes described in this Privacy Policy and, where required by applicable law, only where We have a valid legal basis to do so, including Your consent where consent is required.</p>
         <div class="actions">
           <a class="btn btn-sm" href="/contact"><i class="fa-solid fa-envelope"></i> Contact</a>
           <a class="btn ghost btn-sm" href="/terms"><i class="fa-solid fa-file-contract"></i> Terms</a>
@@ -786,7 +787,7 @@
 <p><strong>Affiliate</strong> means an entity that controls, is controlled by, or is under common control with a party, where "control" means ownership of 50% or more of the shares, equity interest or other securities entitled to vote for election of directors or other managing authority.</p>
 </li>
 <li>
-<p><strong>Company</strong> (referred to as either "the Company", "We", "Us" or "Our" in this Privacy Policy) refers to Classic Academy.</p>
+<p><strong>Company</strong> (referred to as "the Company", "We", "Us" or "Our") means Mabur Technologies, trading as Classic Technologies, as the operator of the Classic Academy product and service.</p>
 </li>
 <li>
 <p><strong>Cookies</strong> are small files that are placed on Your computer, mobile device or any other device by a website, containing the details of Your browsing history on that website, among its many uses.</p>
@@ -802,7 +803,7 @@
 <p>We use "Personal Data" and "Personal Information" interchangeably unless a law uses a specific term.</p>
 </li>
 <li>
-<p><strong>Service</strong> refers to the Website.</p>
+<p><strong>Service</strong> means the Classic Academy school-management platform, public website, demo-booking service, tenant school services, and related features made available through Classic Academy.</p>
 </li>
 <li>
 <p><strong>Service Provider</strong> means any natural or legal person who processes the data on behalf of the Company. It refers to third-party companies or individuals employed by the Company to facilitate the Service, to provide the Service on behalf of the Company, to perform services related to the Service or to assist the Company in analyzing how the Service is used.</p>
@@ -904,9 +905,10 @@
 <p><strong>For business transfers:</strong> We may use Your Personal Data to evaluate or conduct a merger, divestiture, restructuring, reorganization, dissolution, or other sale or transfer of some or all of Our assets, whether as a going concern or as part of bankruptcy, liquidation, or similar proceeding, in which Personal Data held by Us about Our Service users is among the assets transferred.</p>
 </li>
 <li>
-<p><strong>For other purposes</strong>: We may use Your information for other purposes, such as data analysis, identifying usage trends, determining the effectiveness of Our promotional campaigns, and evaluating and improving Our Service, products, services, marketing and Your experience.</p>
+<p><strong>For other purposes</strong>: We may use non-Google Personal Data for purposes such as data analysis, identifying usage trends, determining the effectiveness of Our promotional campaigns, and evaluating and improving Our Service, products, services, marketing and Your experience.</p>
 </li>
 </ul>
+          <p><strong>Important Google User Data limitation:</strong> The general marketing, analytics, affiliate, business-transfer, and "other purposes" language in this section does <strong>not</strong> expand how Classic Academy may use Google user data. Google user data is governed by the dedicated "Google User Data — Access, Use, Storage, Sharing and Deletion" section below and is used only to provide or improve the user-facing Google Calendar booking functionality described there.</p>
           <p>We may share Your Personal Data in the following situations:</p>
           <ul>
 <li><strong>With Service Providers:</strong> We may share Your Personal Data with Service Providers to monitor and analyze the use of Our Service, and to contact You.</li>
@@ -930,14 +932,16 @@
           <p>Reply STOP to opt-out. Reply HELP for support. Message &amp; data rates may apply. Messaging frequency may vary. Carriers are not liable for delayed or undelivered messages.</p>
         </article>
 
-        <article class="card reveal">
-          <h2>Google Calendar and Google API Data</h2>
-          <p>Classic Academy can connect to Google Calendar for the optional demo and booking feature. When an authorized administrator connects Google Calendar, Classic Academy requests only the Calendar permissions needed to check free/busy availability and create, update, or remove booking events associated with the Classic Academy booking service.</p>
-          <p>Google Calendar data is used only to provide and improve the user-facing booking functionality requested by the authorized administrator. We do not use Google user data for advertising, retargeting, credit decisions, data-broker services, or to train general-purpose artificial intelligence or machine-learning models.</p>
-          <p>When OAuth is used, Classic Academy stores the Google refresh credential in encrypted form so the booking service can continue to access the authorized Calendar without requiring the administrator to sign in for every booking. Calendar event and availability information is processed only as needed to perform booking operations, maintain service integrity, troubleshoot failures, and comply with applicable legal obligations.</p>
-          <p>We do not sell Google user data. We do not share Google user data with third parties except service providers that are necessary to operate or secure the Service, when required by law, or when the user has expressly authorized the disclosure.</p>
-          <p>An authorized administrator can disconnect Google Calendar from Classic Academy, revoke Classic Academy access from their Google Account permissions, or contact Us to request deletion of stored Google authorization credentials and related integration records, subject to any legal retention requirement.</p>
-          <p>Classic Academy's use and transfer of information received from Google APIs will adhere to the <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer">Google API Services User Data Policy</a>, including the Limited Use requirements.</p>
+        <article class="card reveal" id="google-user-data">
+          <h2>Google User Data — Access, Use, Storage, Sharing and Deletion</h2>
+          <p><strong>Feature and authorization.</strong> Classic Academy offers an optional Google Calendar integration for scheduling Classic Academy demos, onboarding sessions, and support bookings. The integration is connected only after an authorized Classic Academy administrator chooses to connect a Google account and grants Google OAuth permission.</p>
+          <p><strong>Google data and permissions accessed.</strong> For OAuth-based Calendar booking, Classic Academy requests <code>https://www.googleapis.com/auth/calendar.events.owned</code> and <code>https://www.googleapis.com/auth/calendar.events.freebusy</code>. These permissions allow Classic Academy to read free/busy availability for the configured booking calendar and to create, update, or delete Calendar events owned by the connected account. In performing those actions, Classic Academy may process calendar identifiers, free/busy time ranges, event identifiers, event titles/descriptions, start and end times, meeting links, and booking attendee information that is necessary to create or manage a requested booking.</p>
+          <p><strong>How Google user data is used.</strong> Google user data is used only to provide and improve the user-facing Classic Academy booking functionality: checking whether a requested time is available, preventing booking conflicts, creating the requested Calendar event, updating or cancelling that event where necessary, maintaining booking integrity, and troubleshooting failures. Classic Academy does not use Google user data for advertising, personalized advertising, retargeting, credit decisions, lending, data-broker or information-reseller services, unrelated marketing, or creation of unrelated databases.</p>
+          <p><strong>AI and machine learning.</strong> Google Workspace API data obtained through this integration is not used to develop, improve, or train generalized or non-personalized artificial-intelligence or machine-learning models.</p>
+          <p><strong>Storage and protection.</strong> When OAuth is used, Classic Academy stores the Google refresh credential in encrypted form so the booking service can continue operating without requiring the administrator to sign in for every booking. Access to integration credentials is restricted to authorized server-side application processes. Google Calendar availability and event information is processed only as needed for the booking operation and related service integrity. Production connections use HTTPS/TLS in transit.</p>
+          <p><strong>Sharing and transfer.</strong> Classic Academy does not sell Google user data and does not share or transfer Google user data for advertising, marketing, profiling, data brokerage, credit, lending, or generalized AI/ML training. Google user data may be disclosed only to service providers acting on Our behalf where necessary to provide or secure the user-facing booking functionality, when required by applicable law, or when the connected user has expressly authorized the disclosure. Those providers may use the data only to perform the contracted service for Classic Academy.</p>
+          <p><strong>Retention and deletion.</strong> Google authorization credentials are retained only while the Calendar integration remains connected and as necessary to operate the booking feature. An authorized administrator can disconnect Google Calendar in Classic Academy, revoke Classic Academy's access from the Google Account's third-party access settings, or contact Us to request deletion of stored Google authorization credentials and related integration records. We delete or render unusable the stored integration credential after disconnection or a valid deletion request, except where a limited record must be retained to meet a legal or security obligation. Calendar events already written to the user's Google Calendar remain subject to the user's own Google Calendar controls and can be deleted there.</p>
+          <p><strong>Limited Use.</strong> Classic Academy's use and transfer of information received from Google APIs adheres to the <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer">Google API Services User Data Policy</a>, including the Limited Use requirements. If any general provision elsewhere in this Privacy Policy could be interpreted more broadly, this Google User Data section controls for data obtained through Google APIs.</p>
         </article>
 
         <article class="card reveal">
@@ -1020,7 +1024,7 @@
 
         <article class="card reveal">
           <h2>Security of Your Personal Data</h2>
-          <p>The security of Your Personal Data is important to Us, but remember that no method of transmission over the Internet, or method of electronic storage, is 100% secure. While We strive to use commercially reasonable means to protect Your Personal Data, We cannot guarantee its absolute security.</p>
+          <p>The security of Your Personal Data is important to Us. We use administrative and technical safeguards appropriate to the Service, including access controls, secure server-side handling of integration credentials, HTTPS/TLS for production traffic, and encryption of stored Google OAuth refresh credentials. No method of transmission over the Internet or electronic storage is 100% secure, so We cannot guarantee absolute security.</p>
         </article>
 
         <article class="card reveal">
